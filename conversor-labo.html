@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transformador de laboratorio → LABO</title>
+<style>
+  :root{
+    --ink:#23302c; --paper:#faf7f0; --panel:#fff; --muted:#7a7468;
+    --line-soft:#dcd6c8; --field-bg:#fcfbf7; --accent-dark:#2f5d5a; --danger:#c0392b;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:'IBM Plex Sans',Arial,sans-serif;padding:14px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;background:var(--panel);border:2px solid var(--ink);border-radius:4px;box-shadow:0 8px 26px rgba(0,0,0,.15);}
+  .head{padding:14px 20px;border-bottom:2px solid var(--ink);}
+  .head h1{margin:0 0 4px;font-size:16px;}
+  .head .sub{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);}
+  .body{padding:16px 20px 20px;}
+  .grid{display:grid;grid-template-columns:1fr 34px 1fr;gap:0 14px;align-items:stretch;}
+  @media (max-width:860px){ .grid{grid-template-columns:1fr;} .pipe{display:none;} }
+  .panel{display:flex;flex-direction:column;}
+  .panel h3{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-dark);margin:0 0 7px;}
+  #laboInput{min-height:320px;flex:1;font-family:'IBM Plex Mono',monospace;font-size:12px;padding:8px;border:1px solid var(--line-soft);background:var(--field-bg);border-radius:2px;resize:vertical;width:100%;}
+  .controls{display:flex;align-items:center;gap:8px;margin-top:9px;flex-wrap:wrap;}
+  .controls label{font-size:10.5px;color:var(--muted);font-weight:600;}
+  .controls button{font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:11.5px;padding:7px 12px;border-radius:2px;cursor:pointer;border:none;}
+  .btn-primary{background:var(--accent-dark);color:#fff;}
+  .btn-primary:hover{opacity:.85;}
+  .btn-secondary{background:transparent;border:1px solid var(--ink) !important;color:var(--ink);}
+  .btn-secondary:hover{background:var(--ink);color:var(--paper);}
+  .btn-tiny{font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:10.5px;padding:4px 9px;border-radius:2px;cursor:pointer;border:1px solid var(--line-soft);background:#fff;color:var(--muted);}
+  .btn-tiny:hover{border-color:var(--accent-dark);color:var(--accent-dark);}
+  .pipe{display:flex;align-items:center;justify-content:center;}
+  .pipe svg{width:20px;height:56px;}
+  #laboOutput{
+    flex:1;min-height:320px;border:1px solid var(--line-soft);background:var(--field-bg);
+    padding:11px 13px;font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:12pt;line-height:1.6;
+    white-space:pre-wrap;word-break:break-word;overflow:auto;border-radius:2px;color:#000;
+  }
+  #laboOutput:empty::before{content:"El resultado formateado va a aparecer acá.";color:var(--muted);font-style:italic;font-size:11.5px;font-family:'IBM Plex Sans',Arial,sans-serif;}
+  .legend{display:flex;gap:14px;margin-top:7px;font-size:10.5px;color:var(--muted);}
+  .legend .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px;vertical-align:middle;}
+  .legend .n .dot{background:var(--ink);}
+  .legend .a .dot{background:var(--danger);}
+  .out-footer{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  #laboStatus{font-size:11px;color:var(--accent-dark);font-family:'IBM Plex Mono',monospace;min-height:14px;}
+  .note{font-size:10.5px;color:var(--muted);margin-top:12px;line-height:1.5;}
+
+  .checklist-wrap{margin-top:18px;border-top:1px solid var(--line-soft);padding-top:12px;}
+  .checklist-wrap summary{cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-dark);margin:0 0 4px;user-select:none;}
+  .checklist-toolbar{display:flex;gap:8px;margin:10px 0 12px;}
+  .checklist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;}
+  .catgroup{border:1px solid var(--line-soft);border-radius:3px;padding:8px 10px;background:var(--field-bg);}
+  .catgroup h4{margin:0 0 6px;font-size:10.5px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.03em;}
+  .catgroup label{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink);padding:2px 0;cursor:pointer;}
+  .catgroup input[type=checkbox]{margin:0;cursor:pointer;}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="head">
+    <h1>Transformador de laboratorio → LABO</h1>
+    <div class="sub">Pegá el texto tal como lo copiás de la página del laboratorio. Se convierte solo al pegar. Genera un renglón completo y, debajo, el renglón resumen.</div>
+  </div>
+  <div class="body">
+    <div class="grid">
+      <div class="panel">
+        <h3>1. Datos crudos del laboratorio</h3>
+        <textarea id="laboInput" placeholder="Pegá acá el texto copiado del laboratorio..."></textarea>
+        <div class="controls">
+          <label for="laboFecha">Fecha:</label>
+          <input type="date" id="laboFecha">
+          <button type="button" class="btn-primary" id="laboProcesarBtn">Procesar</button>
+          <button type="button" class="btn-secondary" id="laboLimpiarBtn">Limpiar</button>
+        </div>
+      </div>
+
+      <div class="pipe">
+        <svg viewBox="0 0 22 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <line x1="11" y1="2" x2="11" y2="52" stroke="#c9c4b8" stroke-width="2" stroke-dasharray="3 4"/>
+          <path d="M4 46 L11 56 L18 46" stroke="#2f5d5a" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <div class="panel">
+        <h3>2. Líneas listas para LABO</h3>
+        <div id="laboOutput" contenteditable="true" spellcheck="false"></div>
+        <div class="legend">
+          <span class="n"><span class="dot"></span>Normal</span>
+          <span class="a"><span class="dot"></span>Alterado</span>
+        </div>
+        <div class="out-footer">
+          <button type="button" class="btn-secondary" id="laboCopiarBtn">Copiar con formato</button>
+          <span id="laboStatus"></span>
+        </div>
+        <p class="note">"Copiar con formato" copia negrita y rojo, letra negra pura y sin fondo de color, para pegar directo en Google Docs. El texto de arriba también es editable antes de copiarlo. Arriba va el renglón completo (todos los parámetros habilitados); abajo, separado por una línea en blanco, va el renglón resumen (listado core + hallazgos alterados fuera de lista).</p>
+      </div>
+    </div>
+
+    <details class="checklist-wrap">
+      <summary>3. Parámetros a incluir (tildados por defecto)</summary>
+      <div class="checklist-toolbar">
+        <button type="button" class="btn-tiny" id="laboMarcarTodos">Marcar todos</button>
+        <button type="button" class="btn-tiny" id="laboDesmarcarTodos">Desmarcar todos</button>
+      </div>
+      <div class="checklist-grid" id="laboChecklistGrid"></div>
+    </details>
+  </div>
+</div>
+
+<script>
+function fld(id){ return document.getElementById(id); }
+
+/* ================= Transformador de LABO ================= */
+(function(){
+  const $input = fld('laboInput');
+  const $fecha = fld('laboFecha');
+  const $output = fld('laboOutput');
+  const $status = fld('laboStatus');
+  const $checklistGrid = fld('laboChecklistGrid');
+
+  function laboToday(){
+    // Usamos los componentes de fecha LOCALES (no toISOString, que
+    // convierte a UTC) para que en husos horarios detrás de UTC como
+    // Argentina (UTC-3) no se adelante un día durante la noche.
+    const t = new Date();
+    const y = t.getFullYear();
+    const m = String(t.getMonth()+1).padStart(2,'0');
+    const d = String(t.getDate()).padStart(2,'0');
+    $fecha.value = `${y}-${m}-${d}`;
+  }
+
+  function laboToNumber(str){
+    if(str==null) return null;
+    let s = String(str).trim();
+    s = s.replace(/[^\d.,-]/g,'');
+    if(s==='') return null;
+    s = s.replace(',', '.');
+    const n = parseFloat(s);
+    return isNaN(n) ? null : n;
+  }
+  function laboLooksLikeUnit(line){
+    const s = line.trim();
+    if(s==='') return false;
+    if(/^-?\d+([.,]\d+)?$/.test(s)) return false;
+    return /^[A-Za-zµ³²%/º.\-\d\s]{1,18}$/.test(s) && /[A-Za-zµ%]/.test(s);
+  }
+  function laboLooksLikeRange(line){
+    const s = line.trim().toLowerCase();
+    if(s==='') return false;
+    if(/estad[ií]o/.test(s)) return false;
+    if(/-\s*\d+([.,]\d+)?\s*-\s*\d+([.,]\d+)?/.test(s)) return true;
+    if(/\d+([.,]\d+)?\s*-\s*\d+([.,]\d+)?/.test(s)) return true;
+    if(/hasta\s*\d+([.,]\d+)?/.test(s)) return true;
+    if(/mayor\s*a?\s*\d+([.,]\d+)?/.test(s)) return true;
+    if(/menor\s*a?\s*\d+([.,]\d+)?/.test(s)) return true;
+    if(/[<>]=?\s*\d+([.,]\d+)?/.test(s)) return true;
+    return false;
+  }
+  function laboParseRange(line){
+    // Se juntan todos los patrones de rango que matchean en la ventana de
+    // texto y se usa el que aparece primero (más cercano al valor), en vez
+    // de probar los patrones en un orden fijo (eso hacía que a veces se
+    // tomara el rango de OTRO parámetro que aparecía más adelante en el
+    // mismo bloque de texto).
+    const s = line.trim().toLowerCase().replace(/,/g,'.');
+    const candidates = [];
+    let m;
+    m = s.match(/(-?\d+(?:\.\d+)?)\s*-\s*(-?\d+(?:\.\d+)?)/);
+    if(m) candidates.push({idx:m.index, range:{low: parseFloat(m[1]), high: parseFloat(m[2])}});
+    m = s.match(/hasta\s*(-?\d+(?:\.\d+)?)/);
+    if(m) candidates.push({idx:m.index, range:{low: -Infinity, high: parseFloat(m[1])}});
+    m = s.match(/menor\s*a?\s*(-?\d+(?:\.\d+)?)/);
+    if(m) candidates.push({idx:m.index, range:{low: -Infinity, high: parseFloat(m[1])}});
+    m = s.match(/mayor\s*a?\s*(-?\d+(?:\.\d+)?)/);
+    if(m) candidates.push({idx:m.index, range:{low: parseFloat(m[1]), high: Infinity}});
+    m = s.match(/<=?\s*(-?\d+(?:\.\d+)?)/);
+    if(m) candidates.push({idx:m.index, range:{low: -Infinity, high: parseFloat(m[1])}});
+    m = s.match(/>=?\s*(-?\d+(?:\.\d+)?)/);
+    if(m) candidates.push({idx:m.index, range:{low: parseFloat(m[1]), high: Infinity}});
+    if(candidates.length===0) return null;
+    candidates.sort((a,b)=>a.idx-b.idx);
+    return candidates[0].range;
+  }
+  function laboIsAbnormal(value, range){
+    if(value==null || !range) return false;
+    return value < range.low || value > range.high;
+  }
+  function laboFechaFormateada(){
+    if(!$fecha.value) return '';
+    const [y,m,d] = $fecha.value.split('-');
+    return `${d}/${m}/${y}`;
+  }
+
+  // ---------------------------------------------------------------------
+  // Catálogo maestro de parámetros. Cada uno indica en qué renglón entra:
+  //   l1 = renglón resumen (comportamiento "de siempre": listado core +
+  //        agregados detectados como alterados fuera de lista)
+  //   l2 = renglón completo (todo lo reconocido y habilitado, siempre,
+  //        estén o no alterados)
+  // cat = categoría para el checklist tildable.
+  // El orden de este arreglo es el orden de salida en ambos renglones.
+  // ---------------------------------------------------------------------
+  const LABO_MASTER = [
+    {code:'GB',            cat:'hemograma', kind:'std',    l1:true,  l2:true,  aliases:[/\brecuento de gl[oó]bulos blancos\b/i]},
+    {code:'N',             cat:'hemograma', kind:'pct',    l1:true,  l2:true,  aliases:[/\bneutrofilos?\s+segmentados\b/i]},
+    {code:'L',             cat:'hemograma', kind:'pct',    l1:true,  l2:true,  aliases:[/\blinfocitos\b/i]},
+    {code:'M',             cat:'hemograma', kind:'pct',    l1:false, l2:true,  aliases:[/\bmonocitos\b/i]},
+    {code:'E',             cat:'hemograma', kind:'pct',    l1:false, l2:true,  aliases:[/\beosinofilos\b/i]},
+    {code:'B',             cat:'hemograma', kind:'pct',    l1:false, l2:true,  aliases:[/\bbasofilos\b/i]},
+    {code:'GR',            cat:'hemograma', kind:'std',    l1:true,  l2:true,  aliases:[/\brecuento de gl[oó]bulos rojos\b/i]},
+    {code:'HB',            cat:'hemograma', kind:'std',    l1:true,  l2:true,  aliases:[/\bhemoglobina\b/i]},
+    {code:'HTO',           cat:'hemograma', kind:'std',    l1:true,  l2:true,  aliases:[/\bhematocrito\b/i]},
+    {code:'PLAQ',          cat:'hemograma', kind:'plaq',   l1:true,  l2:true,  aliases:[/\brecuento de plaquetas\b/i]},
+    {code:'Reticulocitos', cat:'hemograma', kind:'pctstd', l1:false, l2:true,  aliases:[/\breticulocitos\b/i]},
+    {code:'ERS',           cat:'hemograma', kind:'std',    l1:false, l2:true,  aliases:[/\beritrosedimentaci[oó]n\b/i]},
+
+    {code:'VCM',  cat:'indices', kind:'std', l1:false, l2:true, aliases:[/\bvcm\b/i]},
+    {code:'HCM',  cat:'indices', kind:'std', l1:false, l2:true, aliases:[/\bhcm\b/i]},
+    {code:'CHCM', cat:'indices', kind:'std', l1:false, l2:true, aliases:[/\bchcm\b/i]},
+    {code:'RDW',  cat:'indices', kind:'std', l1:false, l2:true, aliases:[/\brdw\b/i]},
+    {code:'VPM',  cat:'indices', kind:'std', l1:false, l2:true, aliases:[/\bvpm\b/i]},
+
+    {code:'TP%',  cat:'coagulograma', kind:'pctstd', l1:false, l2:true, aliases:[/\btiempo de protrombina\b/i]},
+    {code:'RIN',  cat:'coagulograma', kind:'raw',    l1:false, l2:true, aliases:[/\brin\b/i]},
+    {code:'KPTT', cat:'coagulograma', kind:'std',    l1:false, l2:true, aliases:[/\btromboplastina parcial activada\b/i, /\bk\.?p\.?t\.?t\.?/i]},
+
+    {code:'PCR',   cat:'quimica', kind:'std',    l1:true,  l2:true,  aliases:[/\bproteina c reactiva\b/i]},
+    {code:'GLUC',  cat:'quimica', kind:'std',    l1:true,  l2:true,  aliases:[/\bglucosa\b/i]},
+    {code:'HbA1c', cat:'quimica', kind:'pctstd', l1:true,  l2:false, aliases:[/\bhba1c\b/i, /\bhemoglobina glicosilada\b/i]},
+    {code:'UREA',  cat:'quimica', kind:'std',    l1:true,  l2:true,  aliases:[/\burea\b/i]},
+    {code:'CR',    cat:'quimica', kind:'std',    l1:true,  l2:true,  aliases:[/\bcreatinina\b/i]},
+    {code:'FG',    cat:'quimica', kind:'std',    l1:true,  l2:true,  aliases:[/\bfiltrado glomerular por ckd-?epi\b/i]},
+    {code:'LDH',   cat:'quimica', kind:'std',    l1:false, l2:true,  aliases:[/\blactato deshidrogenasa\b/i]},
+
+    {code:'Na', cat:'ionograma', kind:'std', l1:true, l2:true, aliases:[/\bsodio\b/i]},
+    {code:'K',  cat:'ionograma', kind:'std', l1:true, l2:true, aliases:[/\bpotasio\b/i]},
+    {code:'CL', cat:'ionograma', kind:'std', l1:true, l2:true, aliases:[/\bcloro\b/i]},
+    {code:'Ca', cat:'ionograma', kind:'std', l1:true, l2:true, aliases:[/\bcalcemia\b/i]},
+    {code:'P',  cat:'ionograma', kind:'std', l1:true, l2:true, aliases:[/\bfosfatemia\b/i]},
+    {code:'Mg', cat:'ionograma', kind:'std', l1:true, l2:true, aliases:[/\bmagnesemia\b/i]},
+
+    {code:'GPT', cat:'hepatico', kind:'std', l1:true, l2:true, aliases:[/\btransaminasa gpt\b/i]},
+    {code:'GOT', cat:'hepatico', kind:'std', l1:true, l2:true, aliases:[/\btransaminasa got\b/i]},
+    {code:'FAL', cat:'hepatico', kind:'std', l1:true, l2:true, aliases:[/\bfosfatasa alcalina\b/i]},
+    {code:'BT',  cat:'hepatico', kind:'std', l1:true, l2:true, aliases:[/\bbilirrubina total\b/i]},
+    {code:'BD',  cat:'hepatico', kind:'std', l1:true, l2:true, aliases:[/\bbilirrubina directa\b/i]},
+    {code:'GGT',    cat:'hepatico', kind:'std', l1:false, l2:true, aliases:[/\bgamma-?glutamil transpeptidasa\b/i]},
+    {code:'Prot T', cat:'hepatico', kind:'std', l1:false, l2:true, aliases:[/\bproteinas totales\b/i]},
+    {code:'ALB', cat:'hepatico', kind:'std', l1:true, l2:true, aliases:[/\balbumina\b/i]},
+
+    {code:'colesterol T', cat:'lipidico', kind:'std', l1:false, l2:true, aliases:[/\bcolesterol total\b/i]},
+    {code:'HDL',          cat:'lipidico', kind:'std', l1:false, l2:true, aliases:[/\bhdl colesterol\b/i]},
+    {code:'No HDL',       cat:'lipidico', kind:'std', l1:false, l2:true, aliases:[/\bcolesterol no hdl\b/i]},
+    {code:'LDL',          cat:'lipidico', kind:'std', l1:false, l2:true, aliases:[/\bldl colesterol\b/i]},
+    {code:'Tg',           cat:'lipidico', kind:'std', l1:false, l2:true, aliases:[/\btrigliceridos\b/i]},
+
+    {code:'Fe',            cat:'ferrico', kind:'std',    l1:false, l2:true, aliases:[/(?<!de )\bhierro\b/i]},
+    {code:'transferrina',  cat:'ferrico', kind:'std',    l1:false, l2:true, aliases:[/\btransferrina\b/i]},
+    {code:'Sat Transf',    cat:'ferrico', kind:'pctstd', l1:false, l2:true, aliases:[/\bsaturaci[oó]n de transferrina\b/i]},
+    {code:'TIBC',          cat:'ferrico', kind:'std',    l1:false, l2:true, aliases:[/\btibc\b/i]},
+    {code:'UIBC',          cat:'ferrico', kind:'std',    l1:false, l2:true, aliases:[/\buibc\b/i]},
+    {code:'ferritina',     cat:'ferrico', kind:'std',    l1:false, l2:true, aliases:[/\bferritina\b/i]},
+
+    {code:'Ac Fólico',    cat:'vitaminas', kind:'std', l1:false, l2:true, aliases:[/\bacido f[oó]lico\b/i]},
+    {code:'vitamina B12', cat:'vitaminas', kind:'std', l1:false, l2:true, aliases:[/\bvitamina\s*b\s*-?\s*12\b/i]},
+
+    {code:'PSA',       cat:'oncologicos', kind:'std', l1:false, l2:true, aliases:[/\bpsa\b/i]},
+    {code:'PSA libre', cat:'oncologicos', kind:'raw', l1:false, l2:true, aliases:[/\bpsa libre\b/i]},
+    {code:'PSA L/T',   cat:'oncologicos', kind:'raw', l1:false, l2:true, aliases:[/\brelaci[oó]n psa libre\b/i]},
+
+    {code:'IgA', cat:'inmunologia', kind:'std', l1:false, l2:true, aliases:[/\binmunoglobulina a\b/i]},
+
+    {code:'VDRL',         cat:'serologia', kind:'qual', l1:false, l2:true, aliases:[/\bvdrl\b/i]},
+    {code:'HBc Total',    cat:'serologia', kind:'qual', l1:false, l2:true, aliases:[/\bhepatitis b\s*-\s*core total\b/i]},
+    {code:'HBc IgM',      cat:'serologia', kind:'qual', l1:false, l2:true, aliases:[/\bhepatitis b core\s*-\s*igm\b/i]},
+    {code:'HBsAc',        cat:'serologia', kind:'qual', l1:false, l2:true, aliases:[/\bhbsac\b/i]},
+    {code:'HBsAg',        cat:'serologia', kind:'qual', l1:false, l2:true, aliases:[/\bhbsag\b/i]},
+    {code:'HCV',          cat:'serologia', kind:'qual', l1:false, l2:true, aliases:[/\bhepatitis c\b/i, /\bhcv\b/i]},
+    {code:'HIV Ag',       cat:'serologia', kind:'qual', l1:false, l2:true, aliases:[/\bhiv antigeno\b/i]},
+    {code:'HIV Ac',       cat:'serologia', kind:'qual', l1:false, l2:true, aliases:[/\banti-hiv 1-2\b/i]},
+    {code:'Chagas ELISA', cat:'serologia', kind:'qual', l1:false, l2:true, aliases:[/\bchagas\b(?!\s*hai)/i]},
+    {code:'Chagas HAI',   cat:'serologia', kind:'qual', l1:false, l2:true, aliases:[/\bchagas hai\b/i]},
+
+    {code:'pH',          cat:'acidobase', kind:'raw', l1:false, l2:true, aliases:[/\bph\b/i]},
+    {code:'pCO2',        cat:'acidobase', kind:'raw', l1:false, l2:true, aliases:[/\bpco2\b/i]},
+    {code:'pO2',         cat:'acidobase', kind:'raw', l1:false, l2:true, aliases:[/\bpo2\b/i]},
+    {code:'HCO3',        cat:'acidobase', kind:'raw', l1:false, l2:true, aliases:[/\bchco3\b/i]},
+    {code:'base buffer', cat:'acidobase', kind:'raw', l1:false, l2:true, aliases:[/\bbase buffer\b/i]},
+    {code:'EB',          cat:'acidobase', kind:'raw', l1:false, l2:true, aliases:[/\bbeec\b/i]},
+    {code:'SO2',         cat:'acidobase', kind:'raw', l1:false, l2:true, aliases:[/\bso2\b/i]},
+    {code:'Anión GAP',   cat:'acidobase', kind:'raw', l1:false, l2:true, aliases:[/\banion gap\b/i]},
+    {code:'Ac Lac',      cat:'acidobase', kind:'std', l1:false, l2:true, aliases:[/\bacido l[aá]ctico\b/i]},
+  ];
+
+  const LABO_CATS = [
+    {id:'hemograma',    label:'Hemograma'},
+    {id:'indices',      label:'Índices hematimétricos'},
+    {id:'coagulograma', label:'Coagulograma'},
+    {id:'quimica',      label:'Química general (renal / glucemia / PCR / LDH)'},
+    {id:'ionograma',    label:'Ionograma (Na/K/Cl + Ca/P/Mg)'},
+    {id:'hepatico',     label:'Perfil hepático'},
+    {id:'lipidico',     label:'Perfil lipídico'},
+    {id:'ferrico',      label:'Perfil férrico'},
+    {id:'vitaminas',    label:'Vitaminas'},
+    {id:'oncologicos',  label:'Marcadores oncológicos'},
+    {id:'inmunologia',  label:'Autoinmunidad / Inmunoglobulinas'},
+    {id:'serologia',    label:'Serología (solo se listan si dan reactivo)'},
+    {id:'acidobase',    label:'Estado ácido-base'},
+    {id:'liquidos_puncion', label:'Líquidos de punción'},
+    {id:'uroanalisis', label:'Uroanálisis / Urocultivo'},
+  ];
+
+  // ---------------------------------------------------------------------
+  // Líquidos de punción (ascítico, y con esta misma estructura se pueden
+  // sumar después pleural, LCR, sinovial, etc.). A diferencia del resto
+  // del catálogo, estos campos solo se buscan si el texto pegado contiene
+  // el encabezado de la sección correspondiente, y arman un renglón
+  // aparte con etiqueta propia (no se mezclan con el renglón completo ni
+  // con el resumen general).
+  //   headerParts = fragmentos que deben aparecer en ese orden en el
+  //                 texto pegado para reconocer el estudio.
+  //   label       = etiqueta con la que se abre el renglón de salida.
+  // ---------------------------------------------------------------------
+  const LABO_LIQUIDOS_STUDIES = [
+    {
+      id:'ascitico',
+      headerParts:[/l[ií]quidos?\s+de\s+punci[oó]n/i, /fisicoqu[ií]mico\s+de\s+l[ií]q\.?\s*asc[ií]tico/i],
+      label:'LIQUIDOS DE PUNCION - FISICOQUIMICO DE LIQ. ASCITICO',
+    },
+  ];
+
+  // Campos comunes a estos estudios de líquido, en el orden de salida.
+  // "aspecto" no lleva etiqueta de código: va como primer dato suelto.
+  // "range" = valor de referencia orientativo usado para marcar en rojo
+  // (ajustalo si tu criterio clínico usa otros puntos de corte). Prot T y
+  // ALB quedan sin rango propio: en líquido ascítico se interpretan por
+  // comparación con la albuminemia sérica (gradiente séro-ascítico), no
+  // por un corte fijo aislado, así que no se marcan en rojo automáticamente.
+  const LABO_LIQUIDOS_FIELDS = [
+    {code:null,              key:'aspecto', label:'Aspecto (post-centrifugado)', kind:'liqtext',
+      afterHeaderParts:[/post\s*-?\s*centrifugado/i, /\baspecto\b/i]},
+    {code:'GLU',             key:'glu',     label:'GLU',        kind:'liqstd', aliases:[/\bglucosa\b/i], range:{low:60, high:100}},
+    {code:'Prot T',          key:'protT',   label:'Prot T',     kind:'liqstd', aliases:[/\bprotein[ai]s?\s+totales\b/i]},
+    {code:'Amilasa',         key:'amilasa', label:'Amilasa',    kind:'liqstd', aliases:[/\bamilasa\b/i], range:{low:0, high:100}},
+    {code:'LDH',             key:'ldh',     label:'LDH',        kind:'liqstd', aliases:[/\bldh\b/i, /\blactato deshidrogenasa\b/i], range:{low:0, high:250}},
+    {code:'Bilirrubina',     key:'bili',    label:'Bilirrubina',kind:'liqstd', aliases:[/\bbilirrubina\b/i], range:{low:0, high:0.6}},
+    {code:'ALB',             key:'alb',     label:'ALB',        kind:'liqstd', aliases:[/\balb[uú]mina\b/i]},
+    {code:'Rto. de Leucocitos', key:'leuco', label:'Rto. de Leucocitos', kind:'liqleuco', aliases:[/\brto\.?\s*de\s*leucocitos\b/i], range:{low:0, high:500}},
+    {code:'Rto de Hematíes',    key:'hema',  label:'Rto de Hematíes',    kind:'liqhema',  aliases:[/\brto\.?\s*de\s*hemat[ií]es\b/i]},
+  ];
+  function laboLiqEnabledKey(study, field){ return 'liquidos_puncion|' + study.id + '|' + field.key; }
+
+  // ---------------------------------------------------------------------
+  // Uroanálisis / Urocultivo. A diferencia del catálogo general (valores
+  // numéricos con rango), acá los parámetros son mayormente cualitativos.
+  // Cada estudio (UROANALISIS, MICROBIOLOGIA - UROCULTIVO) se arma en
+  // "chunks": cada chunk sale como su propio renglón con etiqueta en
+  // negrita (ej. "Sedimento Urinario", "EXAMEN MICROSCÓPICO", "CULTIVO").
+  // Cada campo dentro de un chunk tiene un "mode":
+  //   'always'      -> siempre se informa tal cual figura en el laboratorio.
+  //   'skipDefault' -> si el valor coincide con "defaultRe" (el resultado
+  //                    esperable/negativo, ej. "No contiene", "Negativo",
+  //                    "No se observan") NO se informa; si el laboratorio
+  //                    puso otra cosa, se informa en rojo (hallazgo).
+  //   'cross'       -> valores tipo "Positivo +/++/+++"; si el texto es
+  //                    "Negativo"/"No contiene" no se informa; si hay
+  //                    cruces se informa la cantidad de "+", y si en cambio
+  //                    hay un valor numérico se informa ese número, ambos
+  //                    en rojo.
+  // Como estos estudios pueden variar bastante de un paciente a otro, un
+  // campo que no se encuentra en el texto pegado simplemente no aparece en
+  // el resultado (no corta el resto del reconocimiento).
+  // ---------------------------------------------------------------------
+  const LABO_TEXT_SEARCH_WINDOW = 260;
+
+  const LABO_TEXT_STUDIES = [
+    {
+      id:'uroanalisis',
+      headerParts:[/UROAN[AÁ]LISIS/i, /ORINA\s+COMPLETA/i],
+      chunks:[
+        {
+          id:'orina_fq', boldLabel:'UROANALISIS (ORINA COMPLETA)', subheaderRe:null,
+          fields:[
+            {key:'color',     out:'color', mode:'always',      labelRe:/\bcolor\b/i},
+            {key:'aspecto',   out:null,    mode:'aspectoQual', labelRe:/\baspecto\b/i},
+            {key:'densidad',  out:'δ',     mode:'always',      labelRe:/\bdensidad\b/i},
+            {key:'ph',        out:'pH',    mode:'always',      labelRe:/\bph\b/i},
+            {key:'proteinas', out:'proteinas', mode:'cross',    labelRe:/\bprote[ií]nas\b/i},
+            {key:'glucosa',   out:'Glucosa', mode:'skipDefault', labelRe:/\bglucosa\b/i, defaultRe:/no\s+contiene/i},
+            {key:'cetonas',   out:'Cetonas', mode:'cross',      labelRe:/\bcetonas\b/i},
+            {key:'pigbil',    out:'Pigmentos biliares', mode:'skipDefault', labelRe:/\bpigmentos\s+biliares\b/i, defaultRe:/no\s+contiene/i},
+            {key:'hb',        out:'Hb', mode:'skipDefault', labelRe:/\bhemoglobina\b/i, defaultRe:/no\s+contiene/i},
+            {key:'nitritos',  out:'Nitritos', mode:'skipDefault', labelRe:/\bnitritos\b/i, defaultRe:/negativo/i},
+            {key:'urobil',    out:'Urobilinógeno', mode:'always', labelRe:/\burobilin[oó]geno\b/i},
+            {key:'esterasa',  out:'Esterasa leucocitaria', mode:'always', labelRe:/\besterasa\s+leucocitaria\b/i},
+          ]
+        },
+        {
+          id:'sedimento', boldLabel:'Sedimento Urinario',
+          fields:[
+            {marker:/\bsedimento\s+urinario\b/i},
+            {key:'cel_epit', out:'Células epiteliales', mode:'always', labelRe:/\bc[eé]lulas\s+epiteliales\b/i},
+            {key:'hematies', out:'Hematíes', mode:'always', labelRe:/\bhemat[ií]es\b/i},
+            {key:'leucos',   out:'leucocitos', mode:'always', labelRe:/\bleucocitos\b/i},
+            {key:'cilindros',out:'cilindros', mode:'skipDefault', labelRe:/\bcilindros\b/i, defaultRe:/no\s+se\s+observan/i},
+            {key:'cristales',out:'cristales', mode:'skipDefault', labelRe:/\bcristales\b/i, defaultRe:/no\s+se\s+observan/i},
+            {key:'mucus_s',  out:'mucus', mode:'always', labelRe:/\bmucus\b/i},
+          ]
+        }
+      ]
+    },
+    {
+      id:'urocultivo',
+      headerParts:[/MICROBIOLOG[IÍ]A/i, /UROCULTIVO/i],
+      chunks:[
+        {
+          id:'urocultivo_fq', boldLabel:'MICROBIOLOGIA - UROCULTIVO',
+          fields:[
+            {key:'tipo_muestra', out:null, mode:'always', labelRe:/\btipo\s+de\s+muestra\b/i},
+            {marker:/\bEXAMEN\s+FISICO-?\s*QUIMICO\b/i},
+            {key:'color2',    out:'color', mode:'always', labelRe:/\bcolor\b/i},
+            {key:'aspecto2',  out:null,    mode:'aspectoQual', labelRe:/\baspecto\b/i},
+            {key:'densidad2', out:'δ',     mode:'always', labelRe:/\bdensidad\b/i},
+            {key:'ph2',       out:'pH',    mode:'always', labelRe:/\bph\b/i},
+            {key:'prot2',     out:'Prot', mode:'skipDefault', labelRe:/\bprote[ií]nas\b/i, defaultRe:/no\s+contiene/i},
+            {key:'glu2',      out:'GLU', mode:'skipDefault', labelRe:/\bglucosa\b/i, defaultRe:/no\s+contiene/i},
+            {key:'cet2',      out:'Cetonas', mode:'skipDefault', labelRe:/\bcetonas\b/i, defaultRe:/no\s+contiene/i},
+            {key:'bili2',     out:'Bilirrubina', mode:'skipDefault', labelRe:/\bbilirrubina\b/i, defaultRe:/no\s+contiene/i},
+            {key:'hb2',       out:'Hb', mode:'skipDefault', labelRe:/\bhemoglobina\b/i, defaultRe:/no\s+contiene/i},
+            {key:'nitritos2', out:'Nitritos', mode:'skipDefault', labelRe:/\bnitritos\b/i, defaultRe:/negativo/i},
+            {key:'urobil2',   out:'Urobilinogeno', mode:'always', labelRe:/\burobilin[oó]geno\b/i},
+            {key:'esterasa2', out:'Esterasa', mode:'skipDefault', labelRe:/\besterasa\b/i, defaultRe:/no\s+contiene/i},
+          ]
+        },
+        {
+          id:'micro', boldLabel:'EXAMEN MICROSCÓPICO',
+          fields:[
+            {marker:/\bEXAMEN\s+MICROSC[OÓ]PICO\b/i},
+            {key:'celulas',      out:'Células', mode:'always', labelRe:/\bc[eé]lulas\b/i},
+            {key:'cel_redondas', out:'Células redondas', mode:'skipDefault', labelRe:/\bc[eé]lulas\s+redondas\b/i, defaultRe:/no\s+se\s+observan/i},
+            {key:'hematies2',    out:'Hematíes', mode:'skipDefault', labelRe:/\bhemat[ií]es\b/i, defaultRe:/no\s+se\s+observan/i},
+            {key:'leucos2',      out:'Leucocitos', mode:'always', labelRe:/\bleucocitos\b/i},
+            {key:'germenes',     out:'Gérmenes', mode:'always', labelRe:/\bg[eé]rmenes\b/i},
+            {key:'levaduras',    out:'Levaduras', mode:'always', labelRe:/\blevaduras\b/i},
+            {key:'cristales2',   out:'Cristales', mode:'skipDefault', labelRe:/\bcristales\b/i, defaultRe:/no\s+se\s+observan/i},
+            {key:'cilindros2',   out:'Cilindros', mode:'skipDefault', labelRe:/\bcilindros\b/i, defaultRe:/no\s+se\s+observan/i},
+            {key:'mucus_m',      out:'Mucus', mode:'skipDefault', labelRe:/\bmucus\b/i, defaultRe:/no\s+se\s+observa\b/i},
+          ]
+        },
+        {
+          id:'cultivo', boldLabel:'CULTIVO',
+          fields:[
+            {marker:/\bCULTIVO\b/i},
+            {key:'resultado', out:'Resultado', mode:'always', labelRe:/\bresultado\b/i},
+          ]
+        }
+      ]
+    }
+  ];
+  const TEXT_STUDY_ALIAS_ALL = LABO_TEXT_STUDIES.flatMap(s=>s.chunks.flatMap(c=>c.fields.filter(f=>f.labelRe).map(f=>f.labelRe)));
+  // Límites "duros" válidos para cualquier estudio de texto: el encabezado
+  // de cada estudio y el subtítulo de cada chunk. Sirven de tope cuando el
+  // último campo de un chunk no tiene, dentro del propio estudio, ningún
+  // campo posterior que lo acote (ej. "Mucus" en Sedimento Urinario, que es
+  // el último campo antes de que empiece MICROBIOLOGIA - UROCULTIVO).
+  const LABO_TEXT_GLOBAL_STOPS = LABO_TEXT_STUDIES.flatMap(s=>
+    [s.headerParts[0]].concat(s.chunks.flatMap(c=>c.fields.filter(f=>f.marker).map(f=>f.marker)))
+  );
+
+  // Fragmentos de texto que NUNCA deben tomarse como nombre de un parámetro
+  // "extra": nombres de método de laboratorio, descriptores de rango
+  // ("límite superior", "ideal", etc.) y encabezados que quedaban sueltos
+  // en su propia línea al pegar la tabla del laboratorio.
+  const EXTRA_STOPWORD_SUBSTR = [
+    'metodo','ifcc','segun','formula','calculado','chabrol','charonnat',
+    'enzimatico','punto final','tptz','desproteinizacion','quimioluminiscencia',
+    'inmunoturbidimetrico','colesteron','oxidasa','esterasa','peroxidasa',
+    'polimer','polianion','hexoquinasa','ureasa','picrato','alc-cinetico',
+    'estandarizado','hplc','westergreen','arsenazo','phosphomolybdate',
+    'xilidil','cresilo','bromocresol','electrodo','ion selectivo',
+    'sysmex','contador hematologico','ise indirecto','directa',
+    'limite superior','ideal','deseable','aceptable','muy alto','alto riesgo',
+    'bajo','nivel no diabetico','diabetico','estadio','confirmado por',
+    'inadecuado','multiplicar','raza negra','bmi','indice de riesgo','riesgo',
+    'frotis','biuret','tampon amp','pnpp','dpd','sampson','gamma glutamil',
+  ];
+
+  function laboFmtNumber(n){
+    if(n==null) return null;
+    let s = String(n);
+    if(s.indexOf('.') !== -1){
+      s = s.replace(/0+$/,'').replace(/\.$/,'');
+    }
+    return s;
+  }
+  function laboFmtMiles(n){
+    const abs = Math.round(n*1000);
+    return abs.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  }
+  function laboNormText(s){
+    return s.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/\s+/g,' ').trim();
+  }
+  function laboFindNumberAfter(text, startPos, maxWindow){
+    const win = text.slice(startPos, startPos+maxWindow);
+    const m = win.match(/(-?\d+(?:[.,]\d+)?)/);
+    if(!m) return null;
+    // Si entre el nombre del parámetro y el número aparece una frase como
+    // "no se realiza" o "no reactivo", ese número pertenece a una oración
+    // explicativa (o al parámetro siguiente), no al valor buscado.
+    const before = win.slice(0, m.index).toLowerCase();
+    if(/no se realiza|no se efectua|no reactivo|no aplica|pendiente|no corresponde/.test(before)) return null;
+    return {value: laboToNumber(m[1]), endPos: startPos + m.index + m[0].length};
+  }
+  function laboFindPctAfter(text, startPos, maxWindow){
+    const win = text.slice(startPos, startPos+maxWindow);
+    const m = win.match(/(-?\d+(?:[.,]\d+)?)\s*%/);
+    if(!m) return null;
+    return {value: laboToNumber(m[1]), endPos: startPos + m.index + m[0].length};
+  }
+  function laboFindRangeAfter(text, startPos, maxWindow){
+    const win = text.slice(startPos, startPos+maxWindow);
+    if(!laboLooksLikeRange(win)) return null;
+    return laboParseRange(win);
+  }
+  function laboExtractStd(flat, param){
+    for(const rx of param.aliases){
+      const re = new RegExp(rx.source, rx.flags.replace('g','')+'g');
+      let m;
+      while((m = re.exec(flat)) !== null){
+        const numRes = laboFindNumberAfter(flat, m.index+m[0].length, 40);
+        if(numRes && numRes.value!=null){
+          const range = laboFindRangeAfter(flat, numRes.endPos, 90);
+          return {value:numRes.value, range, pos:m.index};
+        }
+        if(re.lastIndex === m.index) re.lastIndex++;
+      }
+    }
+    return null;
+  }
+  function laboExtractPct(flat, param){
+    for(const rx of param.aliases){
+      const re = new RegExp(rx.source, rx.flags.replace('g','')+'g');
+      let m;
+      while((m = re.exec(flat)) !== null){
+        const r = laboFindPctAfter(flat, m.index+m[0].length, 40);
+        if(r && r.value!=null) return {value:r.value, pos:m.index};
+        if(re.lastIndex === m.index) re.lastIndex++;
+      }
+    }
+    return null;
+  }
+  // Resultados cualitativos (serologías: reactivo / no reactivo). Solo se
+  // informan cuando dan reactivo/positivo; si da "no reactivo" o "no se
+  // realiza" se considera que no hace falta anotarlo.
+  function laboExtractQual(flat, param){
+    for(const rx of param.aliases){
+      const re = new RegExp(rx.source, rx.flags.replace('g','')+'g');
+      let m;
+      while((m = re.exec(flat)) !== null){
+        const win = flat.slice(m.index+m[0].length, m.index+m[0].length+60).toLowerCase();
+        if(/\bno\s+reactivo/.test(win)) return null;
+        if(/\breactivo\b/.test(win) || /\bpositivo\b/.test(win)){
+          return {pos:m.index, value:'Reactivo'};
+        }
+        if(re.lastIndex === m.index) re.lastIndex++;
+      }
+    }
+    return null;
+  }
+
+  // ---------------------------------------------------------------------
+  // Helpers para los estudios de líquidos de punción (ver
+  // LABO_LIQUIDOS_STUDIES / LABO_LIQUIDOS_FIELDS más arriba).
+  // ---------------------------------------------------------------------
+  function laboFindSeqIndex(flat, parts, fromIdx){
+    // Busca cada regex de "parts" en orden, cada una después de donde
+    // terminó la anterior. Devuelve la posición donde termina el último
+    // match (o null si no encuentra alguno de los fragmentos).
+    let pos = fromIdx || 0;
+    for(const rx of parts){
+      const re = new RegExp(rx.source, rx.flags.replace('g','')+'g');
+      re.lastIndex = pos;
+      const m = re.exec(flat);
+      if(!m) return null;
+      pos = m.index + m[0].length;
+    }
+    return pos;
+  }
+  function laboFindWordAfter(flat, startPos, maxWindow){
+    // Captura la primera palabra (o frase corta tipo "no se obs") pegada
+    // después de un rótulo, para valores cualitativos de texto libre.
+    const win = flat.slice(startPos, startPos+maxWindow);
+    const m = win.match(/^\s*([A-Za-zÁÉÍÓÚÑáéíóúñ][A-Za-zÁÉÍÓÚÑáéíóúñ]*(?:\s+(?:se|no|obs\.?|observ[oó]a?n?)\b)*)/i);
+    if(!m || !m[1]) return null;
+    const value = m[1].trim().replace(/\.+$/,'');
+    if(value==='') return null;
+    return {value, endPos: startPos + m.index + m[0].length};
+  }
+  function laboExtractLiqAspecto(flat, field, sectionIdx){
+    const idx = laboFindSeqIndex(flat, field.afterHeaderParts, sectionIdx);
+    if(idx==null) return null;
+    const w = laboFindWordAfter(flat, idx, 40);
+    if(!w) return null;
+    const abnormal = !/^l[ií]mpido/i.test(w.value.trim());
+    return {value:w.value, pos:idx, abnormal};
+  }
+  function laboExtractLiqStd(flat, field, sectionIdx){
+    for(const rx of field.aliases){
+      const re = new RegExp(rx.source, rx.flags.replace('g','')+'g');
+      re.lastIndex = sectionIdx;
+      const m = re.exec(flat);
+      if(!m) continue;
+      const numRes = laboFindNumberAfter(flat, m.index+m[0].length, 40);
+      if(numRes && numRes.value!=null){
+        const abnormal = field.range ? laboIsAbnormal(numRes.value, field.range) : false;
+        return {value: laboFmtNumber(numRes.value), pos:m.index, abnormal};
+      }
+    }
+    return null;
+  }
+  function laboExtractLiqLeuco(flat, field, sectionIdx){
+    for(const rx of field.aliases){
+      const re = new RegExp(rx.source, rx.flags.replace('g','')+'g');
+      re.lastIndex = sectionIdx;
+      const m = re.exec(flat);
+      if(!m) continue;
+      const numRes = laboFindNumberAfter(flat, m.index+m[0].length, 40);
+      if(!numRes || numRes.value==null) continue;
+      let text = laboFmtNumber(numRes.value);
+      const unitWin = flat.slice(numRes.endPos, numRes.endPos+15);
+      if(/^\s*\/?\s*mm[³3]/i.test(unitWin)) text += ' /mm³';
+      const predWin = flat.slice(numRes.endPos, numRes.endPos+150);
+      const predM = predWin.match(/predominio\s*(\d+(?:[.,]\d+)?)\s*%\s*([a-záéíóúñ]+)/i);
+      if(predM){
+        const pct = laboFmtNumber(laboToNumber(predM[1]));
+        let tipo = predM[2].toLowerCase();
+        if(/polimorfonuclear/.test(tipo)) tipo = 'PMN';
+        else if(/mononuclear/.test(tipo)) tipo = 'MN';
+        else tipo = predM[2];
+        text += ` (Predominio ${pct}% ${tipo})`;
+      }
+      const abnormal = field.range ? laboIsAbnormal(numRes.value, field.range) : false;
+      return {value:text, pos:m.index, abnormal};
+    }
+    return null;
+  }
+  function laboExtractLiqHema(flat, field, sectionIdx){
+    for(const rx of field.aliases){
+      const re = new RegExp(rx.source, rx.flags.replace('g','')+'g');
+      re.lastIndex = sectionIdx;
+      const m = re.exec(flat);
+      if(!m) continue;
+      const win = flat.slice(m.index+m[0].length, m.index+m[0].length+40);
+      if(/^\s*no\s+se\s+obs/i.test(win)) return {value:'no se obs', pos:m.index, abnormal:false};
+      const numRes = laboFindNumberAfter(flat, m.index+m[0].length, 40);
+      if(numRes && numRes.value!=null) return {value: laboFmtNumber(numRes.value), pos:m.index, abnormal:true};
+    }
+    return null;
+  }
+  function laboBuildLiquidosBlocks(flat){
+    const blocks = [];
+    LABO_LIQUIDOS_STUDIES.forEach(study=>{
+      const sectionIdx = laboFindSeqIndex(flat, study.headerParts, 0);
+      if(sectionIdx==null) return;
+      const itemsHtml = [];
+      LABO_LIQUIDOS_FIELDS.forEach(field=>{
+        const k = laboLiqEnabledKey(study, field);
+        if(!(laboEnabled[k] ?? true)) return;
+        let r = null;
+        if(field.kind==='liqtext') r = laboExtractLiqAspecto(flat, field, sectionIdx);
+        else if(field.kind==='liqleuco') r = laboExtractLiqLeuco(flat, field, sectionIdx);
+        else if(field.kind==='liqhema') r = laboExtractLiqHema(flat, field, sectionIdx);
+        else r = laboExtractLiqStd(flat, field, sectionIdx);
+        if(r && r.value!=null && r.value!==''){
+          const txt = field.code ? `${field.code}: ${r.value}` : r.value;
+          itemsHtml.push(r.abnormal ? `<span style="color:#C0392B;font-weight:700;">${txt}</span>` : txt);
+        }
+      });
+      if(itemsHtml.length>0) blocks.push(`${study.label}: ${itemsHtml.join(', ')}`);
+    });
+    return blocks;
+  }
+
+  // ---------------------------------------------------------------------
+  // Helpers para uroanálisis / urocultivo (ver LABO_TEXT_STUDIES). A
+  // diferencia de los líquidos de punción, acá cada estudio tiene varios
+  // "chunks" con su propia etiqueta en negrita, y cada campo puede faltar
+  // sin romper el resto (los informes de laboratorio varían mucho entre
+  // pacientes). El escaneo recorre el texto una sola vez, en el orden en
+  // que están definidos los campos, acotando cada valor hasta el próximo
+  // campo/subtítulo reconocido (o hasta la palabra suelta "Final", que es
+  // ruido típico de estos informes al copiar y pegar).
+  // ---------------------------------------------------------------------
+  function laboScanTextStudy(flat, study, globalStops){
+    const startRe = new RegExp(study.headerParts[0].source, study.headerParts[0].flags.replace('g','')+'g');
+    const mStart = startRe.exec(flat);
+    if(!mStart) return null;
+    const startPos = laboFindSeqIndex(flat, study.headerParts, 0);
+    if(startPos==null) return null;
+
+    const tokens = [];
+    study.chunks.forEach((chunk, ci)=>{
+      chunk.fields.forEach(f=>{
+        if(f.marker) tokens.push({type:'marker', re:f.marker});
+        else tokens.push({type:'field', re:f.labelRe, field:f, chunkIdx:ci});
+      });
+    });
+
+    let cursor = startPos;
+    let lastPos = startPos;
+    const byChunk = study.chunks.map(()=>[]);
+    for(let i=0;i<tokens.length;i++){
+      const tok = tokens[i];
+      const re = new RegExp(tok.re.source, tok.re.flags.replace('g','')+'g');
+      const win = flat.slice(cursor, cursor+LABO_TEXT_SEARCH_WINDOW);
+      const m = re.exec(win);
+      if(!m) continue; // no se encontró cerca: se deja afuera, sin cortar el resto
+      const matchStart = cursor + m.index;
+      const labelEnd = matchStart + m[0].length;
+      if(tok.type==='marker'){ cursor = labelEnd; lastPos = labelEnd; continue; }
+
+      // Buscamos dónde arranca el próximo token reconocido (campo o
+      // subtítulo) para saber dónde termina el valor de este campo.
+      let valueEnd = null;
+      for(let j=i+1;j<tokens.length;j++){
+        const re2 = new RegExp(tokens[j].re.source, tokens[j].re.flags.replace('g','')+'g');
+        const win2 = flat.slice(labelEnd, labelEnd+LABO_TEXT_SEARCH_WINDOW);
+        const m2 = re2.exec(win2);
+        if(m2){ valueEnd = labelEnd + m2.index; break; }
+      }
+      // Si dentro de este estudio no hay ningún campo/subtítulo posterior
+      // que lo acote (ej. "Mucus", último campo de Sedimento Urinario),
+      // probamos con los límites "duros" de cualquier estudio de texto
+      // (encabezados y subtítulos de TODOS los estudios), para no comernos
+      // el título de la sección siguiente.
+      if(valueEnd==null && globalStops){
+        for(const gre of globalStops){
+          const re3 = new RegExp(gre.source, gre.flags.replace('g','')+'g');
+          const win3 = flat.slice(labelEnd, labelEnd+300);
+          const m3 = re3.exec(win3);
+          if(m3){
+            const cand = labelEnd + m3.index;
+            if(valueEnd==null || cand < valueEnd) valueEnd = cand;
+          }
+        }
+      }
+      // Última red de contención: ventana chica, por si no hubo ningún
+      // límite reconocible cerca (fin del texto pegado, formato distinto).
+      if(valueEnd==null) valueEnd = Math.min(flat.length, labelEnd+45);
+
+      let valueText = flat.slice(labelEnd, valueEnd);
+      const finalM = valueText.match(/\bfinal\b/i);
+      if(finalM) valueText = valueText.slice(0, finalM.index);
+      valueText = valueText.replace(/\s+/g,' ').trim();
+      if(valueText!==''){
+        byChunk[tok.chunkIdx].push({field:tok.field, value:valueText, pos:matchStart});
+        lastPos = labelEnd + valueText.length;
+      }
+      cursor = labelEnd;
+    }
+    return {byChunk, maskStart: mStart.index, maskEnd: Math.max(lastPos, startPos+20)};
+  }
+
+  function laboClassifyTextField(field, rawValue){
+    if(field.mode==='always') return {text: rawValue, abnormal:false};
+    if(field.mode==='aspectoQual'){
+      // "Límpido" es el hallazgo esperable; cualquier otra cosa (Turbio,
+      // Ligeramente turbio, etc.) se resalta como hallazgo anormal.
+      const abnormal = !/^l[ií]mpido\b/i.test(rawValue.trim());
+      return {text: rawValue, abnormal};
+    }
+    if(field.mode==='skipDefault'){
+      if(field.defaultRe.test(rawValue)) return null;
+      return {text: rawValue, abnormal:true};
+    }
+    if(field.mode==='cross'){
+      if(/no\s+contiene|negativo/i.test(rawValue)) return null;
+      const plus = rawValue.match(/\++/);
+      if(plus) return {text:plus[0], abnormal:true};
+      const num = rawValue.match(/-?\d+(?:[.,]\d+)?/);
+      if(num) return {text:num[0].replace(',', '.'), abnormal:true};
+      return null;
+    }
+    return null;
+  }
+  function laboTextEnabledKey(study, chunk, field){ return 'uroanalisis|' + study.id + '|' + chunk.id + '|' + field.key; }
+
+  function laboBuildTextStudyBlocks(flat){
+    const blocks = [];
+    const ranges = [];
+    LABO_TEXT_STUDIES.forEach(study=>{
+      const scan = laboScanTextStudy(flat, study, LABO_TEXT_GLOBAL_STOPS);
+      if(!scan) return;
+      ranges.push({start:scan.maskStart, end:scan.maskEnd});
+      const chunkTexts = [];
+      study.chunks.forEach((chunk, ci)=>{
+        const entries = scan.byChunk[ci];
+        if(!entries || entries.length===0) return;
+        const parts = [];
+        entries.forEach(e=>{
+          const k = laboTextEnabledKey(study, chunk, e.field);
+          if(!(laboEnabled[k] ?? true)) return;
+          const cls = laboClassifyTextField(e.field, e.value);
+          if(!cls) return;
+          const txt = e.field.out ? `${e.field.out}: ${cls.text}` : cls.text;
+          parts.push(cls.abnormal ? `<span style="color:#C0392B;font-weight:700;">${txt}</span>` : txt);
+        });
+        if(parts.length>0) chunkTexts.push(`<b>${chunk.boldLabel}</b>: ${parts.join(', ')}.`);
+      });
+      if(chunkTexts.length>0) blocks.push(chunkTexts.join('<br>'));
+    });
+    return {blocks, ranges};
+  }
+
+  // ---------------------------------------------------------------------
+  // Checklist de parámetros habilitados/deshabilitados (persistido en
+  // localStorage, ya que este archivo se usa como herramienta local, igual
+  // que extractor.html).
+  // ---------------------------------------------------------------------
+  const LABO_ENABLED_KEY = 'labo_conversor_enabled_v1';
+  let laboEnabled = {};
+  function laboEnabledKey(param){ return param.cat + '|' + param.code; }
+  function laboLoadEnabled(){
+    let saved = {};
+    try{ saved = JSON.parse(localStorage.getItem(LABO_ENABLED_KEY) || '{}'); }catch(e){ saved = {}; }
+    LABO_MASTER.forEach(p=>{
+      const k = laboEnabledKey(p);
+      laboEnabled[k] = (k in saved) ? !!saved[k] : true;
+    });
+    LABO_LIQUIDOS_STUDIES.forEach(study=>{
+      LABO_LIQUIDOS_FIELDS.forEach(field=>{
+        const k = laboLiqEnabledKey(study, field);
+        laboEnabled[k] = (k in saved) ? !!saved[k] : true;
+      });
+    });
+    LABO_TEXT_STUDIES.forEach(study=>{
+      study.chunks.forEach(chunk=>{
+        chunk.fields.filter(field=>field.labelRe).forEach(field=>{
+          const k = laboTextEnabledKey(study, chunk, field);
+          laboEnabled[k] = (k in saved) ? !!saved[k] : true;
+        });
+      });
+    });
+  }
+  function laboSaveEnabled(){
+    try{ localStorage.setItem(LABO_ENABLED_KEY, JSON.stringify(laboEnabled)); }catch(e){}
+  }
+  function laboBuildChecklist(){
+    $checklistGrid.innerHTML = '';
+    LABO_CATS.forEach(cat=>{
+      const group = document.createElement('div');
+      group.className = 'catgroup';
+      const h4 = document.createElement('h4');
+      h4.textContent = cat.label;
+      group.appendChild(h4);
+      if(cat.id === 'liquidos_puncion'){
+        LABO_LIQUIDOS_STUDIES.forEach(study=>{
+          LABO_LIQUIDOS_FIELDS.forEach(field=>{
+            const k = laboLiqEnabledKey(study, field);
+            const label = document.createElement('label');
+            const chk = document.createElement('input');
+            chk.type = 'checkbox';
+            chk.checked = !!laboEnabled[k];
+            chk.addEventListener('change', ()=>{
+              laboEnabled[k] = chk.checked;
+              laboSaveEnabled();
+              laboProcesar();
+            });
+            label.appendChild(chk);
+            label.appendChild(document.createTextNode(field.label));
+            group.appendChild(label);
+          });
+        });
+      } else if(cat.id === 'uroanalisis'){
+        LABO_TEXT_STUDIES.forEach(study=>{
+          study.chunks.forEach(chunk=>{
+            chunk.fields.filter(field=>field.labelRe).forEach(field=>{
+              const k = laboTextEnabledKey(study, chunk, field);
+              const label = document.createElement('label');
+              const chk = document.createElement('input');
+              chk.type = 'checkbox';
+              chk.checked = !!laboEnabled[k];
+              chk.addEventListener('change', ()=>{
+                laboEnabled[k] = chk.checked;
+                laboSaveEnabled();
+                laboProcesar();
+              });
+              label.appendChild(chk);
+              label.appendChild(document.createTextNode(`${chunk.boldLabel} – ${field.out || field.key}`));
+              group.appendChild(label);
+            });
+          });
+        });
+      } else {
+        LABO_MASTER.filter(p=>p.cat===cat.id).forEach(p=>{
+          const k = laboEnabledKey(p);
+          const label = document.createElement('label');
+          const chk = document.createElement('input');
+          chk.type = 'checkbox';
+          chk.checked = !!laboEnabled[k];
+          chk.addEventListener('change', ()=>{
+            laboEnabled[k] = chk.checked;
+            laboSaveEnabled();
+            laboProcesar();
+          });
+          label.appendChild(chk);
+          label.appendChild(document.createTextNode(p.code));
+          group.appendChild(label);
+        });
+      }
+      $checklistGrid.appendChild(group);
+    });
+  }
+  fld('laboMarcarTodos').addEventListener('click', ()=>{
+    LABO_MASTER.forEach(p=>{ laboEnabled[laboEnabledKey(p)] = true; });
+    LABO_LIQUIDOS_STUDIES.forEach(study=>{ LABO_LIQUIDOS_FIELDS.forEach(field=>{ laboEnabled[laboLiqEnabledKey(study, field)] = true; }); });
+    LABO_TEXT_STUDIES.forEach(study=>{ study.chunks.forEach(chunk=>{ chunk.fields.filter(field=>field.labelRe).forEach(field=>{ laboEnabled[laboTextEnabledKey(study, chunk, field)] = true; }); }); });
+    laboSaveEnabled(); laboBuildChecklist(); laboProcesar();
+  });
+  fld('laboDesmarcarTodos').addEventListener('click', ()=>{
+    LABO_MASTER.forEach(p=>{ laboEnabled[laboEnabledKey(p)] = false; });
+    LABO_LIQUIDOS_STUDIES.forEach(study=>{ LABO_LIQUIDOS_FIELDS.forEach(field=>{ laboEnabled[laboLiqEnabledKey(study, field)] = false; }); });
+    LABO_TEXT_STUDIES.forEach(study=>{ study.chunks.forEach(chunk=>{ chunk.fields.filter(field=>field.labelRe).forEach(field=>{ laboEnabled[laboTextEnabledKey(study, chunk, field)] = false; }); }); });
+    laboSaveEnabled(); laboBuildChecklist(); laboProcesar();
+  });
+
+  function laboProcesar(){
+    const raw = $input.value;
+    if(!raw.trim()){
+      $output.innerHTML = '';
+      $status.textContent = 'Pegá primero el texto del laboratorio.';
+      return;
+    }
+    // Aplanamos tabs y saltos de línea a espacios simples: así no importa en
+    // qué línea haya quedado cada dato al pegar desde la página del laboratorio.
+    const flat = raw.replace(/[\t\r\n]+/g,' ').replace(/\s+/g,' ');
+
+    // Los estudios de líquidos de punción (ver LABO_LIQUIDOS_STUDIES) tienen
+    // parámetros que se llaman igual que algunos del catálogo general de
+    // sangre (Glucosa, Proteínas Totales, LDH, Albúmina, Bilirrubina...).
+    // Para que esos valores del líquido no se confundan con valores de
+    // sangre en el renglón general, se "tapa" con espacios (mismo largo,
+    // para no correr posiciones) el tramo de texto que va desde el
+    // encabezado del estudio de líquido hasta el final del texto pegado,
+    // solo a los fines del escaneo del catálogo general/los "extras".
+    function laboMaskRanges(str, ranges){
+      if(!ranges.length) return str;
+      const arr = str.split('');
+      ranges.forEach(r=>{ for(let i=r.start; i<r.end && i<arr.length; i++) arr[i] = ' '; });
+      return arr.join('');
+    }
+    const liquidosRanges = LABO_LIQUIDOS_STUDIES.map(study=>{
+      const startRe = new RegExp(study.headerParts[0].source, study.headerParts[0].flags.replace('g','')+'g');
+      const mStart = startRe.exec(flat);
+      if(!mStart) return null;
+      if(laboFindSeqIndex(flat, study.headerParts, 0)==null) return null;
+      return {start:mStart.index, end:flat.length};
+    }).filter(Boolean);
+
+    // Uroanálisis / urocultivo: se tapa solo el tramo propio de cada
+    // estudio (no hasta el final del texto), para no perder de vista datos
+    // de sangre que puedan venir después en el mismo informe.
+    const textStudyScan = LABO_TEXT_STUDIES.map(study=>laboScanTextStudy(flat, study, LABO_TEXT_GLOBAL_STOPS)).filter(Boolean);
+    const textStudyRanges = textStudyScan.map(s=>({start:s.maskStart, end:s.maskEnd}));
+
+    const flatMasked = laboMaskRanges(flat, liquidosRanges.concat(textStudyRanges));
+
+    const found = [];
+    LABO_MASTER.forEach(param=>{
+      if(!laboEnabled[laboEnabledKey(param)]) return;
+      let text = null, abnormal = false, ok = false, pos = null;
+      if(param.kind==='pct'){
+        const r = laboExtractPct(flatMasked, param);
+        if(r && r.value!=null){ text = `${laboFmtNumber(r.value)}%`; abnormal = false; ok = true; pos = r.pos; }
+      } else if(param.kind==='plaq'){
+        const r = laboExtractStd(flatMasked, param);
+        if(r){ text = laboFmtMiles(r.value); abnormal = laboIsAbnormal(r.value, r.range); ok = true; pos = r.pos; }
+      } else if(param.kind==='pctstd'){
+        const r = laboExtractStd(flatMasked, param);
+        if(r){ text = `${laboFmtNumber(r.value)}%`; abnormal = laboIsAbnormal(r.value, r.range); ok = true; pos = r.pos; }
+      } else if(param.kind==='raw'){
+        // Sin chequeo de rango: se usa para parámetros que en este formato
+        // de informe (ej. estado ácido-base) no traen un valor de
+        // referencia propio pegado justo después, para evitar que el motor
+        // "tome prestado" por error el rango de otro parámetro que aparece
+        // más adelante en el texto.
+        const r = laboExtractStd(flatMasked, param);
+        if(r){ text = laboFmtNumber(r.value); abnormal = false; ok = true; pos = r.pos; }
+      } else if(param.kind==='qual'){
+        // Serología: solo se informa si dio reactivo/positivo.
+        const r = laboExtractQual(flatMasked, param);
+        if(r){ text = r.value; abnormal = true; ok = true; pos = r.pos; }
+      } else {
+        const r = laboExtractStd(flatMasked, param);
+        if(r){ text = laboFmtNumber(r.value); abnormal = laboIsAbnormal(r.value, r.range); ok = true; pos = r.pos; }
+      }
+      if(ok) found.push({code:param.code, text, abnormal, l1:param.l1, l2:param.l2, pos});
+    });
+
+    // Datos adicionales alterados que no están en el catálogo (ej.
+    // coagulograma u otro estudio no cubierto). Solo alimentan el renglón
+    // resumen, igual que antes.
+    const CORE_ALIAS_ALL = LABO_MASTER.flatMap(p=>p.aliases).concat(LABO_LIQUIDOS_FIELDS.flatMap(f=>f.aliases||[])).concat(TEXT_STUDY_ALIAS_ALL);
+    const rawLines = raw.split(/\r?\n/);
+    const extras = [];
+    const seenNames = new Set();
+    let cursor = 0;
+    for(let i=0;i<rawLines.length;i++){
+      let candidate = rawLines[i].trim();
+      candidate = candidate.replace(/^(grafico|evolucion|item)\s*/i,'').trim();
+      const digitCut = candidate.search(/\d/);
+      if(digitCut !== -1) candidate = candidate.slice(0, digitCut).trim();
+      candidate = candidate.replace(/[\t:]+$/,'').trim();
+      if(candidate==='') continue;
+      if(!/[a-zA-Z]/.test(candidate)) continue;
+      if(candidate.length < 3) continue;
+      const norm = laboNormText(candidate);
+      if(SECTION_STOPWORDS.includes(norm)) continue;
+      if(EXTRA_STOPWORD_SUBSTR.some(w=>norm.includes(w))) continue;
+      if(/^m[eé]todo/i.test(candidate)) continue;
+      if(laboLooksLikeRange(candidate)) continue;
+      if(laboLooksLikeUnit(candidate)) continue;
+      if(candidate === candidate.toUpperCase() && /[A-Za-zÁÉÍÓÚÑ]/.test(candidate)) continue;
+      if(CORE_ALIAS_ALL.some(rx=>rx.test(candidate))) continue;
+      if(seenNames.has(norm)) continue;
+
+      const flatCandidate = candidate.replace(/\s+/g,' ');
+      let extraPos = flatMasked.indexOf(flatCandidate, cursor);
+      if(extraPos === -1) extraPos = flatMasked.indexOf(flatCandidate);
+      if(extraPos === -1) continue;
+      const afterPos = extraPos + flatCandidate.length;
+      const numRes = laboFindNumberAfter(flatMasked, afterPos, 30);
+      if(!numRes || numRes.value==null) continue;
+      const range = laboFindRangeAfter(flatMasked, numRes.endPos, 60);
+      if(!laboIsAbnormal(numRes.value, range)) continue;
+
+      seenNames.add(norm);
+      extras.push({code:candidate, text:laboFmtNumber(numRes.value), abnormal:true, l1:true, l2:false, pos:extraPos});
+      cursor = numRes.endPos;
+    }
+
+    // Ambos renglones se ordenan según el orden en que cada dato aparece
+    // en el texto pegado (no según el orden fijo del catálogo).
+    const byPos = (a,b)=> (a.pos ?? 0) - (b.pos ?? 0);
+    const line2Items = found.filter(f=>f.l2).sort(byPos);
+    const line1Items = found.filter(f=>f.l1).concat(extras).sort(byPos);
+
+    const liquidosBlocks = laboBuildLiquidosBlocks(flat);
+    const textStudyResult = laboBuildTextStudyBlocks(flat);
+    const textStudyBlocks = textStudyResult.blocks;
+
+    if(line2Items.length===0 && line1Items.length===0 && liquidosBlocks.length===0 && textStudyBlocks.length===0){
+      $output.innerHTML = '';
+      $status.textContent = 'No se pudo reconocer ningún dato conocido en el texto pegado. Revisá el formato.';
+      return;
+    }
+
+    const fecha = laboFechaFormateada();
+    const prefix = fecha ? `${fecha}: ` : '';
+    const LABO_FONT = "font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:12pt;color:#000;";
+
+    function buildLine(items){
+      if(items.length===0) return '';
+      const parts = items.map(r=>{
+        const txt = `${r.code}: ${r.text}`;
+        return r.abnormal
+          ? `<span style="color:#C0392B;font-weight:700;">${txt}</span>`
+          : txt;
+      });
+      return prefix + parts.join(', ') + '.';
+    }
+
+    const line2Html = buildLine(line2Items);
+    const line1Html = buildLine(line1Items.filter(x=>x.l1));
+
+    let out = '';
+    if(line2Html) out += `<span style="${LABO_FONT}">${line2Html}</span>`;
+    if(line2Html && line1Html) out += '<br><br>';
+    if(line1Html) out += `<span style="${LABO_FONT}">${line1Html}</span>`;
+    liquidosBlocks.forEach(b=>{
+      if(out) out += '<br><br>';
+      out += `<span style="${LABO_FONT}">${prefix}${b}.</span>`;
+    });
+    textStudyBlocks.forEach(b=>{
+      if(out) out += '<br><br>';
+      // El bloque ya trae "." al final de cada chunk (uno por línea), así
+      // que acá no se agrega otro punto extra al final.
+      out += `<span style="${LABO_FONT}">${prefix}${b}</span>`;
+    });
+    $output.innerHTML = out;
+
+    const extrasCount = extras.length;
+    const line1CoreCount = line1Items.length - extrasCount;
+    const liqTxt = liquidosBlocks.length ? ` Líquidos de punción: ${liquidosBlocks.length} estudio(s).` : '';
+    const uroTxt = textStudyBlocks.length ? ` Uroanálisis/urocultivo: ${textStudyBlocks.length} estudio(s).` : '';
+    $status.textContent = `Listo. Renglón completo: ${line2Items.length} dato(s). Renglón resumen: ${line1CoreCount} del listado + ${extrasCount} adicional(es) alterado(s).${liqTxt}${uroTxt}`;
+  }
+
+  const SECTION_STOPWORDS = [
+    'hematologia','hemograma','quimica','hemostasia','coagulograma',
+    'ionograma plasmatico','hepatograma','serie blanca','serie roja',
+    'serie plaquetaria','indices hematimetricos','formula leucocitaria',
+    'valor porcentual','valor absoluto','resultados','determinacion',
+    'evol','cama','unidad','valores de referencia','metodo','orden',
+    'paciente','fecha','medico','servicio','sala','sexo','edad'
+  ];
+
+  fld('laboProcesarBtn').addEventListener('click', laboProcesar);
+  fld('laboLimpiarBtn').addEventListener('click', ()=>{
+    $input.value = '';
+    $output.innerHTML = '';
+    $status.textContent = '';
+    $input.focus();
+  });
+  fld('laboCopiarBtn').addEventListener('click', async ()=>{
+    if(!$output.innerHTML.trim()){
+      $status.textContent = 'No hay nada para copiar todavía.';
+      return;
+    }
+
+    // El HTML "limpio" (fondo blanco explícito, texto negro puro) se usa
+    // como respaldo para el método 2. Para el método 1 no lo usamos: copiar
+    // desde un clon fuera de pantalla hacía que el navegador no calculara
+    // bien los colores anidados y el rojo de los valores alterados se
+    // perdía al pegar. En cambio, copiamos del propio cuadro visible
+    // (#laboOutput), que sí conserva el rojo tal cual se ve en pantalla, y
+    // solo le forzamos un fondo blanco en línea justo antes de copiar (en
+    // vez del crema del panel), restaurándolo enseguida después.
+    const cleanHtml = `<div style="background:#ffffff;color:#000000;font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:12pt;">${$output.innerHTML}</div>`;
+    const text = $output.innerText;
+
+    // Método 1 (el más confiable en navegadores móviles, incluido Chrome
+    // Android): seleccionamos de verdad el contenido de #laboOutput y
+    // disparamos el copiado nativo del navegador con execCommand.
+    let copiadoConFormato = false;
+    const prevBg = $output.style.background;
+    $output.style.background = '#ffffff';
+    try{
+      const range = document.createRange();
+      range.selectNodeContents($output);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      copiadoConFormato = document.execCommand('copy');
+      sel.removeAllRanges();
+    }catch(e){
+      copiadoConFormato = false;
+    }
+    $output.style.background = prevBg;
+    if(copiadoConFormato){
+      $status.textContent = 'Copiado con formato al portapapeles.';
+      return;
+    }
+
+    // Método 2: Clipboard API moderna con HTML + texto plano.
+    try{
+      const blobHtml = new Blob([cleanHtml], {type:'text/html'});
+      const blobText = new Blob([text], {type:'text/plain'});
+      const item = new ClipboardItem({'text/html': blobHtml, 'text/plain': blobText});
+      await navigator.clipboard.write([item]);
+      $status.textContent = 'Copiado con formato al portapapeles.';
+      return;
+    }catch(e){
+      // sigue al método 3
+    }
+
+    // Método 3: solo texto plano (sin negrita/rojo).
+    try{
+      await navigator.clipboard.writeText(text);
+      $status.textContent = 'Copiado como texto simple (el formato con color no se pudo copiar en este navegador).';
+    }catch(e2){
+      $status.textContent = 'No se pudo copiar automáticamente. Seleccioná el texto manualmente.';
+    }
+  });
+
+  // Auto-conversión: apenas se pega o se escribe texto en el cuadro de
+  // entrada, se procesa solo, sin necesidad de tocar "Procesar".
+  let laboAutoTimer = null;
+  function laboAutoProcesar(){
+    if(laboAutoTimer) clearTimeout(laboAutoTimer);
+    laboAutoTimer = setTimeout(()=>{ laboProcesar(); }, 150);
+  }
+  $input.addEventListener('input', laboAutoProcesar);
+  $input.addEventListener('paste', laboAutoProcesar);
+
+  laboToday();
+  laboLoadEnabled();
+  laboBuildChecklist();
+  window.laboProcesar = laboProcesar;
+})();
+</script>
+</body>
+</html>

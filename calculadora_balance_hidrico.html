@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Balance Hídrico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#152238;
+    --ink-soft:#4C5C71;
+    --bg:#EEF2F6;
+    --panel:#FFFFFF;
+    --border:#DCE3EA;
+    --border-strong:#B9C6D3;
+    --ingreso:#1B8F63;
+    --ingreso-soft:#E4F5EC;
+    --egreso:#1C64C9;
+    --egreso-soft:#E6EFFB;
+    --auto:#7C8CA3;
+    --atb:#F2A93B;
+    --atb-soft:#FDF1DC;
+    --positivo:#C1660C;
+    --positivo-soft:#FBEBD9;
+    --negativo:#C4362F;
+    --negativo-soft:#FBE4E2;
+    --neutro-pos:#1B8F63;
+    --neutro-pos-soft:#E4F5EC;
+    --neutro-neg:#5B7083;
+    --neutro-neg-soft:#E9EDF1;
+    --q1:#2F9E44;
+    --q2:#1C7ED6;
+    --q3:#155DA8;
+    --q4:#152A52;
+    --radius:10px;
+    --shadow:0 1px 2px rgba(21,34,56,.06), 0 6px 16px rgba(21,34,56,.05);
+    font-size:16px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    line-height:1.4;
+    padding:20px 20px 60px;
+  }
+  .num{font-family:'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums;}
+  .wrap{max-width:1180px; margin:0 auto;}
+
+  /* ---------- Header ---------- */
+  h1{font-size:1.05rem; letter-spacing:.01em; margin:0 0 4px; font-weight:700;}
+  .sub{color:var(--ink-soft); font-size:.82rem; margin:0 0 18px;}
+
+  .hero{
+    display:grid;
+    grid-template-columns: 1fr 300px;
+    gap:14px;
+    margin-bottom:14px;
+  }
+  .patient-card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    display:flex;
+    align-items:stretch;
+    overflow:hidden;
+  }
+  .patient-section{
+    padding:16px 22px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+  }
+  .patient-section + .patient-section{ border-left:1px solid var(--border); }
+  .patient-section.ids{
+    flex:0 0 auto;
+    flex-direction:row;
+    gap:16px;
+  }
+  .patient-section.php-section{ flex:0 0 232px; }
+  .patient-section.bh-section{
+    flex:1;
+    padding:0;
+    display:flex;
+    align-items:stretch;
+  }
+  .bh-goal, .bh-actual{
+    padding:16px 22px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+  }
+  .bh-goal{ flex:0 0 270px; }
+  .bh-goal select{ width:100%; }
+  .bh-actual{
+    flex:1;
+    border-left:1px solid var(--border);
+    background:#F7F9FB;
+    transition:background .15s, color .15s;
+  }
+  .field label{
+    display:block;
+    font-size:.68rem;
+    color:var(--ink-soft);
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    margin-bottom:6px;
+  }
+  .field input[type="text"], .field input[type="number"], .field select{
+    padding:8px 9px;
+    border:1px solid var(--border-strong);
+    border-radius:7px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:.92rem;
+    background:#fff;
+    color:var(--ink);
+  }
+  .field-cama input{ width:78px; }
+  .field-peso input{ width:64px; }
+  .php-section select{ width:100%; }
+  .field input:focus, .field select:focus{
+    outline:2px solid var(--egreso);
+    outline-offset:1px;
+  }
+  .php-readout{
+    font-size:.72rem;
+    color:var(--egreso);
+    margin-top:6px;
+    font-family:'IBM Plex Mono', monospace;
+  }
+  .bh-actual .bh-eyebrow{
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    font-weight:600;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+  }
+  .bh-actual .bh-row{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .bh-actual .bh-value{
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:700;
+    font-size:1.5rem;
+  }
+  .bh-actual .bh-tagline{
+    font-size:.8rem;
+    font-weight:600;
+  }
+  .bh-actual .bh-match{
+    font-size:.72rem;
+    font-weight:600;
+    margin-top:4px;
+  }
+
+  .ref-card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:12px 14px;
+  }
+  .ref-card h2{
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    color:var(--ink-soft);
+    margin:0 0 8px;
+    font-weight:700;
+  }
+  table.ref-table{width:100%; border-collapse:collapse; font-size:.82rem;}
+  table.ref-table th{
+    text-align:left;
+    font-size:.65rem;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+    letter-spacing:.03em;
+    font-weight:600;
+    padding:2px 4px 5px;
+    border-bottom:1px solid var(--border);
+  }
+  table.ref-table td{
+    padding:3px 4px;
+    font-family:'IBM Plex Mono', monospace;
+    color:var(--ink);
+  }
+  table.ref-table tr.active td{
+    background:var(--egreso-soft);
+    color:var(--egreso);
+    font-weight:700;
+    border-radius:4px;
+  }
+
+  /* ---------- ATB config ---------- */
+  .atb-card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:14px 18px;
+    margin-bottom:16px;
+    display:flex;
+    gap:22px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  .atb-card h2{
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    color:var(--ink-soft);
+    margin:0;
+    font-weight:700;
+    width:100%;
+  }
+  .atb-card .field{min-width:150px;}
+  .atb-hint{font-size:.76rem; color:var(--ink-soft); flex:1; min-width:220px;}
+
+  /* ---------- Quarters grid: un solo panel dividido en 4 cuadrantes ---------- */
+  .quarters{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    grid-template-rows:1fr 1fr;
+    background:var(--border-strong);
+    gap:1px;
+    border:1px solid var(--border-strong);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    overflow:hidden;
+    margin-bottom:20px;
+  }
+  .panel{
+    background:var(--panel);
+    transition:opacity .15s;
+  }
+  .panel.unconfirmed{opacity:.94;}
+  .panel-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 14px;
+    color:#fff;
+  }
+  .panel-head .hour{font-weight:700; font-size:1rem;}
+  .panel-head .confirm{
+    display:flex; align-items:center; gap:6px;
+    font-size:.72rem; font-weight:600;
+    background:rgba(255,255,255,.16);
+    padding:4px 8px; border-radius:20px;
+    cursor:pointer;
+    user-select:none;
+  }
+  .panel-head .confirm input{accent-color:#fff; cursor:pointer;}
+  .panel-body{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+  }
+  .col{padding:12px 14px;}
+  .col + .col{border-left:1px solid var(--border);}
+  .col-title{
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    font-weight:700;
+    margin:0 0 8px;
+  }
+  .col-title.ing{color:var(--ingreso);}
+  .col-title.egr{color:var(--egreso);}
+
+  .row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    padding:5px 0;
+    border-bottom:1px dashed var(--border);
+  }
+  .row:last-of-type{border-bottom:none;}
+  .row .rlabel{font-size:.78rem; color:var(--ink); flex:0 0 auto; white-space:nowrap;}
+  .row .rinput{
+    width:64px;
+    padding:4px 6px;
+    border:1px solid var(--border-strong);
+    border-radius:6px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:.82rem;
+    text-align:right;
+  }
+  .row .rauto{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:.82rem;
+    font-weight:600;
+    color:var(--auto);
+    background:#F2F4F7;
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:4px 8px;
+    min-width:52px;
+    text-align:right;
+  }
+  .row .atb-inline{display:flex; align-items:center; gap:6px;}
+  .row .atb-inline input[type=checkbox]{accent-color:var(--atb); width:15px; height:15px; cursor:pointer;}
+  .row .atb-dose{font-family:'IBM Plex Mono', monospace; font-size:.78rem; color:var(--atb); font-weight:700;}
+
+  .breakdown{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:.68rem;
+    text-align:right;
+    margin-top:1px;
+    letter-spacing:.01em;
+  }
+  .breakdown .plus{color:var(--ink-soft); margin:0 1px;}
+
+  .col-total{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:8px;
+    padding-top:8px;
+    border-top:1px solid var(--border-strong);
+    font-size:.8rem;
+    font-weight:700;
+  }
+  .col-total .val{font-family:'IBM Plex Mono', monospace;}
+  .col-total.ing .val{color:var(--ingreso);}
+  .col-total.egr .val{color:var(--egreso);}
+
+  .panel-foot{
+    grid-column:1 / -1;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:9px 14px;
+    background:#F7F9FB;
+    border-top:1px solid var(--border);
+  }
+  .diuresis-rate{font-size:.68rem; color:var(--ink-soft);}
+  .diuresis-rate .flag-ok{color:var(--ingreso); font-weight:600;}
+  .diuresis-rate .flag-warn{color:var(--positivo); font-weight:600;}
+  .bh-chip{
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:700;
+    font-size:.82rem;
+    padding:4px 12px;
+    border-radius:20px;
+  }
+  .bh-chip .tag{font-family:'IBM Plex Sans', sans-serif; font-weight:600; font-size:.65rem; text-transform:uppercase; letter-spacing:.03em; margin-left:6px; opacity:.85;}
+
+  /* ---------- Report ---------- */
+  .report-card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:16px 18px;
+  }
+  .report-card h2{
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    color:var(--ink-soft);
+    margin:0 0 10px;
+    font-weight:700;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  #reportText{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:.86rem;
+    line-height:1.6;
+    background:#F7F9FB;
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:12px 14px;
+    white-space:pre-wrap;
+    word-wrap:break-word;
+    min-height:2.4em;
+    color:var(--ink);
+  }
+  .report-empty{color:var(--ink-soft); font-style:italic;}
+  .report-actions{display:flex; gap:8px; margin-top:10px;}
+  button.btn{
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:.8rem;
+    font-weight:600;
+    padding:8px 14px;
+    border-radius:7px;
+    border:1px solid var(--border-strong);
+    background:#fff;
+    color:var(--ink);
+    cursor:pointer;
+  }
+  button.btn:hover{background:#F2F4F7;}
+  button.btn.primary{background:var(--egreso); color:#fff; border-color:var(--egreso);}
+  button.btn.primary:hover{background:#17529E;}
+  button.btn.ghost{color:var(--ink-soft);}
+  .toast{
+    display:inline-block;
+    font-size:.76rem;
+    color:var(--ingreso);
+    font-weight:600;
+    margin-left:8px;
+    opacity:0;
+    transition:opacity .2s;
+  }
+  .toast.show{opacity:1;}
+
+  footer.disclaimer{
+    margin-top:16px;
+    font-size:.72rem;
+    color:var(--ink-soft);
+    text-align:center;
+  }
+
+  @media (max-width: 880px){
+    .hero{grid-template-columns:1fr;}
+    .patient-card{flex-direction:column;}
+    .patient-section + .patient-section{border-left:none; border-top:1px solid var(--border);}
+    .patient-section.php-section{flex:0 0 auto;}
+    .quarters{grid-template-columns:1fr; grid-template-rows:none;}
+    .panel-body{grid-template-columns:1fr;}
+    .col + .col{border-left:none; border-top:1px solid var(--border);}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Calculadora de balance hídrico</h1>
+  <p class="sub">Cargá lo nuevo registrado en cada bloque de 6 hs — el acumulado, el PHP, el agua endógena y las pérdidas insensibles se calculan solos.</p>
+
+  <div class="hero">
+    <div class="patient-card">
+      <div class="patient-section ids">
+        <div class="field field-cama">
+          <label for="cama">Cama</label>
+          <input type="text" id="cama" placeholder="132">
+        </div>
+        <div class="field field-peso">
+          <label for="peso">Peso (kg)</label>
+          <input type="number" id="peso" value="60" min="1" step="1">
+        </div>
+      </div>
+      <div class="patient-section php-section">
+        <div class="field">
+          <label for="phpPlan">Plan PHP (24 hs)</label>
+          <select id="phpPlan">
+            <option value="7">A 7 · 500 ml</option>
+            <option value="14">A 14 · 1000 ml</option>
+            <option value="21" selected>A 21 · 1500 ml</option>
+            <option value="28">A 28 · 2000 ml</option>
+          </select>
+        </div>
+        <div class="php-readout" id="phpReadout">375 ml cada 6 hs</div>
+      </div>
+      <div class="patient-section bh-section">
+        <div class="bh-goal">
+          <label for="bhGoal">Objetivo de BH</label>
+          <select id="bhGoal">
+            <option value="positivo">BH (+) Positivo · &gt; +500 ml</option>
+            <option value="neutro-pos" selected>Neutro (+) · 0 a +500 ml</option>
+            <option value="neutro-neg">Neutro (−) · −500 a 0 ml</option>
+            <option value="negativo">BH (−) Negativo · &lt; −500 ml</option>
+          </select>
+        </div>
+        <div class="bh-actual" id="bhTypeBadge">
+          <div class="bh-eyebrow">Actual (calculado)</div>
+          <div class="bh-row">
+            <span class="bh-value">—</span>
+            <span class="bh-tagline">sin datos</span>
+          </div>
+          <div class="bh-match" id="bhMatch"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ref-card">
+      <h2>Velocidad de infusión</h2>
+      <table class="ref-table" id="refTable">
+        <thead><tr><th>Macrogotas/min</th><th>Volumen/24h</th></tr></thead>
+        <tbody>
+          <tr data-vol="500"><td>7</td><td>500 ml</td></tr>
+          <tr data-vol="1000"><td>14</td><td>1000 ml</td></tr>
+          <tr data-vol="1500"><td>21</td><td>1500 ml</td></tr>
+          <tr data-vol="2000"><td>28</td><td>2000 ml</td></tr>
+          <tr data-vol="2500"><td>35</td><td>2500 ml</td></tr>
+          <tr data-vol="3000"><td>42</td><td>3000 ml</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="atb-card">
+    <h2>Antibióticos (ATB)</h2>
+    <div class="field">
+      <label for="atbFreq">Frecuencia</label>
+      <select id="atbFreq">
+        <option value="6">Cada 6 hs</option>
+        <option value="12" selected>Cada 12 hs</option>
+        <option value="24">Cada 24 hs</option>
+        <option value="none">No indicado</option>
+      </select>
+    </div>
+    <div class="atb-hint">La frecuencia marca automáticamente en qué bloques se administra el ATB — tildá o destildá cada casillero si el horario real difiere.</div>
+  </div>
+
+  <main class="quarters" id="quarters"></main>
+
+  <div class="report-card">
+    <h2>Informe <span style="font-weight:400; text-transform:none; letter-spacing:0;">se arma con los bloques confirmados</span></h2>
+    <div id="reportText"><span class="report-empty">Confirmá el primer bloque (6 hs) para empezar a generar el informe.</span></div>
+    <div class="report-actions">
+      <button class="btn primary" id="copyBtn">Copiar informe</button>
+      <button class="btn ghost" id="resetBtn">Reiniciar todo</button>
+      <span class="toast" id="toast">Copiado ✓</span>
+    </div>
+  </div>
+
+  <footer class="disclaimer">Herramienta de apoyo al cálculo — no reemplaza el criterio clínico. Balance neutro (+): 0 a +499 ml · Positivo: ≥ +500 ml · Neutro (−): 0 a −499 ml · Negativo: ≤ −500 ml.</footer>
+</div>
+
+<script>
+(function(){
+  const PLAN_VOLUMES = {7:500, 14:1000, 21:1500, 28:2000};
+  const HOURS = [6,12,18,24];
+  const QCOLORS = ['#2F9E44','#1C7ED6','#155DA8','#152A52'];
+  const ATB_DOSE = 100; // los ATB siempre se disuelven en 100 ml — constante, no editable
+
+  const ING_FIELDS = [
+    {key:'vo',    label:'Vía oral (VO)',        type:'input'},
+    {key:'php',   label:'PHP',                  type:'auto'},
+    {key:'alim',  label:'Alim. parenteral',     type:'input'},
+    {key:'atb',   label:'Antibióticos (ATB)',   type:'atb'},
+    {key:'ae',    label:'Agua endógena (AE)',   type:'auto'},
+    {key:'transf',label:'Transfusiones',        type:'input'},
+    {key:'exp',   label:'Expansiones',          type:'input'},
+  ];
+  const EGR_FIELDS = [
+    {key:'diuresis', label:'Diuresis (D)',          type:'input'},
+    {key:'catarsis', label:'Catarsis/Diarrea',      type:'input'},
+    {key:'vomitos',  label:'Vómitos',               type:'input'},
+    {key:'drenajes', label:'Drenajes',              type:'input'},
+    {key:'pi',       label:'Pérdidas insens. (PI)', type:'auto'},
+  ];
+
+  const state = {
+    peso: 60,
+    phpPlan: 21,
+    atbFreq: '12',
+    bhGoal: 'neutro-pos',
+    blocks: [0,1,2,3].map(()=>({
+      vo:0, alim:0, transf:0, exp:0,
+      diuresis:0, catarsis:0, vomitos:0, drenajes:0,
+      atb:false,
+      confirmed:false
+    }))
+  };
+
+  const ATB_DEFAULTS = {
+    '6':   [true,true,true,true],
+    '12':  [true,false,true,false],
+    '24':  [true,false,false,false],
+    'none':[false,false,false,false]
+  };
+  applyAtbDefaults('12');
+  function applyAtbDefaults(freq){
+    const pattern = ATB_DEFAULTS[freq] || ATB_DEFAULTS.none;
+    state.blocks.forEach((b,i)=> b.atb = pattern[i]);
+  }
+
+  const nf = new Intl.NumberFormat('es-AR');
+  function fmt(n){ return nf.format(Math.round(n)); }
+  function signed(n){ const r = Math.round(n); return (r>=0?'+':'') + fmt(r); }
+
+  const quartersEl = document.getElementById('quarters');
+
+  function buildRow(field, side){
+    const row = document.createElement('div');
+    row.className = 'row';
+    const label = document.createElement('span');
+    label.className = 'rlabel';
+    label.textContent = field.label + ':';
+    row.appendChild(label);
+
+    if (field.type === 'auto'){
+      const auto = document.createElement('span');
+      auto.className = 'rauto';
+      auto.id = null;
+      row.dataset.autoKey = field.key;
+      row.dataset.side = side;
+      row.dataset.type = 'auto';
+      row.appendChild(auto);
+    } else if (field.type === 'atb'){
+      const wrap = document.createElement('span');
+      wrap.className = 'atb-inline';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.dataset.side = side;
+      cb.dataset.key = field.key;
+      cb.dataset.type = 'atbCheckbox';
+      const dose = document.createElement('span');
+      dose.className = 'atb-dose';
+      dose.dataset.role = 'atbDoseLabel';
+      wrap.appendChild(cb);
+      wrap.appendChild(dose);
+      row.appendChild(wrap);
+      row.dataset.side = side;
+      row.dataset.type = 'atbRow';
+    } else {
+      const inp = document.createElement('input');
+      inp.type = 'number';
+      inp.className = 'rinput';
+      inp.min = '0';
+      inp.step = 'any';
+      inp.value = 0;
+      inp.dataset.side = side;
+      inp.dataset.key = field.key;
+      inp.dataset.type = 'delta';
+      row.appendChild(inp);
+      row.dataset.side = side;
+      row.dataset.type = 'inputRow';
+    }
+    return row;
+  }
+
+  function buildBreakdownRow(field){
+    const bd = document.createElement('div');
+    bd.className = 'breakdown';
+    bd.dataset.breakdownKey = field.key;
+    return bd;
+  }
+
+  function buildPanel(qIndex){
+    const hour = HOURS[qIndex];
+    const color = QCOLORS[qIndex];
+    const panel = document.createElement('div');
+    panel.className = 'panel unconfirmed';
+    panel.dataset.q = qIndex;
+
+    const head = document.createElement('div');
+    head.className = 'panel-head';
+    head.style.background = color;
+    head.innerHTML = `<span class="hour">${hour} hs</span>`;
+    const confirmLabel = document.createElement('label');
+    confirmLabel.className = 'confirm';
+    confirmLabel.innerHTML = `<input type="checkbox" data-role="confirm" data-q="${qIndex}"> Confirmar bloque`;
+    head.appendChild(confirmLabel);
+    panel.appendChild(head);
+
+    const body = document.createElement('div');
+    body.className = 'panel-body';
+
+    const colIng = document.createElement('div');
+    colIng.className = 'col';
+    colIng.innerHTML = `<p class="col-title ing">Ingresos</p>`;
+    const ingRowsWrap = document.createElement('div');
+    ING_FIELDS.forEach(f=>{
+      ingRowsWrap.appendChild(buildRow(f,'ing'));
+      if (f.type==='input') ingRowsWrap.appendChild(buildBreakdownRow(f));
+    });
+    colIng.appendChild(ingRowsWrap);
+    const ingTotal = document.createElement('div');
+    ingTotal.className = 'col-total ing';
+    ingTotal.innerHTML = `<span>Total ingresos</span><span class="val" data-role="ingTotal">0 ml</span>`;
+    colIng.appendChild(ingTotal);
+
+    const colEgr = document.createElement('div');
+    colEgr.className = 'col';
+    colEgr.innerHTML = `<p class="col-title egr">Egresos</p>`;
+    const egrRowsWrap = document.createElement('div');
+    EGR_FIELDS.forEach(f=>{
+      egrRowsWrap.appendChild(buildRow(f,'egr'));
+      if (f.type==='input') egrRowsWrap.appendChild(buildBreakdownRow(f));
+    });
+    colEgr.appendChild(egrRowsWrap);
+    const egrTotal = document.createElement('div');
+    egrTotal.className = 'col-total egr';
+    egrTotal.innerHTML = `<span>Total egresos</span><span class="val" data-role="egrTotal">0 ml</span>`;
+    colEgr.appendChild(egrTotal);
+
+    body.appendChild(colIng);
+    body.appendChild(colEgr);
+    panel.appendChild(body);
+
+    const foot = document.createElement('div');
+    foot.className = 'panel-foot';
+    foot.innerHTML = `
+      <span class="diuresis-rate" data-role="diuresisRate"></span>
+      <span class="bh-chip" data-role="bhChip">BH ${hour}h: 0 <span class="tag" data-role="bhTag">—</span></span>
+    `;
+    panel.appendChild(foot);
+
+    return panel;
+  }
+
+  for (let i=0;i<4;i++) quartersEl.appendChild(buildPanel(i));
+
+  // ---------- calculation ----------
+  function fieldsCumulative(key, uptoIndex){
+    let sum = 0;
+    for (let i=0;i<=uptoIndex;i++) sum += Number(state.blocks[i][key]) || 0;
+    return sum;
+  }
+
+  function atbDeltaFor(i){
+    return state.blocks[i].atb ? ATB_DOSE : 0;
+  }
+  function atbCumulative(uptoIndex){
+    let sum=0;
+    for (let i=0;i<=uptoIndex;i++) sum += atbDeltaFor(i);
+    return sum;
+  }
+
+  function autoValues(hour){
+    const peso = Number(state.peso)||0;
+    const frac = hour/24;
+    const plan = PLAN_VOLUMES[state.phpPlan] || 0;
+    return {
+      php: plan*frac,
+      ae: peso*5*frac,
+      pi: peso*10*frac
+    };
+  }
+
+  function computeQuarter(i){
+    const hour = HOURS[i];
+    const auto = autoValues(hour);
+    const vo = fieldsCumulative('vo', i);
+    const alim = fieldsCumulative('alim', i);
+    const transf = fieldsCumulative('transf', i);
+    const exp = fieldsCumulative('exp', i);
+    const atb = atbCumulative(i);
+    const diuresis = fieldsCumulative('diuresis', i);
+    const catarsis = fieldsCumulative('catarsis', i);
+    const vomitos = fieldsCumulative('vomitos', i);
+    const drenajes = fieldsCumulative('drenajes', i);
+
+    const ingreso = vo + auto.php + alim + atb + auto.ae + transf + exp;
+    const egreso = diuresis + catarsis + vomitos + drenajes + auto.pi;
+    const bh = ingreso - egreso;
+
+    return {hour, auto, vo, alim, transf, exp, atb, diuresis, catarsis, vomitos, drenajes, ingreso, egreso, bh};
+  }
+
+  function classify(bh){
+    if (bh >= 500) return {tag:'Positivo', cls:'positivo'};
+    if (bh <= -500) return {tag:'Negativo', cls:'negativo'};
+    if (bh >= 0) return {tag:'Neutro (+)', cls:'neutro-pos'};
+    return {tag:'Neutro (−)', cls:'neutro-neg'};
+  }
+  const CLASS_COLORS = {
+    positivo:  {bg:'var(--positivo-soft)', fg:'var(--positivo)'},
+    negativo:  {bg:'var(--negativo-soft)', fg:'var(--negativo)'},
+    'neutro-pos': {bg:'var(--neutro-pos-soft)', fg:'var(--neutro-pos)'},
+    'neutro-neg': {bg:'var(--neutro-neg-soft)', fg:'var(--neutro-neg)'},
+  };
+  const GOAL_LABELS = {
+    positivo: 'BH (+) Positivo',
+    negativo: 'BH (−) Negativo',
+    'neutro-pos': 'Neutro (+)',
+    'neutro-neg': 'Neutro (−)',
+  };
+
+  function renderBreakdown(el, key, uptoIndex){
+    const parts = [];
+    for (let i=0;i<=uptoIndex;i++){
+      const v = Number(state.blocks[i][key])||0;
+      if (v !== 0) parts.push({v, i});
+    }
+    if (parts.length === 0){ el.innerHTML = ''; return; }
+    el.innerHTML = parts.map((p,idx)=>{
+      const num = `<span style="color:${QCOLORS[p.i]}">${fmt(p.v)}</span>`;
+      return idx===0 ? num : `<span class="plus">+</span>${num}`;
+    }).join('');
+  }
+
+  function recalcAll(){
+    // sync PHP readout
+    const plan = PLAN_VOLUMES[state.phpPlan]||0;
+    document.getElementById('phpReadout').textContent = fmt(plan/4) + ' ml cada 6 hs';
+
+    let lastConfirmed = -1;
+
+    for (let i=0;i<4;i++){
+      const panel = quartersEl.children[i];
+      const q = computeQuarter(i);
+      const block = state.blocks[i];
+
+      panel.classList.toggle('unconfirmed', !block.confirmed);
+      if (block.confirmed) lastConfirmed = i;
+
+      // auto fields
+      panel.querySelectorAll('[data-type="auto"]').forEach(row=>{
+        const key = row.dataset.autoKey;
+        const box = row.querySelector('.rauto');
+        box.textContent = fmt(q.auto[key]) + ' ml';
+      });
+
+      // atb row
+      const atbRow = panel.querySelector('[data-type="atbRow"]');
+      const atbCb = atbRow.querySelector('input[type=checkbox]');
+      atbCb.checked = block.atb;
+      const atbDoseLabel = atbRow.querySelector('[data-role="atbDoseLabel"]');
+      atbDoseLabel.textContent = block.atb ? (fmt(ATB_DOSE) + ' ml') : '— ml';
+
+      // input rows + breakdowns
+      panel.querySelectorAll('[data-type="delta"]').forEach(inp=>{
+        if (document.activeElement !== inp){
+          inp.value = block[inp.dataset.key];
+        }
+      });
+      panel.querySelectorAll('[data-breakdown-key]').forEach(bd=>{
+        renderBreakdown(bd, bd.dataset.breakdownKey, i);
+      });
+
+      // totals
+      panel.querySelector('[data-role="ingTotal"]').textContent = fmt(q.ingreso) + ' ml';
+      panel.querySelector('[data-role="egrTotal"]').textContent = fmt(q.egreso) + ' ml';
+
+      // BH chip
+      const cls = classify(q.bh);
+      const colors = CLASS_COLORS[cls.cls];
+      const chip = panel.querySelector('[data-role="bhChip"]');
+      chip.innerHTML = `BH ${q.hour}h: ${signed(q.bh)} ml <span class="tag" data-role="bhTag">${cls.tag}</span>`;
+      chip.style.background = colors.bg;
+      chip.style.color = colors.fg;
+
+      // diuresis rate
+      const peso = Number(state.peso)||1;
+      const rate = q.diuresis / (peso * q.hour);
+      const rateEl = panel.querySelector('[data-role="diuresisRate"]');
+      const inRange = rate >= 1.5 && rate <= 3.5;
+      rateEl.innerHTML = `Ritmo diurético: <span class="${inRange?'flag-ok':'flag-warn'}">${rate.toFixed(1)} ml/kg/h</span>`;
+    }
+
+    // header BH type badge
+    const badge = document.getElementById('bhTypeBadge');
+    const matchEl = document.getElementById('bhMatch');
+    if (lastConfirmed === -1){
+      badge.querySelector('.bh-tagline').textContent = 'sin datos';
+      badge.querySelector('.bh-value').textContent = '—';
+      badge.style.background = '#F7F9FB';
+      badge.querySelector('.bh-value').style.color = 'var(--ink-soft)';
+      badge.querySelector('.bh-tagline').style.color = 'var(--ink-soft)';
+      matchEl.textContent = '';
+    } else {
+      const q = computeQuarter(lastConfirmed);
+      const cls = classify(q.bh);
+      const colors = CLASS_COLORS[cls.cls];
+      badge.querySelector('.bh-tagline').textContent = cls.tag + ' · acumulado a las ' + q.hour + 'h';
+      badge.querySelector('.bh-value').textContent = signed(q.bh) + ' ml';
+      badge.style.background = colors.bg;
+      badge.querySelector('.bh-value').style.color = colors.fg;
+      badge.querySelector('.bh-tagline').style.color = colors.fg;
+
+      if (cls.cls === state.bhGoal){
+        matchEl.textContent = '✓ ' + cls.tag + ' — coincide con el objetivo (' + GOAL_LABELS[state.bhGoal] + ')';
+        matchEl.style.color = 'var(--ingreso)';
+      } else {
+        const severe = (cls.cls === 'positivo' || cls.cls === 'negativo');
+        matchEl.textContent = '⚠ buscabas ' + GOAL_LABELS[state.bhGoal] + ' y el resultado es ' + cls.tag;
+        matchEl.style.color = severe ? 'var(--negativo)' : 'var(--positivo)';
+      }
+    }
+
+    // reference table active row
+    document.querySelectorAll('#refTable tr[data-vol]').forEach(tr=>{
+      tr.classList.toggle('active', Number(tr.dataset.vol) === plan);
+    });
+
+    buildReport(lastConfirmed);
+  }
+
+  function buildReport(lastConfirmed){
+    const box = document.getElementById('reportText');
+    if (lastConfirmed === -1){
+      box.innerHTML = '<span class="report-empty">Confirmá el primer bloque (6 hs) para empezar a generar el informe.</span>';
+      return;
+    }
+    const lines = [];
+    for (let i=0;i<=lastConfirmed;i++){
+      if (!state.blocks[i].confirmed) continue;
+      const q = computeQuarter(i);
+      let line = `BH ${q.hour}hs: ${signed(q.bh)} ml (D: ${fmt(q.diuresis)} ml)`;
+      const events = [];
+      const b = state.blocks[i];
+      if (Number(b.exp) > 0) events.push(`se indica expansión de ${fmt(b.exp)} ml con SF`);
+      if (Number(b.transf) > 0) events.push(`se transfunden ${fmt(b.transf)} ml`);
+      if (events.length){
+        const cap = events.map(e => e.charAt(0).toUpperCase()+e.slice(1));
+        line += '. ' + cap.join('. ') + '.';
+      } else {
+        line += '.';
+      }
+      lines.push(line);
+    }
+    box.textContent = lines.join(' ');
+  }
+
+  // ---------- events ----------
+  document.getElementById('peso').addEventListener('input', e=>{
+    state.peso = Number(e.target.value)||0;
+    recalcAll();
+  });
+  document.getElementById('phpPlan').addEventListener('change', e=>{
+    state.phpPlan = Number(e.target.value);
+    recalcAll();
+  });
+  document.getElementById('atbFreq').addEventListener('change', e=>{
+    state.atbFreq = e.target.value;
+    applyAtbDefaults(state.atbFreq);
+    recalcAll();
+  });
+  document.getElementById('bhGoal').addEventListener('change', e=>{
+    state.bhGoal = e.target.value;
+    recalcAll();
+  });
+
+  quartersEl.addEventListener('input', e=>{
+    const t = e.target;
+    if (t.dataset.type === 'delta'){
+      const panel = t.closest('.panel');
+      const q = Number(panel.dataset.q);
+      state.blocks[q][t.dataset.key] = Number(t.value)||0;
+      recalcAll();
+    }
+  });
+  quartersEl.addEventListener('change', e=>{
+    const t = e.target;
+    if (t.dataset.type === 'atbCheckbox'){
+      const panel = t.closest('.panel');
+      const q = Number(panel.dataset.q);
+      state.blocks[q].atb = t.checked;
+      recalcAll();
+    }
+    if (t.dataset.role === 'confirm'){
+      const q = Number(t.dataset.q);
+      state.blocks[q].confirmed = t.checked;
+      recalcAll();
+    }
+  });
+
+  document.getElementById('copyBtn').addEventListener('click', ()=>{
+    const text = document.getElementById('reportText').textContent;
+    if (!text || text.includes('Confirmá el primer bloque')) return;
+    navigator.clipboard.writeText(text).then(()=>{
+      const toast = document.getElementById('toast');
+      toast.classList.add('show');
+      setTimeout(()=>toast.classList.remove('show'), 1500);
+    });
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', ()=>{
+    if (!confirm('¿Reiniciar todos los datos cargados?')) return;
+    state.peso = 60;
+    state.phpPlan = 21;
+    state.atbFreq = '12';
+    state.bhGoal = 'neutro-pos';
+    state.blocks = [0,1,2,3].map(()=>({
+      vo:0, alim:0, transf:0, exp:0,
+      diuresis:0, catarsis:0, vomitos:0, drenajes:0,
+      atb:false, confirmed:false
+    }));
+    applyAtbDefaults('12');
+    document.getElementById('cama').value = '';
+    document.getElementById('peso').value = 60;
+    document.getElementById('phpPlan').value = '21';
+    document.getElementById('atbFreq').value = '12';
+    document.getElementById('bhGoal').value = 'neutro-pos';
+    quartersEl.querySelectorAll('[data-role="confirm"]').forEach(cb=>cb.checked=false);
+    recalcAll();
+  });
+
+  recalcAll();
+})();
+</script>
+</body>
+</html>

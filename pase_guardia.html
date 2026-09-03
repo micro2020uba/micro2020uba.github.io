@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pase de guardia — archivero</title>
+<style>
+  :root{
+    --paper:#f6f5f1; --ink:#1c2321; --line:#111111; --line-soft:#c9c4b8;
+    --panel:#ffffff; --accent:#2f5d5a; --accent-dark:#1e403d; --muted:#6b6a63;
+    --field-bg:#fbfaf7; --danger:#8a3324; --folder:#e8dcb5;
+    --ok:#2f5d5a; --warn:#c08a2e; --bad:#8a3324;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Sans','Segoe UI',Arial,sans-serif;min-height:100vh;}
+  header{padding:16px clamp(14px,3vw,32px);border-bottom:2px solid var(--ink);display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+  header .brand{display:flex;align-items:baseline;gap:12px;}
+  header .mark{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:12px;letter-spacing:.14em;background:var(--ink);color:var(--paper);padding:4px 8px;}
+  header h1{font-size:17px;margin:0;font-weight:700;}
+  header .sub{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);}
+
+  main{display:grid;grid-template-columns:240px minmax(380px,1fr) minmax(340px,1fr);gap:0;align-items:start;}
+  @media (max-width:1200px){ main{grid-template-columns:1fr;} }
+
+  .sidebar{padding:16px 12px;border-right:1px solid var(--line-soft);position:sticky;top:0;background:#efece2;}
+  @media (max-width:1200px){ .sidebar{position:static;border-right:none;border-bottom:1px solid var(--line-soft);} }
+  .sidebar h2{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-dark);margin:0 0 8px;}
+  #patientSearch{width:100%;margin-bottom:10px;}
+  .folder-list{margin-bottom:6px;}
+  .patient-chip{
+    position:relative;
+    display:flex;justify-content:space-between;align-items:center;
+    padding:8px 9px 8px 12px;margin-bottom:4px;
+    background:var(--folder);
+    border:1px solid #cbb98a;border-left:4px solid #a99a66;
+    cursor:pointer;font-size:12px;border-radius:0 4px 4px 0;
+    box-shadow:1px 1px 0 rgba(0,0,0,.06);
+  }
+  .patient-chip.active{background:#fff6dd;border-color:var(--ink);font-weight:700;}
+  .patient-chip.tab-estable{border-left-color:var(--ok);}
+  .patient-chip.tab-regular{border-left-color:var(--warn);}
+  .patient-chip.tab-malo{border-left-color:var(--bad);}
+  .patient-chip .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .patient-chip .del{color:var(--danger);font-weight:700;padding:0 4px;background:none;border:none;cursor:pointer;font-size:13px;}
+  .pend-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warn);margin:0 6px;flex-shrink:0;}
+  #addPatientBtn{width:100%;margin:6px 0 14px;background:var(--ink);color:var(--paper);border:none;padding:8px;font-weight:600;font-size:12px;cursor:pointer;border-radius:2px;}
+  #addPatientBtn:hover{opacity:.85;}
+  .persist-box{border-top:1px solid var(--line-soft);padding-top:12px;margin-top:6px;}
+  .persist-box button{width:100%;margin-bottom:6px;font-size:11px;padding:7px;background:transparent;border:1px solid var(--ink);color:var(--ink);cursor:pointer;border-radius:2px;font-family:'IBM Plex Sans',sans-serif;font-weight:600;}
+  .persist-box button:hover{background:var(--ink);color:var(--paper);}
+  .persist-box button.danger{border-color:var(--danger);color:var(--danger);}
+  .persist-box button.danger:hover{background:var(--danger);color:#fff;}
+  .persist-note{font-size:10px;color:var(--muted);line-height:1.4;margin-top:4px;}
+
+  .patient-actions{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+  button.secondary.small{padding:6px 9px;font-size:10.5px;}
+  button.secondary.small.danger{border-color:var(--danger);color:var(--danger);}
+  button.secondary.small.danger:hover{background:var(--danger);color:#fff;}
+  #printSingleTarget{display:none;}
+
+  .form-col{padding:16px clamp(10px,2vw,20px);border-right:1px solid var(--line-soft);}
+  @media (max-width:1200px){ .form-col{border-right:none;border-bottom:1px solid var(--line-soft);} }
+  fieldset{border:none;margin:0 0 16px;padding:0;}
+  legend{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-dark);border-bottom:1px solid var(--ink);width:100%;padding-bottom:5px;margin-bottom:9px;}
+  .field{display:flex;flex-direction:column;gap:4px;margin-bottom:8px;}
+  .field label{font-size:10.5px;color:var(--muted);font-weight:600;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px;}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+  input[type=text],input[type=date],textarea,select{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;padding:6px 7px;
+    border:1px solid var(--line-soft);background:var(--field-bg);color:var(--ink);border-radius:2px;width:100%;
+  }
+  textarea{resize:vertical;min-height:40px;line-height:1.4;font-family:inherit;}
+  textarea.tall{min-height:80px;}
+  input:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px;}
+
+  .item-list{margin-bottom:8px;}
+  .item-row{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px dashed var(--line-soft);font-size:12.5px;}
+  .item-row .txt{flex:1;outline:none;padding:2px 3px;border-radius:2px;}
+  .item-row .txt:focus{background:#fff;box-shadow:0 0 0 1px var(--accent);}
+  .item-row.resuelto .txt{text-decoration:line-through;color:var(--muted);}
+  .item-row label.res{display:flex;align-items:center;gap:3px;font-size:10.5px;color:var(--muted);white-space:nowrap;}
+  .item-row .del{color:var(--danger);border:none;background:none;cursor:pointer;font-weight:700;font-size:14px;}
+  .add-item-row{display:flex;gap:6px;}
+  .add-item-row input{flex:1;}
+  .add-item-row button{white-space:nowrap;padding:6px 10px;font-size:11.5px;font-weight:600;background:var(--accent-dark);color:#fff;border:none;cursor:pointer;border-radius:2px;}
+
+  .sys-block{border:1px dashed var(--line-soft);padding:9px;margin-bottom:9px;background:#fdfcf9;}
+  .sys-title{font-weight:700;font-size:12px;margin-bottom:6px;color:var(--accent-dark);}
+  .sys-title .opt-toggle{font-weight:400;font-size:10.5px;color:var(--muted);margin-left:8px;}
+  .chk-group{display:flex;flex-direction:column;gap:3px;margin-bottom:4px;}
+  .chk-row{display:flex;align-items:center;gap:6px;font-size:11.5px;flex-wrap:wrap;}
+  .chk-row .detail-input{width:150px;font-size:11px;padding:3px 5px;}
+  .chk-subtitle{font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:5px 0 2px;}
+  .estudio-row{margin-top:6px;display:grid;grid-template-columns:130px 1fr;gap:6px;}
+  .add-custom-row{display:flex;gap:5px;margin-top:4px;}
+  .add-custom-row input{flex:1;font-size:11px;padding:4px 6px;}
+  .add-custom-row button{font-size:10.5px;padding:4px 8px;background:transparent;border:1px solid var(--accent-dark);color:var(--accent-dark);cursor:pointer;border-radius:2px;}
+  .add-custom-row button:hover{background:var(--accent-dark);color:#fff;}
+
+  #addEntryBtn{background:var(--accent-dark);color:#fff;border:none;padding:9px 14px;font-weight:600;font-size:12.5px;cursor:pointer;border-radius:2px;margin-top:4px;width:100%;}
+  #addEntryBtn:hover{opacity:.85;}
+
+  .out-col{padding:16px clamp(10px,2vw,20px);position:sticky;top:0;}
+  @media (max-width:1200px){ .out-col{position:static;} }
+  .actions{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+  button.secondary{background:transparent;border:1px solid var(--ink);color:var(--ink);padding:8px 14px;font-weight:600;font-size:12px;cursor:pointer;border-radius:2px;}
+  button.secondary:hover{background:var(--ink);color:var(--paper);}
+  .status{font-size:11px;color:var(--accent-dark);font-family:'IBM Plex Mono',monospace;min-height:14px;margin-bottom:8px;}
+
+  .preview-scroll{max-height:82vh;overflow:auto;border:1px solid var(--line-soft);background:var(--panel);padding:10px;}
+  @media (max-width:1200px){ .preview-scroll{max-height:none;} }
+  table.pase{width:100%;border-collapse:collapse;margin-bottom:20px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;}
+  table.pase td{border:1px solid var(--line);padding:6px 8px;vertical-align:top;}
+  table.pase tr.head td{background:#eceae1;font-weight:700;font-size:12.5px;}
+  table.pase tr.head td.cama{width:60px;text-align:center;}
+  table.pase td.label{width:52px;font-weight:700;text-align:center;background:#f5f4ef;}
+  table.pase td.content{white-space:pre-wrap;}
+  table.pase td.content ul{margin:0;padding-left:16px;}
+  table.pase td.content li.resuelto{text-decoration:line-through;color:var(--muted);}
+  .empty-note{color:var(--muted);font-style:italic;font-size:12px;padding:8px 0;}
+
+  footer{padding:12px clamp(14px,3vw,32px) 22px;font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;}
+
+  @media print{
+    header,.sidebar,.form-col,.actions,footer,.status{display:none !important;}
+    main{display:block;}
+    .out-col{padding:0;position:static;}
+    .preview-scroll{max-height:none;overflow:visible;border:none;padding:0;}
+  }
+  body.print-single-mode .preview-scroll{display:none !important;}
+  @media print{
+    body.print-single-mode #printSingleTarget{display:block !important;}
+  }
+
+  /* ===== Botón "Volver al inicio" (hub) ===== */
+  .back-home-btn{
+    font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:11px;
+    background:transparent;color:var(--ink);border:1px solid var(--ink);padding:7px 11px;
+    border-radius:2px;cursor:pointer;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center;gap:5px;
+  }
+  .back-home-btn:hover{background:var(--ink);color:var(--paper);}
+
+  /* ===== Botón interno "Transformador de LABO" (dentro del header, ya logueado) ===== */
+  .header-labo-btn{
+    font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:11.5px;
+    background:var(--accent-dark);color:#fff;border:none;padding:8px 12px;
+    border-radius:2px;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:7px;
+  }
+  .header-labo-btn:hover{opacity:.85;}
+  .header-labo-btn svg{width:15px;height:15px;fill:#fff;flex-shrink:0;}
+
+  /* ===== Modal contenedor del transformador de LABO (conversor-labo.html embebido) ===== */
+  .labo-standalone-overlay{
+    display:none;position:fixed;inset:0;background:rgba(28,35,33,.6);
+    z-index:1200;align-items:flex-start;justify-content:center;padding:clamp(10px,3vh,40px) 14px;overflow:auto;
+  }
+  .labo-standalone-overlay.open{display:flex;}
+  .labo-standalone-modal{
+    background:var(--panel);border:2px solid var(--ink);border-radius:4px;
+    width:100%;max-width:1220px;height:min(88vh,900px);box-shadow:0 14px 46px rgba(0,0,0,.35);
+    display:flex;flex-direction:column;overflow:hidden;
+  }
+  .labo-standalone-header{
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+    padding:11px 16px;border-bottom:2px solid var(--ink);background:var(--panel);flex-shrink:0;
+  }
+  .labo-standalone-header span{font-weight:700;font-size:13.5px;display:flex;align-items:center;gap:8px;}
+  .labo-standalone-header svg{width:18px;height:18px;fill:var(--accent-dark);}
+  .labo-standalone-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink);line-height:1;padding:2px 6px;flex-shrink:0;}
+  .labo-standalone-close:hover{color:var(--danger);}
+  .labo-standalone-modal iframe{flex:1;width:100%;border:none;background:var(--paper);}
+
+  /* ===== Login (Firebase Auth) ===== */
+  body:not(.auth-in) header, body:not(.auth-in) main, body:not(.auth-in) footer, body:not(.auth-in) #printSingleTarget{
+    display:none !important;
+  }
+  .login-overlay{
+    position:fixed;inset:0;background:var(--paper);z-index:1000;
+    display:flex;align-items:center;justify-content:center;padding:20px;
+  }
+  body.auth-in .login-overlay{display:none;}
+  .login-card{
+    background:var(--panel);border:2px solid var(--ink);border-radius:4px;
+    padding:30px 28px;max-width:360px;width:100%;box-shadow:0 14px 46px rgba(0,0,0,.22);
+  }
+  .login-card .mark{
+    font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:11px;letter-spacing:.14em;
+    background:var(--ink);color:var(--paper);padding:4px 8px;display:inline-block;margin-bottom:10px;
+  }
+  .login-card h1{font-size:16.5px;margin:0 0 4px;}
+  .login-card .sub{font-size:11.5px;color:var(--muted);margin-bottom:20px;line-height:1.4;}
+  .login-loading{display:none;text-align:center;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:12px;padding:20px 0;}
+  body.auth-checking .login-loading{display:block;}
+  body.auth-checking .login-form{display:none;}
+  .login-form{display:none;}
+  body.auth-out .login-form{display:block;}
+  .login-form .field{margin-bottom:12px;}
+  .login-form label{font-size:10.5px;color:var(--muted);font-weight:600;display:block;margin-bottom:4px;}
+  .login-form input{width:100%;}
+  #loginBtn{
+    width:100%;margin-top:6px;background:var(--accent-dark);color:#fff;border:none;
+    padding:10px;font-weight:600;font-size:12.5px;cursor:pointer;border-radius:2px;
+  }
+  #loginBtn:hover{opacity:.85;}
+  #loginBtn:disabled{opacity:.6;cursor:default;}
+  #loginError{
+    font-size:11px;color:var(--danger);margin-top:10px;min-height:14px;line-height:1.4;
+  }
+  #loginNote{
+    font-size:10.5px;color:var(--accent-dark);margin-top:8px;min-height:14px;line-height:1.4;
+  }
+  .logout-btn{
+    font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:11px;
+    background:transparent;color:var(--ink);border:1px solid var(--ink);padding:7px 11px;
+    border-radius:2px;cursor:pointer;white-space:nowrap;
+  }
+  .logout-btn:hover{background:var(--ink);color:var(--paper);}
+  #loginUserTag{font-size:10.5px;color:var(--muted);font-family:'IBM Plex Mono',monospace;}
+</style>
+</head>
+<body class="auth-checking">
+
+<div class="labo-standalone-overlay" id="laboStandaloneOverlay">
+  <div class="labo-standalone-modal">
+    <div class="labo-standalone-header">
+      <span>
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18 2H8a2 2 0 0 0-2 2v.5A1.5 1.5 0 0 0 4.5 6H4v13.5A2.5 2.5 0 0 0 6.5 22h5.79c-.85-1-1.29-2.28-1.29-3.5a5.5 5.5 0 0 1 3-4.9V9a1 1 0 0 1 1-1h.5a.5.5 0 0 0 0-1H14a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h.5a.5.5 0 0 0 0-1H9.5a.5.5 0 0 0 0 1H10a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-.5a.5.5 0 0 0 0 1H10a1 1 0 0 1 1 1v.09A5.49 5.49 0 0 1 15.5 9V6.5A1.5 1.5 0 0 0 14 5V4a2 2 0 0 0 2-2h2Z"/><path d="M17 12a3.5 3.5 0 0 0-1 6.85V21a2 2 0 0 0 4 0v-2.15A3.5 3.5 0 0 0 17 12Zm-1 3.5a1 1 0 1 1 2 0v3a1 1 0 0 1-2 0Z"/></svg>
+        LABORATORIO — Transformador de resultados
+      </span>
+      <button type="button" class="labo-standalone-close" id="laboStandaloneCloseBtn" title="Cerrar">×</button>
+    </div>
+    <iframe id="laboStandaloneFrame" title="Transformador de laboratorio" src=""></iframe>
+  </div>
+</div>
+
+<div class="login-overlay">
+  <div class="login-card">
+    <span class="mark"></span>
+    <h1></h1>
+    <div class="sub">Acceso restringido. Ingresá con el correo y contraseña habilitados para este equipo.</div>
+    <div class="sub" style="margin-top:-14px;margin-bottom:18px;">La sesión se cierra sola a los 5 min sin uso, o al cerrar esta ventana.</div>
+
+    <div class="login-loading">Verificando sesión…</div>
+
+    <div class="login-form">
+      <div class="field">
+        <label for="loginEmail">Correo electrónico</label>
+        <input type="text" id="loginEmail" autocomplete="username" placeholder="nombre@ejemplo.com">
+      </div>
+      <div class="field">
+        <label for="loginPassword">Contraseña</label>
+        <input type="password" id="loginPassword" autocomplete="current-password">
+      </div>
+      <button type="button" id="loginBtn">Ingresar</button>
+      <div id="loginError"></div>
+      <div id="loginNote"></div>
+    </div>
+  </div>
+</div>
+
+
+<header>
+  <div class="brand">
+    <span class="mark">PASE·04</span>
+    <div>
+      <h1></h1>
+      <div class="sub">archivero por cama · antagonistas automáticos · EVOL por checklist</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:14px;">
+    <a href="index.html" class="back-home-btn" title="Volver al panel principal">← Inicio</a>
+    <button type="button" class="header-labo-btn" id="openLaboStandaloneBtn">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18 2H8a2 2 0 0 0-2 2v.5A1.5 1.5 0 0 0 4.5 6H4v13.5A2.5 2.5 0 0 0 6.5 22h5.79c-.85-1-1.29-2.28-1.29-3.5a5.5 5.5 0 0 1 3-4.9V9a1 1 0 0 1 1-1h.5a.5.5 0 0 0 0-1H14a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h.5a.5.5 0 0 0 0-1H9.5a.5.5 0 0 0 0 1H10a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-.5a.5.5 0 0 0 0 1H10a1 1 0 0 1 1 1v.09A5.49 5.49 0 0 1 15.5 9V6.5A1.5 1.5 0 0 0 14 5V4a2 2 0 0 0 2-2h2Z"/><path d="M17 12a3.5 3.5 0 0 0-1 6.85V21a2 2 0 0 0 4 0v-2.15A3.5 3.5 0 0 0 17 12Zm-1 3.5a1 1 0 1 1 2 0v3a1 1 0 0 1-2 0Z"/></svg>
+      Transformador de LABO
+    </button>
+    <span id="loginUserTag"></span>
+    <button type="button" class="logout-btn" id="logoutBtn">Cerrar sesión</button>
+    <div class="sub" id="clock"></div>
+  </div>
+</header>
+
+<main>
+
+  <div class="sidebar">
+    <h2>Archivero de pacientes</h2>
+    <input type="text" id="patientSearch" placeholder="Buscar por cama o nombre...">
+    <div class="folder-list" id="patientList"></div>
+    <button id="addPatientBtn">+ Nueva carpeta (paciente)</button>
+    <div class="persist-box">
+      <button id="saveAllBtn">Exportar copia (.json)</button>
+      <button id="loadAllBtn">Importar copia (.json)</button>
+      <input type="file" id="loadFileInput" accept="application/json" style="display:none">
+      <button id="clearAllBtn" class="danger">Borrar toda la base</button>
+      <div class="persist-note">Los datos quedan guardados automáticamente en este navegador y esta computadora. Exportá una copia de vez en cuando por las dudas — si abrís el archivo en otra PC o navegador, no vas a ver lo cargado acá salvo que importes esa copia.</div>
+    </div>
+  </div>
+
+  <div class="form-col" id="formCol"></div>
+
+  <div class="out-col">
+    <div class="actions">
+      <button class="secondary" id="copyBtn">Copiar pase completo</button>
+      <button class="secondary" id="printBtn">Imprimir</button>
+    </div>
+    <div class="status" id="status"></div>
+    <div class="preview-scroll" id="preview"></div>
+  </div>
+
+</main>
+
+<footer>generador local — los datos no se envían a ningún servidor, se procesan y guardan en este navegador.</footer>
+<div id="printSingleTarget"></div>
+
+<script>
+/* ================= Definición de sistemas para EVOL ================= */
+const SISTEMAS = {
+  neuro: { label:'Neurológico',
+    normal:[
+      {id:'vigil',text:'vigil',antagonistas:['somnoliento','glasgow']},
+      {id:'reactivo',text:'reactivo',antagonistas:[]},
+      {id:'colaborador',text:'colaborador',antagonistas:['excitacion']},
+      {id:'orientado3',text:'orientado en las 3 esferas',antagonistas:['desorientado','confuso']},
+      {id:'sinfoco',text:'sin signos de foco motor',antagonistas:['focomotor']}
+    ],
+    alteraciones:[
+      {id:'desorientado',text:'desorientado',detail:true,detailLabel:'esfera(s)',antagonistas:['orientado3']},
+      {id:'glasgow',text:'Glasgow disminuido',detail:true,detailLabel:'puntaje',antagonistas:['vigil']},
+      {id:'focomotor',text:'foco motor',detail:true,detailLabel:'descripción',antagonistas:['sinfoco']},
+      {id:'excitacion',text:'excitación psicomotriz',antagonistas:['colaborador']},
+      {id:'somnoliento',text:'tendencia al sueño / somnoliento',antagonistas:['vigil']},
+      {id:'confuso',text:'confuso',antagonistas:['orientado3']}
+    ]
+  },
+  cv: { label:'Cardiovascular',
+    normal:[
+      {id:'r1r2',text:'R1 y R2 en 4 focos',antagonistas:[]},
+      {id:'ritmoregular',text:'ritmo regular',antagonistas:['arritmia']},
+      {id:'silencios',text:'silencios impresionan libres',antagonistas:['soplo']},
+      {id:'sinfallo',text:'sin signos de fallo de bomba',antagonistas:['fallo']},
+      {id:'iy',text:'IY 2/3 con colapso inspiratorio',antagonistas:['fallo']},
+      {id:'rhyneg',text:'reflejo hepatoyugular negativo',antagonistas:['rhypos']},
+      {id:'decubito',text:'tolera decúbito dorsal',antagonistas:['nodecubito']},
+      {id:'pulsos',text:'pulsos periféricos conservados',antagonistas:['pulsosdism']}
+    ],
+    alteraciones:[
+      {id:'arritmia',text:'arritmia / ritmo irregular',detail:true,detailLabel:'detalle',antagonistas:['ritmoregular']},
+      {id:'soplo',text:'soplo',detail:true,detailLabel:'foco / intensidad',antagonistas:['silencios']},
+      {id:'fallo',text:'signos de fallo de bomba',antagonistas:['sinfallo','iy']},
+      {id:'rhypos',text:'reflejo hepatoyugular positivo',antagonistas:['rhyneg']},
+      {id:'nodecubito',text:'no tolera decúbito dorsal',antagonistas:['decubito']},
+      {id:'pulsosdism',text:'pulsos periféricos disminuidos',antagonistas:['pulsos']}
+    ],
+    estudio:true
+  },
+  resp: { label:'Respiratorio',
+    normal:[
+      {id:'mecanica',text:'mecánica ventilatoria conservada',antagonistas:['tiraje']},
+      {id:'mv',text:'murmullo vesicular conservado bilateral',antagonistas:['mvdism']},
+      {id:'sinagregados',text:'sin ruidos agregados',antagonistas:['crepitantes','sibilancias','roncus']},
+      {id:'sintiraje',text:'sin tiraje',antagonistas:['tiraje']},
+      {id:'sat',text:'saturando adecuadamente al aire ambiente',antagonistas:['o2sup']}
+    ],
+    alteraciones:[
+      {id:'crepitantes',text:'crepitantes',detail:true,detailLabel:'ubicación',antagonistas:['sinagregados']},
+      {id:'sibilancias',text:'sibilancias',detail:true,detailLabel:'ubicación',antagonistas:['sinagregados']},
+      {id:'roncus',text:'roncus',detail:true,detailLabel:'ubicación',antagonistas:['sinagregados']},
+      {id:'tiraje',text:'tiraje',antagonistas:['mecanica','sintiraje']},
+      {id:'o2sup',text:'requerimiento de oxígeno suplementario',detail:true,detailLabel:'cantidad / dispositivo',antagonistas:['sat']},
+      {id:'mvdism',text:'murmullo vesicular disminuido / abolido',detail:true,detailLabel:'ubicación',antagonistas:['mv']}
+    ]
+  },
+  dig: { label:'Digestivo',
+    normal:[
+      {id:'blando',text:'blando',antagonistas:['defensa']},
+      {id:'depresible',text:'depresible',antagonistas:['distendido']},
+      {id:'indoloro',text:'indoloro',antagonistas:['doloroso']},
+      {id:'rha',text:'RHA presentes',variants:['RHA presentes','RHA (+)'],antagonistas:['rhadism']},
+      {id:'catarsispos',text:'catarsis positiva',antagonistas:['catarsisneg']}
+    ],
+    alteraciones:[
+      {id:'doloroso',text:'doloroso a la palpación',detail:true,detailLabel:'localización',antagonistas:['indoloro']},
+      {id:'distendido',text:'distendido',antagonistas:['depresible']},
+      {id:'rhadism',text:'RHA disminuidos / ausentes',variants:['RHA disminuidos / ausentes','RHA (-)'],antagonistas:['rha']},
+      {id:'catarsisneg',text:'catarsis negativa',detail:true,detailLabel:'días de evolución',antagonistas:['catarsispos']},
+      {id:'defensa',text:'defensa / reacción peritoneal',antagonistas:['blando']},
+      {id:'masa',text:'masa palpable',detail:true,detailLabel:'descripción'}
+    ]
+  },
+  renal: { label:'Renal',
+    normal:[
+      {id:'diuresispos',text:'Diuresis (+)',antagonistas:['diuresisneg']}
+    ],
+    alteraciones:[
+      {id:'diuresisneg',text:'Oliguria / diuresis disminuida (-)',detail:true,detailLabel:'ml aprox.',antagonistas:['diuresispos']}
+    ]
+  },
+  miembros: { label:'Miembros',
+    normal:[
+      {id:'sinedema',text:'sin edemas',antagonistas:['edema']},
+      {id:'sinflogosis',text:'sin flogosis',antagonistas:['flogosis']},
+      {id:'sinflebitis',text:'sin signos de flebitis',antagonistas:['flebitis']},
+      {id:'pielsp',text:'piel sin particularidades',antagonistas:['lesionpiel']},
+      {id:'perfusionok',text:'perfusión distal conservada',antagonistas:['perfusionmala']}
+    ],
+    alteraciones:[
+      {id:'edema',text:'edema en miembros inferiores',detail:true,detailLabel:'grado / localización',antagonistas:['sinedema']},
+      {id:'flogosis',text:'flogosis',detail:true,detailLabel:'localización',antagonistas:['sinflogosis']},
+      {id:'flebitis',text:'signos de flebitis',detail:true,detailLabel:'localización',antagonistas:['sinflebitis']},
+      {id:'lesionpiel',text:'lesión / alteración en la piel',detail:true,detailLabel:'descripción',antagonistas:['pielsp']},
+      {id:'perfusionmala',text:'perfusión distal disminuida',antagonistas:['perfusionok']}
+    ]
+  },
+  infecto: { label:'Infectológico', opcional:true,
+    normal:[
+      {id:'buenaevol',text:'buena evolución del cuadro infeccioso',antagonistas:[]},
+      {id:'afebril',text:'afebril',antagonistas:['febril']},
+      {id:'descensoleuco',text:'descenso de leucocitosis',antagonistas:['ascensoleuco']}
+    ],
+    alteraciones:[
+      {id:'febril',text:'febril',detail:true,detailLabel:'temperatura',antagonistas:['afebril']},
+      {id:'ascensoleuco',text:'leucocitosis en ascenso',antagonistas:['descensoleuco']},
+      {id:'sinrespuesta',text:'sin respuesta al tratamiento actual',antagonistas:[]}
+    ]
+  }
+};
+
+const SYS_ORDER = ['neuro','cv','resp','dig','renal','miembros','infecto'];
+const STORAGE_PATIENTS = 'pase_sala_patients_v1';
+const STORAGE_CUSTOM = 'pase_sala_custom_v1';
+
+let patients = [];
+let customItems = {};
+let selectedId = null;
+let counter = 0;
+let sidebarFilter = '';
+let fechaAutoSync = true;
+
+function fld(id){ return document.getElementById(id); }
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtFechaDMY(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; }
+
+function newPatient(){
+  counter++;
+  return { id:'p'+counter, cama:'', nombre:'', edad:'', ant:'', mi:[], asoc:[], cult:'', evol:'', evolCount:0, lastEstado:'', labo:'', img:'', pend:'', plan:'' };
+}
+
+/* ================= Persistencia local ================= */
+function saveLocal(){
+  try{ localStorage.setItem(STORAGE_PATIENTS, JSON.stringify(patients)); }catch(e){}
+}
+function saveCustomLocal(){
+  try{ localStorage.setItem(STORAGE_CUSTOM, JSON.stringify(customItems)); }catch(e){}
+}
+function loadLocal(){
+  try{
+    const raw = localStorage.getItem(STORAGE_PATIENTS);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(Array.isArray(parsed)) patients = parsed;
+    }
+    const rawC = localStorage.getItem(STORAGE_CUSTOM);
+    if(rawC){
+      const parsedC = JSON.parse(rawC);
+      if(parsedC && typeof parsedC === 'object') customItems = parsedC;
+    }
+  }catch(e){}
+  if(patients.length){
+    counter = Math.max(...patients.map(p=>parseInt((p.id||'p0').replace('p',''))||0));
+    selectedId = patients[0].id;
+  }
+}
+
+/* ================= Pacientes ================= */
+function addPatient(){
+  const p = newPatient();
+  patients.push(p);
+  selectedId = p.id;
+  renderAll();
+}
+function removePatient(id){
+  if(!confirm('¿Eliminar esta carpeta de paciente? Esta acción no se puede deshacer.')) return;
+  patients = patients.filter(p=>p.id!==id);
+  if(selectedId===id) selectedId = patients.length ? patients[0].id : null;
+  renderAll();
+}
+function getSelected(){ return patients.find(p=>p.id===selectedId); }
+
+function vaciarCarpeta(p){
+  const camaTxt = p.cama ? `de la cama ${p.cama}` : '';
+  if(!confirm(`¿Vaciar la carpeta ${camaTxt}? Se van a borrar todos los datos del paciente actual (nombre, EVOL, MI, ASOC, etc.). La carpeta queda con el mismo número de cama, lista para el próximo paciente.`)) return;
+  const cama = p.cama;
+  p.nombre=''; p.edad=''; p.ant=''; p.mi=[]; p.asoc=[]; p.cult='';
+  p.evol=''; p.evolCount=0; p.lastEstado=''; p.lastChecklist=null;
+  p.labo=''; p.img=''; p.pend=''; p.plan='';
+  p.cama = cama;
+  renderAll();
+}
+
+function sortedPatients(){
+  return [...patients].sort((a,b)=>{
+    const na = parseInt((a.cama||'').replace(/[^0-9]/g,'')) || 0;
+    const nb = parseInt((b.cama||'').replace(/[^0-9]/g,'')) || 0;
+    if(na!==nb) return na-nb;
+    return (a.cama||'').localeCompare(b.cama||'');
+  });
+}
+
+function estadoClass(p){
+  if(!p.lastEstado) return '';
+  if(p.lastEstado.indexOf('estables')===0) return 'tab-estable';
+  if(p.lastEstado.indexOf('regulares')===0) return 'tab-regular';
+  if(p.lastEstado.indexOf('mal')===0) return 'tab-malo';
+  return '';
+}
+
+/* ================= Sidebar ================= */
+function renderSidebar(){
+  const list = fld('patientList');
+  list.innerHTML='';
+  const f = sidebarFilter.trim().toLowerCase();
+  sortedPatients().forEach(p=>{
+    const label = (p.cama?p.cama+' — ':'')+(p.nombre||'Sin nombre');
+    if(f && label.toLowerCase().indexOf(f)===-1) return;
+    const chip = document.createElement('div');
+    chip.className = 'patient-chip'+(p.id===selectedId?' active':'')+' '+estadoClass(p);
+    const dot = (p.pend && p.pend.trim()) ? '<span class="pend-dot" title="Tiene pendientes"></span>' : '';
+    chip.innerHTML = `<span class="name">${escapeHtml(label)}</span>${dot}<button class="del" title="Eliminar">×</button>`;
+    chip.querySelector('.name').addEventListener('click',()=>{selectedId=p.id;renderAll();});
+    chip.querySelector('.del').addEventListener('click',(e)=>{e.stopPropagation();removePatient(p.id);});
+    list.appendChild(chip);
+  });
+}
+
+/* ================= Listas MI / ASOC (editables, activo-resuelto) ================= */
+function renderItemList(containerId, patient, field){
+  const box = fld(containerId);
+  box.innerHTML='';
+  patient[field].forEach(item=>{
+    const row = document.createElement('div');
+    row.className = 'item-row'+(item.resuelto?' resuelto':'');
+    row.innerHTML = `
+      <span class="txt" contenteditable="true" spellcheck="false">${escapeHtml(item.text)}</span>
+      <label class="res"><input type="checkbox" ${item.resuelto?'checked':''}> resuelto</label>
+      <button class="del">×</button>
+    `;
+    const txtEl = row.querySelector('.txt');
+    txtEl.addEventListener('blur',(e)=>{
+      item.text = e.target.textContent.trim();
+      renderPreview();
+    });
+    txtEl.addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ e.preventDefault(); e.target.blur(); } });
+    row.querySelector('input[type=checkbox]').addEventListener('change',(e)=>{
+      item.resuelto = e.target.checked;
+      renderPreview();
+      renderItemList(containerId, patient, field);
+    });
+    row.querySelector('.del').addEventListener('click',()=>{
+      patient[field] = patient[field].filter(i=>i!==item);
+      renderItemList(containerId, patient, field);
+      renderPreview();
+    });
+    box.appendChild(row);
+  });
+}
+
+/* ================= Formulario principal ================= */
+function renderForm(){
+  const col = fld('formCol');
+  const p = getSelected();
+  if(!p){
+    col.innerHTML = '<p class="empty-note">Agregá un paciente para empezar a cargar datos.</p>';
+    return;
+  }
+
+  col.innerHTML = `
+    <div class="patient-actions">
+      <button type="button" class="secondary small" id="copyPatientBtn">Copiar esta ficha</button>
+      <button type="button" class="secondary small" id="printPatientBtn">Imprimir esta ficha</button>
+      <button type="button" class="secondary small danger" id="vaciarPatientBtn">Vaciar carpeta (alta)</button>
+    </div>
+    <fieldset>
+      <legend>Identificación</legend>
+      <div class="grid3">
+        <div class="field"><label>Cama</label><input type="text" data-f="cama" placeholder="Ej: C103"></div>
+        <div class="field" style="grid-column:span 2;"><label>Nombre</label><input type="text" data-f="nombre"></div>
+      </div>
+      <div class="field"><label>Edad</label><input type="text" data-f="edad" placeholder="Ej: 68 años"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>ANT — Antecedentes personales</legend>
+      <div class="field"><textarea data-f="ant"></textarea></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>MI — Motivo de internación (ítems, editables)</legend>
+      <div class="item-list" id="miList"></div>
+      <div class="add-item-row">
+        <input type="text" id="miNuevo" placeholder="Nuevo ítem de MI">
+        <button id="miAddBtn">Agregar</button>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>ASOC — Diagnósticos asociados (ítems, editables)</legend>
+      <div class="item-list" id="asocList"></div>
+      <div class="add-item-row">
+        <input type="text" id="asocNuevo" placeholder="Nuevo diagnóstico asociado">
+        <button id="asocAddBtn">Agregar</button>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>CULT — Cultivos</legend>
+      <div class="field"><textarea data-f="cult"></textarea></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>EVOL — Evolución</legend>
+      <div id="evolBuilder"></div>
+      <div class="field"><label>Texto acumulado de EVOL (editable — lo nuevo se agrega arriba)</label><textarea class="tall" data-f="evol"></textarea></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>LABO — Laboratorio</legend>
+      <div class="field"><textarea class="tall" data-f="labo" placeholder="26/8 H 6/11/34/287 Q 94/70/1.01 Iono 139/4.4/101"></textarea></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>IMG — Imágenes</legend>
+      <div class="field"><textarea class="tall" data-f="img"></textarea></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>PEND — Pendientes</legend>
+      <div class="field"><textarea data-f="pend"></textarea></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>PLAN</legend>
+      <div class="field"><textarea data-f="plan"></textarea></div>
+    </fieldset>
+  `;
+
+  col.querySelectorAll('[data-f]').forEach(el=>{ el.value = p[el.dataset.f]||''; });
+  col.querySelectorAll('[data-f]').forEach(el=>{
+    el.addEventListener('input',()=>{ p[el.dataset.f]=el.value; renderSidebar(); renderPreview(); });
+  });
+
+  renderItemList('miList', p, 'mi');
+  renderItemList('asocList', p, 'asoc');
+
+  fld('miAddBtn').addEventListener('click',()=>{
+    const v = fld('miNuevo').value.trim();
+    if(!v) return;
+    p.mi.push({text:v, resuelto:false});
+    fld('miNuevo').value='';
+    renderItemList('miList', p, 'mi');
+    renderPreview();
+  });
+  fld('miNuevo').addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ e.preventDefault(); fld('miAddBtn').click(); } });
+
+  fld('asocAddBtn').addEventListener('click',()=>{
+    const v = fld('asocNuevo').value.trim();
+    if(!v) return;
+    p.asoc.push({text:v, resuelto:false});
+    fld('asocNuevo').value='';
+    renderItemList('asocList', p, 'asoc');
+    renderPreview();
+  });
+  fld('asocNuevo').addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ e.preventDefault(); fld('asocAddBtn').click(); } });
+
+  renderEvolBuilder(p);
+  fld('addEntryBtn').addEventListener('click', ()=>addEvolEntry(p));
+
+  fld('copyPatientBtn').addEventListener('click', ()=>{
+    navigator.clipboard.writeText(buildPlainText([p])).then(()=>{
+      fld('status').textContent = 'Ficha copiada al portapapeles.';
+      setTimeout(()=>fld('status').textContent='',2500);
+    }).catch(()=>{ fld('status').textContent = 'No se pudo copiar automáticamente.'; });
+  });
+  fld('printPatientBtn').addEventListener('click', ()=> printSinglePatient(p));
+  fld('vaciarPatientBtn').addEventListener('click', ()=> vaciarCarpeta(p));
+}
+
+/* ================= EVOL: checklist builder ================= */
+function getMergedItems(key){
+  const base = SISTEMAS[key];
+  const custom = customItems[key] || {normal:[], alteraciones:[]};
+  return {
+    normal: base.normal.concat(custom.normal||[]),
+    alteraciones: base.alteraciones.concat(custom.alteraciones||[]),
+    opcional: base.opcional, estudio: base.estudio, label: base.label
+  };
+}
+
+function lastChecked(p, key, kind, id, fallback){
+  const lc = p && p.lastChecklist;
+  if(lc && lc.systems && lc.systems[key]){
+    const map = kind==='normal' ? lc.systems[key].normal : lc.systems[key].alt;
+    if(map && Object.prototype.hasOwnProperty.call(map, id)) return !!map[id];
+  }
+  return fallback;
+}
+function lastDetail(p, key, id){
+  const lc = p && p.lastChecklist;
+  if(lc && lc.systems && lc.systems[key] && lc.systems[key].alt){
+    const v = lc.systems[key].alt['detail_'+id];
+    return v || '';
+  }
+  return '';
+}
+
+function renderEvolBuilder(p){
+  const box = fld('evolBuilder');
+  const lastEstado = (p && p.lastChecklist && p.lastChecklist.estado) || 'estables condiciones generales';
+  let html = `
+    <div class="grid2" style="margin-bottom:8px;">
+      <div class="field"><label>Fecha de la entrada (se actualiza sola)</label><input type="date" id="evolFecha"></div>
+      <div class="field"><label>Estado general</label>
+        <select id="evolEstado">
+          <option value="estables condiciones generales">Estables condiciones generales</option>
+          <option value="regulares condiciones generales">Regulares condiciones generales</option>
+          <option value="mal estado general">Mal estado general</option>
+        </select>
+      </div>
+    </div>
+  `;
+
+  SYS_ORDER.forEach(key=>{
+    const sys = getMergedItems(key);
+    const applyChecked = p && p.lastChecklist && p.lastChecklist.systems && p.lastChecklist.systems[key] && p.lastChecklist.systems[key].apply;
+    html += `<div class="sys-block" data-block="${key}">
+      <div class="sys-title">${sys.label}
+        ${sys.opcional ? `<label class="opt-toggle"><input type="checkbox" id="apply_${key}" ${applyChecked?'checked':''}> incluir en esta evolución</label>` : ''}
+      </div>
+      <div class="chk-subtitle">Normal</div>
+      <div class="chk-group">`;
+    sys.normal.forEach(item=>{
+      const checked = lastChecked(p, key, 'normal', item.id, true);
+      html += `<label class="chk-row"><input type="checkbox" data-sys="${key}" data-kind="normal" data-id="${item.id}" ${checked?'checked':''}> ${escapeHtml(item.text)}</label>`;
+    });
+    html += `</div>
+      <div class="add-custom-row">
+        <input type="text" class="customInput" placeholder="+ agregar opción normal">
+        <button type="button" class="addCustomBtn" data-sys="${key}" data-kind="normal">Agregar</button>
+      </div>
+      <div class="chk-subtitle">Alteraciones</div><div class="chk-group">`;
+    sys.alteraciones.forEach(item=>{
+      const checked = lastChecked(p, key, 'alt', item.id, false);
+      const detailVal = item.detail ? lastDetail(p, key, item.id) : '';
+      html += `<label class="chk-row"><input type="checkbox" data-sys="${key}" data-kind="alt" data-id="${item.id}" ${checked?'checked':''}>${escapeHtml(item.text)}`;
+      if(item.detail){
+        html += ` <input type="text" class="detail-input" data-detail-for="${item.id}" data-sys="${key}" placeholder="${escapeHtml(item.detailLabel)}" value="${escapeHtml(detailVal)}">`;
+      }
+      html += `</label>`;
+    });
+    html += `</div>
+      <div class="add-custom-row">
+        <input type="text" class="customInput" placeholder="+ agregar opción alterada">
+        <button type="button" class="addCustomBtn" data-sys="${key}" data-kind="alt">Agregar</button>
+      </div>`;
+    if(sys.estudio){
+      html += `<div class="estudio-row">
+        <select id="evolEstudioTipo">
+          <option value="">— sin estudio —</option>
+          <option value="Ecocardiograma">Ecocardiograma</option>
+          <option value="ECG">ECG</option>
+          <option value="Ecodoppler">Ecodoppler</option>
+          <option value="Rx de tórax">Rx de tórax</option>
+          <option value="Otro estudio">Otro estudio</option>
+        </select>
+        <textarea id="evolEstudioInforme" placeholder="Informe del estudio complementario"></textarea>
+      </div>`;
+    }
+    html += `</div>`;
+  });
+
+  html += `
+    <div class="grid4" style="margin-bottom:8px;">
+      <div class="field"><label>TA</label><input type="text" id="evolTA" placeholder="120/80"></div>
+      <div class="field"><label>FC</label><input type="text" id="evolFC"></div>
+      <div class="field"><label>SatO2</label><input type="text" id="evolSat"></div>
+      <div class="field"><label>T°</label><input type="text" id="evolT"></div>
+    </div>
+    <div class="field"><label>Conducta / otros hallazgos</label><textarea id="evolExtra" placeholder="Se realiza IC con... Se decide iniciar..."></textarea></div>
+    <button id="addEntryBtn">+ Agregar entrada de hoy a EVOL</button>
+  `;
+
+  box.innerHTML = html;
+  fld('evolEstado').value = lastEstado;
+
+  fechaAutoSync = true;
+  fld('evolFecha').value = new Date().toISOString().slice(0,10);
+  fld('evolFecha').addEventListener('input', ()=>{ fechaAutoSync = false; });
+}
+
+function pickVariant(item, patient){
+  if(item.variants && item.variants.length>1){
+    return item.variants[(patient.evolCount||0) % item.variants.length];
+  }
+  return item.text;
+}
+
+function collectSystemPhrase(key, patient){
+  const merged = getMergedItems(key);
+  const parts = [];
+  merged.normal.forEach(item=>{
+    const chk = document.querySelector(`[data-sys="${key}"][data-kind="normal"][data-id="${item.id}"]`);
+    if(chk && chk.checked) parts.push(pickVariant(item, patient));
+  });
+  merged.alteraciones.forEach(item=>{
+    const chk = document.querySelector(`[data-sys="${key}"][data-kind="alt"][data-id="${item.id}"]`);
+    if(chk && chk.checked){
+      let t = pickVariant(item, patient);
+      if(item.detail){
+        const det = document.querySelector(`[data-detail-for="${item.id}"][data-sys="${key}"]`);
+        if(det && det.value.trim()) t += ` (${det.value.trim()})`;
+      }
+      parts.push(t);
+    }
+  });
+  return parts.join(', ');
+}
+
+function captureChecklistState(estado){
+  const state = { estado: estado, systems:{} };
+  SYS_ORDER.forEach(key=>{
+    const merged = getMergedItems(key);
+    const sysState = { normal:{}, alt:{} };
+    merged.normal.forEach(item=>{
+      const chk = document.querySelector(`[data-sys="${key}"][data-kind="normal"][data-id="${item.id}"]`);
+      if(chk) sysState.normal[item.id] = chk.checked;
+    });
+    merged.alteraciones.forEach(item=>{
+      const chk = document.querySelector(`[data-sys="${key}"][data-kind="alt"][data-id="${item.id}"]`);
+      if(chk){
+        sysState.alt[item.id] = chk.checked;
+        if(item.detail){
+          const det = document.querySelector(`[data-detail-for="${item.id}"][data-sys="${key}"]`);
+          sysState.alt['detail_'+item.id] = det ? det.value : '';
+        }
+      }
+    });
+    if(key==='infecto'){
+      const apply = fld('apply_infecto');
+      sysState.apply = apply ? apply.checked : false;
+    }
+    state.systems[key] = sysState;
+  });
+  return state;
+}
+
+function addEvolEntry(p){
+  const fecha = fmtFechaDMY(fld('evolFecha').value) || '(fecha)';
+  const estado = fld('evolEstado').value;
+
+  const neuro = collectSystemPhrase('neuro', p);
+  const cv = collectSystemPhrase('cv', p);
+  const resp = collectSystemPhrase('resp', p);
+  const dig = collectSystemPhrase('dig', p);
+  const renal = collectSystemPhrase('renal', p);
+  const miembros = collectSystemPhrase('miembros', p);
+  const infectoAplica = fld('apply_infecto') && fld('apply_infecto').checked;
+  const infecto = infectoAplica ? collectSystemPhrase('infecto', p) : '';
+
+  const estudioTipo = fld('evolEstudioTipo').value;
+  const estudioInforme = fld('evolEstudioInforme').value.trim();
+
+  const ta = fld('evolTA').value.trim();
+  const fc = fld('evolFC').value.trim();
+  const sat = fld('evolSat').value.trim();
+  const t = fld('evolT').value.trim();
+  const extra = fld('evolExtra').value.trim();
+
+  let intro = `${fecha}: Paciente`;
+  if(p.edad) intro += ` de ${p.edad}`;
+  if(p.ant) intro += `, con antecedentes de ${p.ant}`;
+  intro += `, en ${estado}.`;
+
+  let out = intro + ' ';
+  if(neuro) out += `Neurológicamente ${neuro}. `;
+  if(cv) out += `A nivel cardiovascular, ${cv}. `;
+  if(estudioTipo && estudioInforme) out += `Se recibe informe de ${estudioTipo}: ${estudioInforme}. `;
+  if(resp) out += `A nivel pulmonar, ${resp}. `;
+  if(dig) out += `Abdomen: ${dig}. `;
+  if(renal) out += `A nivel renal, ${renal}. `;
+  if(miembros) out += `Miembros: ${miembros}. `;
+  if(infectoAplica && infecto) out += `Desde el punto de vista infectológico, ${infecto}. `;
+
+  const csv = [];
+  if(ta) csv.push('TA '+ta);
+  if(fc) csv.push('FC '+fc);
+  if(sat) csv.push('SAT '+sat+'%');
+  if(t) csv.push('T° '+t);
+  if(csv.length) out += `CSV: ${csv.join(', ')}. `;
+  if(extra) out += extra;
+
+  out = out.trim();
+  p.evol = p.evol ? (out + '\n\n' + p.evol) : out;
+  p.evolCount = (p.evolCount||0) + 1;
+  p.lastEstado = estado;
+  p.lastChecklist = captureChecklistState(estado);
+
+  renderForm();
+  renderPreview();
+  const status = fld('status');
+  status.textContent = 'Entrada de EVOL agregada.';
+  setTimeout(()=>status.textContent='',2000);
+}
+
+/* ================= Antagonistas: desmarcado automático ================= */
+document.body.addEventListener('change', (e)=>{
+  const el = e.target;
+  if(el.type !== 'checkbox' || !el.dataset || !el.dataset.sys) return;
+  if(!el.checked) return;
+  const sysKey = el.dataset.sys;
+  const id = el.dataset.id;
+  const merged = getMergedItems(sysKey);
+  const allItems = merged.normal.concat(merged.alteraciones);
+  const def = allItems.find(i=>i.id===id);
+  if(def && def.antagonistas && def.antagonistas.length){
+    def.antagonistas.forEach(antId=>{
+      const antChk = document.querySelector(`[data-sys="${sysKey}"][data-id="${antId}"]`);
+      if(antChk && antChk.checked){
+        antChk.checked = false;
+        const det = document.querySelector(`[data-detail-for="${antId}"][data-sys="${sysKey}"]`);
+        if(det) det.value = '';
+      }
+    });
+  }
+});
+
+/* ================= Agregar opciones personalizadas por sistema ================= */
+document.body.addEventListener('click', (e)=>{
+  if(!e.target.classList || !e.target.classList.contains('addCustomBtn')) return;
+  const sysKey = e.target.dataset.sys;
+  const kind = e.target.dataset.kind;
+  const input = e.target.previousElementSibling;
+  const text = input.value.trim();
+  if(!text) return;
+  if(!customItems[sysKey]) customItems[sysKey] = {normal:[], alteraciones:[]};
+  const listKey = kind === 'normal' ? 'normal' : 'alteraciones';
+  customItems[sysKey][listKey].push({ id:'custom_'+Date.now(), text: text, antagonistas:[] });
+  saveCustomLocal();
+  renderEvolBuilder(getSelected());
+});
+
+/* ================= Reloj de fecha en tiempo real ================= */
+setInterval(()=>{
+  const input = fld('evolFecha');
+  if(!input) return;
+  if(fechaAutoSync){
+    const today = new Date().toISOString().slice(0,10);
+    if(input.value !== today) input.value = today;
+  }
+}, 20000);
+
+/* ================= Preview ================= */
+function itemListHtml(items){
+  if(!items || items.length===0) return '';
+  return '<ul>' + items.map(i=>`<li class="${i.resuelto?'resuelto':''}">${escapeHtml(i.text)}</li>`).join('') + '</ul>';
+}
+
+function rowsFor(p){
+  return [
+    ['ANT', escapeHtml(p.ant)],
+    ['MI', itemListHtml(p.mi)],
+    ['CULT', escapeHtml(p.cult)],
+    ['ASOC', itemListHtml(p.asoc)],
+    ['EVOL', escapeHtml(p.evol)],
+    ['LABO', escapeHtml(p.labo)],
+    ['IMG', escapeHtml(p.img)],
+    ['PEND', escapeHtml(p.pend)],
+    ['PLAN', escapeHtml(p.plan)]
+  ];
+}
+
+function patientTableHtml(p){
+  const headInfo = (p.nombre||'Sin nombre') + (p.edad ? ' — '+p.edad : '');
+  let html = `<table class="pase">
+    <tr class="head"><td class="cama">${escapeHtml(p.cama||'—')}</td><td>${escapeHtml(headInfo)}</td></tr>`;
+  rowsFor(p).forEach(([label, val])=>{
+    html += `<tr><td class="label">${label}</td><td class="content">${val||''}</td></tr>`;
+  });
+  html += `</table>`;
+  return html;
+}
+
+function renderPreview(){
+  const out = fld('preview');
+  saveLocal();
+  if(patients.length===0){
+    out.innerHTML = '<p class="empty-note">Sin pacientes cargados todavía.</p>';
+    return;
+  }
+  out.innerHTML = sortedPatients().map(patientTableHtml).join('');
+}
+
+function printSinglePatient(p){
+  fld('printSingleTarget').innerHTML = patientTableHtml(p);
+  document.body.classList.add('print-single-mode');
+  window.print();
+}
+window.addEventListener('afterprint', ()=>{ document.body.classList.remove('print-single-mode'); });
+
+function buildPlainText(list){
+  list = list || sortedPatients();
+  let text='';
+  list.forEach(p=>{
+    text += `${p.cama||'—'} | ${p.nombre||'Sin nombre'}${p.edad? ' — '+p.edad:''}\n`;
+    text += `ANT: ${p.ant||''}\n`;
+    text += `MI: ${p.mi.map(i=>(i.resuelto?'[RESUELTO] ':'')+i.text).join(' / ')}\n`;
+    text += `CULT: ${p.cult||''}\n`;
+    text += `ASOC: ${p.asoc.map(i=>(i.resuelto?'[RESUELTO] ':'')+i.text).join(' / ')}\n`;
+    text += `EVOL: ${p.evol||''}\n`;
+    text += `LABO: ${p.labo||''}\n`;
+    text += `IMG: ${p.img||''}\n`;
+    text += `PEND: ${p.pend||''}\n`;
+    text += `PLAN: ${p.plan||''}\n\n`;
+  });
+  return text.trim();
+}
+
+function renderAll(){ renderSidebar(); renderForm(); renderPreview(); }
+
+/* ================= Exportar / importar copia ================= */
+function saveAll(){
+  const data = JSON.stringify({patients, savedAt:new Date().toISOString()}, null, 2);
+  const blob = new Blob([data], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `fichas_pase_sala_${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+function loadAllFromFile(file){
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const data = JSON.parse(e.target.result);
+      if(data.patients && Array.isArray(data.patients)){
+        patients = data.patients;
+        counter = patients.length ? Math.max(...patients.map(p=>parseInt((p.id||'p0').replace('p',''))||0)) : 0;
+        selectedId = patients.length ? patients[0].id : null;
+        renderAll();
+        fld('status').textContent = 'Copia importada correctamente.';
+        setTimeout(()=>fld('status').textContent='',2500);
+      } else {
+        fld('status').textContent = 'El archivo no tiene el formato esperado.';
+      }
+    }catch(err){
+      fld('status').textContent = 'No se pudo leer el archivo.';
+    }
+  };
+  reader.readAsText(file);
+}
+
+fld('addPatientBtn').addEventListener('click', addPatient);
+fld('saveAllBtn').addEventListener('click', saveAll);
+fld('loadAllBtn').addEventListener('click', ()=>fld('loadFileInput').click());
+fld('loadFileInput').addEventListener('change', (e)=>{
+  if(e.target.files[0]) loadAllFromFile(e.target.files[0]);
+  e.target.value='';
+});
+fld('clearAllBtn').addEventListener('click', ()=>{
+  if(!confirm('¿Borrar TODA la base de pacientes guardada en esta computadora? Esta acción no se puede deshacer.')) return;
+  patients = [];
+  localStorage.removeItem(STORAGE_PATIENTS);
+  addPatient();
+});
+fld('patientSearch').addEventListener('input', (e)=>{ sidebarFilter = e.target.value; renderSidebar(); });
+
+fld('copyBtn').addEventListener('click', ()=>{
+  navigator.clipboard.writeText(buildPlainText()).then(()=>{
+    fld('status').textContent = 'Pase completo copiado al portapapeles.';
+    setTimeout(()=>fld('status').textContent='',2500);
+  }).catch(()=>{ fld('status').textContent = 'No se pudo copiar automáticamente.'; });
+});
+fld('printBtn').addEventListener('click', ()=>window.print());
+
+(function(){
+  const today = new Date();
+  fld('clock').textContent = today.toLocaleDateString('es-AR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+})();
+
+function iniciarAppPrincipal(){
+  if(window.__paseAppIniciada) return;
+  window.__paseAppIniciada = true;
+  loadLocal();
+  if(patients.length===0){ addPatient(); } else { renderAll(); }
+}
+window.iniciarAppPrincipal = iniciarAppPrincipal;
+</script>
+
+<script>
+/* ================= Botón interno "Transformador de LABO" =================
+   El transformador vive en conversor-labo.html (mismo directorio que este
+   archivo). Acá solo se abre/cierra el modal y se carga ese archivo en un
+   iframe la primera vez que se necesita, así cualquier cambio futuro se
+   hace únicamente en conversor-labo.html sin tocar pase_guardia.html.
+
+   *** IMPORTANTE — CACHÉ DEL NAVEGADOR ***
+   Cada vez que subas una modificación nueva a conversor-labo.html, cambiá el
+   valor de LABO_VERSION de acá abajo (por ejemplo a la fecha del día, o
+   sumale 1). Eso agrega un "?v=..." distinto a la URL del iframe, y como el
+   navegador lo trata como una URL nueva, va a descargar la versión fresca en
+   vez de servir una copia vieja guardada en caché. Si no cambiás este valor,
+   algunos dispositivos podrían seguir viendo la versión anterior por un
+   tiempo aunque el archivo en GitHub ya esté actualizado. */
+  const LABO_VERSION = '2026-09-02-1';
+(function(){
+  const overlay = document.getElementById('laboStandaloneOverlay');
+  const frame = document.getElementById('laboStandaloneFrame');
+  const openBtn = document.getElementById('openLaboStandaloneBtn');
+  const closeBtn = document.getElementById('laboStandaloneCloseBtn');
+
+  function openLaboStandalone(){
+    if(!frame.dataset.loaded){
+      frame.src = 'conversor-labo.html?v=' + encodeURIComponent(LABO_VERSION);
+      frame.dataset.loaded = '1';
+    }
+    overlay.classList.add('open');
+  }
+  function closeLaboStandalone(){
+    overlay.classList.remove('open');
+  }
+
+  openBtn.addEventListener('click', openLaboStandalone);
+  closeBtn.addEventListener('click', closeLaboStandalone);
+  overlay.addEventListener('click', (e)=>{
+    if(e.target === overlay) closeLaboStandalone();
+  });
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape' && overlay.classList.contains('open')) closeLaboStandalone();
+  });
+})();
+</script>
+
+<script type="module">
+/* ================= Login con Firebase Authentication ================= */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import {
+  getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut,
+  setPersistence, browserSessionPersistence
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBYTf3p2WoKckSI8wGvi5jxvYPOghlMNqo",
+  authDomain: "gestor-9271f.firebaseapp.com",
+  projectId: "gestor-9271f",
+  storageBucket: "gestor-9271f.firebasestorage.app",
+  messagingSenderId: "765485190604",
+  appId: "1:765485190604:web:38ed43e7d1decba8b7e169",
+  measurementId: "G-RFHMGTL3L6"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+// Persistencia "de sesión": la sesión vive mientras la pestaña/ventana está
+// abierta. Al cerrar la ventana del navegador, Firebase la descarta sola y
+// la próxima vez pide login de nuevo. (Recargar la página SÍ mantiene la sesión.)
+setPersistence(auth, browserSessionPersistence).catch(()=>{});
+
+const $body = document.body;
+const $email = document.getElementById('loginEmail');
+const $password = document.getElementById('loginPassword');
+const $loginBtn = document.getElementById('loginBtn');
+const $loginError = document.getElementById('loginError');
+const $loginNote = document.getElementById('loginNote');
+const $userTag = document.getElementById('loginUserTag');
+const $logoutBtn = document.getElementById('logoutBtn');
+
+function traducirErrorAuth(code){
+  switch(code){
+    case 'auth/invalid-email': return 'El correo no tiene un formato válido.';
+    case 'auth/user-disabled': return 'Este usuario está deshabilitado.';
+    case 'auth/user-not-found':
+    case 'auth/wrong-password':
+    case 'auth/invalid-credential': return 'Correo o contraseña incorrectos.';
+    case 'auth/too-many-requests': return 'Demasiados intentos. Probá de nuevo en unos minutos.';
+    case 'auth/network-request-failed': return 'Sin conexión a internet.';
+    default: return 'No se pudo iniciar sesión (' + code + ').';
+  }
+}
+
+async function intentarLogin(){
+  const email = $email.value.trim();
+  const pass = $password.value;
+  if(!email || !pass){
+    $loginError.textContent = 'Completá el correo y la contraseña.';
+    return;
+  }
+  $loginBtn.disabled = true;
+  $loginBtn.textContent = 'Ingresando…';
+  $loginError.textContent = '';
+  try{
+    await signInWithEmailAndPassword(auth, email, pass);
+    $password.value = '';
+  }catch(err){
+    $loginError.textContent = traducirErrorAuth(err.code || '');
+  }finally{
+    $loginBtn.disabled = false;
+    $loginBtn.textContent = 'Ingresar';
+  }
+}
+
+$loginBtn.addEventListener('click', intentarLogin);
+$password.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); intentarLogin(); } });
+$email.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); intentarLogin(); } });
+
+$logoutBtn.addEventListener('click', ()=>{
+  if(!confirm('¿Cerrar sesión en este equipo?')) return;
+  cierreManual = true;
+  signOut(auth);
+});
+
+/* ================= Cierre automático por inactividad (5 min) ================= */
+const INACTIVITY_LIMIT_MS = 5 * 60 * 1000;
+let inactivityTimer = null;
+let cierreManual = false;
+let cierrePorInactividad = false;
+
+function pausarTimerInactividad(){
+  if(inactivityTimer){ clearTimeout(inactivityTimer); inactivityTimer = null; }
+}
+function reiniciarTimerInactividad(){
+  if(!$body.classList.contains('auth-in')) return;
+  pausarTimerInactividad();
+  inactivityTimer = setTimeout(()=>{
+    cierrePorInactividad = true;
+    signOut(auth);
+  }, INACTIVITY_LIMIT_MS);
+}
+['mousemove','mousedown','keydown','scroll','touchstart','wheel','click'].forEach(evt=>{
+  window.addEventListener(evt, reiniciarTimerInactividad, {passive:true});
+});
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'visible') reiniciarTimerInactividad();
+});
+
+onAuthStateChanged(auth, (user)=>{
+  if(user){
+    $userTag.textContent = user.email || '';
+    $body.className = 'auth-in';
+    if(window.iniciarAppPrincipal) window.iniciarAppPrincipal();
+    reiniciarTimerInactividad();
+  } else {
+    $userTag.textContent = '';
+    $body.className = 'auth-out';
+    pausarTimerInactividad();
+    $loginNote.textContent = cierrePorInactividad
+      ? 'Se cerró la sesión automáticamente por 5 minutos de inactividad.'
+      : '';
+    cierrePorInactividad = false;
+    cierreManual = false;
+  }
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel principal</title>
+<style>
+  :root{
+    --paper:#f6f5f1; --ink:#1c2321; --line:#111111; --line-soft:#c9c4b8;
+    --panel:#ffffff; --accent:#2f5d5a; --accent-dark:#1e403d; --muted:#6b6a63;
+    --field-bg:#fbfaf7; --danger:#8a3324;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Sans','Segoe UI',Arial,sans-serif;min-height:100vh;}
+
+  header{padding:16px clamp(14px,3vw,32px);border-bottom:2px solid var(--ink);display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+  header .brand{display:flex;align-items:baseline;gap:12px;}
+  header .mark{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:12px;letter-spacing:.14em;background:var(--ink);color:var(--paper);padding:4px 8px;}
+  header h1{font-size:17px;margin:0;font-weight:700;}
+  header .sub{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);}
+  header .clock{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);}
+
+  main{max-width:980px;margin:0 auto;padding:clamp(24px,5vw,48px) clamp(14px,3vw,32px);}
+  main > .intro{margin-bottom:26px;}
+  main > .intro p{color:var(--muted);font-size:13px;line-height:1.5;max-width:640px;margin:0;}
+
+  .tool-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;}
+
+  .tool-card{
+    display:flex;flex-direction:column;align-items:flex-start;gap:10px;text-align:left;
+    background:var(--panel);border:2px solid var(--ink);border-radius:4px;
+    padding:20px;cursor:pointer;box-shadow:2px 3px 0 rgba(0,0,0,.06);
+    font-family:inherit;color:var(--ink);
+    transition:transform .08s ease, box-shadow .08s ease;
+  }
+  .tool-card:hover{transform:translateY(-2px);box-shadow:3px 5px 0 rgba(0,0,0,.1);}
+  .tool-card:active{transform:translateY(0);box-shadow:1px 2px 0 rgba(0,0,0,.1);}
+  .tool-card .icon{
+    width:44px;height:44px;border-radius:4px;background:var(--accent-dark);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .tool-card .icon svg{width:24px;height:24px;fill:#fff;}
+  .tool-card h2{font-size:14.5px;margin:0;font-weight:700;}
+  .tool-card p{font-size:12px;color:var(--muted);line-height:1.45;margin:0;}
+  .tool-card .go{
+    margin-top:auto;font-family:'IBM Plex Mono',monospace;font-size:10.5px;
+    letter-spacing:.06em;text-transform:uppercase;color:var(--accent-dark);font-weight:700;
+  }
+
+  .tool-card.placeholder{
+    border-style:dashed;border-color:var(--line-soft);cursor:default;box-shadow:none;color:var(--muted);
+  }
+  .tool-card.placeholder:hover{transform:none;box-shadow:none;}
+  .tool-card.placeholder .icon{background:transparent;border:2px dashed var(--line-soft);}
+  .tool-card.placeholder .icon svg{fill:var(--line-soft);}
+
+  footer{padding:12px clamp(14px,3vw,32px) 22px;font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;text-align:center;}
+
+  /* ===== Modal contenedor del transformador de LABO (conversor-labo.html embebido) ===== */
+  .labo-standalone-overlay{
+    display:none;position:fixed;inset:0;background:rgba(28,35,33,.6);
+    z-index:1200;align-items:flex-start;justify-content:center;padding:clamp(10px,3vh,40px) 14px;overflow:auto;
+  }
+  .labo-standalone-overlay.open{display:flex;}
+  .labo-standalone-modal{
+    background:var(--panel);border:2px solid var(--ink);border-radius:4px;
+    width:100%;max-width:1220px;height:min(88vh,900px);box-shadow:0 14px 46px rgba(0,0,0,.35);
+    display:flex;flex-direction:column;overflow:hidden;
+  }
+  .labo-standalone-header{
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+    padding:11px 16px;border-bottom:2px solid var(--ink);background:var(--panel);flex-shrink:0;
+  }
+  .labo-standalone-header span{font-weight:700;font-size:13.5px;display:flex;align-items:center;gap:8px;}
+  .labo-standalone-header svg{width:18px;height:18px;fill:var(--accent-dark);}
+  .labo-standalone-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink);line-height:1;padding:2px 6px;flex-shrink:0;}
+  .labo-standalone-close:hover{color:var(--danger);}
+  .labo-standalone-modal iframe{flex:1;width:100%;border:none;background:var(--paper);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="mark">PASE</span>
+    <div>
+      <h1>Panel principal</h1>
+      <div class="sub">accesos a las herramientas — cada una vive en su propio archivo</div>
+    </div>
+  </div>
+  <div class="clock" id="clock"></div>
+</header>
+
+<main>
+  <div class="intro">
+    <p>Elegí una herramienta para empezar. Con el tiempo se van a ir sumando más tarjetas acá a medida que se agreguen nuevas funciones.</p>
+  </div>
+
+  <div class="tool-grid">
+
+    <!-- PASE DE GUARDIA: navega de página completa a pase_guardia.html.
+         El "?v=" de PASE_VERSION evita que el navegador sirva una copia
+         vieja guardada en caché cuando subas cambios nuevos a ese archivo. -->
+    <button type="button" class="tool-card" id="openPaseBtn">
+      <div class="icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm8 1.5V8h4.5L14 3.5ZM8 12h8v1.5H8Zm0 3.5h8V17H8ZM8 8.5h4V10H8Z"/></svg>
+      </div>
+      <h2>Pase de guardia</h2>
+      <p>Archivero de pacientes por cama, EVOL por checklist y generador del pase completo. Requiere iniciar sesión.</p>
+      <span class="go">Abrir →</span>
+    </button>
+
+    <!-- LABORATORIO: se abre como modal con un iframe hacia conversor-labo.html,
+         accesible para cualquiera sin necesidad de iniciar sesión. -->
+    <button type="button" class="tool-card" id="openLaboBtn">
+      <div class="icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18 2H8a2 2 0 0 0-2 2v.5A1.5 1.5 0 0 0 4.5 6H4v13.5A2.5 2.5 0 0 0 6.5 22h5.79c-.85-1-1.29-2.28-1.29-3.5a5.5 5.5 0 0 1 3-4.9V9a1 1 0 0 1 1-1h.5a.5.5 0 0 0 0-1H14a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h.5a.5.5 0 0 0 0-1H9.5a.5.5 0 0 0 0 1H10a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-.5a.5.5 0 0 0 0 1H10a1 1 0 0 1 1 1v.09A5.49 5.49 0 0 1 15.5 9V6.5A1.5 1.5 0 0 0 14 5V4a2 2 0 0 0 2-2h2Z"/><path d="M17 12a3.5 3.5 0 0 0-1 6.85V21a2 2 0 0 0 4 0v-2.15A3.5 3.5 0 0 0 17 12Zm-1 3.5a1 1 0 1 1 2 0v3a1 1 0 0 1-2 0Z"/></svg>
+      </div>
+      <h2>Laboratorio</h2>
+      <p>Pegá un resultado de laboratorio y obtené la línea lista para copiar, con los valores alterados marcados. Acceso libre, sin necesidad de iniciar sesión.</p>
+      <span class="go">Abrir →</span>
+    </button>
+
+    <!-- BALANCE HÍDRICO: se abre como modal con un iframe hacia
+         calculadora_balance_hidrico.html, accesible para cualquiera sin
+         necesidad de iniciar sesión (mismo patrón que Laboratorio). -->
+    <button type="button" class="tool-card" id="openBhBtn">
+      <div class="icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C9 6.5 5.5 11.2 5.5 15a6.5 6.5 0 0 0 13 0C18.5 11.2 15 6.5 12 2Zm0 17.5A4.5 4.5 0 0 1 7.5 15c0-2.4 2.2-6 4.5-9.6 2.3 3.6 4.5 7.2 4.5 9.6a4.5 4.5 0 0 1-4.5 4.5Z"/><path d="M9.3 15.2a.9.9 0 0 1 1.1.6 1.7 1.7 0 0 0 1.6 1.2.9.9 0 1 1 0 1.8 3.5 3.5 0 0 1-3.3-2.4.9.9 0 0 1 .6-1.2Z"/></svg>
+      </div>
+      <h2>Balance hídrico</h2>
+      <p>Calculadora por bloques de 6 hs: PHP, agua endógena, pérdidas insensibles y ATB automáticos, BH clasificado contra el objetivo elegido, e informe listo para copiar. Acceso libre, sin necesidad de iniciar sesión.</p>
+      <span class="go">Abrir →</span>
+    </button>
+
+    <!-- Para sumar una herramienta nueva más adelante, copiá uno de los
+         .tool-card de arriba (o el placeholder de abajo) y armá su propio
+         acceso: navegación de página completa (como Pase de guardia) o
+         modal con iframe versionado (como Laboratorio o Balance hídrico). -->
+    <div class="tool-card placeholder">
+      <div class="icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5Z"/></svg>
+      </div>
+      <h2>Próximamente</h2>
+      <p>Acá se va a ir sumando cada nueva función a medida que se agregue.</p>
+    </div>
+
+  </div>
+</main>
+
+<footer>panel principal — cada herramienta vive en su propio archivo y se actualiza de forma independiente.</footer>
+
+<div class="labo-standalone-overlay" id="laboStandaloneOverlay">
+  <div class="labo-standalone-modal">
+    <div class="labo-standalone-header">
+      <span>
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18 2H8a2 2 0 0 0-2 2v.5A1.5 1.5 0 0 0 4.5 6H4v13.5A2.5 2.5 0 0 0 6.5 22h5.79c-.85-1-1.29-2.28-1.29-3.5a5.5 5.5 0 0 1 3-4.9V9a1 1 0 0 1 1-1h.5a.5.5 0 0 0 0-1H14a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h.5a.5.5 0 0 0 0-1H9.5a.5.5 0 0 0 0 1H10a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-.5a.5.5 0 0 0 0 1H10a1 1 0 0 1 1 1v.09A5.49 5.49 0 0 1 15.5 9V6.5A1.5 1.5 0 0 0 14 5V4a2 2 0 0 0 2-2h2Z"/><path d="M17 12a3.5 3.5 0 0 0-1 6.85V21a2 2 0 0 0 4 0v-2.15A3.5 3.5 0 0 0 17 12Zm-1 3.5a1 1 0 1 1 2 0v3a1 1 0 0 1-2 0Z"/></svg>
+        LABORATORIO — Transformador de resultados
+      </span>
+      <button type="button" class="labo-standalone-close" id="laboStandaloneCloseBtn" title="Cerrar">×</button>
+    </div>
+    <iframe id="laboStandaloneFrame" title="Transformador de laboratorio" src=""></iframe>
+  </div>
+</div>
+
+<div class="labo-standalone-overlay" id="bhStandaloneOverlay">
+  <div class="labo-standalone-modal">
+    <div class="labo-standalone-header">
+      <span>
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C9 6.5 5.5 11.2 5.5 15a6.5 6.5 0 0 0 13 0C18.5 11.2 15 6.5 12 2Zm0 17.5A4.5 4.5 0 0 1 7.5 15c0-2.4 2.2-6 4.5-9.6 2.3 3.6 4.5 7.2 4.5 9.6a4.5 4.5 0 0 1-4.5 4.5Z"/></svg>
+        BALANCE HÍDRICO — Calculadora
+      </span>
+      <button type="button" class="labo-standalone-close" id="bhStandaloneCloseBtn" title="Cerrar">×</button>
+    </div>
+    <iframe id="bhStandaloneFrame" title="Calculadora de balance hídrico" src=""></iframe>
+  </div>
+</div>
+
+<script>
+(function(){
+  const today = new Date();
+  document.getElementById('clock').textContent = today.toLocaleDateString('es-AR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+})();
+
+/* =========================================================================
+   VERSIONES — CACHÉ DEL NAVEGADOR
+   =========================================================================
+   Cada herramienta (pase_guardia.html, conversor-labo.html) vive en su
+   propio archivo y se actualiza subiendo SOLO ese archivo a GitHub. Para
+   que el navegador no siga mostrando una copia vieja guardada en caché
+   cuando subas una modificación nueva, cambiá acá abajo el número/fecha de
+   versión correspondiente (por ejemplo a la fecha del día, o sumale 1).
+   Eso agrega un "?v=..." distinto a la URL, y como el navegador lo trata
+   como una URL nueva, va a descargar la versión fresca en vez de servir
+   una copia guardada en caché. Si agregás una herramienta nueva más
+   adelante, sumale acá su propia constante de versión.
+   ========================================================================= */
+  const PASE_VERSION = '2026-09-02-1';
+  const LABO_VERSION = '2026-09-02-4';
+  const BH_VERSION = '2026-09-03-1';
+
+/* ---- Pase de guardia: navegación de página completa ---- */
+document.getElementById('openPaseBtn').addEventListener('click', ()=>{
+  window.location.href = 'pase_guardia.html?v=' + encodeURIComponent(PASE_VERSION);
+});
+
+/* ---- Laboratorio: modal con iframe hacia conversor-labo.html ---- */
+(function(){
+  const overlay = document.getElementById('laboStandaloneOverlay');
+  const frame = document.getElementById('laboStandaloneFrame');
+  const openBtn = document.getElementById('openLaboBtn');
+  const closeBtn = document.getElementById('laboStandaloneCloseBtn');
+
+  function openLaboStandalone(){
+    if(!frame.dataset.loaded){
+      frame.src = 'conversor-labo.html?v=' + encodeURIComponent(LABO_VERSION);
+      frame.dataset.loaded = '1';
+    }
+    overlay.classList.add('open');
+  }
+  function closeLaboStandalone(){
+    overlay.classList.remove('open');
+  }
+
+  openBtn.addEventListener('click', openLaboStandalone);
+  closeBtn.addEventListener('click', closeLaboStandalone);
+  overlay.addEventListener('click', (e)=>{
+    if(e.target === overlay) closeLaboStandalone();
+  });
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape' && overlay.classList.contains('open')) closeLaboStandalone();
+  });
+})();
+
+/* ---- Balance hídrico: modal con iframe hacia calculadora_balance_hidrico.html ---- */
+(function(){
+  const overlay = document.getElementById('bhStandaloneOverlay');
+  const frame = document.getElementById('bhStandaloneFrame');
+  const openBtn = document.getElementById('openBhBtn');
+  const closeBtn = document.getElementById('bhStandaloneCloseBtn');
+
+  function openBhStandalone(){
+    if(!frame.dataset.loaded){
+      frame.src = 'calculadora_balance_hidrico.html?v=' + encodeURIComponent(BH_VERSION);
+      frame.dataset.loaded = '1';
+    }
+    overlay.classList.add('open');
+  }
+  function closeBhStandalone(){
+    overlay.classList.remove('open');
+  }
+
+  openBtn.addEventListener('click', openBhStandalone);
+  closeBtn.addEventListener('click', closeBhStandalone);
+  overlay.addEventListener('click', (e)=>{
+    if(e.target === overlay) closeBhStandalone();
+  });
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape' && overlay.classList.contains('open')) closeBhStandalone();
+  });
+})();
+</script>
+
+</body>
+</html>
