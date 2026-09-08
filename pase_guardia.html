@@ -68,7 +68,6 @@
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px;}
   .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
   .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
-  .grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
   input[type=text],input[type=date],textarea,select{
     font-family:'IBM Plex Mono',monospace;font-size:12px;padding:6px 7px;
     border:1px solid var(--line-soft);background:var(--field-bg);color:var(--ink);border-radius:2px;width:100%;
@@ -294,7 +293,6 @@
       <button id="saveAllBtn">Exportar copia (.json)</button>
       <button id="loadAllBtn">Importar copia (.json)</button>
       <input type="file" id="loadFileInput" accept="application/json" style="display:none">
-      <button id="restoreSeedBtn">Cargar pacientes precargados</button>
       <button id="clearAllBtn" class="danger">Borrar toda la base</button>
       <div class="persist-note">Los datos quedan guardados automáticamente en este navegador y esta computadora. Exportá una copia de vez en cuando por las dudas — si abrís el archivo en otra PC o navegador, no vas a ver lo cargado acá salvo que importes esa copia.</div>
     </div>
@@ -532,310 +530,76 @@ function aplicarPlantilla(patient, key){
   });
   if(tpl.estado) fld('evolEstado').value = tpl.estado;
 }
-const STORAGE_PATIENTS = 'pase_sala_patients_v1';
-const STORAGE_CUSTOM = 'pase_sala_custom_v1';
-
 let patients = [];
 let customItems = {};
 let selectedId = null;
-let counter = 0;
 let sidebarFilter = '';
 let fechaAutoSync = true;
-
-/* ================= Checklist inicial a partir de un examen ya descripto =================
-   Convierte un objeto "set" (mismo formato que PLANTILLAS[x].set: normal/alt por sistema)
-   en un lastChecklist completo, usando como base el catálogo de SISTEMAS. Así, un paciente
-   precargado con su último examen físico ya transcripto arranca con el checklist en ese
-   mismo estado, y desde ahí la evolución se va modificando a medida que se tilda/destilda
-   cada ítem, en vez de arrancar de cero. */
-function buildChecklistState(estado, setObj){
-  const state = { estado: estado, systems:{} };
-  SYS_ORDER.forEach(key=>{
-    const merged = getMergedItems(key);
-    const cfg = (setObj && setObj[key]) || {normal:{}, alt:{}};
-    const sysState = { normal:{}, alt:{} };
-    merged.normal.forEach(item=>{ sysState.normal[item.id] = !!(cfg.normal && cfg.normal[item.id]); });
-    merged.alteraciones.forEach(item=>{
-      const val = cfg.alt && cfg.alt[item.id];
-      sysState.alt[item.id] = !!val;
-      if(item.detail) sysState.alt['detail_'+item.id] = (typeof val === 'string') ? val : '';
-    });
-    if(key==='infecto') sysState.apply = !!(setObj && setObj.infecto && setObj.infecto.apply);
-    state.systems[key] = sysState;
-  });
-  return state;
-}
-
-/* ================= Archivero precargado (pacientes reales del pase) =================
-   Cada entrada trae el EVOL tal cual estaba escrito (texto libre, se sigue completando
-   igual que cualquier otro), y un lastChecklist ya calculado a partir del último examen
-   físico transcripto en ese EVOL, para que la carga de la próxima entrada arranque
-   reflejando el estado real del paciente y no un paciente sano genérico. */
-const SEED_PATIENTS_DATA = [
-  {
-    cama:'C109', nombre:'Gallo Jorge', edad:'74 años · DNI 10424858 · FN 18/04/1952 · FI 18/07/26', sexo:'masculino',
-    ant:'MC: Caída de propia altura en vía pública. ANT: Trastorno de pánico, alcoholismo (2 botellas de licor al día), consumo de marihuana y cocaína no cuantificable, apendicectomía. MH: Clonazepam 2.5 mg.',
-    mi:[
-      {text:'Social - Tercer nivel', resuelto:false},
-      {text:'TEC sin pérdida de conciencia secundario a caída de propia altura', resuelto:true}
-    ],
-    asoc:[
-      {text:'Deterioro cognitivo en estudio', resuelto:false},
-      {text:'Hipovitaminosis B12 34 (20/7)', resuelto:false},
-      {text:'Flebitis en miembro superior izquierdo', resuelto:true},
-      {text:'Hipokalemia leve', resuelto:true},
-      {text:'Hiperbilirrubinemia', resuelto:true}
-    ],
-    cult:'',
-    evol:[
-      '7/9: estable. Paciente en buen estado general, hemodinámicamente estable. CSV: TA:120/80, Tº35.3, FC:104, SAT:97% (21%).',
-      '4/9: estable',
-      '3/9: Paciente en buen estado general, hemodinámicamente estable. CSV: TA:120/80, Tº35.9, FC:87, SAT:96% (21%).',
-      '2/9: Estable. CSV: TA:122/82, Tº35.6, FC:107, SAT:98% (21%).',
-      '1/9: Estable. CSV: TA:130/80, Tº35.6, FC:107, SAT:98% (21%).',
-      '31/8: Estable. CSV: TA:120/80, Tº35.7, FC:97, SAT:98% (21%).',
-      '28/8: Estable. CSV: TA:120/80, Tº35.6, FC:95, SAT:98% (21%).',
-      '27/8: Estable. CSV: TA:130/90, Tº35, FC:98, SAT:98% (21%).',
-      '26/8: Estable. Se ajusta medicación psiquiátrica por valoración de salud mental (risperidona suspende, se indica olanzapina).',
-      '25/8: hielo en antebrazo por flogosis.',
-      '20/8: CSV TA 116/76, T 36, FC 85, SAT 99. Vigil, orientado en 3 esferas, reactivo, sin signos de foco motor. BEAB, BMV, sin ruidos agregados. R1-R2 en cuatro focos, sin signos de fallo agudo de bomba. Abdomen sin particularidades. IC con kinesiología para mejora de movilización.',
-      '18/8: Vigil, reactivo, confuso no orientado, sin foco motor, R1-R2 en 4 focos sin fallo de bomba. BMV BEAB. ABD blando depresible indoloro.',
-      '14/8: estable',
-      '9/8 Guardia: Estable. Inversión del ciclo sueño-vigilia (somnoliento de día, excitado de noche).',
-      '7/8: estable. Mejoría del sensorio por la tarde.',
-      '4/8: intercurre con deterioro del sensorio, se realiza labo y TAC de encéfalo sin cambios.'
-    ].join('\n\n'),
-    labo:'31/08/2026: GB: 7.2, N: 64%, LINF: 24%, GR: 4.9, HB: 13.7, HTO: 39.6, PLAQ: 224.000, GLUC: 114, CR: 1.02, NA: 142.2, K: 4.2, CL: 103.9, GPT: 15, GOT: 15, FAL: 72, BT: 0.47, BD: 0.1.\n24/08/2026: GB: 10.9, N: 79%, LINF: 13%, GR: 4.6, HB: 12.8, HTO: 37.3, PLAQ: 189.000, GLUC: 121.0, UREA: 32.9, CR: 0.89, NA: 141.2, K: 4.2, CL: 102.9.\nSerologías negativas / B12 34 / Ácido fólico 14.',
-    img:'4/8 TAC de encéfalo: sp.\n18/7 TC de encéfalo: no se visualizan colecciones hemorrágicas. Hipodensidades subcentimétricas de aspecto secuelar microangiopático. Leucoaraiosis. Sistema ventricular y surcos amplios de aspecto involutivo. Línea media sin desplazamientos. Conclusión: no se observa patología aguda.',
-    pend:'IC Salud Mental.',
-    plan:'',
-    lastEstado:'estables condiciones generales',
-    lastChecklist: buildChecklistState('estables condiciones generales', PLANTILLAS.sano.set)
-  },
-  {
-    cama:'C120', nombre:'Souto Geronima', edad:'87 años · DNI 3537387 · FN 28/11/1938 · FI 20/06/26', sexo:'femenino',
-    ant:'MC: Caída de propia altura en vía pública. ANT: HTA; demencia.',
-    mi:[{text:'Caso social', resuelto:false}],
-    asoc:[
-      {text:'Hipokalemia leve', resuelto:true},
-      {text:'Hiponatremia leve', resuelto:true},
-      {text:'Hiperbilirrubinemia indirecta', resuelto:true},
-      {text:'Extrasístoles ventriculares aisladas en ECG', resuelto:false},
-      {text:'Hipoalbuminemia', resuelto:false},
-      {text:'Hipovitaminosis B12', resuelto:false}
-    ],
-    cult:'',
-    evol:[
-      '7/9: estable. Paciente vigil, poco reactiva, poco colaboradora. R1-R2 en 4 focos, BMV, BEAB, abdomen blando, depresible, indoloro, hemodinámicamente estable. CSV: TA:120/80, Tº35.7, FC:70, SAT:98% (21%).',
-      '3/9: paciente vigil, poco reactiva, poco colaboradora. R1-R2 en 4 focos, BMV, BEAB, abdomen blando, depresible, indoloro. En contexto de somnolencia nueva del día de hoy se le realiza tacto rectal: esfínter normotónico, MF normocoloreada, sin rastros de sangre ni pus. Se le indica enema de Murphy.',
-      '31/8: estable. CSV: Tº36, FC:75, SAT (21%):98%. Vigil, reactiva, sin foco motor, R1-R2 en 4 focos, sin signos de fallo de bomba. BEAB y BMV sin ruidos agregados, abdomen blando indoloro depresible. Sigue control clínico a la espera de tercer nivel.',
-      '27/8: estable. CSV: Tº36.2, FC:77, SAT (21%):98%. Vigil, reactiva, sin foco motor, R1-R2 en 4 focos, sin signos de fallo de bomba. BEAB y BMV sin ruidos agregados, abdomen blando indoloro depresible. Sigue control clínico a la espera de tercer nivel.',
-      '26/8: estable.',
-      '18/8: vigil, reactiva, sin foco motor, R1-R2 en 4 focos, sin signos de fallo de bomba. BEAB y BMV sin ruidos agregados, abdomen blando indoloro depresible. Sigue control clínico a la espera de tercer nivel.',
-      '22/7 al 14/8: estable.'
-    ].join('\n\n'),
-    labo:'31/08/2026: GB: 9.5, N: 70%, LINF: 21%, GR: 5.8, HB: 16.3, HTO: 47.4, PLAQ: 359.000, GLUC: 104, UREA: 22.5, CR: 0.56, FG: 84, NA: 142.4, K: 3.6, CL: 102.5.\n24/08/2026: GB: 8.1, N: 74%, LINF: 19%, GR: 5.9, HB: 17.4, HTO: 51.6, PLAQ: 303.000, GLUC: 110.0, UREA: 22.5, CR: 0.61, NA: 142.7, K: 3.6, CL: 99.8.\nVDRL no reactivo. Fólico 7.38. Vit B12 89.',
-    img:'20/6 Rx de tórax: sp.\n20/6 TC de encéfalo: impresiona sin lesión aguda.',
-    pend:'',
-    plan:'',
-    lastEstado:'estables condiciones generales',
-    lastChecklist: buildChecklistState('estables condiciones generales', PLANTILLAS.sano.set)
-  },
-  {
-    cama:'C123', nombre:'Hernandez Susana', edad:'81 años · DNI 96166476 · FI 06/09/2026', sexo:'femenino',
-    ant:'MC: Fiebre, hiperestesia generalizada, astenia, dificultad para deambular. ANT: demencia, colon irritable, hipotiroidismo, artrosis, HTA, anemia crónica, migraña, caída de propia altura 1/9 sin TEC, postrada desde entonces.',
-    mi:[{text:'SCA secundario a ITU + NAC. Ceftriaxona 1 g cada 12 hs EV (FI: 6/9, día 1)', resuelto:false}],
-    asoc:[
-      {text:'IRA prerenal', resuelto:false},
-      {text:'Extrasístoles supraventriculares', resuelto:false},
-      {text:'Anemia normocítica normocrómica en estudio', resuelto:false}
-    ],
-    cult:'Urocultivo: patológico (leucocitos >50). HMC: pendiente.',
-    evol:[
-      'GUARDIA 7/9: paciente queda de pase para control clínico: vigil, reactiva, globalmente desorientada, R1-R2 en 4 focos, sin signos de fallo de bomba. BEAB, BMV, crepitantes bibasales ya conocidos. Abdomen blando, depresible, doloroso a la palpación, RHA+. CSV: TA 100/60, SAT 96% (0,21), FC 87, T 36,1°C. Se realiza hemocultivo x2.',
-      '7/9: vigil, reactiva, desorientada globalmente, obedece órdenes simples, no impresiona foco neurológico agudo. CSV: TA 120/60, FC 120, eupneica, SAT 99% (0,21), T 36,2, diuresis en bolsa 300ml. R1-R2 en 4 focos, ritmo irregular alternante, sin ingurgitación yugular, tolera decúbito, sin signos de fallo de bomba. Adecuada MV, crepitantes bibasales a predominio izquierdo, derechos tipo velcro, hipoventilación bibasal. Abdomen blando, depresible, doloroso a la palpación profunda a predominio de flancos, más derecho, RHA+. Puntos ureterales y puño percusión positivos. Perfusión distal conservada, sin edemas periféricos, mucosas deshidratadas. ECG: ritmo irregular con extrasístoles, FC 120 lpm. Queda de pase para control clínico, HMC x2 y hemoglucotest.'
-    ].join('\n\n'),
-    labo:'07/09/2026: GB: 17.3, N: 94%, L: 4%, GR: 3.2, HB: 9.4, HTO: 27.3, PLAQ: 284.000, GLUC: 57, UREA: 44.5, CR: 1.05, FG: 46, NA: 143.5, K: 3.7, CL: 104.9, GPT: 7, GOT: 17, FAL: 90, BT: 0.37, BD: 0.1.\n06/09/2026: GB: 8.9, N: 91%, L: 6%, GR: 3.5, HB: 10, HTO: 29.9, PLAQ: 292.000, GLUC: 93, UREA: 50, CR: 1.43, FG: 31, NA: 139.2, K: 3.8, CL: 101.8, GPT: 5, GOT: 13, FAL: 83, BT: 0.45, BD: 0.1.',
-    img:'7/9 TAC tórax, abdomen y pelvis: área consolidativa/atelectásica en lóbulos inferiores asociada a broncograma aéreo y derrame pleural bibasal a predominio derecho con derrame cisural asociado. No se identifican adenomegalias mediastinales ni axilares. No se observan alteraciones hepatoesplénicas. Vesícula biliar distendida con litiasis. Escaso líquido libre en cavidad.\nECG: ritmo sinusal irregular a expensas de extrasístoles en V3, FC 120.\nRx tórax: mala técnica, impresiona infiltrado en campo pulmonar medio-inferior izquierdo.',
-    pend:'',
-    plan:'',
-    lastEstado:'regulares condiciones generales',
-    lastChecklist: buildChecklistState('regulares condiciones generales', {
-      neuro:{normal:{vigil:true,reactivo:true,colaborador:true,sinfoco:true}, alt:{desorientado:'global'}},
-      cv:{normal:{r1r2:true,silencios:true,sinfallo:true,pulsos:true}, alt:{arritmia:'extrasístoles supraventriculares, ritmo irregular alternante'}},
-      resp:{normal:{mecanica:true,mv:true,sintiraje:true,sat:true}, alt:{crepitantes:'bibasales, derechas tipo velcro, hipoventilación a predominio izquierdo'}},
-      dig:{normal:{blando:true,depresible:true,rha:true,catarsispos:true,sinascitis:true,sinvisceromegalia:true}, alt:{doloroso:'difusa, a predominio de flancos, más derecho'}},
-      renal:{normal:{}, alt:{diuresisneg:'~300 ml/turno (IRA prerenal)'}},
-      miembros:{normal:{sinedema:true,sinflogosis:true,sinflebitis:true,pielsp:true,perfusionok:true}, alt:{}},
-      infecto:{apply:true, normal:{afebril:true}, alt:{ascensoleuco:true}}
-    })
-  },
-  {
-    cama:'C126', nombre:'Marcos, Maria del Carmen', edad:'80 años · DNI 5306560 · FN 03/01/1946 · FI 04/09/2024', sexo:'femenino',
-    ant:'MC: Disnea CFIV, taquipnea. ANT: HTA; reemplazo de cadera con posterior postración (2016); trastorno de pánico.',
-    mi:[{text:'SCA secundario a NAC en tto con AMS + claritromicina día 0 (FI 7/9)', resuelto:false}],
-    asoc:[
-      {text:'Intertrigo micótico en cuello', resuelto:false},
-      {text:'Deshidratación', resuelto:false},
-      {text:'Trastorno de repolarización', resuelto:false},
-      {text:'Anemia leve', resuelto:false},
-      {text:'Hipokalemia moderada', resuelto:false}
-    ],
-    cult:'HMC x2 (771996): negativo a las 96 hs. Urocultivo (771996): pendiente.',
-    evol:[
-      'GUARDIA 7/9: paciente queda de pase para control clínico: vigil, desorientada globalmente, R1-R2 en 4 focos, sin signos de fallo de bomba. BMV, BEAB, crepitantes bibasales.',
-      '7/9: paciente en regular estado general, vigil, reactivo, orientado en persona y desorientada en tiempo y espacio, sin signos de foco motor agudo. CSV: PA:110/60, FC:106, T°:35.6, SatO2%:90 (0,21). R1 y R2 en 4 focos, normofonéticos, impresionan libres, ritmo regular, sin soplos evidentes ni signos de descompensación hemodinámica ni fallo agudo de bomba. BMV, tos no productiva, con sibilancias y crepitantes a predominio de base pulmonar izquierda, se escucha desplazamiento de secreciones en vía aérea. Abdomen blando, depresible, no doloroso a la palpación superficial y profunda, RHA+. Diuresis (200 ml en bolsa) y catarsis conservados en pañal. No se evidencian escaras. Se realiza TC con contraste de tórax por sospecha de NAC no visualizada adecuadamente en Rx de guardia. Paciente hemodinámicamente estable. Continúa control evolutivo. Queda de pase para control clínico, ionograma control y EAB 0,21.'
-    ].join('\n\n'),
-    labo:'07/09/2026: GB: 5.3, N: 63%, L: 30%, GR: 3.9, HB: 10.8, HTO: 32.9, PLAQ: 150.000, PCR: 4.26, GLUC: 95, UREA: 25.4, CR: 0.67, FG: 83, NA: 143.6, K: 2.9, CL: 104.4, GPT: 4, GOT: 9, FAL: 40, BT: 0.57, BD: 0.1, Ca: 8, P: 1.85, Mg: 1.77, ALB: 2.9.\n04/09/2026: GB: 7.6, N: 68%, L: 20%, GR: 4.8, HB: 13.4, HTO: 40.4, PLAQ: 162.000, PCR: 1.23, GLUC: 148, UREA: 22.2, CR: 0.7, FG: 82, NA: 134.9, K: 4, CL: 95, GPT: 6, GOT: 14, FAL: 54, BT: 0.76, BD: 0.1.',
-    img:'07/09/26 TC tórax con contraste: degradación de la calidad por artificio de movimiento respiratorio. Área consolidativa con broncograma aéreo en LII con mínimo derrame pleural asociado. Tractos densos pleuroparenquimatosos bibasales, derecho asociado a sutil derrame pleural. Imágenes ganglionares subcentimétricas mediastinales. Engrosamiento focal cisural menor.',
-    pend:'Ionograma control. EAB de sangre arterial. Perfil férrico.',
-    plan:'CSV y diuresis por turno. Cabecera 45°. Dieta hiposódica procesada homogénea, asistida según sensorio. PHP a 14 gotas de RL + 1 ampolla ClK + 1 ampolla SO4Mg en c/frasco. Omeprazol 20 mg c/24 hs EV. Enoxaparina 0,4 cc SC c/24 hs. Losartán 50 mg c/24 hs VO. Medidas antiescaras, colchón de aire, rotar cada 2 hs. Carga de potasio: 3 ampollas ClK en 300 SF a pasar en 3 hs EV por única vez.',
-    lastEstado:'regulares condiciones generales',
-    lastChecklist: buildChecklistState('regulares condiciones generales', {
-      neuro:{normal:{vigil:true,reactivo:true,colaborador:true,sinfoco:true}, alt:{desorientado:'tiempo y espacio (orientada en persona)'}},
-      cv:{normal:{r1r2:true,ritmoregular:true,silencios:true,sinfallo:true,pulsos:true}, alt:{}},
-      resp:{normal:{mecanica:true,sintiraje:true}, alt:{sibilancias:'predominio de base pulmonar izquierda', crepitantes:'predominio de base pulmonar izquierda'}},
-      dig:{normal:{blando:true,depresible:true,indoloro:true,rha:true,catarsispos:true,sinascitis:true,sinvisceromegalia:true}, alt:{}},
-      renal:{normal:{diuresispos:true}, alt:{}},
-      miembros:{normal:{sinedema:true,sinflogosis:true,sinflebitis:true,pielsp:true,perfusionok:true}, alt:{}},
-      infecto:{apply:true, normal:{afebril:true}, alt:{}}
-    })
-  },
-  {
-    cama:'C127', nombre:'Elias Lidia Angelica', edad:'88 años · DNI 3674639 · FN 04/09/1937 · FI 13/08/26', sexo:'femenino',
-    ant:'MC: negativismo a la ingesta. ANT: deterioro cognitivo, HTA, dislipemia. MH: clonazepam 2 mg/día, escitalopram 10 mg/día, quetiapina 10 mg/día, memantine 20 mg/día, AAS 100 mg/día, losartán 50 mg/día, sinvastatina 10 mg/día.',
-    mi:[
-      {text:'Social: tercer nivel', resuelto:false},
-      {text:'SCA secundario a NAC en tto con amoxicilina/clavulánico + claritromicina día 6 (FI 21/8)', resuelto:true},
-      {text:'SCA secundario a síndrome diarreico por Clostridium en tto con vancomicina día 10 (FI 14/8)', resuelto:true},
-      {text:'Foco respiratorio en tto con AMS día 3 (FI 18/8)', resuelto:true},
-      {text:'Sepsis a foco abdominal por diarrea por Clostridium en tto con vancomicina día 4 (FI 14/8)', resuelto:true}
-    ],
-    asoc:[
-      {text:'Escara lumbosacra grado II y dorsal grado I, con buena evolución', resuelto:false},
-      {text:'Plaquetopenia', resuelto:true},
-      {text:'AVC yugular posterior derecho (13/8)', resuelto:true},
-      {text:'Hipernatremia moderada, sintomática', resuelto:true}
-    ],
-    cult:'HMC x2 (768518): negativos. Urocultivo (768518): desarrollo de Staphylococcus epidermidis (resuelto).',
-    evol:[
-      '7/9: paciente estable, vigil, orientada en persona y espacio, responde a estímulos verbales, moviliza 4 miembros, sin foco motor agudo. R1 y R2 en 4 focos, sin soplos, sin ingurgitación yugular, tolera el decúbito. BEAB, BMV, se escuchan leves crepitantes en base izquierda ya conocidos. Abdomen blando, depresible, indoloro, RHA+. Resto sin particularidades.',
-      '4/9: estable. CSV: TA:100/70. Guardia: curva térmica sin registros febriles ni subfebriles. Control de RAO: orina espontáneamente en pañal.',
-      '3/9: estable. Se retira sonda vesical. Queda control de RAO por guardia. Se indica probiótico por catarsis abundantes reiteradas.',
-      '31/8: paciente vigil, orientada en persona y espacio, responde a estímulos, moviliza 4 miembros, sin foco motor agudo. R1 y R2 en 4 focos, sin soplos, sin ingurgitación yugular, tolera el decúbito. Mejora la asimetría en miembro inferior derecho respecto del izquierdo (se realizó ecodóppler de MMII, ver resultado). BEAB, BMV, leves crepitantes en base izquierda ya conocidos. Abdomen blando, depresible, indoloro, RHA+. Placas blanquecinas en lengua, de aspecto cremoso, sin evaluar desprendimiento al raspado.',
-      '28/8 Guardia: estable, sin cambios.',
-      '27/8: paciente vigil, orientada en persona y espacio, responde a estímulos, moviliza 4 miembros, sin foco motor agudo. R1 y R2 en 4 focos, sin soplos, sin ingurgitación yugular, tolera el decúbito. Asimetría en miembro inferior derecho respecto del izquierdo, queda pendiente ecodóppler de MMII. BEAB, BMV, crepitantes en base izquierda ya conocidos. Abdomen blando, depresible, indoloro, RHA+. Hiperestesia generalizada, se indica paracetamol. Se habla con servicio social por trámites de 3er nivel por PAMI.',
-      '26/8: paciente vigil, responde a estímulos, moviliza 4 miembros, sin foco motor agudo, orientada en persona y espacio. R1 y R2 en 4 focos, silencios impresionan libres, sin signos de fallo de bomba. Buena mecánica respiratoria, crepitantes en base derecha. Abdomen blando, depresible, con ruidos hidroaéreos conservados.',
-      '24/8: estable. Se indica nuevo enema de Murphy. Guardia: se realiza TAC de abdomen y pelvis (ver informe).',
-      '20/8: CSV 120/70, FC 114, T 36.7, SAT 99. Vigil, desorientada en tiempo, orientada en espacio, responde órdenes, más reactiva que ayer, moviliza 4 miembros sin foco motor agudo. Sin signos de fallo de bomba, sin requerimiento de oxígeno suplementario. Abdomen blando, indoloro, depresible, RHA+. Escaras destechadas. Febrícula (37,2 a las 14 hs).',
-      '19/8: vigil, colaboradora. CSV: 110/70, FC 84, T 35.4, SAT 93 (0,21). Sin signos de fallo agudo de bomba. BMV, BEAB, ruidos agregados tipo crepitante en base derecha. Abdomen blando, depresible, leve dolor en fosa ilíaca izquierda sin defensa ni reacción peritoneal, RHA+. Catarsis y diuresis positivas.',
-      '18/8: vigil, confusa, sin foco motor. Sin fallo de bomba. BMV, BEAB. Abdomen con dolor a la palpación profunda. Escara en dorso y lumbosacra grado II.',
-      '13/8 al 15/8: vigil/confusa según turno, desorientada en tiempo y espacio en algunos registros. Hemodinámicamente con episodio de mala perfusión e hipotensión (70/50) el 13/8. Abdomen con contenido de materia fecal, tacto rectal con ampolla normotónica.'
-    ].join('\n\n'),
-    labo:'03/09/2026: GB: 6.9, N: 65%, L: 22%, M: 11%, E: 2%, GR: 4.4, HB: 10.9, HTO: 33.5, VCM: 76.7, HCM: 24.9, CHCM: 32.5, RDW: 18, PLAQ: 150.000, ERS: 31, PCR: 11.45, GLUC: 96, UREA: 18.5, CR: 0.53, FG: 84, NA: 140.4, K: 3.8, CL: 100.6.\n31/08/2026: GB: 4.4, N: 60%, GR: 4.4, PLAQ: 124.000, GLUC: 114, UREA: 16.7, CR: 0.49, FG: 87, NA: 139.7, K: 3.9, CL: 102.7.',
-    img:'31/08/2026 ecodóppler de MMII: sistema venoso superficial y profundo compresible en ambas piernas, sin signos de trombosis. Conclusión: estudio dentro de parámetros normales.\n13/8 PAN-TAC: sin colecciones hemorrágicas agudas ni lesiones expansivas. Leucoaraiosis. Tórax sin consolidaciones agudas, infiltrado micronodular en LID. Abdomen y pelvis: engrosamiento parietal rectal y colónico con rarefacción grasa adyacente, sugiere correlacionar con antecedentes y continuar algoritmo diagnóstico oncológico.',
-    pend:'',
-    plan:'',
-    lastEstado:'estables condiciones generales',
-    lastChecklist: buildChecklistState('estables condiciones generales', {
-      neuro:{normal:{vigil:true,reactivo:true,colaborador:true,orientado3:true,sinfoco:true}, alt:{}},
-      cv:{normal:{r1r2:true,ritmoregular:true,silencios:true,sinfallo:true,iy:true,decubito:true,pulsos:true}, alt:{}},
-      resp:{normal:{mecanica:true,sintiraje:true,sat:true}, alt:{crepitantes:'base izquierda, leves, ya conocidos'}},
-      dig:{normal:{blando:true,depresible:true,indoloro:true,rha:true,catarsispos:true,sinascitis:true,sinvisceromegalia:true}, alt:{}},
-      renal:{normal:{diuresispos:true}, alt:{}},
-      miembros:{normal:{sinflogosis:true,sinflebitis:true,perfusionok:true}, alt:{necrosis:'escara lumbosacra grado II y dorsal grado I, en buena evolución'}},
-      infecto:{apply:false, normal:{}, alt:{}}
-    })
-  },
-  {
-    cama:'C130', nombre:'Zeniquel Eduardo', edad:'48 años · DNI 26687678 · FN 25/11/1946 · FI 01/09/2026 · IC Neumonología', sexo:'masculino',
-    ant:'MC: disnea CF3. ANT: HIV en tto con TARV (carga indetectable), EPOC, asma, ex enolista, ex tabaquista (dejó hace 10 años), herpes genital, consumo problemático de sustancias, Cushing exógeno.',
-    mi:[{text:'NAC bilateral en tto con piperacilina-tazobactam día 3 (FI 1/9)', resuelto:false}],
-    asoc:[
-      {text:'Anemia', resuelto:false},
-      {text:'Hiperglucemias por disrupciones alimentarias', resuelto:false},
-      {text:'Alcalosis mixta', resuelto:false}
-    ],
-    cult:'Micoplasma y clamidia: pendiente (771648).',
-    evol:[
-      '4/9 Guardia: PA 190 premerienda, 167 precorrección con 2 UI, precena 207 corrige con 4 U, preD 150. Total 6 U.',
-      '3/9 Guardia: 10 UI preal con glucemia 366. Labo descarta cetoacidosis (cetonemia negativa, EAB 7.47/37.8/27). 10 UI premerienda, se indica expansión con 500 ml SF. Enfermería refiere que el paciente consume alimentos por fuera del hospital y no respeta la dieta. HGT predesayuno corrigió con 8 UI.',
-      '3/9: se realiza EAB venoso y cetonemia para control de cetoacidosis por HGT >250. Alcalosis mixta. Diabetes inicia NPH 10 UI preD y 8 postcena.',
-      '2/9: vigil, colaborador, orientado en 3 esferas. CSV: 170/–, FC 88, T 36.4, SAT 93% (0,21). R1-R2 en cuatro focos, ritmo regular, sin soplos ni ingurgitación yugular. Aceptable MV, crepitantes bibasales a predominio izquierdo. Abdomen blando, depresible, indoloro, distendido con estrías y circulación colateral. Facies de luna llena, exoftalmos, obesidad central, miembros adelgazados; en este contexto IC con endocrinología por sospecha de Cushing exógeno. Edemas en MMII y de pared. En tto con aerosolterapia, fluticasona y salbutamol, furosemida y TARV. Queda con controles glucémicos.'
-    ].join('\n\n'),
-    labo:'03/09/2026: GB: 3.5, N: 86%, L: 9%, GR: 3.9, HB: 12.1, HTO: 34.6, PLAQ: 150.000, PCR: 7.79, GLUC: 289, UREA: 43.2, CR: 0.48, FG: 130, NA: 140.7, K: 4, CL: 98.8, GPT: 35, GOT: 13, FAL: 122, BT: 0.74, BD: 0.1, Ca: 9.3, P: 3.16, Mg: 2.04, ALB: 3.2.\n02/09/2026: GB: 4.3, N: 87%, L: 8%, GR: 3.7, HB: 11.5, HTO: 33.3, PLAQ: 145.000, GLUC: 228, NA: 142.2, K: 3.9, CL: 102.5.',
-    img:'02/09 Ecocardio: FEy 30%. Aquinesia inferoposterior basal y medioventricular. Patrón de VI con relajación prolongada.\nTAC tórax 1/9: extenso engrosamiento peribroncovascular con infiltrados retículo-nodulares y patrón en árbol en brotes de predominio en ambos LLII; áreas de consolidación en vidrio esmerilado en LSD, LM y LSI. Enfisema centroacinar y paraseptal. Tractos fibroadherenciales.\nTAC abdomen y pelvis 1/9: sin alteraciones hepatoesplénicas ni retroperitoneales significativas.',
-    pend:'Cortisol urinario.',
-    plan:'',
-    lastEstado:'regulares condiciones generales',
-    lastChecklist: buildChecklistState('regulares condiciones generales', {
-      neuro:{normal:{vigil:true,colaborador:true,orientado3:true,reactivo:true,sinfoco:true}, alt:{}},
-      cv:{normal:{r1r2:true,silencios:true,ritmoregular:true,iy:true,sinfallo:true,pulsos:true}, alt:{}},
-      resp:{normal:{mecanica:true,sintiraje:true}, alt:{crepitantes:'bibasales a predominio izquierdo'}},
-      dig:{normal:{depresible:true,indoloro:true,rha:true,catarsispos:true,sinascitis:true,sinvisceromegalia:true}, alt:{distendido:'con estrías y circulación colateral (hábito cushingoide)'}},
-      renal:{normal:{diuresispos:true}, alt:{}},
-      miembros:{normal:{sinflogosis:true,sinflebitis:true,perfusionok:true,pielsp:true}, alt:{edema:'MMII y de pared'}},
-      infecto:{apply:true, normal:{afebril:true}, alt:{}}
-    })
-  }
-];
-
-function buildSeedPatients(){
-  return SEED_PATIENTS_DATA.map(base=>{
-    counter++;
-    const clone = JSON.parse(JSON.stringify(base));
-    clone.id = 'p'+counter;
-    clone.evolCount = 0;
-    return clone;
-  });
-}
+const saveTimers = {}; // debounce de guardado en Firestore, por paciente
 
 function fld(id){ return document.getElementById(id); }
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmtFechaDMY(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; }
+function fsApi(){ return window.__fsBridge; }
 
 function newPatient(){
-  counter++;
-  return { id:'p'+counter, cama:'', nombre:'', edad:'', sexo:'', ant:'', mi:[], asoc:[], cult:'', evol:'', evolCount:0, lastEstado:'', labo:'', img:'', pend:'', plan:'' };
+  const fs = fsApi();
+  const id = fs ? fs.doc(fs.pacientesCol).id : ('local'+Date.now());
+  return { id, cama:'', nombre:'', edad:'', ant:'', mi:[], asoc:[], cult:'', evol:'', evolCount:0, lastEstado:'', labo:'', img:'', pend:'', plan:'' };
 }
 
-/* ================= Persistencia local ================= */
-function saveLocal(){
-  try{ localStorage.setItem(STORAGE_PATIENTS, JSON.stringify(patients)); }catch(e){}
+/* ================= Persistencia en Firestore (compartida entre dispositivos) =================
+   El guardado se centraliza acá: renderPreview() se llama después de CUALQUIER cambio en un
+   paciente (así estaba diseñado desde antes con localStorage), así que basta con enganchar el
+   guardado ahí para cubrir todos los puntos de edición sin tocar cada uno. Los cambios de texto
+   (data-f) se guardan con un pequeño debounce para no escribir en cada tecla; las acciones
+   estructurales (alta, baja, vaciar carpeta, nueva evolución) se guardan al toque. */
+function patientDataForSave(p){
+  const { id, ...rest } = p;
+  return rest;
+}
+function savePatientNow(p){
+  const fs = fsApi();
+  if(!fs || !p || !p.id) return;
+  clearTimeout(saveTimers[p.id]);
+  fs.setDoc(fs.doc(fs.db,'pacientes',p.id), patientDataForSave(p)).catch(()=>{
+    fld('status').textContent = 'No se pudo guardar en la nube — revisá tu conexión.';
+  });
+}
+function schedulePatientSave(p, delay){
+  if(!p || !p.id) return;
+  clearTimeout(saveTimers[p.id]);
+  saveTimers[p.id] = setTimeout(()=>savePatientNow(p), delay==null?700:delay);
+}
+function deletePatientRemote(id){
+  const fs = fsApi();
+  if(!fs) return;
+  clearTimeout(saveTimers[id]);
+  fs.deleteDoc(fs.doc(fs.db,'pacientes',id)).catch(()=>{});
 }
 function saveCustomLocal(){
-  try{ localStorage.setItem(STORAGE_CUSTOM, JSON.stringify(customItems)); }catch(e){}
+  const fs = fsApi();
+  if(!fs) return;
+  fs.setDoc(fs.configDocRef, customItems).catch(()=>{});
 }
-function loadLocal(){
-  try{
-    const raw = localStorage.getItem(STORAGE_PATIENTS);
-    if(raw){
-      const parsed = JSON.parse(raw);
-      if(Array.isArray(parsed)) patients = parsed;
-    }
-    const rawC = localStorage.getItem(STORAGE_CUSTOM);
-    if(rawC){
-      const parsedC = JSON.parse(rawC);
-      if(parsedC && typeof parsedC === 'object') customItems = parsedC;
-    }
-  }catch(e){}
-  if(patients.length){
-    counter = Math.max(...patients.map(p=>parseInt((p.id||'p0').replace('p',''))||0));
-    selectedId = patients[0].id;
-  }
-}
+
+/* Se completa con applyRemoteSnapshot() e iniciarAppPrincipal() más abajo, que arman
+   "patients" y "customItems" a partir de lo que llega en tiempo real desde Firestore. */
+
 
 /* ================= Pacientes ================= */
 function addPatient(){
   const p = newPatient();
   patients.push(p);
   selectedId = p.id;
+  savePatientNow(p);
   renderAll();
 }
 function removePatient(id){
   if(!confirm('¿Eliminar esta carpeta de paciente? Esta acción no se puede deshacer.')) return;
   patients = patients.filter(p=>p.id!==id);
   if(selectedId===id) selectedId = patients.length ? patients[0].id : null;
+  deletePatientRemote(id);
   renderAll();
 }
 function getSelected(){ return patients.find(p=>p.id===selectedId); }
@@ -848,6 +612,7 @@ function vaciarCarpeta(p){
   p.evol=''; p.evolCount=0; p.lastEstado=''; p.lastChecklist=null;
   p.labo=''; p.img=''; p.pend=''; p.plan='';
   p.cama = cama;
+  savePatientNow(p);
   renderAll();
 }
 
@@ -939,16 +704,7 @@ function renderForm(){
         <div class="field"><label>Cama</label><input type="text" data-f="cama" placeholder="Ej: C103"></div>
         <div class="field" style="grid-column:span 2;"><label>Nombre</label><input type="text" data-f="nombre"></div>
       </div>
-      <div class="grid2">
-        <div class="field"><label>Edad</label><input type="text" data-f="edad" placeholder="Ej: 68 años"></div>
-        <div class="field"><label>Sexo</label>
-          <select data-f="sexo">
-            <option value="">— sin especificar —</option>
-            <option value="masculino">Masculino</option>
-            <option value="femenino">Femenino</option>
-          </select>
-        </div>
-      </div>
+      <div class="field"><label>Edad</label><input type="text" data-f="edad" placeholder="Ej: 68 años"></div>
     </fieldset>
 
     <fieldset>
@@ -1148,18 +904,13 @@ function renderEvolBuilder(p){
   });
 
   html += `
-    <div class="grid5" style="margin-bottom:8px;">
+    <div class="grid4" style="margin-bottom:8px;">
       <div class="field"><label>TA</label><input type="text" id="evolTA" placeholder="120/80"></div>
       <div class="field"><label>FC</label><input type="text" id="evolFC"></div>
-      <div class="field"><label>FR</label><input type="text" id="evolFR"></div>
-      <div class="field"><label>T°</label><input type="text" id="evolT"></div>
       <div class="field"><label>SatO2</label><input type="text" id="evolSat"></div>
+      <div class="field"><label>T°</label><input type="text" id="evolT"></div>
     </div>
     <div class="field"><label>Conducta / otros hallazgos</label><textarea id="evolExtra" placeholder="Se realiza IC con... Se decide iniciar..."></textarea></div>
-    <div class="field" style="flex-direction:row;align-items:center;gap:6px;">
-      <input type="checkbox" id="evolCierre" checked>
-      <label for="evolCierre" style="margin:0;">Agregar cierre estándar (remite a LABO/IMG/PEND cargados + estabilidad hemodinámica)</label>
-    </div>
     <button id="addEntryBtn">+ Agregar entrada de hoy a EVOL</button>
   `;
 
@@ -1258,22 +1009,6 @@ function captureChecklistState(estado){
   return state;
 }
 
-/* ================= Helpers para la redacción de la entrada de EVOL ================= */
-function domChecked(sys, kind, id){
-  const el = document.querySelector(`[data-sys="${sys}"][data-kind="${kind}"][data-id="${id}"]`);
-  return !!(el && el.checked);
-}
-function domDetail(sys, id){
-  const el = document.querySelector(`[data-detail-for="${id}"][data-sys="${sys}"]`);
-  return el ? el.value.trim() : '';
-}
-function extractEdadCorta(edadStr){
-  if(!edadStr) return '';
-  const m = edadStr.match(/(\d{1,3})\s*(años?|AÑOS?)/i);
-  if(m) return `${m[1]} años`;
-  return edadStr.trim();
-}
-
 function addEvolEntry(p){
   const fecha = fmtFechaDMY(fld('evolFecha').value) || '(fecha)';
   const estado = fld('evolEstado').value;
@@ -1292,72 +1027,33 @@ function addEvolEntry(p){
 
   const ta = fld('evolTA').value.trim();
   const fc = fld('evolFC').value.trim();
-  const fr = fld('evolFR').value.trim();
-  const t = fld('evolT').value.trim();
   const sat = fld('evolSat').value.trim();
+  const t = fld('evolT').value.trim();
   const extra = fld('evolExtra').value.trim();
-  const agregarCierre = fld('evolCierre') ? fld('evolCierre').checked : false;
 
-  const sexoTexto = p.sexo==='femenino' ? 'femenina' : (p.sexo==='masculino' ? 'masculino' : '');
-  const edadCorta = extractEdadCorta(p.edad);
-  const motivos = (p.mi||[]).filter(i=>!i.resuelto).map(i=>i.text);
-
-  /* --- Oración de apertura: sexo + edad + motivo de internación + estado + neuro,
-     todo en una sola oración, como en las evoluciones de referencia. --- */
   let intro = `${fecha}: Paciente`;
-  if(sexoTexto) intro += ` ${sexoTexto}`;
-  if(edadCorta) intro += ` de ${edadCorta}`;
-  if(motivos.length) intro += `, en tratamiento por ${motivos.join('; ')}`;
+  if(p.edad) intro += ` de ${p.edad}`;
   if(p.ant) intro += `, con antecedentes de ${p.ant}`;
-  intro += `, en ${pickEstadoText(estado, p)}`;
-  if(neuro) intro += `, ${neuro}${trendPhraseFor('neuro',p)}`;
-  intro += '.';
+  intro += `, en ${pickEstadoText(estado, p)}.`;
   intro += estadoTrendPhrase(p.lastEstado, estado);
 
   let out = intro + ' ';
+  if(neuro) out += `Neurológicamente ${neuro}${trendPhraseFor('neuro',p)}. `;
+  if(cv) out += `A nivel cardiovascular, ${cv}${trendPhraseFor('cv',p)}. `;
+  if(estudioTipo && estudioInforme) out += `Se recibe informe de ${estudioTipo}: ${estudioInforme}. `;
+  if(resp) out += `A nivel pulmonar, ${resp}${trendPhraseFor('resp',p)}. `;
+  if(dig) out += `Abdomen: ${dig}${trendPhraseFor('dig',p)}. `;
+  if(renal) out += `A nivel renal, ${renal}${trendPhraseFor('renal',p)}. `;
+  if(miembros) out += `Miembros: ${miembros}${trendPhraseFor('miembros',p)}. `;
+  if(infectoAplica && infecto) out += `Desde el punto de vista infectológico, ${infecto}${trendPhraseFor('infecto',p)}. `;
 
-  /* --- CSV, agregando el dispositivo de O2 según lo tildado en Respiratorio --- */
   const csv = [];
   if(ta) csv.push('TA '+ta);
   if(fc) csv.push('FC '+fc);
-  if(fr) csv.push('FR '+fr);
+  if(sat) csv.push('SAT '+sat+'%');
   if(t) csv.push('T° '+t);
-  if(sat){
-    let satTxt = 'SAT '+sat+'%';
-    if(domChecked('resp','normal','sat')) satTxt += ' (aire ambiente)';
-    else if(domChecked('resp','alt','o2sup')){
-      const disp = domDetail('resp','o2sup');
-      satTxt += disp ? ` (${disp})` : ' (con requerimiento de oxígeno suplementario)';
-    }
-    csv.push(satTxt);
-  }
   if(csv.length) out += `CSV: ${csv.join(', ')}. `;
-
-  if(cv) out += `A nivel cardiovascular, ${cv}${trendPhraseFor('cv',p)}. `;
-  if(estudioTipo && estudioInforme) out += `Se recibe informe de ${estudioTipo}: ${estudioInforme}. `;
-  if(resp) out += `Al examen respiratorio, ${resp}${trendPhraseFor('resp',p)}. `;
-  if(dig) out += `Abdomen ${dig}${trendPhraseFor('dig',p)}. `;
-  if(renal) out += `A nivel renal, ${renal}${trendPhraseFor('renal',p)}. `;
-  if(miembros) out += `A nivel de los miembros, ${miembros}${trendPhraseFor('miembros',p)}. `;
-  if(infectoAplica && infecto) out += `Desde el punto de vista infectológico, ${infecto}${trendPhraseFor('infecto',p)}. `;
-
-  if(extra) out += extra.trim() + ' ';
-
-  /* --- Cierre estándar: remite a LABO/IMG/PEND cargados + estabilidad hemodinámica,
-     como en las evoluciones de referencia ("– LABO (ver labo)... Paciente
-     hemodinámicamente estable. Continúa control evolutivo."). Opcional, con checkbox. --- */
-  if(agregarCierre){
-    const refs = [];
-    if((p.labo||'').trim()) refs.push('LABO (ver labo)');
-    if((p.img||'').trim()) refs.push('IMG (ver imágenes)');
-    if((p.pend||'').trim()) refs.push('PEND (ver pendientes)');
-    if(refs.length) out += refs.join('. ') + '. ';
-    if(estado === 'mal estado general'){
-      out += 'Paciente persiste con criterios de inestabilidad. Requiere reevaluación estrecha y control evolutivo estricto.';
-    } else {
-      out += 'Paciente hemodinámicamente estable. Continúa control evolutivo.';
-    }
-  }
+  if(extra) out += extra;
 
   out = out.trim();
   p.evol = p.evol ? (out + '\n\n' + p.evol) : out;
@@ -1367,6 +1063,7 @@ function addEvolEntry(p){
 
   renderForm();
   renderPreview();
+  savePatientNow(p);
   const status = fld('status');
   status.textContent = 'Entrada de EVOL agregada.';
   setTimeout(()=>status.textContent='',2000);
@@ -1452,7 +1149,8 @@ function patientTableHtml(p){
 
 function renderPreview(){
   const out = fld('preview');
-  saveLocal();
+  const sel = getSelected();
+  if(sel) schedulePatientSave(sel);
   if(patients.length===0){
     out.innerHTML = '<p class="empty-note">Sin pacientes cargados todavía.</p>';
     return;
@@ -1506,12 +1204,31 @@ function loadAllFromFile(file){
     try{
       const data = JSON.parse(e.target.result);
       if(data.patients && Array.isArray(data.patients)){
-        patients = data.patients;
-        counter = patients.length ? Math.max(...patients.map(p=>parseInt((p.id||'p0').replace('p',''))||0)) : 0;
-        selectedId = patients.length ? patients[0].id : null;
+        const fs = fsApi();
+        const imported = data.patients.map(raw=>{
+          const id = raw.id || (fs ? fs.doc(fs.pacientesCol).id : ('local'+Date.now()+Math.random()));
+          return { ...raw, id };
+        });
+        imported.forEach(p=>{
+          const idx = patients.findIndex(x=>x.id===p.id);
+          if(idx===-1) patients.push(p); else patients[idx]=p;
+        });
+        selectedId = imported.length ? imported[0].id : selectedId;
         renderAll();
-        fld('status').textContent = 'Copia importada correctamente.';
-        setTimeout(()=>fld('status').textContent='',2500);
+        if(fs){
+          fld('status').textContent = `Subiendo ${imported.length} pacientes a la base compartida...`;
+          Promise.all(imported.map(p=>fs.setDoc(fs.doc(fs.db,'pacientes',p.id), patientDataForSave(p))))
+            .then(()=>{
+              fld('status').textContent = `${imported.length} pacientes importados y sincronizados en todos los dispositivos.`;
+              setTimeout(()=>fld('status').textContent='',3500);
+            })
+            .catch(()=>{
+              fld('status').textContent = 'Se importó localmente, pero hubo un error subiendo algún paciente a la nube.';
+            });
+        } else {
+          fld('status').textContent = 'Copia importada (sin conexión a la base compartida).';
+          setTimeout(()=>fld('status').textContent='',2500);
+        }
       } else {
         fld('status').textContent = 'El archivo no tiene el formato esperado.';
       }
@@ -1530,18 +1247,12 @@ fld('loadFileInput').addEventListener('change', (e)=>{
   e.target.value='';
 });
 fld('clearAllBtn').addEventListener('click', ()=>{
-  if(!confirm('¿Borrar TODA la base de pacientes guardada en esta computadora? Esta acción no se puede deshacer.')) return;
+  if(!confirm('¿Borrar TODA la base de pacientes compartida (para todos los dispositivos)? Esta acción no se puede deshacer.')) return;
+  const toDelete = patients.map(p=>p.id);
   patients = [];
-  localStorage.removeItem(STORAGE_PATIENTS);
-  addPatient();
-});
-fld('restoreSeedBtn').addEventListener('click', ()=>{
-  if(!confirm('¿Reemplazar la lista actual de pacientes por el archivero precargado de ejemplo? Se van a borrar los pacientes que tengas cargados ahora en esta computadora (podés exportar una copia antes con "Exportar copia").')) return;
-  patients = buildSeedPatients();
-  selectedId = patients[0].id;
   renderAll();
-  fld('status').textContent = 'Archivero precargado restaurado.';
-  setTimeout(()=>fld('status').textContent='',2500);
+  toDelete.forEach(id=>deletePatientRemote(id));
+  addPatient();
 });
 fld('patientSearch').addEventListener('input', (e)=>{ sidebarFilter = e.target.value; renderSidebar(); });
 
@@ -1558,16 +1269,65 @@ fld('printBtn').addEventListener('click', ()=>window.print());
   fld('clock').textContent = today.toLocaleDateString('es-AR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
 })();
 
+/* ================= Sincronización en tiempo real con Firestore =================
+   Un único listener (onSnapshot) mantiene "patients" al día en todos los dispositivos.
+   Si estás con el foco puesto en un campo del formulario del paciente seleccionado,
+   se evita pisar esa ficha con datos que lleguen de otro dispositivo justo en ese
+   instante (se van a acomodar solos apenas saques el foco de ahí). */
+let firstSnapshotHandled = false;
+function applyRemoteSnapshot(remoteList){
+  const activeInsideForm = document.activeElement && fld('formCol') && fld('formCol').contains(document.activeElement);
+  const currentlyEditingId = activeInsideForm ? selectedId : null;
+
+  const remoteById = {};
+  remoteList.forEach(r=>{ remoteById[r.id] = { id:r.id, ...r.data }; });
+
+  patients = patients.filter(p=>remoteById[p.id]);
+  Object.keys(remoteById).forEach(id=>{
+    const idx = patients.findIndex(p=>p.id===id);
+    if(idx===-1){
+      patients.push(remoteById[id]);
+    } else if(id !== currentlyEditingId){
+      patients[idx] = remoteById[id];
+    }
+  });
+
+  if(!selectedId || !patients.find(p=>p.id===selectedId)){
+    selectedId = patients.length ? patients[0].id : null;
+  }
+
+  renderSidebar();
+  renderPreview();
+  if(!activeInsideForm) renderForm();
+}
+
 function iniciarAppPrincipal(){
   if(window.__paseAppIniciada) return;
   window.__paseAppIniciada = true;
-  loadLocal();
-  if(patients.length===0){
-    patients = buildSeedPatients();
-    selectedId = patients[0].id;
-    saveLocal();
+  const fs = fsApi();
+  if(!fs){
+    fld('status').textContent = 'No se pudo conectar con la base de datos compartida. Revisá la configuración de Firebase.';
+    return;
   }
-  renderAll();
+  fs.onSnapshot(fs.pacientesCol, (snapshot)=>{
+    const remoteList = snapshot.docs.map(d=>({id:d.id, data:d.data()}));
+    applyRemoteSnapshot(remoteList);
+    if(!firstSnapshotHandled){
+      firstSnapshotHandled = true;
+      if(patients.length===0) addPatient();
+    }
+  }, ()=>{
+    fld('status').textContent = 'Error de conexión con la base de datos compartida.';
+  });
+  fs.onSnapshot(fs.configDocRef, (snap)=>{
+    if(snap.exists && snap.exists()){
+      const data = snap.data();
+      customItems = (data && typeof data === 'object') ? data : {};
+    } else {
+      customItems = {};
+    }
+    if(getSelected()) renderForm();
+  }, ()=>{});
 }
 window.iniciarAppPrincipal = iniciarAppPrincipal;
 </script>
@@ -1617,24 +1377,53 @@ window.iniciarAppPrincipal = iniciarAppPrincipal;
 </script>
 
 <script type="module">
+/* ================= Firestore: puente hacia el script clásico (no-module) =================
+   Este bloque inicializa Firestore y expone lo necesario en window.__fsBridge para que
+   el script principal (más abajo, script clásico) pueda leer/escribir sin convertirse
+   en módulo. Se ejecuta después de parsear el documento (los módulos siempre se difieren),
+   y antes de que el login dispare iniciarAppPrincipal() (que es asíncrono). */
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import {
+  getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDrBZV9QSlG27Sl0rXbwP7HGWBHQTYe56I",
+  authDomain: "pases-c121c.firebaseapp.com",
+  projectId: "pases-c121c",
+  storageBucket: "pases-c121c.firebasestorage.app",
+  messagingSenderId: "261660416072",
+  appId: "1:261660416072:web:e500450ad82c33de1be07d"
+};
+
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+window.__fsBridge = {
+  db, collection, doc, setDoc, deleteDoc, onSnapshot,
+  pacientesCol: collection(db, 'pacientes'),
+  configDocRef: doc(db, 'config', 'customItems')
+};
+</script>
+
+<script type="module">
 /* ================= Login con Firebase Authentication ================= */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
   getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut,
   setPersistence, browserSessionPersistence
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBYTf3p2WoKckSI8wGvi5jxvYPOghlMNqo",
-  authDomain: "gestor-9271f.firebaseapp.com",
-  projectId: "gestor-9271f",
-  storageBucket: "gestor-9271f.firebasestorage.app",
-  messagingSenderId: "765485190604",
-  appId: "1:765485190604:web:38ed43e7d1decba8b7e169",
-  measurementId: "G-RFHMGTL3L6"
+  apiKey: "AIzaSyDrBZV9QSlG27Sl0rXbwP7HGWBHQTYe56I",
+  authDomain: "pases-c121c.firebaseapp.com",
+  projectId: "pases-c121c",
+  storageBucket: "pases-c121c.firebasestorage.app",
+  messagingSenderId: "261660416072",
+  appId: "1:261660416072:web:e500450ad82c33de1be07d"
 };
 
-const app = initializeApp(firebaseConfig);
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
 // Persistencia "de sesión": la sesión vive mientras la pestaña/ventana está
