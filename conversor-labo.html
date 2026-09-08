@@ -31,6 +31,7 @@
   .btn-primary:hover{opacity:.85;}
   .btn-secondary{background:transparent;border:1px solid var(--ink) !important;color:var(--ink);}
   .btn-secondary:hover{background:var(--ink);color:var(--paper);}
+  .btn-secondary.active{background:var(--accent-dark) !important;border-color:var(--accent-dark) !important;color:var(--paper);}
   .btn-tiny{font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:10.5px;padding:4px 9px;border-radius:2px;cursor:pointer;border:1px solid var(--line-soft);background:#fff;color:var(--muted);}
   .btn-tiny:hover{border-color:var(--accent-dark);color:var(--accent-dark);}
   .pipe{display:flex;align-items:center;justify-content:center;}
@@ -57,6 +58,11 @@
   .catgroup h4{margin:0 0 6px;font-size:10.5px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.03em;}
   .catgroup label{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink);padding:2px 0;cursor:pointer;}
   .catgroup input[type=checkbox]{margin:0;cursor:pointer;}
+
+  .gasa-wrap{display:none;flex-direction:column;gap:6px;margin-top:12px;border-top:1px dashed var(--accent-dark);padding-top:10px;}
+  .gasa-wrap.show{display:flex;}
+  .gasa-wrap .gasa-label{font-size:11px;color:var(--accent-dark);font-weight:700;line-height:1.4;}
+  #laboGasaInput{min-height:110px;font-family:'IBM Plex Mono',monospace;font-size:12px;padding:8px;border:1px solid var(--accent-dark);background:var(--field-bg);border-radius:2px;resize:vertical;width:100%;}
 </style>
 </head>
 <body>
@@ -76,6 +82,11 @@
           <input type="date" id="laboFecha">
           <button type="button" class="btn-primary" id="laboProcesarBtn">Procesar</button>
           <button type="button" class="btn-secondary" id="laboLimpiarBtn">Limpiar</button>
+          <button type="button" class="btn-secondary" id="laboLabCompletoBtn">LAB Completo</button>
+        </div>
+        <div class="gasa-wrap" id="laboGasaWrap">
+          <div class="gasa-label">Se detectó una punción de líquido ascítico con Albúmina. Para calcular el GASA, pegá acá el laboratorio de sangre (plasmático) que incluya Albúmina:</div>
+          <textarea id="laboGasaInput" placeholder="Pegá acá el laboratorio plasmático (debe incluir Albúmina)..."></textarea>
         </div>
       </div>
 
@@ -122,6 +133,10 @@ function fld(id){ return document.getElementById(id); }
   const $output = fld('laboOutput');
   const $status = fld('laboStatus');
   const $checklistGrid = fld('laboChecklistGrid');
+  const $gasaWrap = fld('laboGasaWrap');
+  const $gasaInput = fld('laboGasaInput');
+  const $labCompletoBtn = fld('laboLabCompletoBtn');
+  let laboFullMode = false;
 
   function laboToday(){
     // Usamos los componentes de fecha LOCALES (no toISOString, que
@@ -161,7 +176,25 @@ function fld(id){ return document.getElementById(id); }
     if(/[<>]=?\s*\d+([.,]\d+)?/.test(s)) return true;
     return false;
   }
-  function laboParseRange(line){
+  function laboParseRange(line, sex){
+    // Algunos parámetros (ej. Troponina) traen dos rangos en el mismo
+    // renglón, uno para "Hombre" y otro para "Mujer". Si detectamos ambos
+    // marcadores, elegimos el que corresponda al sexo del paciente (si lo
+    // sabemos); si no lo sabemos, no evaluamos como alterado/normal para no
+    // arriesgar una lectura equivocada.
+    const sLower = line.trim().toLowerCase();
+    if(/\bhombre\b/.test(sLower) && /\bmujer\b/.test(sLower)){
+      if(!sex) return null;
+      const re = sex==='M'
+        ? /\bhombre\b\s*:?\s*([\s\S]*?)(?=\bmujer\b|$)/
+        : /\bmujer\b\s*:?\s*([\s\S]*)/;
+      const gm = sLower.match(re);
+      if(gm && gm[1]) return laboParseRangeSimple(gm[1]);
+      return null;
+    }
+    return laboParseRangeSimple(line);
+  }
+  function laboParseRangeSimple(line){
     // Se juntan todos los patrones de rango que matchean en la ventana de
     // texto y se usa el que aparece primero (más cercano al valor), en vez
     // de probar los patrones en un orden fijo (eso hacía que a veces se
@@ -194,6 +227,15 @@ function fld(id){ return document.getElementById(id); }
     if(!$fecha.value) return '';
     const [y,m,d] = $fecha.value.split('-');
     return `${d}/${m}/${y}`;
+  }
+  function laboDetectSex(flat){
+    // Busca "Sexo Masculino" / "Sexo Femenino" (tal cual vienen pegados,
+    // sin espacio, en el volcado de NextLab) para poder elegir el rango de
+    // referencia correcto en parámetros que difieren por sexo (ej.
+    // Troponina). Si no se encuentra, se devuelve null (no se puede saber).
+    const m = flat.match(/\bsexo\s*:?\s*(masculino|femenino)/i);
+    if(!m) return null;
+    return /femenino/i.test(m[1]) ? 'F' : 'M';
   }
 
   // ---------------------------------------------------------------------
@@ -236,6 +278,11 @@ function fld(id){ return document.getElementById(id); }
     {code:'CR',    cat:'quimica', kind:'std',    l1:true,  l2:true,  aliases:[/\bcreatinina\b/i]},
     {code:'FG',    cat:'quimica', kind:'std',    l1:true,  l2:true,  aliases:[/\bfiltrado glomerular por ckd-?epi\b/i]},
     {code:'LDH',   cat:'quimica', kind:'std',    l1:false, l2:true,  aliases:[/\blactato deshidrogenasa\b/i]},
+    {code:'Amilasemia', cat:'quimica', kind:'std', l1:true, l2:true, aliases:[/\bamilasemia\b/i]},
+
+    {code:'CPK',       cat:'cardiaco', kind:'std', l1:true, l2:true, aliases:[/\bcreatinfosfoquinasa\b/i, /\bcpk\b/i]},
+    {code:'Troponina', cat:'cardiaco', kind:'std', l1:true, l2:true, aliases:[/\btroponina\s+i\s+cardiaca\s+ultrasensible\b/i, /\btroponina\s+i\b/i, /\btroponina\b/i]},
+
 
     {code:'Na', cat:'ionograma', kind:'std', l1:true, l2:true, aliases:[/\bsodio\b/i]},
     {code:'K',  cat:'ionograma', kind:'std', l1:true, l2:true, aliases:[/\bpotasio\b/i]},
@@ -301,7 +348,8 @@ function fld(id){ return document.getElementById(id); }
     {id:'hemograma',    label:'Hemograma'},
     {id:'indices',      label:'Índices hematimétricos'},
     {id:'coagulograma', label:'Coagulograma'},
-    {id:'quimica',      label:'Química general (renal / glucemia / PCR / LDH)'},
+    {id:'quimica',      label:'Química general (renal / glucemia / PCR / LDH / amilasa)'},
+    {id:'cardiaco',     label:'Marcadores cardíacos (CPK / Troponina)'},
     {id:'ionograma',    label:'Ionograma (Na/K/Cl + Ca/P/Mg)'},
     {id:'hepatico',     label:'Perfil hepático'},
     {id:'lipidico',     label:'Perfil lipídico'},
@@ -384,32 +432,33 @@ function fld(id){ return document.getElementById(id); }
       headerParts:[/UROAN[AÁ]LISIS/i, /ORINA\s+COMPLETA/i],
       chunks:[
         {
-          id:'orina_fq', boldLabel:'UROANALISIS (ORINA COMPLETA)', subheaderRe:null,
+          id:'orina_fq', boldLabel:'Uroanálisis', subheaderRe:null,
           fields:[
-            {key:'color',     out:'color', mode:'always',      labelRe:/\bcolor\b/i},
-            {key:'aspecto',   out:null,    mode:'aspectoQual', labelRe:/\baspecto\b/i},
-            {key:'densidad',  out:'δ',     mode:'always',      labelRe:/\bdensidad\b/i},
-            {key:'ph',        out:'pH',    mode:'always',      labelRe:/\bph\b/i},
-            {key:'proteinas', out:'proteinas', mode:'cross',    labelRe:/\bprote[ií]nas\b/i},
-            {key:'glucosa',   out:'Glucosa', mode:'skipDefault', labelRe:/\bglucosa\b/i, defaultRe:/no\s+contiene/i},
-            {key:'cetonas',   out:'Cetonas', mode:'cross',      labelRe:/\bcetonas\b/i},
-            {key:'pigbil',    out:'Pigmentos biliares', mode:'skipDefault', labelRe:/\bpigmentos\s+biliares\b/i, defaultRe:/no\s+contiene/i},
-            {key:'hb',        out:'Hb', mode:'skipDefault', labelRe:/\bhemoglobina\b/i, defaultRe:/no\s+contiene/i},
-            {key:'nitritos',  out:'Nitritos', mode:'skipDefault', labelRe:/\bnitritos\b/i, defaultRe:/negativo/i},
-            {key:'urobil',    out:'Urobilinógeno', mode:'always', labelRe:/\burobilin[oó]geno\b/i},
-            {key:'esterasa',  out:'Esterasa leucocitaria', mode:'always', labelRe:/\besterasa\s+leucocitaria\b/i},
+            {marker:/\bEx[aá]men\s+Fisicoqu[ií]mico\b/i},
+            {key:'color',     out:'color', mode:'core', labelRe:/\bcolor\b/i, noColon:true, lowercase:true},
+            {key:'aspecto',   out:null,    mode:'aspectoQual', labelRe:/\baspecto\b/i, lowercase:true},
+            {key:'densidad',  out:'δ',     mode:'core', labelRe:/\bdensidad\b/i},
+            {key:'ph',        out:'pH',    mode:'core', labelRe:/\bph\b/i},
+            {key:'proteinas', out:'Prot', mode:'cond', cross:true, labelRe:/\bprote[ií]nas\b/i},
+            {key:'glucosa',   out:'GLU', mode:'cond', labelRe:/\bglucosa\b/i},
+            {key:'cetonas',   out:'Cetonas', mode:'cond', cross:true, labelRe:/\bcetonas\b/i},
+            {key:'pigbil',    out:'Pigmentos biliares', mode:'cond', labelRe:/\bpigmentos\s+biliares\b/i},
+            {key:'hb',        out:'Hb', mode:'cond', labelRe:/\bhemoglobina\b/i},
+            {key:'nitritos',  out:'Nitritos', mode:'cond', labelRe:/\bnitritos\b/i},
+            {key:'urobil',    out:'Urobilinógeno', mode:'condPlain', labelRe:/\burobilin[oó]geno\b/i},
+            {key:'esterasa',  out:'Esterasa leucocitaria', mode:'condPlain', labelRe:/\besterasa\s+leucocitaria\b/i},
           ]
         },
         {
           id:'sedimento', boldLabel:'Sedimento Urinario',
           fields:[
             {marker:/\bsedimento\s+urinario\b/i},
-            {key:'cel_epit', out:'Células epiteliales', mode:'always', labelRe:/\bc[eé]lulas\s+epiteliales\b/i},
-            {key:'hematies', out:'Hematíes', mode:'always', labelRe:/\bhemat[ií]es\b/i},
-            {key:'leucos',   out:'leucocitos', mode:'always', labelRe:/\bleucocitos\b/i},
-            {key:'cilindros',out:'cilindros', mode:'skipDefault', labelRe:/\bcilindros\b/i, defaultRe:/no\s+se\s+observan/i},
-            {key:'cristales',out:'cristales', mode:'skipDefault', labelRe:/\bcristales\b/i, defaultRe:/no\s+se\s+observan/i},
-            {key:'mucus_s',  out:'mucus', mode:'always', labelRe:/\bmucus\b/i},
+            {key:'cel_epit', out:'Células epiteliales', mode:'condPlain', labelRe:/\bc[eé]lulas\s+epiteliales\b/i},
+            {key:'hematies', out:'Hematíes', mode:'condPlain', labelRe:/\bhemat[ií]es\b/i},
+            {key:'leucos',   out:'leucocitos', mode:'condPlain', labelRe:/\bleucocitos\b/i},
+            {key:'cilindros',out:'Cilindros', mode:'cond', labelRe:/\bcilindros\b/i},
+            {key:'cristales',out:'Cristales', mode:'cond', labelRe:/\bcristales\b/i},
+            {key:'mucus_s',  out:'Mucus', mode:'condPlain', labelRe:/\bmucus\b/i},
           ]
         }
       ]
@@ -421,42 +470,42 @@ function fld(id){ return document.getElementById(id); }
         {
           id:'urocultivo_fq', boldLabel:'MICROBIOLOGIA - UROCULTIVO',
           fields:[
-            {key:'tipo_muestra', out:null, mode:'always', labelRe:/\btipo\s+de\s+muestra\b/i},
+            {key:'tipo_muestra', out:null, mode:'core', labelRe:/\btipo\s+de\s+muestra\b/i},
             {marker:/\bEXAMEN\s+FISICO-?\s*QUIMICO\b/i},
-            {key:'color2',    out:'color', mode:'always', labelRe:/\bcolor\b/i},
-            {key:'aspecto2',  out:null,    mode:'aspectoQual', labelRe:/\baspecto\b/i},
-            {key:'densidad2', out:'δ',     mode:'always', labelRe:/\bdensidad\b/i},
-            {key:'ph2',       out:'pH',    mode:'always', labelRe:/\bph\b/i},
-            {key:'prot2',     out:'Prot', mode:'skipDefault', labelRe:/\bprote[ií]nas\b/i, defaultRe:/no\s+contiene/i},
-            {key:'glu2',      out:'GLU', mode:'skipDefault', labelRe:/\bglucosa\b/i, defaultRe:/no\s+contiene/i},
-            {key:'cet2',      out:'Cetonas', mode:'skipDefault', labelRe:/\bcetonas\b/i, defaultRe:/no\s+contiene/i},
-            {key:'bili2',     out:'Bilirrubina', mode:'skipDefault', labelRe:/\bbilirrubina\b/i, defaultRe:/no\s+contiene/i},
-            {key:'hb2',       out:'Hb', mode:'skipDefault', labelRe:/\bhemoglobina\b/i, defaultRe:/no\s+contiene/i},
-            {key:'nitritos2', out:'Nitritos', mode:'skipDefault', labelRe:/\bnitritos\b/i, defaultRe:/negativo/i},
-            {key:'urobil2',   out:'Urobilinogeno', mode:'always', labelRe:/\burobilin[oó]geno\b/i},
-            {key:'esterasa2', out:'Esterasa', mode:'skipDefault', labelRe:/\besterasa\b/i, defaultRe:/no\s+contiene/i},
+            {key:'color2',    out:'color', mode:'core', labelRe:/\bcolor\b/i, noColon:true, lowercase:true},
+            {key:'aspecto2',  out:null,    mode:'aspectoQual', labelRe:/\baspecto\b/i, lowercase:true},
+            {key:'densidad2', out:'δ',     mode:'core', labelRe:/\bdensidad\b/i},
+            {key:'ph2',       out:'pH',    mode:'core', labelRe:/\bph\b/i},
+            {key:'prot2',     out:'Prot', mode:'cond', labelRe:/\bprote[ií]nas\b/i},
+            {key:'glu2',      out:'GLU', mode:'cond', labelRe:/\bglucosa\b/i},
+            {key:'cet2',      out:'Cetonas', mode:'cond', labelRe:/\bcetonas\b/i},
+            {key:'bili2',     out:'Bilirrubina', mode:'cond', labelRe:/\bbilirrubina\b/i},
+            {key:'hb2',       out:'Hb', mode:'cond', labelRe:/\bhemoglobina\b/i},
+            {key:'nitritos2', out:'Nitritos', mode:'cond', labelRe:/\bnitritos\b/i},
+            {key:'urobil2',   out:'Urobilinogeno', mode:'condPlain', labelRe:/\burobilin[oó]geno\b/i},
+            {key:'esterasa2', out:'Esterasa', mode:'cond', labelRe:/\besterasa\b/i},
           ]
         },
         {
           id:'micro', boldLabel:'EXAMEN MICROSCÓPICO',
           fields:[
             {marker:/\bEXAMEN\s+MICROSC[OÓ]PICO\b/i},
-            {key:'celulas',      out:'Células', mode:'always', labelRe:/\bc[eé]lulas\b/i},
-            {key:'cel_redondas', out:'Células redondas', mode:'skipDefault', labelRe:/\bc[eé]lulas\s+redondas\b/i, defaultRe:/no\s+se\s+observan/i},
-            {key:'hematies2',    out:'Hematíes', mode:'skipDefault', labelRe:/\bhemat[ií]es\b/i, defaultRe:/no\s+se\s+observan/i},
-            {key:'leucos2',      out:'Leucocitos', mode:'always', labelRe:/\bleucocitos\b/i},
-            {key:'germenes',     out:'Gérmenes', mode:'always', labelRe:/\bg[eé]rmenes\b/i},
-            {key:'levaduras',    out:'Levaduras', mode:'always', labelRe:/\blevaduras\b/i},
-            {key:'cristales2',   out:'Cristales', mode:'skipDefault', labelRe:/\bcristales\b/i, defaultRe:/no\s+se\s+observan/i},
-            {key:'cilindros2',   out:'Cilindros', mode:'skipDefault', labelRe:/\bcilindros\b/i, defaultRe:/no\s+se\s+observan/i},
-            {key:'mucus_m',      out:'Mucus', mode:'skipDefault', labelRe:/\bmucus\b/i, defaultRe:/no\s+se\s+observa\b/i},
+            {key:'celulas',      out:'Células', mode:'condPlain', labelRe:/\bc[eé]lulas\b/i},
+            {key:'cel_redondas', out:'Células redondas', mode:'cond', labelRe:/\bc[eé]lulas\s+redondas\b/i},
+            {key:'hematies2',    out:'Hematíes', mode:'cond', labelRe:/\bhemat[ií]es\b/i},
+            {key:'leucos2',      out:'Leucocitos', mode:'condPlain', labelRe:/\bleucocitos\b/i},
+            {key:'germenes',     out:'Gérmenes', mode:'condPlain', labelRe:/\bg[eé]rmenes\b/i},
+            {key:'levaduras',    out:'Levaduras', mode:'condPlain', labelRe:/\blevaduras\b/i},
+            {key:'cristales2',   out:'Cristales', mode:'cond', labelRe:/\bcristales\b/i},
+            {key:'cilindros2',   out:'Cilindros', mode:'cond', labelRe:/\bcilindros\b/i},
+            {key:'mucus_m',      out:'Mucus', mode:'cond', labelRe:/\bmucus\b/i},
           ]
         },
         {
           id:'cultivo', boldLabel:'CULTIVO',
           fields:[
             {marker:/\bCULTIVO\b/i},
-            {key:'resultado', out:'Resultado', mode:'always', labelRe:/\bresultado\b/i},
+            {key:'resultado', out:'Resultado', mode:'core', labelRe:/\bresultado\b/i},
           ]
         }
       ]
@@ -524,19 +573,20 @@ function fld(id){ return document.getElementById(id); }
     if(!m) return null;
     return {value: laboToNumber(m[1]), endPos: startPos + m.index + m[0].length};
   }
-  function laboFindRangeAfter(text, startPos, maxWindow){
+  function laboFindRangeAfter(text, startPos, maxWindow, sex){
     const win = text.slice(startPos, startPos+maxWindow);
-    if(!laboLooksLikeRange(win)) return null;
-    return laboParseRange(win);
+    const hasGenderSplit = /\bhombre\b/i.test(win) && /\bmujer\b/i.test(win);
+    if(!hasGenderSplit && !laboLooksLikeRange(win)) return null;
+    return laboParseRange(win, sex);
   }
-  function laboExtractStd(flat, param){
+  function laboExtractStd(flat, param, sex){
     for(const rx of param.aliases){
       const re = new RegExp(rx.source, rx.flags.replace('g','')+'g');
       let m;
       while((m = re.exec(flat)) !== null){
         const numRes = laboFindNumberAfter(flat, m.index+m[0].length, 40);
         if(numRes && numRes.value!=null){
-          const range = laboFindRangeAfter(flat, numRes.endPos, 90);
+          const range = laboFindRangeAfter(flat, numRes.endPos, 90, sex);
           return {value:numRes.value, range, pos:m.index};
         }
         if(re.lastIndex === m.index) re.lastIndex++;
@@ -608,7 +658,10 @@ function fld(id){ return document.getElementById(id); }
     if(idx==null) return null;
     const w = laboFindWordAfter(flat, idx, 40);
     if(!w) return null;
-    const abnormal = !/^l[ií]mpido/i.test(w.value.trim());
+    // En líquidos de punción (ascítico, pleural, etc.) el hallazgo esperable
+    // se describe como "claro" o "incoloro" (no "límpido", que es el término
+    // que se usa en orina).
+    const abnormal = !/^(l[ií]mpido|claro|incoloro)\b/i.test(w.value.trim());
     return {value:w.value, pos:idx, abnormal};
   }
   function laboExtractLiqStd(flat, field, sectionIdx){
@@ -689,6 +742,44 @@ function fld(id){ return document.getElementById(id); }
   }
 
   // ---------------------------------------------------------------------
+  // GASA (Gradiente de Albúmina Sero-Ascítico). Solo tiene sentido cuando
+  // el texto pegado trae una punción de líquido ascítico con Albúmina
+  // informada; ahí se muestra una segunda caja para pegar el laboratorio
+  // de sangre (plasmático) y se calcula GASA = albúmina sérica − albúmina
+  // del líquido ascítico, con la interpretación clásica (Runyon).
+  // ---------------------------------------------------------------------
+  function laboFindAscLiqAlbumina(flat){
+    const study = LABO_LIQUIDOS_STUDIES.find(s=>s.id==='ascitico');
+    if(!study) return null;
+    const sectionIdx = laboFindSeqIndex(flat, study.headerParts, 0);
+    if(sectionIdx==null) return null;
+    const albField = LABO_LIQUIDOS_FIELDS.find(f=>f.key==='alb');
+    if(!albField) return null;
+    const r = laboExtractLiqStd(flat, albField, sectionIdx);
+    if(!r || r.value==null || r.value==='') return null;
+    return laboToNumber(r.value);
+  }
+  function laboFindSerumAlbumina(flatPlasma){
+    const param = LABO_MASTER.find(p=>p.code==='ALB');
+    if(!param) return null;
+    const sex = laboDetectSex(flatPlasma);
+    const r = laboExtractStd(flatPlasma, param, sex);
+    if(!r || r.value==null) return null;
+    return r.value;
+  }
+  function laboBuildGasaBlock(ascAlb, serumAlb){
+    const gasa = Math.round((serumAlb - ascAlb) * 100) / 100;
+    const esHTP = gasa >= 1.1;
+    const gasaTxtRaw = `${laboFmtNumber(gasa)} g/dL`;
+    const gasaTxt = `<span style="color:#C0392B;font-weight:700;">${gasaTxtRaw}</span>`;
+    const interp = esHTP
+      ? 'GASA ≥ 1.1 g/dL: indica hipertensión portal (sensibilidad aproximada 97%). La causa más frecuente es la cirrosis hepática; también se ve en insuficiencia cardíaca congestiva, hepatitis alcohólica, síndrome de Budd-Chiari, trombosis de la vena porta, metástasis hepáticas masivas y mixedema. Si además las proteínas totales del líquido son ≥2,5 g/dL orienta a causa cardíaca; si son &lt;2,5 g/dL orienta a cirrosis.'
+      : 'GASA &lt; 1.1 g/dL: sugiere causas no relacionadas con hipertensión portal, como carcinomatosis peritoneal, tuberculosis peritoneal, pancreatitis, síndrome nefrótico, serositis por enfermedades del tejido conectivo, u obstrucción/infarto intestinal.';
+    return `<b>GASA (gradiente de albúmina sero-ascítico)</b>: ${gasaTxt} `
+      + `(albúmina sérica ${laboFmtNumber(serumAlb)} g/dL − albúmina en líquido ascítico ${laboFmtNumber(ascAlb)} g/dL). ${interp}`;
+  }
+
+  // ---------------------------------------------------------------------
   // Helpers para uroanálisis / urocultivo (ver LABO_TEXT_STUDIES). A
   // diferencia de los líquidos de punción, acá cada estudio tiene varios
   // "chunks" con su propia etiqueta en negrita, y cada campo puede faltar
@@ -705,94 +796,162 @@ function fld(id){ return document.getElementById(id); }
     const startPos = laboFindSeqIndex(flat, study.headerParts, 0);
     if(startPos==null) return null;
 
-    const tokens = [];
-    study.chunks.forEach((chunk, ci)=>{
-      chunk.fields.forEach(f=>{
-        if(f.marker) tokens.push({type:'marker', re:f.marker});
-        else tokens.push({type:'field', re:f.labelRe, field:f, chunkIdx:ci});
-      });
-    });
-
     let cursor = startPos;
     let lastPos = startPos;
     const byChunk = study.chunks.map(()=>[]);
-    for(let i=0;i<tokens.length;i++){
-      const tok = tokens[i];
-      const re = new RegExp(tok.re.source, tok.re.flags.replace('g','')+'g');
-      const win = flat.slice(cursor, cursor+LABO_TEXT_SEARCH_WINDOW);
-      const m = re.exec(win);
-      if(!m) continue; // no se encontró cerca: se deja afuera, sin cortar el resto
-      const matchStart = cursor + m.index;
-      const labelEnd = matchStart + m[0].length;
-      if(tok.type==='marker'){ cursor = labelEnd; lastPos = labelEnd; continue; }
 
-      // Buscamos dónde arranca el próximo token reconocido (campo o
-      // subtítulo) para saber dónde termina el valor de este campo.
-      let valueEnd = null;
-      for(let j=i+1;j<tokens.length;j++){
-        const re2 = new RegExp(tokens[j].re.source, tokens[j].re.flags.replace('g','')+'g');
-        const win2 = flat.slice(labelEnd, labelEnd+LABO_TEXT_SEARCH_WINDOW);
-        const m2 = re2.exec(win2);
-        if(m2){ valueEnd = labelEnd + m2.index; break; }
-      }
-      // Si dentro de este estudio no hay ningún campo/subtítulo posterior
-      // que lo acote (ej. "Mucus", último campo de Sedimento Urinario),
-      // probamos con los límites "duros" de cualquier estudio de texto
-      // (encabezados y subtítulos de TODOS los estudios), para no comernos
-      // el título de la sección siguiente.
-      if(valueEnd==null && globalStops){
-        for(const gre of globalStops){
-          const re3 = new RegExp(gre.source, gre.flags.replace('g','')+'g');
-          const win3 = flat.slice(labelEnd, labelEnd+300);
-          const m3 = re3.exec(win3);
-          if(m3){
-            const cand = labelEnd + m3.index;
-            if(valueEnd==null || cand < valueEnd) valueEnd = cand;
-          }
+    study.chunks.forEach((chunk, ci)=>{
+      const items = chunk.fields; // mezcla de {marker} y campos reales
+      let orientationDecided = false;
+      let reversed = false; // true = "valor, luego etiqueta" (orden invertido)
+      let prevEnd = cursor;  // desde acá arranca el "hueco" del próximo campo
+
+      for(let idx=0; idx<items.length; idx++){
+        const item = items[idx];
+        const itemRe = item.marker || item.labelRe;
+        const re = new RegExp(itemRe.source, itemRe.flags.replace('g','')+'g');
+        const win = flat.slice(cursor, cursor+LABO_TEXT_SEARCH_WINDOW);
+        const m = re.exec(win);
+        if(!m) continue; // no se encontró cerca: se deja afuera, sin cortar el resto
+        const labelStart = cursor + m.index;
+        const labelEnd = labelStart + m[0].length;
+
+        if(item.marker){
+          cursor = labelEnd;
+          prevEnd = labelEnd;
+          lastPos = Math.max(lastPos, labelEnd);
+          continue;
         }
-      }
-      // Última red de contención: ventana chica, por si no hubo ningún
-      // límite reconocible cerca (fin del texto pegado, formato distinto).
-      if(valueEnd==null) valueEnd = Math.min(flat.length, labelEnd+45);
 
-      let valueText = flat.slice(labelEnd, valueEnd);
-      const finalM = valueText.match(/\bfinal\b/i);
-      if(finalM) valueText = valueText.slice(0, finalM.index);
-      valueText = valueText.replace(/\s+/g,' ').trim();
-      if(valueText!==''){
-        byChunk[tok.chunkIdx].push({field:tok.field, value:valueText, pos:matchStart});
-        lastPos = labelEnd + valueText.length;
+        // El primer campo real del chunk decide la orientación: si entre el
+        // final del elemento anterior (marcador o inicio del chunk) y esta
+        // etiqueta hay bastante texto de más, ese texto es el VALOR de este
+        // mismo campo (orden invertido: "valor, luego etiqueta"), un patrón
+        // que aparece en algunos volcados de NextLab para "Sedimento
+        // Urinario" cuando la columna de unidad ("/campo") desordena la
+        // tabla al copiarla como texto plano.
+        if(!orientationDecided){
+          reversed = (labelStart - prevEnd) > 3;
+          orientationDecided = true;
+        }
+
+        let valStart, valEnd;
+        if(reversed){
+          valStart = prevEnd;
+          valEnd = labelStart;
+        } else {
+          valStart = labelEnd;
+          // Límite: el próximo campo/marcador de ESTE chunk que se logre
+          // encontrar más adelante.
+          let nextStart = null;
+          for(let j=idx+1;j<items.length && nextStart==null;j++){
+            const nxt = items[j];
+            const nxtRe = nxt.marker || nxt.labelRe;
+            const nre = new RegExp(nxtRe.source, nxtRe.flags.replace('g','')+'g');
+            const winN = flat.slice(valStart, valStart+LABO_TEXT_SEARCH_WINDOW);
+            const mN = nre.exec(winN);
+            if(mN) nextStart = valStart + mN.index;
+          }
+          // Si no hay ninguno más en este chunk (ej. último campo), se
+          // prueba con los límites "duros" de cualquier estudio de texto
+          // (encabezados y subtítulos de TODOS los estudios), para no
+          // comerse el título de la sección siguiente.
+          if(nextStart==null && globalStops){
+            for(const gre of globalStops){
+              const re3 = new RegExp(gre.source, gre.flags.replace('g','')+'g');
+              const win3 = flat.slice(valStart, valStart+300);
+              const m3 = re3.exec(win3);
+              if(m3){
+                const cand = valStart + m3.index;
+                if(nextStart==null || cand < nextStart) nextStart = cand;
+              }
+            }
+          }
+          // Última red de contención: ventana chica, por si no hubo ningún
+          // límite reconocible cerca (fin del texto pegado, formato distinto).
+          valEnd = nextStart!=null ? nextStart : Math.min(flat.length, valStart+45);
+        }
+
+        let valueText = flat.slice(valStart, valEnd);
+        const finalM = valueText.match(/\bfinal\b/i);
+        if(finalM) valueText = valueText.slice(0, finalM.index);
+        valueText = valueText.replace(/\s+/g,' ').trim();
+        if(valueText!==''){
+          byChunk[ci].push({field:item, value:valueText, pos:labelStart});
+          lastPos = Math.max(lastPos, reversed ? labelEnd : valEnd);
+        }
+
+        cursor = labelEnd;
+        prevEnd = labelEnd;
       }
-      cursor = labelEnd;
-    }
+    });
+
     return {byChunk, maskStart: mStart.index, maskEnd: Math.max(lastPos, startPos+20)};
   }
 
-  function laboClassifyTextField(field, rawValue){
-    if(field.mode==='always') return {text: rawValue, abnormal:false};
+  function laboIsNormalText(v){
+    // Patrones que se consideran "sin alteraciones" para decidir qué se
+    // oculta en la presentación resumida (por defecto) de uroanálisis /
+    // urocultivo. Cubre variantes de redacción típicas de NextLab.
+    const s = v.trim().toLowerCase().replace(/\s+/g,' ');
+    if(/no\s+se\s+observan?\b/.test(s)) return true;
+    if(/^normal$/.test(s)) return true;
+    if(/no\s+contiene/.test(s)) return true;
+    if(/negativo/.test(s)) return true;
+    if(/^0\s*(?:a|-)\s*1\s*\/?\s*campo$/.test(s)) return true;
+    return false;
+  }
+  function laboSentenceCase(s){
+    const t = s.trim();
+    if(!t) return t;
+    return t.charAt(0).toUpperCase() + t.slice(1).toLowerCase();
+  }
+  function laboFixSpacedRange(s){
+    // "0a1" -> "0 a 1" (algunos volcados pegan el rango sin espacios)
+    return s.replace(/(\d)\s*a\s*(\d)/gi, '$1 a $2');
+  }
+  function laboClassifyTextField(field, rawValue, fullMode){
+    if(field.mode==='core'){
+      let v = laboFixSpacedRange(rawValue);
+      if(field.lowercase) v = v.toLowerCase();
+      return {text:v, abnormal:false, core:true, show:true};
+    }
     if(field.mode==='aspectoQual'){
-      // "Límpido" es el hallazgo esperable; cualquier otra cosa (Turbio,
-      // Ligeramente turbio, etc.) se resalta como hallazgo anormal.
-      const abnormal = !/^l[ií]mpido\b/i.test(rawValue.trim());
-      return {text: rawValue, abnormal};
+      let v = laboFixSpacedRange(rawValue);
+      if(field.lowercase) v = v.toLowerCase();
+      // Corrige la falta de tilde ("Limpido"/"limpido" -> "límpido").
+      v = v.replace(/^limpido\b/i, 'límpido');
+      const abnormal = !/^(l[ií]mpido|claro|incoloro)\b/i.test(v.trim());
+      return {text:v, abnormal, core:true, show:true};
     }
-    if(field.mode==='skipDefault'){
-      if(field.defaultRe.test(rawValue)) return null;
-      return {text: rawValue, abnormal:true};
-    }
-    if(field.mode==='cross'){
-      if(/no\s+contiene|negativo/i.test(rawValue)) return null;
-      const plus = rawValue.match(/\++/);
-      if(plus) return {text:plus[0], abnormal:true};
-      const num = rawValue.match(/-?\d+(?:[.,]\d+)?/);
-      if(num) return {text:num[0].replace(',', '.'), abnormal:true};
-      return null;
+    if(field.mode==='cond' || field.mode==='condPlain'){
+      const raw = laboFixSpacedRange(rawValue);
+      if(field.cross){
+        const isDefault = /no\s+contiene|negativo/i.test(raw);
+        if(!isDefault){
+          const plus = raw.match(/\++/);
+          const num = !plus && raw.match(/-?\d+(?:[.,]\d+)?/);
+          const val = plus ? plus[0] : (num ? num[0].replace(',', '.') : null);
+          if(val!=null) return {text:val, abnormal:true, core:false, show:true};
+        }
+        // Sin cruces ni número: se informa como un campo condicional común
+        // (ej. "No contiene"), que se oculta en la vista resumida si es lo
+        // esperable.
+      }
+      const normal = laboIsNormalText(raw);
+      const text = laboSentenceCase(raw);
+      if(normal) return {text, abnormal:false, core:false, show: !!fullMode};
+      // 'condPlain' son campos que antes eran "always" (nunca se coloreaban
+      // en rojo, solo se ocultaban si el valor era el esperable): mantienen
+      // ese comportamiento y solo ganan la posibilidad de ocultarse.
+      const colorRed = field.mode==='cond';
+      return {text, abnormal:colorRed, core:false, show:true};
     }
     return null;
   }
   function laboTextEnabledKey(study, chunk, field){ return 'uroanalisis|' + study.id + '|' + chunk.id + '|' + field.key; }
 
-  function laboBuildTextStudyBlocks(flat){
+  function laboBuildTextStudyBlocks(flat, fullMode){
     const blocks = [];
     const ranges = [];
     LABO_TEXT_STUDIES.forEach(study=>{
@@ -803,16 +962,35 @@ function fld(id){ return document.getElementById(id); }
       study.chunks.forEach((chunk, ci)=>{
         const entries = scan.byChunk[ci];
         if(!entries || entries.length===0) return;
-        const parts = [];
+        const coreParts = [];
+        const condParts = [];
+        let hasCoreField = false;
+        let anyCondFound = false;
         entries.forEach(e=>{
           const k = laboTextEnabledKey(study, chunk, e.field);
           if(!(laboEnabled[k] ?? true)) return;
-          const cls = laboClassifyTextField(e.field, e.value);
+          const cls = laboClassifyTextField(e.field, e.value, fullMode);
           if(!cls) return;
-          const txt = e.field.out ? `${e.field.out}: ${cls.text}` : cls.text;
-          parts.push(cls.abnormal ? `<span style="color:#C0392B;font-weight:700;">${txt}</span>` : txt);
+          const txt = e.field.out ? (e.field.noColon ? `${e.field.out} ${cls.text}` : `${e.field.out}: ${cls.text}`) : cls.text;
+          const html = cls.abnormal ? `<span style="color:#C0392B;font-weight:700;">${txt}</span>` : txt;
+          if(cls.core){
+            hasCoreField = true;
+            coreParts.push(html);
+          } else {
+            anyCondFound = true;
+            if(cls.show) condParts.push(html);
+          }
         });
-        if(parts.length>0) chunkTexts.push(`<b>${chunk.boldLabel}</b>: ${parts.join(', ')}.`);
+        let chunkText = null;
+        if(hasCoreField){
+          const parts = coreParts.concat(condParts);
+          if(parts.length>0) chunkText = `<b>${chunk.boldLabel}</b>: ${parts.join(', ')}.`;
+        } else if(anyCondFound){
+          chunkText = condParts.length>0
+            ? `<b>${chunk.boldLabel}</b>: ${condParts.join(', ')}.`
+            : `<b>${chunk.boldLabel}</b>: sin alteraciones.`;
+        }
+        if(chunkText) chunkTexts.push(chunkText);
       });
       if(chunkTexts.length>0) blocks.push(chunkTexts.join('<br>'));
     });
@@ -971,6 +1149,7 @@ function fld(id){ return document.getElementById(id); }
     const textStudyRanges = textStudyScan.map(s=>({start:s.maskStart, end:s.maskEnd}));
 
     const flatMasked = laboMaskRanges(flat, liquidosRanges.concat(textStudyRanges));
+    const sex = laboDetectSex(flat);
 
     const found = [];
     LABO_MASTER.forEach(param=>{
@@ -980,10 +1159,10 @@ function fld(id){ return document.getElementById(id); }
         const r = laboExtractPct(flatMasked, param);
         if(r && r.value!=null){ text = `${laboFmtNumber(r.value)}%`; abnormal = false; ok = true; pos = r.pos; }
       } else if(param.kind==='plaq'){
-        const r = laboExtractStd(flatMasked, param);
+        const r = laboExtractStd(flatMasked, param, sex);
         if(r){ text = laboFmtMiles(r.value); abnormal = laboIsAbnormal(r.value, r.range); ok = true; pos = r.pos; }
       } else if(param.kind==='pctstd'){
-        const r = laboExtractStd(flatMasked, param);
+        const r = laboExtractStd(flatMasked, param, sex);
         if(r){ text = `${laboFmtNumber(r.value)}%`; abnormal = laboIsAbnormal(r.value, r.range); ok = true; pos = r.pos; }
       } else if(param.kind==='raw'){
         // Sin chequeo de rango: se usa para parámetros que en este formato
@@ -991,14 +1170,14 @@ function fld(id){ return document.getElementById(id); }
         // referencia propio pegado justo después, para evitar que el motor
         // "tome prestado" por error el rango de otro parámetro que aparece
         // más adelante en el texto.
-        const r = laboExtractStd(flatMasked, param);
+        const r = laboExtractStd(flatMasked, param, sex);
         if(r){ text = laboFmtNumber(r.value); abnormal = false; ok = true; pos = r.pos; }
       } else if(param.kind==='qual'){
         // Serología: solo se informa si dio reactivo/positivo.
         const r = laboExtractQual(flatMasked, param);
         if(r){ text = r.value; abnormal = true; ok = true; pos = r.pos; }
       } else {
-        const r = laboExtractStd(flatMasked, param);
+        const r = laboExtractStd(flatMasked, param, sex);
         if(r){ text = laboFmtNumber(r.value); abnormal = laboIsAbnormal(r.value, r.range); ok = true; pos = r.pos; }
       }
       if(ok) found.push({code:param.code, text, abnormal, l1:param.l1, l2:param.l2, pos});
@@ -1025,6 +1204,7 @@ function fld(id){ return document.getElementById(id); }
       if(SECTION_STOPWORDS.includes(norm)) continue;
       if(EXTRA_STOPWORD_SUBSTR.some(w=>norm.includes(w))) continue;
       if(/^m[eé]todo/i.test(candidate)) continue;
+      if(/\b(hombre|mujer|var[oó]n|masculino|femenino)\s*:/i.test(candidate)) continue;
       if(laboLooksLikeRange(candidate)) continue;
       if(laboLooksLikeUnit(candidate)) continue;
       if(candidate === candidate.toUpperCase() && /[A-Za-zÁÉÍÓÚÑ]/.test(candidate)) continue;
@@ -1053,8 +1233,24 @@ function fld(id){ return document.getElementById(id); }
     const line1Items = found.filter(f=>f.l1).concat(extras).sort(byPos);
 
     const liquidosBlocks = laboBuildLiquidosBlocks(flat);
-    const textStudyResult = laboBuildTextStudyBlocks(flat);
+    const textStudyResult = laboBuildTextStudyBlocks(flat, laboFullMode);
     const textStudyBlocks = textStudyResult.blocks;
+
+    // GASA: si hay líquido ascítico con Albúmina, mostramos la segunda caja
+    // para la albúmina plasmática y, si ya tiene contenido, calculamos.
+    const ascAlb = laboFindAscLiqAlbumina(flat);
+    let gasaBlock = null;
+    if(ascAlb!=null){
+      $gasaWrap.classList.add('show');
+      const plasmaRaw = $gasaInput.value;
+      if(plasmaRaw && plasmaRaw.trim()){
+        const flatPlasma = plasmaRaw.replace(/[\t\r\n]+/g,' ').replace(/\s+/g,' ');
+        const serumAlb = laboFindSerumAlbumina(flatPlasma);
+        if(serumAlb!=null) gasaBlock = laboBuildGasaBlock(ascAlb, serumAlb);
+      }
+    } else {
+      $gasaWrap.classList.remove('show');
+    }
 
     if(line2Items.length===0 && line1Items.length===0 && liquidosBlocks.length===0 && textStudyBlocks.length===0){
       $output.innerHTML = '';
@@ -1094,13 +1290,18 @@ function fld(id){ return document.getElementById(id); }
       // que acá no se agrega otro punto extra al final.
       out += `<span style="${LABO_FONT}">${prefix}${b}</span>`;
     });
+    if(gasaBlock){
+      if(out) out += '<br><br>';
+      out += `<span style="${LABO_FONT}">${prefix}${gasaBlock}</span>`;
+    }
     $output.innerHTML = out;
 
     const extrasCount = extras.length;
     const line1CoreCount = line1Items.length - extrasCount;
     const liqTxt = liquidosBlocks.length ? ` Líquidos de punción: ${liquidosBlocks.length} estudio(s).` : '';
     const uroTxt = textStudyBlocks.length ? ` Uroanálisis/urocultivo: ${textStudyBlocks.length} estudio(s).` : '';
-    $status.textContent = `Listo. Renglón completo: ${line2Items.length} dato(s). Renglón resumen: ${line1CoreCount} del listado + ${extrasCount} adicional(es) alterado(s).${liqTxt}${uroTxt}`;
+    const gasaTxt = gasaBlock ? ' GASA calculado.' : (ascAlb!=null ? ' Falta el laboratorio plasmático para calcular el GASA.' : '');
+    $status.textContent = `Listo. Renglón completo: ${line2Items.length} dato(s). Renglón resumen: ${line1CoreCount} del listado + ${extrasCount} adicional(es) alterado(s).${liqTxt}${uroTxt}${gasaTxt}`;
   }
 
   const SECTION_STOPWORDS = [
@@ -1112,9 +1313,22 @@ function fld(id){ return document.getElementById(id); }
     'paciente','fecha','medico','servicio','sala','sexo','edad'
   ];
 
-  fld('laboProcesarBtn').addEventListener('click', laboProcesar);
+  fld('laboProcesarBtn').addEventListener('click', ()=>{
+    laboFullMode = false;
+    $labCompletoBtn.classList.remove('active');
+    laboProcesar();
+  });
+  $labCompletoBtn.addEventListener('click', ()=>{
+    laboFullMode = true;
+    $labCompletoBtn.classList.add('active');
+    laboProcesar();
+  });
   fld('laboLimpiarBtn').addEventListener('click', ()=>{
     $input.value = '';
+    $gasaInput.value = '';
+    $gasaWrap.classList.remove('show');
+    laboFullMode = false;
+    $labCompletoBtn.classList.remove('active');
     $output.innerHTML = '';
     $status.textContent = '';
     $input.focus();
@@ -1181,14 +1395,26 @@ function fld(id){ return document.getElementById(id); }
   });
 
   // Auto-conversión: apenas se pega o se escribe texto en el cuadro de
-  // entrada, se procesa solo, sin necesidad de tocar "Procesar".
+  // entrada, se procesa solo, sin necesidad de tocar "Procesar". Al llegar
+  // texto nuevo al cuadro principal, se vuelve a la vista resumida (LAB
+  // Completo hay que pedirla de nuevo a propósito).
   let laboAutoTimer = null;
   function laboAutoProcesar(){
+    if(laboAutoTimer) clearTimeout(laboAutoTimer);
+    laboAutoTimer = setTimeout(()=>{
+      laboFullMode = false;
+      $labCompletoBtn.classList.remove('active');
+      laboProcesar();
+    }, 150);
+  }
+  function laboAutoProcesarGasa(){
     if(laboAutoTimer) clearTimeout(laboAutoTimer);
     laboAutoTimer = setTimeout(()=>{ laboProcesar(); }, 150);
   }
   $input.addEventListener('input', laboAutoProcesar);
   $input.addEventListener('paste', laboAutoProcesar);
+  $gasaInput.addEventListener('input', laboAutoProcesarGasa);
+  $gasaInput.addEventListener('paste', laboAutoProcesarGasa);
 
   laboToday();
   laboLoadEnabled();
