@@ -68,6 +68,7 @@
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px;}
   .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
   .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+  .grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
   input[type=text],input[type=date],textarea,select{
     font-family:'IBM Plex Mono',monospace;font-size:12px;padding:6px 7px;
     border:1px solid var(--line-soft);background:var(--field-bg);color:var(--ink);border-radius:2px;width:100%;
@@ -293,6 +294,7 @@
       <button id="saveAllBtn">Exportar copia (.json)</button>
       <button id="loadAllBtn">Importar copia (.json)</button>
       <input type="file" id="loadFileInput" accept="application/json" style="display:none">
+      <button id="restoreSeedBtn">Cargar pacientes precargados</button>
       <button id="clearAllBtn" class="danger">Borrar toda la base</button>
       <div class="persist-note">Los datos quedan guardados automáticamente en este navegador y esta computadora. Exportá una copia de vez en cuando por las dudas — si abrís el archivo en otra PC o navegador, no vas a ver lo cargado acá salvo que importes esa copia.</div>
     </div>
@@ -319,31 +321,31 @@
 const SISTEMAS = {
   neuro: { label:'Neurológico',
     normal:[
-      {id:'vigil',text:'vigil',antagonistas:['somnoliento','glasgow']},
-      {id:'reactivo',text:'reactivo',antagonistas:[]},
+      {id:'vigil',text:'vigil',variants:['vigil','consciente y vigil'],antagonistas:['somnoliento','glasgow']},
+      {id:'reactivo',text:'reactivo',variants:['reactivo','reactivo a estímulos'],antagonistas:[]},
       {id:'colaborador',text:'colaborador',antagonistas:['excitacion']},
-      {id:'orientado3',text:'orientado en las 3 esferas',antagonistas:['desorientado','confuso']},
-      {id:'sinfoco',text:'sin signos de foco motor',antagonistas:['focomotor']}
+      {id:'orientado3',text:'orientado en las 3 esferas',variants:['orientado en las 3 esferas','orientado en tiempo, espacio y persona'],antagonistas:['desorientado','confuso']},
+      {id:'sinfoco',text:'sin signos de foco motor',variants:['sin signos de foco motor','sin déficit neurológico focal evidente'],antagonistas:['focomotor']}
     ],
     alteraciones:[
       {id:'desorientado',text:'desorientado',detail:true,detailLabel:'esfera(s)',antagonistas:['orientado3']},
       {id:'glasgow',text:'Glasgow disminuido',detail:true,detailLabel:'puntaje',antagonistas:['vigil']},
       {id:'focomotor',text:'foco motor',detail:true,detailLabel:'descripción',antagonistas:['sinfoco']},
       {id:'excitacion',text:'excitación psicomotriz',antagonistas:['colaborador']},
-      {id:'somnoliento',text:'tendencia al sueño / somnoliento',antagonistas:['vigil']},
-      {id:'confuso',text:'confuso',antagonistas:['orientado3']}
+      {id:'somnoliento',text:'tendencia al sueño / somnoliento',variants:['tendencia al sueño / somnoliento','somnoliento, con inversión del ciclo sueño-vigilia'],antagonistas:['vigil']},
+      {id:'confuso',text:'confuso',variants:['confuso','con cuadro confusional'],antagonistas:['orientado3']}
     ]
   },
   cv: { label:'Cardiovascular',
     normal:[
-      {id:'r1r2',text:'R1 y R2 en 4 focos',antagonistas:[]},
+      {id:'r1r2',text:'R1 y R2 en 4 focos',variants:['R1 y R2 en 4 focos','R1-R2 normofonéticos en 4 focos'],antagonistas:[]},
       {id:'ritmoregular',text:'ritmo regular',antagonistas:['arritmia']},
-      {id:'silencios',text:'silencios impresionan libres',antagonistas:['soplo']},
-      {id:'sinfallo',text:'sin signos de fallo de bomba',antagonistas:['fallo']},
+      {id:'silencios',text:'silencios impresionan libres',variants:['silencios impresionan libres','sin soplos evidentes'],antagonistas:['soplo']},
+      {id:'sinfallo',text:'sin signos de fallo de bomba',variants:['sin signos de fallo de bomba','sin signos de descompensación hemodinámica ni fallo agudo de bomba'],antagonistas:['fallo']},
       {id:'iy',text:'IY 2/3 con colapso inspiratorio',antagonistas:['fallo']},
       {id:'rhyneg',text:'reflejo hepatoyugular negativo',antagonistas:['rhypos']},
       {id:'decubito',text:'tolera decúbito dorsal',antagonistas:['nodecubito']},
-      {id:'pulsos',text:'pulsos periféricos conservados',antagonistas:['pulsosdism']}
+      {id:'pulsos',text:'pulsos periféricos conservados',variants:['pulsos periféricos conservados','pulsos periféricos presentes, con buena perfusión'],antagonistas:['pulsosdism']}
     ],
     alteraciones:[
       {id:'arritmia',text:'arritmia / ritmo irregular',detail:true,detailLabel:'detalle',antagonistas:['ritmoregular']},
@@ -357,11 +359,11 @@ const SISTEMAS = {
   },
   resp: { label:'Respiratorio',
     normal:[
-      {id:'mecanica',text:'mecánica ventilatoria conservada',antagonistas:['tiraje']},
-      {id:'mv',text:'murmullo vesicular conservado bilateral',antagonistas:['mvdism']},
+      {id:'mecanica',text:'mecánica ventilatoria conservada',variants:['mecánica ventilatoria conservada','buena mecánica ventilatoria'],antagonistas:['tiraje']},
+      {id:'mv',text:'murmullo vesicular conservado bilateral',variants:['murmullo vesicular conservado bilateral','buena entrada de aire bilateral, murmullo vesicular conservado'],antagonistas:['mvdism']},
       {id:'sinagregados',text:'sin ruidos agregados',antagonistas:['crepitantes','sibilancias','roncus']},
       {id:'sintiraje',text:'sin tiraje',antagonistas:['tiraje']},
-      {id:'sat',text:'saturando adecuadamente al aire ambiente',antagonistas:['o2sup']}
+      {id:'sat',text:'saturando adecuadamente al aire ambiente',variants:['saturando adecuadamente al aire ambiente','adecuada oxigenación al aire ambiente'],antagonistas:['o2sup']}
     ],
     alteraciones:[
       {id:'crepitantes',text:'crepitantes',detail:true,detailLabel:'ubicación',antagonistas:['sinagregados']},
@@ -374,19 +376,23 @@ const SISTEMAS = {
   },
   dig: { label:'Digestivo',
     normal:[
-      {id:'blando',text:'blando',antagonistas:['defensa']},
+      {id:'blando',text:'blando',variants:['blando','abdomen blando'],antagonistas:['defensa']},
       {id:'depresible',text:'depresible',antagonistas:['distendido']},
-      {id:'indoloro',text:'indoloro',antagonistas:['doloroso']},
+      {id:'indoloro',text:'indoloro',variants:['indoloro','indoloro a la palpación superficial y profunda'],antagonistas:['doloroso']},
       {id:'rha',text:'RHA presentes',variants:['RHA presentes','RHA (+)'],antagonistas:['rhadism']},
-      {id:'catarsispos',text:'catarsis positiva',antagonistas:['catarsisneg']}
+      {id:'catarsispos',text:'catarsis positiva',antagonistas:['catarsisneg']},
+      {id:'sinascitis',text:'sin ascitis',antagonistas:['ascitis']},
+      {id:'sinvisceromegalia',text:'sin visceromegalias',antagonistas:['visceromegalia']}
     ],
     alteraciones:[
       {id:'doloroso',text:'doloroso a la palpación',detail:true,detailLabel:'localización',antagonistas:['indoloro']},
-      {id:'distendido',text:'distendido',antagonistas:['depresible']},
+      {id:'distendido',text:'distendido',variants:['distendido','globoso'],antagonistas:['depresible']},
       {id:'rhadism',text:'RHA disminuidos / ausentes',variants:['RHA disminuidos / ausentes','RHA (-)'],antagonistas:['rha']},
       {id:'catarsisneg',text:'catarsis negativa',detail:true,detailLabel:'días de evolución',antagonistas:['catarsispos']},
       {id:'defensa',text:'defensa / reacción peritoneal',antagonistas:['blando']},
-      {id:'masa',text:'masa palpable',detail:true,detailLabel:'descripción'}
+      {id:'masa',text:'masa palpable',detail:true,detailLabel:'descripción'},
+      {id:'ascitis',text:'signos de ascitis',detail:true,detailLabel:'grado / a tensión',antagonistas:['sinascitis']},
+      {id:'visceromegalia',text:'visceromegalia',detail:true,detailLabel:'hepatomegalia / esplenomegalia',antagonistas:['sinvisceromegalia']}
     ]
   },
   renal: { label:'Renal',
@@ -402,7 +408,7 @@ const SISTEMAS = {
       {id:'sinedema',text:'sin edemas',antagonistas:['edema']},
       {id:'sinflogosis',text:'sin flogosis',antagonistas:['flogosis']},
       {id:'sinflebitis',text:'sin signos de flebitis',antagonistas:['flebitis']},
-      {id:'pielsp',text:'piel sin particularidades',antagonistas:['lesionpiel']},
+      {id:'pielsp',text:'piel sin particularidades',variants:['piel sin particularidades','integridad cutánea conservada'],antagonistas:['lesionpiel','necrosis','palidez','cianosis']},
       {id:'perfusionok',text:'perfusión distal conservada',antagonistas:['perfusionmala']}
     ],
     alteraciones:[
@@ -410,13 +416,16 @@ const SISTEMAS = {
       {id:'flogosis',text:'flogosis',detail:true,detailLabel:'localización',antagonistas:['sinflogosis']},
       {id:'flebitis',text:'signos de flebitis',detail:true,detailLabel:'localización',antagonistas:['sinflebitis']},
       {id:'lesionpiel',text:'lesión / alteración en la piel',detail:true,detailLabel:'descripción',antagonistas:['pielsp']},
+      {id:'necrosis',text:'signos de necrosis / escara',detail:true,detailLabel:'localización',antagonistas:['pielsp']},
+      {id:'palidez',text:'palidez distal',antagonistas:['pielsp']},
+      {id:'cianosis',text:'cianosis distal',antagonistas:['pielsp']},
       {id:'perfusionmala',text:'perfusión distal disminuida',antagonistas:['perfusionok']}
     ]
   },
   infecto: { label:'Infectológico', opcional:true,
     normal:[
       {id:'buenaevol',text:'buena evolución del cuadro infeccioso',antagonistas:[]},
-      {id:'afebril',text:'afebril',antagonistas:['febril']},
+      {id:'afebril',text:'afebril',variants:['afebril','sin registros febriles','se mantiene en curva térmica'],antagonistas:['febril']},
       {id:'descensoleuco',text:'descenso de leucocitosis',antagonistas:['ascensoleuco']}
     ],
     alteraciones:[
@@ -428,6 +437,101 @@ const SISTEMAS = {
 };
 
 const SYS_ORDER = ['neuro','cv','resp','dig','renal','miembros','infecto'];
+
+/* ================= Variantes de estado general + ranking para tendencia ================= */
+const ESTADO_VARIANTS = {
+  'estables condiciones generales': ['estables condiciones generales','buen estado general, clínicamente estable','hemodinámicamente estable, sin intercurrencias'],
+  'regulares condiciones generales': ['regulares condiciones generales','regular estado general'],
+  'mal estado general': ['mal estado general']
+};
+const ESTADO_RANK = {'estables condiciones generales':2,'regulares condiciones generales':1,'mal estado general':0};
+function pickEstadoText(estado, patient){
+  const arr = ESTADO_VARIANTS[estado] || [estado];
+  return arr[(patient.evolCount||0) % arr.length];
+}
+function estadoTrendPhrase(prevEstado, estado){
+  if(!prevEstado || prevEstado===estado) return '';
+  const prevR = ESTADO_RANK[prevEstado], nowR = ESTADO_RANK[estado];
+  if(prevR==null || nowR==null) return '';
+  if(nowR>prevR) return ' Evoluciona con mejoría del estado general respecto de la evaluación previa.';
+  if(nowR<prevR) return ' Evoluciona con deterioro del estado general respecto de la evaluación previa.';
+  return '';
+}
+
+/* ================= Plantillas por motivo de internación ================= */
+const PLANTILLAS = {
+  sano: { label:'Paciente estable / en observación', estado:'estables condiciones generales',
+    set:{
+      neuro:{normal:{vigil:true,reactivo:true,colaborador:true,orientado3:true,sinfoco:true}, alt:{}},
+      cv:{normal:{r1r2:true,ritmoregular:true,silencios:true,sinfallo:true,pulsos:true}, alt:{}},
+      resp:{normal:{mecanica:true,mv:true,sinagregados:true,sintiraje:true,sat:true}, alt:{}},
+      dig:{normal:{blando:true,depresible:true,indoloro:true,rha:true,catarsispos:true,sinascitis:true,sinvisceromegalia:true}, alt:{}},
+      renal:{normal:{diuresispos:true}, alt:{}},
+      miembros:{normal:{sinedema:true,sinflogosis:true,sinflebitis:true,pielsp:true,perfusionok:true}, alt:{}},
+      infecto:{apply:false, normal:{}, alt:{}}
+    }
+  },
+  confusional: { label:'Síndrome confusional agudo / foco infeccioso', estado:'regulares condiciones generales',
+    set:{
+      neuro:{normal:{reactivo:true}, alt:{confuso:true,desorientado:true}},
+      cv:{normal:{r1r2:true,ritmoregular:true,silencios:true,sinfallo:true,pulsos:true}, alt:{}},
+      resp:{normal:{mecanica:true,mv:true,sinagregados:true,sintiraje:true}, alt:{}},
+      dig:{normal:{blando:true,depresible:true,indoloro:true,rha:true}, alt:{}},
+      renal:{normal:{diuresispos:true}, alt:{}},
+      miembros:{normal:{sinedema:true,sinflogosis:true,pielsp:true}, alt:{}},
+      infecto:{apply:true, normal:{}, alt:{febril:true}}
+    }
+  },
+  ic_epoc: { label:'Insuficiencia cardíaca / EPOC reagudizado', estado:'regulares condiciones generales',
+    set:{
+      neuro:{normal:{vigil:true,reactivo:true,colaborador:true,orientado3:true,sinfoco:true}, alt:{}},
+      cv:{normal:{r1r2:true}, alt:{arritmia:true,fallo:true,rhypos:true}},
+      resp:{normal:{mecanica:true}, alt:{sibilancias:'bilaterales'}},
+      dig:{normal:{blando:true,depresible:true,indoloro:true,rha:true,catarsispos:true}, alt:{}},
+      renal:{normal:{diuresispos:true}, alt:{}},
+      miembros:{normal:{sinflebitis:true,perfusionok:true}, alt:{edema:'3/6, miembro inferior'}},
+      infecto:{apply:false, normal:{}, alt:{}}
+    }
+  },
+  ascitico: { label:'Síndrome ascítico-edematoso (cirrosis)', estado:'regulares condiciones generales',
+    set:{
+      neuro:{normal:{reactivo:true}, alt:{confuso:true}},
+      cv:{normal:{r1r2:true,ritmoregular:true,silencios:true,sinfallo:true,iy:true,pulsos:true}, alt:{}},
+      resp:{normal:{mecanica:true,sintiraje:true,sat:true}, alt:{mvdism:'bibasal'}},
+      dig:{normal:{blando:true,indoloro:true}, alt:{distendido:true,ascitis:'a tensión'}},
+      renal:{normal:{diuresispos:true}, alt:{}},
+      miembros:{normal:{sinedema:true,sinflogosis:true,sinflebitis:true,pielsp:true,perfusionok:true}, alt:{}},
+      infecto:{apply:false, normal:{}, alt:{}}
+    }
+  }
+};
+function aplicarPlantilla(patient, key){
+  const tpl = PLANTILLAS[key];
+  if(!tpl) return;
+  SYS_ORDER.forEach(sysKey=>{
+    const merged = getMergedItems(sysKey);
+    const cfg = tpl.set[sysKey] || {normal:{}, alt:{}};
+    merged.normal.forEach(item=>{
+      const chk = document.querySelector(`[data-sys="${sysKey}"][data-kind="normal"][data-id="${item.id}"]`);
+      if(chk) chk.checked = !!(cfg.normal && cfg.normal[item.id]);
+    });
+    merged.alteraciones.forEach(item=>{
+      const chk = document.querySelector(`[data-sys="${sysKey}"][data-kind="alt"][data-id="${item.id}"]`);
+      if(!chk) return;
+      const val = cfg.alt && cfg.alt[item.id];
+      chk.checked = !!val;
+      if(item.detail){
+        const det = document.querySelector(`[data-detail-for="${item.id}"][data-sys="${sysKey}"]`);
+        if(det) det.value = (typeof val === 'string') ? val : '';
+      }
+    });
+    if(sysKey==='infecto'){
+      const apply = fld('apply_infecto');
+      if(apply) apply.checked = !!(tpl.set.infecto && tpl.set.infecto.apply);
+    }
+  });
+  if(tpl.estado) fld('evolEstado').value = tpl.estado;
+}
 const STORAGE_PATIENTS = 'pase_sala_patients_v1';
 const STORAGE_CUSTOM = 'pase_sala_custom_v1';
 
@@ -438,13 +542,261 @@ let counter = 0;
 let sidebarFilter = '';
 let fechaAutoSync = true;
 
+/* ================= Checklist inicial a partir de un examen ya descripto =================
+   Convierte un objeto "set" (mismo formato que PLANTILLAS[x].set: normal/alt por sistema)
+   en un lastChecklist completo, usando como base el catálogo de SISTEMAS. Así, un paciente
+   precargado con su último examen físico ya transcripto arranca con el checklist en ese
+   mismo estado, y desde ahí la evolución se va modificando a medida que se tilda/destilda
+   cada ítem, en vez de arrancar de cero. */
+function buildChecklistState(estado, setObj){
+  const state = { estado: estado, systems:{} };
+  SYS_ORDER.forEach(key=>{
+    const merged = getMergedItems(key);
+    const cfg = (setObj && setObj[key]) || {normal:{}, alt:{}};
+    const sysState = { normal:{}, alt:{} };
+    merged.normal.forEach(item=>{ sysState.normal[item.id] = !!(cfg.normal && cfg.normal[item.id]); });
+    merged.alteraciones.forEach(item=>{
+      const val = cfg.alt && cfg.alt[item.id];
+      sysState.alt[item.id] = !!val;
+      if(item.detail) sysState.alt['detail_'+item.id] = (typeof val === 'string') ? val : '';
+    });
+    if(key==='infecto') sysState.apply = !!(setObj && setObj.infecto && setObj.infecto.apply);
+    state.systems[key] = sysState;
+  });
+  return state;
+}
+
+/* ================= Archivero precargado (pacientes reales del pase) =================
+   Cada entrada trae el EVOL tal cual estaba escrito (texto libre, se sigue completando
+   igual que cualquier otro), y un lastChecklist ya calculado a partir del último examen
+   físico transcripto en ese EVOL, para que la carga de la próxima entrada arranque
+   reflejando el estado real del paciente y no un paciente sano genérico. */
+const SEED_PATIENTS_DATA = [
+  {
+    cama:'C109', nombre:'Gallo Jorge', edad:'74 años · DNI 10424858 · FN 18/04/1952 · FI 18/07/26', sexo:'masculino',
+    ant:'MC: Caída de propia altura en vía pública. ANT: Trastorno de pánico, alcoholismo (2 botellas de licor al día), consumo de marihuana y cocaína no cuantificable, apendicectomía. MH: Clonazepam 2.5 mg.',
+    mi:[
+      {text:'Social - Tercer nivel', resuelto:false},
+      {text:'TEC sin pérdida de conciencia secundario a caída de propia altura', resuelto:true}
+    ],
+    asoc:[
+      {text:'Deterioro cognitivo en estudio', resuelto:false},
+      {text:'Hipovitaminosis B12 34 (20/7)', resuelto:false},
+      {text:'Flebitis en miembro superior izquierdo', resuelto:true},
+      {text:'Hipokalemia leve', resuelto:true},
+      {text:'Hiperbilirrubinemia', resuelto:true}
+    ],
+    cult:'',
+    evol:[
+      '7/9: estable. Paciente en buen estado general, hemodinámicamente estable. CSV: TA:120/80, Tº35.3, FC:104, SAT:97% (21%).',
+      '4/9: estable',
+      '3/9: Paciente en buen estado general, hemodinámicamente estable. CSV: TA:120/80, Tº35.9, FC:87, SAT:96% (21%).',
+      '2/9: Estable. CSV: TA:122/82, Tº35.6, FC:107, SAT:98% (21%).',
+      '1/9: Estable. CSV: TA:130/80, Tº35.6, FC:107, SAT:98% (21%).',
+      '31/8: Estable. CSV: TA:120/80, Tº35.7, FC:97, SAT:98% (21%).',
+      '28/8: Estable. CSV: TA:120/80, Tº35.6, FC:95, SAT:98% (21%).',
+      '27/8: Estable. CSV: TA:130/90, Tº35, FC:98, SAT:98% (21%).',
+      '26/8: Estable. Se ajusta medicación psiquiátrica por valoración de salud mental (risperidona suspende, se indica olanzapina).',
+      '25/8: hielo en antebrazo por flogosis.',
+      '20/8: CSV TA 116/76, T 36, FC 85, SAT 99. Vigil, orientado en 3 esferas, reactivo, sin signos de foco motor. BEAB, BMV, sin ruidos agregados. R1-R2 en cuatro focos, sin signos de fallo agudo de bomba. Abdomen sin particularidades. IC con kinesiología para mejora de movilización.',
+      '18/8: Vigil, reactivo, confuso no orientado, sin foco motor, R1-R2 en 4 focos sin fallo de bomba. BMV BEAB. ABD blando depresible indoloro.',
+      '14/8: estable',
+      '9/8 Guardia: Estable. Inversión del ciclo sueño-vigilia (somnoliento de día, excitado de noche).',
+      '7/8: estable. Mejoría del sensorio por la tarde.',
+      '4/8: intercurre con deterioro del sensorio, se realiza labo y TAC de encéfalo sin cambios.'
+    ].join('\n\n'),
+    labo:'31/08/2026: GB: 7.2, N: 64%, LINF: 24%, GR: 4.9, HB: 13.7, HTO: 39.6, PLAQ: 224.000, GLUC: 114, CR: 1.02, NA: 142.2, K: 4.2, CL: 103.9, GPT: 15, GOT: 15, FAL: 72, BT: 0.47, BD: 0.1.\n24/08/2026: GB: 10.9, N: 79%, LINF: 13%, GR: 4.6, HB: 12.8, HTO: 37.3, PLAQ: 189.000, GLUC: 121.0, UREA: 32.9, CR: 0.89, NA: 141.2, K: 4.2, CL: 102.9.\nSerologías negativas / B12 34 / Ácido fólico 14.',
+    img:'4/8 TAC de encéfalo: sp.\n18/7 TC de encéfalo: no se visualizan colecciones hemorrágicas. Hipodensidades subcentimétricas de aspecto secuelar microangiopático. Leucoaraiosis. Sistema ventricular y surcos amplios de aspecto involutivo. Línea media sin desplazamientos. Conclusión: no se observa patología aguda.',
+    pend:'IC Salud Mental.',
+    plan:'',
+    lastEstado:'estables condiciones generales',
+    lastChecklist: buildChecklistState('estables condiciones generales', PLANTILLAS.sano.set)
+  },
+  {
+    cama:'C120', nombre:'Souto Geronima', edad:'87 años · DNI 3537387 · FN 28/11/1938 · FI 20/06/26', sexo:'femenino',
+    ant:'MC: Caída de propia altura en vía pública. ANT: HTA; demencia.',
+    mi:[{text:'Caso social', resuelto:false}],
+    asoc:[
+      {text:'Hipokalemia leve', resuelto:true},
+      {text:'Hiponatremia leve', resuelto:true},
+      {text:'Hiperbilirrubinemia indirecta', resuelto:true},
+      {text:'Extrasístoles ventriculares aisladas en ECG', resuelto:false},
+      {text:'Hipoalbuminemia', resuelto:false},
+      {text:'Hipovitaminosis B12', resuelto:false}
+    ],
+    cult:'',
+    evol:[
+      '7/9: estable. Paciente vigil, poco reactiva, poco colaboradora. R1-R2 en 4 focos, BMV, BEAB, abdomen blando, depresible, indoloro, hemodinámicamente estable. CSV: TA:120/80, Tº35.7, FC:70, SAT:98% (21%).',
+      '3/9: paciente vigil, poco reactiva, poco colaboradora. R1-R2 en 4 focos, BMV, BEAB, abdomen blando, depresible, indoloro. En contexto de somnolencia nueva del día de hoy se le realiza tacto rectal: esfínter normotónico, MF normocoloreada, sin rastros de sangre ni pus. Se le indica enema de Murphy.',
+      '31/8: estable. CSV: Tº36, FC:75, SAT (21%):98%. Vigil, reactiva, sin foco motor, R1-R2 en 4 focos, sin signos de fallo de bomba. BEAB y BMV sin ruidos agregados, abdomen blando indoloro depresible. Sigue control clínico a la espera de tercer nivel.',
+      '27/8: estable. CSV: Tº36.2, FC:77, SAT (21%):98%. Vigil, reactiva, sin foco motor, R1-R2 en 4 focos, sin signos de fallo de bomba. BEAB y BMV sin ruidos agregados, abdomen blando indoloro depresible. Sigue control clínico a la espera de tercer nivel.',
+      '26/8: estable.',
+      '18/8: vigil, reactiva, sin foco motor, R1-R2 en 4 focos, sin signos de fallo de bomba. BEAB y BMV sin ruidos agregados, abdomen blando indoloro depresible. Sigue control clínico a la espera de tercer nivel.',
+      '22/7 al 14/8: estable.'
+    ].join('\n\n'),
+    labo:'31/08/2026: GB: 9.5, N: 70%, LINF: 21%, GR: 5.8, HB: 16.3, HTO: 47.4, PLAQ: 359.000, GLUC: 104, UREA: 22.5, CR: 0.56, FG: 84, NA: 142.4, K: 3.6, CL: 102.5.\n24/08/2026: GB: 8.1, N: 74%, LINF: 19%, GR: 5.9, HB: 17.4, HTO: 51.6, PLAQ: 303.000, GLUC: 110.0, UREA: 22.5, CR: 0.61, NA: 142.7, K: 3.6, CL: 99.8.\nVDRL no reactivo. Fólico 7.38. Vit B12 89.',
+    img:'20/6 Rx de tórax: sp.\n20/6 TC de encéfalo: impresiona sin lesión aguda.',
+    pend:'',
+    plan:'',
+    lastEstado:'estables condiciones generales',
+    lastChecklist: buildChecklistState('estables condiciones generales', PLANTILLAS.sano.set)
+  },
+  {
+    cama:'C123', nombre:'Hernandez Susana', edad:'81 años · DNI 96166476 · FI 06/09/2026', sexo:'femenino',
+    ant:'MC: Fiebre, hiperestesia generalizada, astenia, dificultad para deambular. ANT: demencia, colon irritable, hipotiroidismo, artrosis, HTA, anemia crónica, migraña, caída de propia altura 1/9 sin TEC, postrada desde entonces.',
+    mi:[{text:'SCA secundario a ITU + NAC. Ceftriaxona 1 g cada 12 hs EV (FI: 6/9, día 1)', resuelto:false}],
+    asoc:[
+      {text:'IRA prerenal', resuelto:false},
+      {text:'Extrasístoles supraventriculares', resuelto:false},
+      {text:'Anemia normocítica normocrómica en estudio', resuelto:false}
+    ],
+    cult:'Urocultivo: patológico (leucocitos >50). HMC: pendiente.',
+    evol:[
+      'GUARDIA 7/9: paciente queda de pase para control clínico: vigil, reactiva, globalmente desorientada, R1-R2 en 4 focos, sin signos de fallo de bomba. BEAB, BMV, crepitantes bibasales ya conocidos. Abdomen blando, depresible, doloroso a la palpación, RHA+. CSV: TA 100/60, SAT 96% (0,21), FC 87, T 36,1°C. Se realiza hemocultivo x2.',
+      '7/9: vigil, reactiva, desorientada globalmente, obedece órdenes simples, no impresiona foco neurológico agudo. CSV: TA 120/60, FC 120, eupneica, SAT 99% (0,21), T 36,2, diuresis en bolsa 300ml. R1-R2 en 4 focos, ritmo irregular alternante, sin ingurgitación yugular, tolera decúbito, sin signos de fallo de bomba. Adecuada MV, crepitantes bibasales a predominio izquierdo, derechos tipo velcro, hipoventilación bibasal. Abdomen blando, depresible, doloroso a la palpación profunda a predominio de flancos, más derecho, RHA+. Puntos ureterales y puño percusión positivos. Perfusión distal conservada, sin edemas periféricos, mucosas deshidratadas. ECG: ritmo irregular con extrasístoles, FC 120 lpm. Queda de pase para control clínico, HMC x2 y hemoglucotest.'
+    ].join('\n\n'),
+    labo:'07/09/2026: GB: 17.3, N: 94%, L: 4%, GR: 3.2, HB: 9.4, HTO: 27.3, PLAQ: 284.000, GLUC: 57, UREA: 44.5, CR: 1.05, FG: 46, NA: 143.5, K: 3.7, CL: 104.9, GPT: 7, GOT: 17, FAL: 90, BT: 0.37, BD: 0.1.\n06/09/2026: GB: 8.9, N: 91%, L: 6%, GR: 3.5, HB: 10, HTO: 29.9, PLAQ: 292.000, GLUC: 93, UREA: 50, CR: 1.43, FG: 31, NA: 139.2, K: 3.8, CL: 101.8, GPT: 5, GOT: 13, FAL: 83, BT: 0.45, BD: 0.1.',
+    img:'7/9 TAC tórax, abdomen y pelvis: área consolidativa/atelectásica en lóbulos inferiores asociada a broncograma aéreo y derrame pleural bibasal a predominio derecho con derrame cisural asociado. No se identifican adenomegalias mediastinales ni axilares. No se observan alteraciones hepatoesplénicas. Vesícula biliar distendida con litiasis. Escaso líquido libre en cavidad.\nECG: ritmo sinusal irregular a expensas de extrasístoles en V3, FC 120.\nRx tórax: mala técnica, impresiona infiltrado en campo pulmonar medio-inferior izquierdo.',
+    pend:'',
+    plan:'',
+    lastEstado:'regulares condiciones generales',
+    lastChecklist: buildChecklistState('regulares condiciones generales', {
+      neuro:{normal:{vigil:true,reactivo:true,colaborador:true,sinfoco:true}, alt:{desorientado:'global'}},
+      cv:{normal:{r1r2:true,silencios:true,sinfallo:true,pulsos:true}, alt:{arritmia:'extrasístoles supraventriculares, ritmo irregular alternante'}},
+      resp:{normal:{mecanica:true,mv:true,sintiraje:true,sat:true}, alt:{crepitantes:'bibasales, derechas tipo velcro, hipoventilación a predominio izquierdo'}},
+      dig:{normal:{blando:true,depresible:true,rha:true,catarsispos:true,sinascitis:true,sinvisceromegalia:true}, alt:{doloroso:'difusa, a predominio de flancos, más derecho'}},
+      renal:{normal:{}, alt:{diuresisneg:'~300 ml/turno (IRA prerenal)'}},
+      miembros:{normal:{sinedema:true,sinflogosis:true,sinflebitis:true,pielsp:true,perfusionok:true}, alt:{}},
+      infecto:{apply:true, normal:{afebril:true}, alt:{ascensoleuco:true}}
+    })
+  },
+  {
+    cama:'C126', nombre:'Marcos, Maria del Carmen', edad:'80 años · DNI 5306560 · FN 03/01/1946 · FI 04/09/2024', sexo:'femenino',
+    ant:'MC: Disnea CFIV, taquipnea. ANT: HTA; reemplazo de cadera con posterior postración (2016); trastorno de pánico.',
+    mi:[{text:'SCA secundario a NAC en tto con AMS + claritromicina día 0 (FI 7/9)', resuelto:false}],
+    asoc:[
+      {text:'Intertrigo micótico en cuello', resuelto:false},
+      {text:'Deshidratación', resuelto:false},
+      {text:'Trastorno de repolarización', resuelto:false},
+      {text:'Anemia leve', resuelto:false},
+      {text:'Hipokalemia moderada', resuelto:false}
+    ],
+    cult:'HMC x2 (771996): negativo a las 96 hs. Urocultivo (771996): pendiente.',
+    evol:[
+      'GUARDIA 7/9: paciente queda de pase para control clínico: vigil, desorientada globalmente, R1-R2 en 4 focos, sin signos de fallo de bomba. BMV, BEAB, crepitantes bibasales.',
+      '7/9: paciente en regular estado general, vigil, reactivo, orientado en persona y desorientada en tiempo y espacio, sin signos de foco motor agudo. CSV: PA:110/60, FC:106, T°:35.6, SatO2%:90 (0,21). R1 y R2 en 4 focos, normofonéticos, impresionan libres, ritmo regular, sin soplos evidentes ni signos de descompensación hemodinámica ni fallo agudo de bomba. BMV, tos no productiva, con sibilancias y crepitantes a predominio de base pulmonar izquierda, se escucha desplazamiento de secreciones en vía aérea. Abdomen blando, depresible, no doloroso a la palpación superficial y profunda, RHA+. Diuresis (200 ml en bolsa) y catarsis conservados en pañal. No se evidencian escaras. Se realiza TC con contraste de tórax por sospecha de NAC no visualizada adecuadamente en Rx de guardia. Paciente hemodinámicamente estable. Continúa control evolutivo. Queda de pase para control clínico, ionograma control y EAB 0,21.'
+    ].join('\n\n'),
+    labo:'07/09/2026: GB: 5.3, N: 63%, L: 30%, GR: 3.9, HB: 10.8, HTO: 32.9, PLAQ: 150.000, PCR: 4.26, GLUC: 95, UREA: 25.4, CR: 0.67, FG: 83, NA: 143.6, K: 2.9, CL: 104.4, GPT: 4, GOT: 9, FAL: 40, BT: 0.57, BD: 0.1, Ca: 8, P: 1.85, Mg: 1.77, ALB: 2.9.\n04/09/2026: GB: 7.6, N: 68%, L: 20%, GR: 4.8, HB: 13.4, HTO: 40.4, PLAQ: 162.000, PCR: 1.23, GLUC: 148, UREA: 22.2, CR: 0.7, FG: 82, NA: 134.9, K: 4, CL: 95, GPT: 6, GOT: 14, FAL: 54, BT: 0.76, BD: 0.1.',
+    img:'07/09/26 TC tórax con contraste: degradación de la calidad por artificio de movimiento respiratorio. Área consolidativa con broncograma aéreo en LII con mínimo derrame pleural asociado. Tractos densos pleuroparenquimatosos bibasales, derecho asociado a sutil derrame pleural. Imágenes ganglionares subcentimétricas mediastinales. Engrosamiento focal cisural menor.',
+    pend:'Ionograma control. EAB de sangre arterial. Perfil férrico.',
+    plan:'CSV y diuresis por turno. Cabecera 45°. Dieta hiposódica procesada homogénea, asistida según sensorio. PHP a 14 gotas de RL + 1 ampolla ClK + 1 ampolla SO4Mg en c/frasco. Omeprazol 20 mg c/24 hs EV. Enoxaparina 0,4 cc SC c/24 hs. Losartán 50 mg c/24 hs VO. Medidas antiescaras, colchón de aire, rotar cada 2 hs. Carga de potasio: 3 ampollas ClK en 300 SF a pasar en 3 hs EV por única vez.',
+    lastEstado:'regulares condiciones generales',
+    lastChecklist: buildChecklistState('regulares condiciones generales', {
+      neuro:{normal:{vigil:true,reactivo:true,colaborador:true,sinfoco:true}, alt:{desorientado:'tiempo y espacio (orientada en persona)'}},
+      cv:{normal:{r1r2:true,ritmoregular:true,silencios:true,sinfallo:true,pulsos:true}, alt:{}},
+      resp:{normal:{mecanica:true,sintiraje:true}, alt:{sibilancias:'predominio de base pulmonar izquierda', crepitantes:'predominio de base pulmonar izquierda'}},
+      dig:{normal:{blando:true,depresible:true,indoloro:true,rha:true,catarsispos:true,sinascitis:true,sinvisceromegalia:true}, alt:{}},
+      renal:{normal:{diuresispos:true}, alt:{}},
+      miembros:{normal:{sinedema:true,sinflogosis:true,sinflebitis:true,pielsp:true,perfusionok:true}, alt:{}},
+      infecto:{apply:true, normal:{afebril:true}, alt:{}}
+    })
+  },
+  {
+    cama:'C127', nombre:'Elias Lidia Angelica', edad:'88 años · DNI 3674639 · FN 04/09/1937 · FI 13/08/26', sexo:'femenino',
+    ant:'MC: negativismo a la ingesta. ANT: deterioro cognitivo, HTA, dislipemia. MH: clonazepam 2 mg/día, escitalopram 10 mg/día, quetiapina 10 mg/día, memantine 20 mg/día, AAS 100 mg/día, losartán 50 mg/día, sinvastatina 10 mg/día.',
+    mi:[
+      {text:'Social: tercer nivel', resuelto:false},
+      {text:'SCA secundario a NAC en tto con amoxicilina/clavulánico + claritromicina día 6 (FI 21/8)', resuelto:true},
+      {text:'SCA secundario a síndrome diarreico por Clostridium en tto con vancomicina día 10 (FI 14/8)', resuelto:true},
+      {text:'Foco respiratorio en tto con AMS día 3 (FI 18/8)', resuelto:true},
+      {text:'Sepsis a foco abdominal por diarrea por Clostridium en tto con vancomicina día 4 (FI 14/8)', resuelto:true}
+    ],
+    asoc:[
+      {text:'Escara lumbosacra grado II y dorsal grado I, con buena evolución', resuelto:false},
+      {text:'Plaquetopenia', resuelto:true},
+      {text:'AVC yugular posterior derecho (13/8)', resuelto:true},
+      {text:'Hipernatremia moderada, sintomática', resuelto:true}
+    ],
+    cult:'HMC x2 (768518): negativos. Urocultivo (768518): desarrollo de Staphylococcus epidermidis (resuelto).',
+    evol:[
+      '7/9: paciente estable, vigil, orientada en persona y espacio, responde a estímulos verbales, moviliza 4 miembros, sin foco motor agudo. R1 y R2 en 4 focos, sin soplos, sin ingurgitación yugular, tolera el decúbito. BEAB, BMV, se escuchan leves crepitantes en base izquierda ya conocidos. Abdomen blando, depresible, indoloro, RHA+. Resto sin particularidades.',
+      '4/9: estable. CSV: TA:100/70. Guardia: curva térmica sin registros febriles ni subfebriles. Control de RAO: orina espontáneamente en pañal.',
+      '3/9: estable. Se retira sonda vesical. Queda control de RAO por guardia. Se indica probiótico por catarsis abundantes reiteradas.',
+      '31/8: paciente vigil, orientada en persona y espacio, responde a estímulos, moviliza 4 miembros, sin foco motor agudo. R1 y R2 en 4 focos, sin soplos, sin ingurgitación yugular, tolera el decúbito. Mejora la asimetría en miembro inferior derecho respecto del izquierdo (se realizó ecodóppler de MMII, ver resultado). BEAB, BMV, leves crepitantes en base izquierda ya conocidos. Abdomen blando, depresible, indoloro, RHA+. Placas blanquecinas en lengua, de aspecto cremoso, sin evaluar desprendimiento al raspado.',
+      '28/8 Guardia: estable, sin cambios.',
+      '27/8: paciente vigil, orientada en persona y espacio, responde a estímulos, moviliza 4 miembros, sin foco motor agudo. R1 y R2 en 4 focos, sin soplos, sin ingurgitación yugular, tolera el decúbito. Asimetría en miembro inferior derecho respecto del izquierdo, queda pendiente ecodóppler de MMII. BEAB, BMV, crepitantes en base izquierda ya conocidos. Abdomen blando, depresible, indoloro, RHA+. Hiperestesia generalizada, se indica paracetamol. Se habla con servicio social por trámites de 3er nivel por PAMI.',
+      '26/8: paciente vigil, responde a estímulos, moviliza 4 miembros, sin foco motor agudo, orientada en persona y espacio. R1 y R2 en 4 focos, silencios impresionan libres, sin signos de fallo de bomba. Buena mecánica respiratoria, crepitantes en base derecha. Abdomen blando, depresible, con ruidos hidroaéreos conservados.',
+      '24/8: estable. Se indica nuevo enema de Murphy. Guardia: se realiza TAC de abdomen y pelvis (ver informe).',
+      '20/8: CSV 120/70, FC 114, T 36.7, SAT 99. Vigil, desorientada en tiempo, orientada en espacio, responde órdenes, más reactiva que ayer, moviliza 4 miembros sin foco motor agudo. Sin signos de fallo de bomba, sin requerimiento de oxígeno suplementario. Abdomen blando, indoloro, depresible, RHA+. Escaras destechadas. Febrícula (37,2 a las 14 hs).',
+      '19/8: vigil, colaboradora. CSV: 110/70, FC 84, T 35.4, SAT 93 (0,21). Sin signos de fallo agudo de bomba. BMV, BEAB, ruidos agregados tipo crepitante en base derecha. Abdomen blando, depresible, leve dolor en fosa ilíaca izquierda sin defensa ni reacción peritoneal, RHA+. Catarsis y diuresis positivas.',
+      '18/8: vigil, confusa, sin foco motor. Sin fallo de bomba. BMV, BEAB. Abdomen con dolor a la palpación profunda. Escara en dorso y lumbosacra grado II.',
+      '13/8 al 15/8: vigil/confusa según turno, desorientada en tiempo y espacio en algunos registros. Hemodinámicamente con episodio de mala perfusión e hipotensión (70/50) el 13/8. Abdomen con contenido de materia fecal, tacto rectal con ampolla normotónica.'
+    ].join('\n\n'),
+    labo:'03/09/2026: GB: 6.9, N: 65%, L: 22%, M: 11%, E: 2%, GR: 4.4, HB: 10.9, HTO: 33.5, VCM: 76.7, HCM: 24.9, CHCM: 32.5, RDW: 18, PLAQ: 150.000, ERS: 31, PCR: 11.45, GLUC: 96, UREA: 18.5, CR: 0.53, FG: 84, NA: 140.4, K: 3.8, CL: 100.6.\n31/08/2026: GB: 4.4, N: 60%, GR: 4.4, PLAQ: 124.000, GLUC: 114, UREA: 16.7, CR: 0.49, FG: 87, NA: 139.7, K: 3.9, CL: 102.7.',
+    img:'31/08/2026 ecodóppler de MMII: sistema venoso superficial y profundo compresible en ambas piernas, sin signos de trombosis. Conclusión: estudio dentro de parámetros normales.\n13/8 PAN-TAC: sin colecciones hemorrágicas agudas ni lesiones expansivas. Leucoaraiosis. Tórax sin consolidaciones agudas, infiltrado micronodular en LID. Abdomen y pelvis: engrosamiento parietal rectal y colónico con rarefacción grasa adyacente, sugiere correlacionar con antecedentes y continuar algoritmo diagnóstico oncológico.',
+    pend:'',
+    plan:'',
+    lastEstado:'estables condiciones generales',
+    lastChecklist: buildChecklistState('estables condiciones generales', {
+      neuro:{normal:{vigil:true,reactivo:true,colaborador:true,orientado3:true,sinfoco:true}, alt:{}},
+      cv:{normal:{r1r2:true,ritmoregular:true,silencios:true,sinfallo:true,iy:true,decubito:true,pulsos:true}, alt:{}},
+      resp:{normal:{mecanica:true,sintiraje:true,sat:true}, alt:{crepitantes:'base izquierda, leves, ya conocidos'}},
+      dig:{normal:{blando:true,depresible:true,indoloro:true,rha:true,catarsispos:true,sinascitis:true,sinvisceromegalia:true}, alt:{}},
+      renal:{normal:{diuresispos:true}, alt:{}},
+      miembros:{normal:{sinflogosis:true,sinflebitis:true,perfusionok:true}, alt:{necrosis:'escara lumbosacra grado II y dorsal grado I, en buena evolución'}},
+      infecto:{apply:false, normal:{}, alt:{}}
+    })
+  },
+  {
+    cama:'C130', nombre:'Zeniquel Eduardo', edad:'48 años · DNI 26687678 · FN 25/11/1946 · FI 01/09/2026 · IC Neumonología', sexo:'masculino',
+    ant:'MC: disnea CF3. ANT: HIV en tto con TARV (carga indetectable), EPOC, asma, ex enolista, ex tabaquista (dejó hace 10 años), herpes genital, consumo problemático de sustancias, Cushing exógeno.',
+    mi:[{text:'NAC bilateral en tto con piperacilina-tazobactam día 3 (FI 1/9)', resuelto:false}],
+    asoc:[
+      {text:'Anemia', resuelto:false},
+      {text:'Hiperglucemias por disrupciones alimentarias', resuelto:false},
+      {text:'Alcalosis mixta', resuelto:false}
+    ],
+    cult:'Micoplasma y clamidia: pendiente (771648).',
+    evol:[
+      '4/9 Guardia: PA 190 premerienda, 167 precorrección con 2 UI, precena 207 corrige con 4 U, preD 150. Total 6 U.',
+      '3/9 Guardia: 10 UI preal con glucemia 366. Labo descarta cetoacidosis (cetonemia negativa, EAB 7.47/37.8/27). 10 UI premerienda, se indica expansión con 500 ml SF. Enfermería refiere que el paciente consume alimentos por fuera del hospital y no respeta la dieta. HGT predesayuno corrigió con 8 UI.',
+      '3/9: se realiza EAB venoso y cetonemia para control de cetoacidosis por HGT >250. Alcalosis mixta. Diabetes inicia NPH 10 UI preD y 8 postcena.',
+      '2/9: vigil, colaborador, orientado en 3 esferas. CSV: 170/–, FC 88, T 36.4, SAT 93% (0,21). R1-R2 en cuatro focos, ritmo regular, sin soplos ni ingurgitación yugular. Aceptable MV, crepitantes bibasales a predominio izquierdo. Abdomen blando, depresible, indoloro, distendido con estrías y circulación colateral. Facies de luna llena, exoftalmos, obesidad central, miembros adelgazados; en este contexto IC con endocrinología por sospecha de Cushing exógeno. Edemas en MMII y de pared. En tto con aerosolterapia, fluticasona y salbutamol, furosemida y TARV. Queda con controles glucémicos.'
+    ].join('\n\n'),
+    labo:'03/09/2026: GB: 3.5, N: 86%, L: 9%, GR: 3.9, HB: 12.1, HTO: 34.6, PLAQ: 150.000, PCR: 7.79, GLUC: 289, UREA: 43.2, CR: 0.48, FG: 130, NA: 140.7, K: 4, CL: 98.8, GPT: 35, GOT: 13, FAL: 122, BT: 0.74, BD: 0.1, Ca: 9.3, P: 3.16, Mg: 2.04, ALB: 3.2.\n02/09/2026: GB: 4.3, N: 87%, L: 8%, GR: 3.7, HB: 11.5, HTO: 33.3, PLAQ: 145.000, GLUC: 228, NA: 142.2, K: 3.9, CL: 102.5.',
+    img:'02/09 Ecocardio: FEy 30%. Aquinesia inferoposterior basal y medioventricular. Patrón de VI con relajación prolongada.\nTAC tórax 1/9: extenso engrosamiento peribroncovascular con infiltrados retículo-nodulares y patrón en árbol en brotes de predominio en ambos LLII; áreas de consolidación en vidrio esmerilado en LSD, LM y LSI. Enfisema centroacinar y paraseptal. Tractos fibroadherenciales.\nTAC abdomen y pelvis 1/9: sin alteraciones hepatoesplénicas ni retroperitoneales significativas.',
+    pend:'Cortisol urinario.',
+    plan:'',
+    lastEstado:'regulares condiciones generales',
+    lastChecklist: buildChecklistState('regulares condiciones generales', {
+      neuro:{normal:{vigil:true,colaborador:true,orientado3:true,reactivo:true,sinfoco:true}, alt:{}},
+      cv:{normal:{r1r2:true,silencios:true,ritmoregular:true,iy:true,sinfallo:true,pulsos:true}, alt:{}},
+      resp:{normal:{mecanica:true,sintiraje:true}, alt:{crepitantes:'bibasales a predominio izquierdo'}},
+      dig:{normal:{depresible:true,indoloro:true,rha:true,catarsispos:true,sinascitis:true,sinvisceromegalia:true}, alt:{distendido:'con estrías y circulación colateral (hábito cushingoide)'}},
+      renal:{normal:{diuresispos:true}, alt:{}},
+      miembros:{normal:{sinflogosis:true,sinflebitis:true,perfusionok:true,pielsp:true}, alt:{edema:'MMII y de pared'}},
+      infecto:{apply:true, normal:{afebril:true}, alt:{}}
+    })
+  }
+];
+
+function buildSeedPatients(){
+  return SEED_PATIENTS_DATA.map(base=>{
+    counter++;
+    const clone = JSON.parse(JSON.stringify(base));
+    clone.id = 'p'+counter;
+    clone.evolCount = 0;
+    return clone;
+  });
+}
+
 function fld(id){ return document.getElementById(id); }
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmtFechaDMY(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; }
 
 function newPatient(){
   counter++;
-  return { id:'p'+counter, cama:'', nombre:'', edad:'', ant:'', mi:[], asoc:[], cult:'', evol:'', evolCount:0, lastEstado:'', labo:'', img:'', pend:'', plan:'' };
+  return { id:'p'+counter, cama:'', nombre:'', edad:'', sexo:'', ant:'', mi:[], asoc:[], cult:'', evol:'', evolCount:0, lastEstado:'', labo:'', img:'', pend:'', plan:'' };
 }
 
 /* ================= Persistencia local ================= */
@@ -587,7 +939,16 @@ function renderForm(){
         <div class="field"><label>Cama</label><input type="text" data-f="cama" placeholder="Ej: C103"></div>
         <div class="field" style="grid-column:span 2;"><label>Nombre</label><input type="text" data-f="nombre"></div>
       </div>
-      <div class="field"><label>Edad</label><input type="text" data-f="edad" placeholder="Ej: 68 años"></div>
+      <div class="grid2">
+        <div class="field"><label>Edad</label><input type="text" data-f="edad" placeholder="Ej: 68 años"></div>
+        <div class="field"><label>Sexo</label>
+          <select data-f="sexo">
+            <option value="">— sin especificar —</option>
+            <option value="masculino">Masculino</option>
+            <option value="femenino">Femenino</option>
+          </select>
+        </div>
+      </div>
     </fieldset>
 
     <fieldset>
@@ -718,6 +1079,13 @@ function renderEvolBuilder(p){
   const box = fld('evolBuilder');
   const lastEstado = (p && p.lastChecklist && p.lastChecklist.estado) || 'estables condiciones generales';
   let html = `
+    <div class="field" style="margin-bottom:8px;">
+      <label>Plantilla según motivo de internación (opcional — precarga el checklist, después se puede ajustar)</label>
+      <select id="evolPlantilla">
+        <option value="">— seleccionar y aplicar —</option>
+        ${Object.keys(PLANTILLAS).map(k=>`<option value="${k}">${escapeHtml(PLANTILLAS[k].label)}</option>`).join('')}
+      </select>
+    </div>
     <div class="grid2" style="margin-bottom:8px;">
       <div class="field"><label>Fecha de la entrada (se actualiza sola)</label><input type="date" id="evolFecha"></div>
       <div class="field"><label>Estado general</label>
@@ -780,13 +1148,18 @@ function renderEvolBuilder(p){
   });
 
   html += `
-    <div class="grid4" style="margin-bottom:8px;">
+    <div class="grid5" style="margin-bottom:8px;">
       <div class="field"><label>TA</label><input type="text" id="evolTA" placeholder="120/80"></div>
       <div class="field"><label>FC</label><input type="text" id="evolFC"></div>
-      <div class="field"><label>SatO2</label><input type="text" id="evolSat"></div>
+      <div class="field"><label>FR</label><input type="text" id="evolFR"></div>
       <div class="field"><label>T°</label><input type="text" id="evolT"></div>
+      <div class="field"><label>SatO2</label><input type="text" id="evolSat"></div>
     </div>
     <div class="field"><label>Conducta / otros hallazgos</label><textarea id="evolExtra" placeholder="Se realiza IC con... Se decide iniciar..."></textarea></div>
+    <div class="field" style="flex-direction:row;align-items:center;gap:6px;">
+      <input type="checkbox" id="evolCierre" checked>
+      <label for="evolCierre" style="margin:0;">Agregar cierre estándar (remite a LABO/IMG/PEND cargados + estabilidad hemodinámica)</label>
+    </div>
     <button id="addEntryBtn">+ Agregar entrada de hoy a EVOL</button>
   `;
 
@@ -796,6 +1169,16 @@ function renderEvolBuilder(p){
   fechaAutoSync = true;
   fld('evolFecha').value = new Date().toISOString().slice(0,10);
   fld('evolFecha').addEventListener('input', ()=>{ fechaAutoSync = false; });
+
+  fld('evolPlantilla').addEventListener('change', (e)=>{
+    const key = e.target.value;
+    if(!key) return;
+    aplicarPlantilla(p, key);
+    e.target.value='';
+    const status = fld('status');
+    status.textContent = 'Plantilla aplicada — revisá y ajustá los ítems antes de agregar la entrada.';
+    setTimeout(()=>status.textContent='',3500);
+  });
 }
 
 function pickVariant(item, patient){
@@ -803,6 +1186,27 @@ function pickVariant(item, patient){
     return item.variants[(patient.evolCount||0) % item.variants.length];
   }
   return item.text;
+}
+
+/* ================= Tendencia hoy vs. ayer, por sistema ================= */
+function trendPhraseFor(key, patient){
+  const prevSys = patient && patient.lastChecklist && patient.lastChecklist.systems && patient.lastChecklist.systems[key];
+  if(!prevSys) return ''; // primera entrada de este paciente: no hay con qué comparar
+  const merged = getMergedItems(key);
+  const mejorias = [], persisten = [], nuevas = [];
+  merged.alteraciones.forEach(item=>{
+    const chk = document.querySelector(`[data-sys="${key}"][data-kind="alt"][data-id="${item.id}"]`);
+    const todayChecked = !!(chk && chk.checked);
+    const prevChecked = !!(prevSys.alt && prevSys.alt[item.id]);
+    if(prevChecked && !todayChecked) mejorias.push(item.text);
+    else if(prevChecked && todayChecked) persisten.push(item.text);
+    else if(!prevChecked && todayChecked) nuevas.push(item.text);
+  });
+  const clauses = [];
+  if(mejorias.length) clauses.push(`con mejoría de ${mejorias.join(', ')} respecto de la evaluación previa`);
+  if(persisten.length) clauses.push(`persiste con ${persisten.join(', ')}`);
+  if(nuevas.length) clauses.push(`presenta nueva aparición de ${nuevas.join(', ')}`);
+  return clauses.length ? (', ' + clauses.join('; ')) : '';
 }
 
 function collectSystemPhrase(key, patient){
@@ -854,6 +1258,22 @@ function captureChecklistState(estado){
   return state;
 }
 
+/* ================= Helpers para la redacción de la entrada de EVOL ================= */
+function domChecked(sys, kind, id){
+  const el = document.querySelector(`[data-sys="${sys}"][data-kind="${kind}"][data-id="${id}"]`);
+  return !!(el && el.checked);
+}
+function domDetail(sys, id){
+  const el = document.querySelector(`[data-detail-for="${id}"][data-sys="${sys}"]`);
+  return el ? el.value.trim() : '';
+}
+function extractEdadCorta(edadStr){
+  if(!edadStr) return '';
+  const m = edadStr.match(/(\d{1,3})\s*(años?|AÑOS?)/i);
+  if(m) return `${m[1]} años`;
+  return edadStr.trim();
+}
+
 function addEvolEntry(p){
   const fecha = fmtFechaDMY(fld('evolFecha').value) || '(fecha)';
   const estado = fld('evolEstado').value;
@@ -872,32 +1292,72 @@ function addEvolEntry(p){
 
   const ta = fld('evolTA').value.trim();
   const fc = fld('evolFC').value.trim();
-  const sat = fld('evolSat').value.trim();
+  const fr = fld('evolFR').value.trim();
   const t = fld('evolT').value.trim();
+  const sat = fld('evolSat').value.trim();
   const extra = fld('evolExtra').value.trim();
+  const agregarCierre = fld('evolCierre') ? fld('evolCierre').checked : false;
 
+  const sexoTexto = p.sexo==='femenino' ? 'femenina' : (p.sexo==='masculino' ? 'masculino' : '');
+  const edadCorta = extractEdadCorta(p.edad);
+  const motivos = (p.mi||[]).filter(i=>!i.resuelto).map(i=>i.text);
+
+  /* --- Oración de apertura: sexo + edad + motivo de internación + estado + neuro,
+     todo en una sola oración, como en las evoluciones de referencia. --- */
   let intro = `${fecha}: Paciente`;
-  if(p.edad) intro += ` de ${p.edad}`;
+  if(sexoTexto) intro += ` ${sexoTexto}`;
+  if(edadCorta) intro += ` de ${edadCorta}`;
+  if(motivos.length) intro += `, en tratamiento por ${motivos.join('; ')}`;
   if(p.ant) intro += `, con antecedentes de ${p.ant}`;
-  intro += `, en ${estado}.`;
+  intro += `, en ${pickEstadoText(estado, p)}`;
+  if(neuro) intro += `, ${neuro}${trendPhraseFor('neuro',p)}`;
+  intro += '.';
+  intro += estadoTrendPhrase(p.lastEstado, estado);
 
   let out = intro + ' ';
-  if(neuro) out += `Neurológicamente ${neuro}. `;
-  if(cv) out += `A nivel cardiovascular, ${cv}. `;
-  if(estudioTipo && estudioInforme) out += `Se recibe informe de ${estudioTipo}: ${estudioInforme}. `;
-  if(resp) out += `A nivel pulmonar, ${resp}. `;
-  if(dig) out += `Abdomen: ${dig}. `;
-  if(renal) out += `A nivel renal, ${renal}. `;
-  if(miembros) out += `Miembros: ${miembros}. `;
-  if(infectoAplica && infecto) out += `Desde el punto de vista infectológico, ${infecto}. `;
 
+  /* --- CSV, agregando el dispositivo de O2 según lo tildado en Respiratorio --- */
   const csv = [];
   if(ta) csv.push('TA '+ta);
   if(fc) csv.push('FC '+fc);
-  if(sat) csv.push('SAT '+sat+'%');
+  if(fr) csv.push('FR '+fr);
   if(t) csv.push('T° '+t);
+  if(sat){
+    let satTxt = 'SAT '+sat+'%';
+    if(domChecked('resp','normal','sat')) satTxt += ' (aire ambiente)';
+    else if(domChecked('resp','alt','o2sup')){
+      const disp = domDetail('resp','o2sup');
+      satTxt += disp ? ` (${disp})` : ' (con requerimiento de oxígeno suplementario)';
+    }
+    csv.push(satTxt);
+  }
   if(csv.length) out += `CSV: ${csv.join(', ')}. `;
-  if(extra) out += extra;
+
+  if(cv) out += `A nivel cardiovascular, ${cv}${trendPhraseFor('cv',p)}. `;
+  if(estudioTipo && estudioInforme) out += `Se recibe informe de ${estudioTipo}: ${estudioInforme}. `;
+  if(resp) out += `Al examen respiratorio, ${resp}${trendPhraseFor('resp',p)}. `;
+  if(dig) out += `Abdomen ${dig}${trendPhraseFor('dig',p)}. `;
+  if(renal) out += `A nivel renal, ${renal}${trendPhraseFor('renal',p)}. `;
+  if(miembros) out += `A nivel de los miembros, ${miembros}${trendPhraseFor('miembros',p)}. `;
+  if(infectoAplica && infecto) out += `Desde el punto de vista infectológico, ${infecto}${trendPhraseFor('infecto',p)}. `;
+
+  if(extra) out += extra.trim() + ' ';
+
+  /* --- Cierre estándar: remite a LABO/IMG/PEND cargados + estabilidad hemodinámica,
+     como en las evoluciones de referencia ("– LABO (ver labo)... Paciente
+     hemodinámicamente estable. Continúa control evolutivo."). Opcional, con checkbox. --- */
+  if(agregarCierre){
+    const refs = [];
+    if((p.labo||'').trim()) refs.push('LABO (ver labo)');
+    if((p.img||'').trim()) refs.push('IMG (ver imágenes)');
+    if((p.pend||'').trim()) refs.push('PEND (ver pendientes)');
+    if(refs.length) out += refs.join('. ') + '. ';
+    if(estado === 'mal estado general'){
+      out += 'Paciente persiste con criterios de inestabilidad. Requiere reevaluación estrecha y control evolutivo estricto.';
+    } else {
+      out += 'Paciente hemodinámicamente estable. Continúa control evolutivo.';
+    }
+  }
 
   out = out.trim();
   p.evol = p.evol ? (out + '\n\n' + p.evol) : out;
@@ -1075,6 +1535,14 @@ fld('clearAllBtn').addEventListener('click', ()=>{
   localStorage.removeItem(STORAGE_PATIENTS);
   addPatient();
 });
+fld('restoreSeedBtn').addEventListener('click', ()=>{
+  if(!confirm('¿Reemplazar la lista actual de pacientes por el archivero precargado de ejemplo? Se van a borrar los pacientes que tengas cargados ahora en esta computadora (podés exportar una copia antes con "Exportar copia").')) return;
+  patients = buildSeedPatients();
+  selectedId = patients[0].id;
+  renderAll();
+  fld('status').textContent = 'Archivero precargado restaurado.';
+  setTimeout(()=>fld('status').textContent='',2500);
+});
 fld('patientSearch').addEventListener('input', (e)=>{ sidebarFilter = e.target.value; renderSidebar(); });
 
 fld('copyBtn').addEventListener('click', ()=>{
@@ -1094,7 +1562,12 @@ function iniciarAppPrincipal(){
   if(window.__paseAppIniciada) return;
   window.__paseAppIniciada = true;
   loadLocal();
-  if(patients.length===0){ addPatient(); } else { renderAll(); }
+  if(patients.length===0){
+    patients = buildSeedPatients();
+    selectedId = patients[0].id;
+    saveLocal();
+  }
+  renderAll();
 }
 window.iniciarAppPrincipal = iniciarAppPrincipal;
 </script>
