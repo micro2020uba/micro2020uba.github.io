@@ -54,6 +54,7 @@
   .persist-note{font-size:10px;color:var(--muted);line-height:1.4;margin-top:4px;}
 
   .patient-actions{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+  .plantilla-actions{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;}
   button.secondary.small{padding:6px 9px;font-size:10.5px;}
   button.secondary.small.danger{border-color:var(--danger);color:var(--danger);}
   button.secondary.small.danger:hover{background:var(--danger);color:#fff;}
@@ -92,13 +93,25 @@
   .sys-title .opt-toggle{font-weight:400;font-size:10.5px;color:var(--muted);margin-left:8px;}
   .chk-group{display:flex;flex-direction:column;gap:3px;margin-bottom:4px;}
   .chk-row{display:flex;align-items:center;gap:6px;font-size:11.5px;flex-wrap:wrap;}
-  .chk-row .detail-input{width:150px;font-size:11px;padding:3px 5px;}
+  .chk-row-wrap{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:1px 0;border-bottom:1px dotted transparent;}
+  .chk-row-wrap:hover{border-bottom-color:var(--line-soft);}
+  .chk-row-wrap .chk-row{flex:1 1 auto;min-width:140px;}
+  .detail-input{width:150px;font-size:11px;padding:3px 5px;}
+  .chk-actions{display:inline-flex;gap:2px;margin-left:auto;opacity:.35;}
+  .chk-row-wrap:hover .chk-actions{opacity:1;}
+  .chk-actions button{font-size:10px;line-height:1;padding:2px 5px;background:transparent;border:1px solid var(--line-soft);color:var(--muted);cursor:pointer;border-radius:2px;}
+  .chk-actions button:hover{background:var(--accent-dark);border-color:var(--accent-dark);color:#fff;}
+  .chk-actions button:disabled{opacity:.25;cursor:default;}
+  .chk-actions button:disabled:hover{background:transparent;border-color:var(--line-soft);color:var(--muted);}
   .chk-subtitle{font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:5px 0 2px;}
   .estudio-row{margin-top:6px;display:grid;grid-template-columns:130px 1fr;gap:6px;}
   .add-custom-row{display:flex;gap:5px;margin-top:4px;}
   .add-custom-row input{flex:1;font-size:11px;padding:4px 6px;}
   .add-custom-row button{font-size:10.5px;padding:4px 8px;background:transparent;border:1px solid var(--accent-dark);color:var(--accent-dark);cursor:pointer;border-radius:2px;}
   .add-custom-row button:hover{background:var(--accent-dark);color:#fff;}
+  #evolDraft{background:#fbfaf6;font-size:12px;line-height:1.5;}
+  .vitals-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
+  @media (max-width:640px){ .vitals-grid{grid-template-columns:1fr 1fr;} }
 
   #addEntryBtn{background:var(--accent-dark);color:#fff;border:none;padding:9px 14px;font-weight:600;font-size:12.5px;cursor:pointer;border-radius:2px;margin-top:4px;width:100%;}
   #addEntryBtn:hover{opacity:.85;}
@@ -320,30 +333,32 @@ const SISTEMAS = {
   neuro: { label:'Neurológico',
     normal:[
       {id:'vigil',text:'vigil',variants:['vigil','consciente y vigil'],antagonistas:['somnoliento','glasgow']},
-      {id:'reactivo',text:'reactivo',variants:['reactivo','reactivo a estímulos'],antagonistas:[]},
-      {id:'colaborador',text:'colaborador',antagonistas:['excitacion']},
       {id:'orientado3',text:'orientado en las 3 esferas',variants:['orientado en las 3 esferas','orientado en tiempo, espacio y persona'],antagonistas:['desorientado','confuso']},
-      {id:'sinfoco',text:'sin signos de foco motor',variants:['sin signos de foco motor','sin déficit neurológico focal evidente'],antagonistas:['focomotor']}
+      {id:'reactivo',text:'reactivo a estímulos',variants:['reactivo a estímulos','reactivo'],antagonistas:[]},
+      {id:'colaborador',text:'colaborador',antagonistas:['excitacion']},
+      {id:'obedeceordenes',text:'obedece órdenes verbales',variants:['obedece órdenes verbales','obedece órdenes verbales simples'],antagonistas:['noobedece']},
+      {id:'sinfoco',text:'sin signo de foco motor agudo',variants:['sin signo de foco motor agudo','sin signos de foco motor agudo'],antagonistas:['focomotor']}
     ],
     alteraciones:[
       {id:'desorientado',text:'desorientado',detail:true,detailLabel:'esfera(s)',antagonistas:['orientado3']},
       {id:'glasgow',text:'Glasgow disminuido',detail:true,detailLabel:'puntaje',antagonistas:['vigil']},
       {id:'focomotor',text:'foco motor',detail:true,detailLabel:'descripción',antagonistas:['sinfoco']},
       {id:'excitacion',text:'excitación psicomotriz',antagonistas:['colaborador']},
+      {id:'noobedece',text:'no obedece órdenes verbales',antagonistas:['obedeceordenes']},
       {id:'somnoliento',text:'tendencia al sueño / somnoliento',variants:['tendencia al sueño / somnoliento','somnoliento, con inversión del ciclo sueño-vigilia'],antagonistas:['vigil']},
       {id:'confuso',text:'confuso',variants:['confuso','con cuadro confusional'],antagonistas:['orientado3']}
     ]
   },
   cv: { label:'Cardiovascular',
     normal:[
-      {id:'r1r2',text:'R1 y R2 en 4 focos',variants:['R1 y R2 en 4 focos','R1-R2 normofonéticos en 4 focos'],antagonistas:[]},
       {id:'ritmoregular',text:'ritmo regular',antagonistas:['arritmia']},
-      {id:'silencios',text:'silencios impresionan libres',variants:['silencios impresionan libres','sin soplos evidentes'],antagonistas:['soplo']},
-      {id:'sinfallo',text:'sin signos de fallo de bomba',variants:['sin signos de fallo de bomba','sin signos de descompensación hemodinámica ni fallo agudo de bomba'],antagonistas:['fallo']},
-      {id:'iy',text:'IY 2/3 con colapso inspiratorio',antagonistas:['fallo']},
-      {id:'rhyneg',text:'reflejo hepatoyugular negativo',antagonistas:['rhypos']},
+      {id:'r1r2',text:'R1 y R2 en 4 focos, normofonéticos',variants:['R1 y R2 en 4 focos, normofonéticos','R1-R2 normofonéticos en 4 focos'],antagonistas:[]},
+      {id:'silencios',text:'impresionan libres',variants:['impresionan libres','sin soplos evidentes'],antagonistas:['soplo']},
+      {id:'sinfallo',text:'sin signos de descompensación hemodinámica ni fallo agudo de bomba',variants:['sin signos de descompensación hemodinámica ni fallo agudo de bomba','sin signos de fallo de bomba'],antagonistas:['fallo']},
       {id:'decubito',text:'tolera decúbito dorsal',antagonistas:['nodecubito']},
-      {id:'pulsos',text:'pulsos periféricos conservados',variants:['pulsos periféricos conservados','pulsos periféricos presentes, con buena perfusión'],antagonistas:['pulsosdism']}
+      {id:'pulsos',text:'pulsos periféricos presentes, con buena perfusión distal',variants:['pulsos periféricos presentes, con buena perfusión distal','pulsos periféricos conservados'],antagonistas:['pulsosdism']},
+      {id:'iy',text:'IY 2/3 con colapso inspiratorio',antagonistas:['fallo']},
+      {id:'rhyneg',text:'reflejo hepatoyugular negativo',antagonistas:['rhypos']}
     ],
     alteraciones:[
       {id:'arritmia',text:'arritmia / ritmo irregular',detail:true,detailLabel:'detalle',antagonistas:['ritmoregular']},
@@ -357,11 +372,11 @@ const SISTEMAS = {
   },
   resp: { label:'Respiratorio',
     normal:[
-      {id:'mecanica',text:'mecánica ventilatoria conservada',variants:['mecánica ventilatoria conservada','buena mecánica ventilatoria'],antagonistas:['tiraje']},
-      {id:'mv',text:'murmullo vesicular conservado bilateral',variants:['murmullo vesicular conservado bilateral','buena entrada de aire bilateral, murmullo vesicular conservado'],antagonistas:['mvdism']},
+      {id:'mecanica',text:'buena mecánica ventilatoria',variants:['buena mecánica ventilatoria','mecánica ventilatoria conservada'],antagonistas:['tiraje']},
+      {id:'mv',text:'buena entrada de aire bilateral, murmullo vesicular conservado',variants:['buena entrada de aire bilateral, murmullo vesicular conservado','murmullo vesicular conservado bilateral'],antagonistas:['mvdism']},
       {id:'sinagregados',text:'sin ruidos agregados',antagonistas:['crepitantes','sibilancias','roncus']},
       {id:'sintiraje',text:'sin tiraje',antagonistas:['tiraje']},
-      {id:'sat',text:'saturando adecuadamente al aire ambiente',variants:['saturando adecuadamente al aire ambiente','adecuada oxigenación al aire ambiente'],antagonistas:['o2sup']}
+      {id:'sat',text:'adecuada oxigenación al aire ambiente',variants:['adecuada oxigenación al aire ambiente','buena oxigenación al aire ambiente'],antagonistas:['o2sup']}
     ],
     alteraciones:[
       {id:'crepitantes',text:'crepitantes',detail:true,detailLabel:'ubicación',antagonistas:['sinagregados']},
@@ -374,20 +389,21 @@ const SISTEMAS = {
   },
   dig: { label:'Digestivo',
     normal:[
-      {id:'blando',text:'blando',variants:['blando','abdomen blando'],antagonistas:['defensa']},
+      {id:'blando',text:'blando',antagonistas:['defensa']},
       {id:'depresible',text:'depresible',antagonistas:['distendido']},
-      {id:'indoloro',text:'indoloro',variants:['indoloro','indoloro a la palpación superficial y profunda'],antagonistas:['doloroso']},
-      {id:'rha',text:'RHA presentes',variants:['RHA presentes','RHA (+)'],antagonistas:['rhadism']},
-      {id:'catarsispos',text:'catarsis positiva',antagonistas:['catarsisneg']},
+      {id:'indoloro',text:'indoloro a la palpación superficial y profunda',variants:['indoloro a la palpación superficial y profunda','indoloro'],antagonistas:['doloroso']},
+      {id:'sinreaccionperitoneal',text:'sin signo de reacción peritoneal',antagonistas:['defensa']},
+      {id:'sinvisceromegalia',text:'sin visceromegalias',antagonistas:['visceromegalia']},
       {id:'sinascitis',text:'sin ascitis',antagonistas:['ascitis']},
-      {id:'sinvisceromegalia',text:'sin visceromegalias',antagonistas:['visceromegalia']}
+      {id:'rha',text:'RHA (+)',variants:['RHA (+)','RHA presentes'],antagonistas:['rhadism']},
+      {id:'catarsispos',text:'catarsis conservada',antagonistas:['catarsisneg']}
     ],
     alteraciones:[
       {id:'doloroso',text:'doloroso a la palpación',detail:true,detailLabel:'localización',antagonistas:['indoloro']},
       {id:'distendido',text:'distendido',variants:['distendido','globoso'],antagonistas:['depresible']},
       {id:'rhadism',text:'RHA disminuidos / ausentes',variants:['RHA disminuidos / ausentes','RHA (-)'],antagonistas:['rha']},
       {id:'catarsisneg',text:'catarsis negativa',detail:true,detailLabel:'días de evolución',antagonistas:['catarsispos']},
-      {id:'defensa',text:'defensa / reacción peritoneal',antagonistas:['blando']},
+      {id:'defensa',text:'defensa / reacción peritoneal',antagonistas:['blando','sinreaccionperitoneal']},
       {id:'masa',text:'masa palpable',detail:true,detailLabel:'descripción'},
       {id:'ascitis',text:'signos de ascitis',detail:true,detailLabel:'grado / a tensión',antagonistas:['sinascitis']},
       {id:'visceromegalia',text:'visceromegalia',detail:true,detailLabel:'hepatomegalia / esplenomegalia',antagonistas:['sinvisceromegalia']}
@@ -395,10 +411,12 @@ const SISTEMAS = {
   },
   renal: { label:'Renal',
     normal:[
-      {id:'diuresispos',text:'Diuresis (+)',antagonistas:['diuresisneg']}
+      {id:'diuresispos',text:'diuresis conservada',detail:true,detailLabel:'ml (opcional, ej. bolsa colectora)',antagonistas:['diuresisneg','oliguria','anuria']}
     ],
     alteraciones:[
-      {id:'diuresisneg',text:'Oliguria / diuresis disminuida (-)',detail:true,detailLabel:'ml aprox.',antagonistas:['diuresispos']}
+      {id:'diuresisneg',text:'diuresis disminuida',detail:true,detailLabel:'ml aprox.',antagonistas:['diuresispos']},
+      {id:'oliguria',text:'oliguria',detail:true,detailLabel:'ml aprox.',antagonistas:['diuresispos']},
+      {id:'anuria',text:'anuria',antagonistas:['diuresispos']}
     ]
   },
   miembros: { label:'Miembros',
@@ -406,8 +424,9 @@ const SISTEMAS = {
       {id:'sinedema',text:'sin edemas',antagonistas:['edema']},
       {id:'sinflogosis',text:'sin flogosis',antagonistas:['flogosis']},
       {id:'sinflebitis',text:'sin signos de flebitis',antagonistas:['flebitis']},
-      {id:'pielsp',text:'piel sin particularidades',variants:['piel sin particularidades','integridad cutánea conservada'],antagonistas:['lesionpiel','necrosis','palidez','cianosis']},
-      {id:'perfusionok',text:'perfusión distal conservada',antagonistas:['perfusionmala']}
+      {id:'pielsp',text:'integridad cutánea conservada',variants:['integridad cutánea conservada','piel sin particularidades'],antagonistas:['lesionpiel','necrosis','palidez','cianosis']},
+      {id:'perfusionok',text:'perfusión distal conservada',antagonistas:['perfusionmala']},
+      {id:'moviliza4',text:'moviliza 4 miembros',antagonistas:['limitacionmov']}
     ],
     alteraciones:[
       {id:'edema',text:'edema en miembros inferiores',detail:true,detailLabel:'grado / localización',antagonistas:['sinedema']},
@@ -417,7 +436,8 @@ const SISTEMAS = {
       {id:'necrosis',text:'signos de necrosis / escara',detail:true,detailLabel:'localización',antagonistas:['pielsp']},
       {id:'palidez',text:'palidez distal',antagonistas:['pielsp']},
       {id:'cianosis',text:'cianosis distal',antagonistas:['pielsp']},
-      {id:'perfusionmala',text:'perfusión distal disminuida',antagonistas:['perfusionok']}
+      {id:'perfusionmala',text:'perfusión distal disminuida',antagonistas:['perfusionok']},
+      {id:'limitacionmov',text:'limitación funcional para la movilización',detail:true,detailLabel:'descripción',antagonistas:['moviliza4']}
     ]
   },
   infecto: { label:'Infectológico', opcional:true,
@@ -432,6 +452,13 @@ const SISTEMAS = {
       {id:'sinrespuesta',text:'sin respuesta al tratamiento actual',antagonistas:[]}
     ]
   }
+};
+
+/* Ítems que no se listan en la frase genérica del sistema porque se redactan
+   con una combinación especial (ver buildCatarsisDiuresisClause / buildFlogosisFlebitisClause) */
+const EXCLUDE_FROM_JOIN = {
+  dig: ['catarsispos', 'catarsisneg'],
+  miembros: ['sinflogosis', 'sinflebitis', 'flogosis', 'flebitis']
 };
 
 const SYS_ORDER = ['neuro','cv','resp','dig','renal','miembros','infecto'];
@@ -460,19 +487,19 @@ function estadoTrendPhrase(prevEstado, estado){
 const PLANTILLAS = {
   sano: { label:'Paciente estable / en observación', estado:'estables condiciones generales',
     set:{
-      neuro:{normal:{vigil:true,reactivo:true,colaborador:true,orientado3:true,sinfoco:true}, alt:{}},
-      cv:{normal:{r1r2:true,ritmoregular:true,silencios:true,sinfallo:true,pulsos:true}, alt:{}},
+      neuro:{normal:{vigil:true,orientado3:true,reactivo:true,colaborador:true,obedeceordenes:true,sinfoco:true}, alt:{}},
+      cv:{normal:{ritmoregular:true,r1r2:true,silencios:true,sinfallo:true,decubito:true,pulsos:true}, alt:{}},
       resp:{normal:{mecanica:true,mv:true,sinagregados:true,sintiraje:true,sat:true}, alt:{}},
-      dig:{normal:{blando:true,depresible:true,indoloro:true,rha:true,catarsispos:true,sinascitis:true,sinvisceromegalia:true}, alt:{}},
+      dig:{normal:{blando:true,depresible:true,indoloro:true,sinreaccionperitoneal:true,sinvisceromegalia:true,rha:true,catarsispos:true}, alt:{}},
       renal:{normal:{diuresispos:true}, alt:{}},
-      miembros:{normal:{sinedema:true,sinflogosis:true,sinflebitis:true,pielsp:true,perfusionok:true}, alt:{}},
+      miembros:{normal:{sinedema:true,sinflogosis:true,sinflebitis:true,pielsp:true,perfusionok:true,moviliza4:true}, alt:{}},
       infecto:{apply:false, normal:{}, alt:{}}
     }
   },
   confusional: { label:'Síndrome confusional agudo / foco infeccioso', estado:'regulares condiciones generales',
     set:{
       neuro:{normal:{reactivo:true}, alt:{confuso:true,desorientado:true}},
-      cv:{normal:{r1r2:true,ritmoregular:true,silencios:true,sinfallo:true,pulsos:true}, alt:{}},
+      cv:{normal:{ritmoregular:true,r1r2:true,silencios:true,sinfallo:true,pulsos:true}, alt:{}},
       resp:{normal:{mecanica:true,mv:true,sinagregados:true,sintiraje:true}, alt:{}},
       dig:{normal:{blando:true,depresible:true,indoloro:true,rha:true}, alt:{}},
       renal:{normal:{diuresispos:true}, alt:{}},
@@ -482,7 +509,7 @@ const PLANTILLAS = {
   },
   ic_epoc: { label:'Insuficiencia cardíaca / EPOC reagudizado', estado:'regulares condiciones generales',
     set:{
-      neuro:{normal:{vigil:true,reactivo:true,colaborador:true,orientado3:true,sinfoco:true}, alt:{}},
+      neuro:{normal:{vigil:true,orientado3:true,reactivo:true,colaborador:true,obedeceordenes:true,sinfoco:true}, alt:{}},
       cv:{normal:{r1r2:true}, alt:{arritmia:true,fallo:true,rhypos:true}},
       resp:{normal:{mecanica:true}, alt:{sibilancias:'bilaterales'}},
       dig:{normal:{blando:true,depresible:true,indoloro:true,rha:true,catarsispos:true}, alt:{}},
@@ -494,7 +521,7 @@ const PLANTILLAS = {
   ascitico: { label:'Síndrome ascítico-edematoso (cirrosis)', estado:'regulares condiciones generales',
     set:{
       neuro:{normal:{reactivo:true}, alt:{confuso:true}},
-      cv:{normal:{r1r2:true,ritmoregular:true,silencios:true,sinfallo:true,iy:true,pulsos:true}, alt:{}},
+      cv:{normal:{ritmoregular:true,r1r2:true,silencios:true,sinfallo:true,iy:true,pulsos:true}, alt:{}},
       resp:{normal:{mecanica:true,sintiraje:true,sat:true}, alt:{mvdism:'bibasal'}},
       dig:{normal:{blando:true,indoloro:true}, alt:{distendido:true,ascitis:'a tensión'}},
       renal:{normal:{diuresispos:true}, alt:{}},
@@ -503,24 +530,29 @@ const PLANTILLAS = {
     }
   }
 };
-function aplicarPlantilla(patient, key){
-  const tpl = PLANTILLAS[key];
+function aplicarPlantillaObj(patient, tpl){
   if(!tpl) return;
   SYS_ORDER.forEach(sysKey=>{
     const merged = getMergedItems(sysKey);
     const cfg = tpl.set[sysKey] || {normal:{}, alt:{}};
     merged.normal.forEach(item=>{
       const chk = document.querySelector(`[data-sys="${sysKey}"][data-kind="normal"][data-id="${item.id}"]`);
-      if(chk) chk.checked = !!(cfg.normal && cfg.normal[item.id]);
+      if(!chk) return;
+      const v = cfg.normal && cfg.normal[item.id];
+      chk.checked = !!v;
+      if(item.detail){
+        const det = document.querySelector(`[data-detail-for="${item.id}"][data-sys="${sysKey}"][data-kind="normal"]`);
+        if(det) det.value = (typeof v === 'string') ? v : '';
+      }
     });
     merged.alteraciones.forEach(item=>{
       const chk = document.querySelector(`[data-sys="${sysKey}"][data-kind="alt"][data-id="${item.id}"]`);
       if(!chk) return;
-      const val = cfg.alt && cfg.alt[item.id];
-      chk.checked = !!val;
+      const v = cfg.alt && cfg.alt[item.id];
+      chk.checked = !!v;
       if(item.detail){
-        const det = document.querySelector(`[data-detail-for="${item.id}"][data-sys="${sysKey}"]`);
-        if(det) det.value = (typeof val === 'string') ? val : '';
+        const det = document.querySelector(`[data-detail-for="${item.id}"][data-sys="${sysKey}"][data-kind="alt"]`);
+        if(det) det.value = (typeof v === 'string') ? v : '';
       }
     });
     if(sysKey==='infecto'){
@@ -529,9 +561,40 @@ function aplicarPlantilla(patient, key){
     }
   });
   if(tpl.estado) fld('evolEstado').value = tpl.estado;
+  updateDraftPreview(patient);
+}
+function aplicarPlantilla(patient, key){
+  aplicarPlantillaObj(patient, PLANTILLAS[key]);
+}
+function aplicarPlantillaCustom(patient, name){
+  const tpl = checklistConfig.customPlantillas && checklistConfig.customPlantillas[name];
+  aplicarPlantillaObj(patient, tpl);
+}
+function captureCurrentAsPlantillaSet(){
+  const set = {};
+  SYS_ORDER.forEach(key=>{
+    const merged = getMergedItems(key);
+    const normal = {}, alt = {};
+    merged.normal.forEach(item=>{
+      if(!isChecked(key,'normal',item.id)) return;
+      const det = item.detail ? detailValFor(key,'normal',item.id) : '';
+      normal[item.id] = det || true;
+    });
+    merged.alteraciones.forEach(item=>{
+      if(!isChecked(key,'alt',item.id)) return;
+      const det = item.detail ? detailValFor(key,'alt',item.id) : '';
+      alt[item.id] = det || true;
+    });
+    set[key] = { normal, alt };
+    if(key==='infecto'){
+      const apply = fld('apply_infecto');
+      set[key].apply = apply ? apply.checked : false;
+    }
+  });
+  return set;
 }
 let patients = [];
-let customItems = {};
+let checklistConfig = { custom:{}, edits:{}, hidden:{}, order:{}, customPlantillas:{} };
 let selectedId = null;
 let sidebarFilter = '';
 let fechaAutoSync = true;
@@ -545,7 +608,7 @@ function fsApi(){ return window.__fsBridge; }
 function newPatient(){
   const fs = fsApi();
   const id = fs ? fs.doc(fs.pacientesCol).id : ('local'+Date.now());
-  return { id, cama:'', nombre:'', edad:'', ant:'', mi:[], asoc:[], cult:'', evol:'', evolCount:0, lastEstado:'', labo:'', img:'', pend:'', plan:'' };
+  return { id, cama:'', nombre:'', sexo:'', edad:'', ant:'', mi:[], asoc:[], cult:'', evol:'', evolCount:0, lastEstado:'', labo:'', img:'', pend:'', plan:'' };
 }
 
 /* ================= Persistencia en Firestore (compartida entre dispositivos) =================
@@ -580,7 +643,7 @@ function deletePatientRemote(id){
 function saveCustomLocal(){
   const fs = fsApi();
   if(!fs) return;
-  fs.setDoc(fs.configDocRef, customItems).catch(()=>{});
+  fs.setDoc(fs.configDocRef, checklistConfig).catch(()=>{});
 }
 
 /* Se completa con applyRemoteSnapshot() e iniciarAppPrincipal() más abajo, que arman
@@ -608,7 +671,7 @@ function vaciarCarpeta(p){
   const camaTxt = p.cama ? `de la cama ${p.cama}` : '';
   if(!confirm(`¿Vaciar la carpeta ${camaTxt}? Se van a borrar todos los datos del paciente actual (nombre, EVOL, MI, ASOC, etc.). La carpeta queda con el mismo número de cama, lista para el próximo paciente.`)) return;
   const cama = p.cama;
-  p.nombre=''; p.edad=''; p.ant=''; p.mi=[]; p.asoc=[]; p.cult='';
+  p.nombre=''; p.sexo=''; p.edad=''; p.ant=''; p.mi=[]; p.asoc=[]; p.cult='';
   p.evol=''; p.evolCount=0; p.lastEstado=''; p.lastChecklist=null;
   p.labo=''; p.img=''; p.pend=''; p.plan='';
   p.cama = cama;
@@ -667,17 +730,20 @@ function renderItemList(containerId, patient, field){
     txtEl.addEventListener('blur',(e)=>{
       item.text = e.target.textContent.trim();
       renderPreview();
+      updateDraftPreview(patient);
     });
     txtEl.addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ e.preventDefault(); e.target.blur(); } });
     row.querySelector('input[type=checkbox]').addEventListener('change',(e)=>{
       item.resuelto = e.target.checked;
       renderPreview();
       renderItemList(containerId, patient, field);
+      updateDraftPreview(patient);
     });
     row.querySelector('.del').addEventListener('click',()=>{
       patient[field] = patient[field].filter(i=>i!==item);
       renderItemList(containerId, patient, field);
       renderPreview();
+      updateDraftPreview(patient);
     });
     box.appendChild(row);
   });
@@ -704,7 +770,16 @@ function renderForm(){
         <div class="field"><label>Cama</label><input type="text" data-f="cama" placeholder="Ej: C103"></div>
         <div class="field" style="grid-column:span 2;"><label>Nombre</label><input type="text" data-f="nombre"></div>
       </div>
-      <div class="field"><label>Edad</label><input type="text" data-f="edad" placeholder="Ej: 68 años"></div>
+      <div class="grid2">
+        <div class="field"><label>Edad</label><input type="text" data-f="edad" placeholder="Ej: 68 años"></div>
+        <div class="field"><label>Sexo</label>
+          <select data-f="sexo">
+            <option value="">— sin especificar —</option>
+            <option value="M">Masculino</option>
+            <option value="F">Femenino</option>
+          </select>
+        </div>
+      </div>
     </fieldset>
 
     <fieldset>
@@ -764,7 +839,8 @@ function renderForm(){
 
   col.querySelectorAll('[data-f]').forEach(el=>{ el.value = p[el.dataset.f]||''; });
   col.querySelectorAll('[data-f]').forEach(el=>{
-    el.addEventListener('input',()=>{ p[el.dataset.f]=el.value; renderSidebar(); renderPreview(); });
+    el.addEventListener('input',()=>{ p[el.dataset.f]=el.value; renderSidebar(); renderPreview(); updateDraftPreview(p); });
+    el.addEventListener('change',()=>{ p[el.dataset.f]=el.value; renderSidebar(); renderPreview(); updateDraftPreview(p); });
   });
 
   renderItemList('miList', p, 'mi');
@@ -777,6 +853,7 @@ function renderForm(){
     fld('miNuevo').value='';
     renderItemList('miList', p, 'mi');
     renderPreview();
+    updateDraftPreview(p);
   });
   fld('miNuevo').addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ e.preventDefault(); fld('miAddBtn').click(); } });
 
@@ -787,6 +864,7 @@ function renderForm(){
     fld('asocNuevo').value='';
     renderItemList('asocList', p, 'asoc');
     renderPreview();
+    updateDraftPreview(p);
   });
   fld('asocNuevo').addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ e.preventDefault(); fld('asocAddBtn').click(); } });
 
@@ -806,27 +884,58 @@ function renderForm(){
 /* ================= EVOL: checklist builder ================= */
 function getMergedItems(key){
   const base = SISTEMAS[key];
-  const custom = customItems[key] || {normal:[], alteraciones:[]};
+  const cfg = checklistConfig || {};
+  const custom = (cfg.custom && cfg.custom[key]) || {normal:[], alteraciones:[]};
+  const hiddenIds = (cfg.hidden && cfg.hidden[key]) || [];
+  const editsForSys = (cfg.edits && cfg.edits[key]) || {};
+  const orderForSys = (cfg.order && cfg.order[key]) || {};
+
+  function build(list, orderKey){
+    let items = list
+      .filter(i => hiddenIds.indexOf(i.id) === -1)
+      .map(i => editsForSys[i.id] ? Object.assign({}, i, { text: editsForSys[i.id], variants: null }) : i);
+    const ord = orderForSys[orderKey];
+    if(ord && ord.length){
+      const pos = id => { const idx = ord.indexOf(id); return idx===-1 ? 9999 : idx; };
+      items = items.slice().sort((a,b)=>pos(a.id)-pos(b.id));
+    }
+    return items;
+  }
+
   return {
-    normal: base.normal.concat(custom.normal||[]),
-    alteraciones: base.alteraciones.concat(custom.alteraciones||[]),
+    normal: build(base.normal.concat(custom.normal||[]), 'normal'),
+    alteraciones: build(base.alteraciones.concat(custom.alteraciones||[]), 'alteraciones'),
     opcional: base.opcional, estudio: base.estudio, label: base.label
   };
 }
 
+function defaultCheckedFromSano(key, kind, id){
+  const cfg = PLANTILLAS.sano.set[key];
+  if(!cfg) return false;
+  const map = kind==='normal' ? cfg.normal : cfg.alt;
+  const val = map && map[id];
+  return typeof val === 'string' ? val : !!val;
+}
 function lastChecked(p, key, kind, id, fallback){
   const lc = p && p.lastChecklist;
   if(lc && lc.systems && lc.systems[key]){
     const map = kind==='normal' ? lc.systems[key].normal : lc.systems[key].alt;
     if(map && Object.prototype.hasOwnProperty.call(map, id)) return !!map[id];
   }
-  return fallback;
+  // Sin historial previo para este paciente: arrancamos desde la plantilla
+  // "paciente sano" en vez de tildar ciegamente todo lo normal.
+  return !!defaultCheckedFromSano(key, kind, id);
 }
-function lastDetail(p, key, id){
+function lastDetail(p, key, kind, id){
   const lc = p && p.lastChecklist;
-  if(lc && lc.systems && lc.systems[key] && lc.systems[key].alt){
-    const v = lc.systems[key].alt['detail_'+id];
-    return v || '';
+  const mapKey = kind==='normal' ? 'normal' : 'alt';
+  if(lc && lc.systems && lc.systems[key] && lc.systems[key][mapKey]){
+    const v = lc.systems[key][mapKey]['detail_'+id];
+    if(v) return v;
+  }
+  if(!lc){
+    const v = defaultCheckedFromSano(key, kind, id);
+    if(typeof v === 'string') return v;
   }
   return '';
 }
@@ -834,13 +943,21 @@ function lastDetail(p, key, id){
 function renderEvolBuilder(p){
   const box = fld('evolBuilder');
   const lastEstado = (p && p.lastChecklist && p.lastChecklist.estado) || 'estables condiciones generales';
+  const customPlantillas = checklistConfig.customPlantillas || {};
   let html = `
-    <div class="field" style="margin-bottom:8px;">
+    <div class="field" style="margin-bottom:4px;">
       <label>Plantilla según motivo de internación (opcional — precarga el checklist, después se puede ajustar)</label>
       <select id="evolPlantilla">
         <option value="">— seleccionar y aplicar —</option>
-        ${Object.keys(PLANTILLAS).map(k=>`<option value="${k}">${escapeHtml(PLANTILLAS[k].label)}</option>`).join('')}
+        ${Object.keys(PLANTILLAS).map(k=>`<option value="builtin:${k}">${escapeHtml(PLANTILLAS[k].label)}</option>`).join('')}
+        ${Object.keys(customPlantillas).length ? `<optgroup label="Mis plantillas">
+          ${Object.keys(customPlantillas).map(name=>`<option value="custom:${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('')}
+        </optgroup>` : ''}
       </select>
+    </div>
+    <div class="plantilla-actions">
+      <button type="button" id="guardarPlantillaBtn" class="secondary small">💾 Guardar checklist actual como plantilla</button>
+      <button type="button" id="borrarPlantillaBtn" class="secondary small danger" style="display:none;">✕ Eliminar esta plantilla</button>
     </div>
     <div class="grid2" style="margin-bottom:8px;">
       <div class="field"><label>Fecha de la entrada (se actualiza sola)</label><input type="date" id="evolFecha"></div>
@@ -863,9 +980,20 @@ function renderEvolBuilder(p){
       </div>
       <div class="chk-subtitle">Normal</div>
       <div class="chk-group">`;
-    sys.normal.forEach(item=>{
+    sys.normal.forEach((item, idx)=>{
       const checked = lastChecked(p, key, 'normal', item.id, true);
-      html += `<label class="chk-row"><input type="checkbox" data-sys="${key}" data-kind="normal" data-id="${item.id}" ${checked?'checked':''}> ${escapeHtml(item.text)}</label>`;
+      const detailVal = item.detail ? lastDetail(p, key, 'normal', item.id) : '';
+      html += `<div class="chk-row-wrap">
+        <label class="chk-row"><input type="checkbox" data-sys="${key}" data-kind="normal" data-id="${item.id}" ${checked?'checked':''}> ${escapeHtml(item.text)}</label>`;
+      if(item.detail){
+        html += `<input type="text" class="detail-input" data-detail-for="${item.id}" data-sys="${key}" data-kind="normal" placeholder="${escapeHtml(item.detailLabel)}" value="${escapeHtml(detailVal)}">`;
+      }
+      html += `<span class="chk-actions" data-sys="${key}" data-kind="normal" data-id="${item.id}">
+          <button type="button" class="chkUpBtn" title="Subir" ${idx===0?'disabled':''}>▲</button>
+          <button type="button" class="chkDownBtn" title="Bajar" ${idx===sys.normal.length-1?'disabled':''}>▼</button>
+          <button type="button" class="chkEditBtn" title="Editar frase">✎</button>
+          <button type="button" class="chkDelBtn" title="Eliminar frase">✕</button>
+        </span></div>`;
     });
     html += `</div>
       <div class="add-custom-row">
@@ -873,14 +1001,20 @@ function renderEvolBuilder(p){
         <button type="button" class="addCustomBtn" data-sys="${key}" data-kind="normal">Agregar</button>
       </div>
       <div class="chk-subtitle">Alteraciones</div><div class="chk-group">`;
-    sys.alteraciones.forEach(item=>{
+    sys.alteraciones.forEach((item, idx)=>{
       const checked = lastChecked(p, key, 'alt', item.id, false);
-      const detailVal = item.detail ? lastDetail(p, key, item.id) : '';
-      html += `<label class="chk-row"><input type="checkbox" data-sys="${key}" data-kind="alt" data-id="${item.id}" ${checked?'checked':''}>${escapeHtml(item.text)}`;
+      const detailVal = item.detail ? lastDetail(p, key, 'alt', item.id) : '';
+      html += `<div class="chk-row-wrap">
+        <label class="chk-row"><input type="checkbox" data-sys="${key}" data-kind="alt" data-id="${item.id}" ${checked?'checked':''}> ${escapeHtml(item.text)}</label>`;
       if(item.detail){
-        html += ` <input type="text" class="detail-input" data-detail-for="${item.id}" data-sys="${key}" placeholder="${escapeHtml(item.detailLabel)}" value="${escapeHtml(detailVal)}">`;
+        html += `<input type="text" class="detail-input" data-detail-for="${item.id}" data-sys="${key}" data-kind="alt" placeholder="${escapeHtml(item.detailLabel)}" value="${escapeHtml(detailVal)}">`;
       }
-      html += `</label>`;
+      html += `<span class="chk-actions" data-sys="${key}" data-kind="alt" data-id="${item.id}">
+          <button type="button" class="chkUpBtn" title="Subir" ${idx===0?'disabled':''}>▲</button>
+          <button type="button" class="chkDownBtn" title="Bajar" ${idx===sys.alteraciones.length-1?'disabled':''}>▼</button>
+          <button type="button" class="chkEditBtn" title="Editar frase">✎</button>
+          <button type="button" class="chkDelBtn" title="Eliminar frase">✕</button>
+        </span></div>`;
     });
     html += `</div>
       <div class="add-custom-row">
@@ -904,13 +1038,17 @@ function renderEvolBuilder(p){
   });
 
   html += `
-    <div class="grid4" style="margin-bottom:8px;">
+    <div class="vitals-grid" style="margin-bottom:8px;">
       <div class="field"><label>TA</label><input type="text" id="evolTA" placeholder="120/80"></div>
       <div class="field"><label>FC</label><input type="text" id="evolFC"></div>
-      <div class="field"><label>SatO2</label><input type="text" id="evolSat"></div>
+      <div class="field"><label>SatO2 %</label><input type="text" id="evolSat"></div>
+      <div class="field"><label>FiO2 % (21 = aire ambiente)</label><input type="text" id="evolFio2" placeholder="21"></div>
       <div class="field"><label>T°</label><input type="text" id="evolT"></div>
     </div>
     <div class="field"><label>Conducta / otros hallazgos</label><textarea id="evolExtra" placeholder="Se realiza IC con... Se decide iniciar..."></textarea></div>
+    <div class="field"><label>Vista previa de la evolución (se arma sola con el checklist — se puede seguir ajustando antes de agregarla)</label>
+      <textarea id="evolDraft" rows="8" readonly></textarea>
+    </div>
     <button id="addEntryBtn">+ Agregar entrada de hoy a EVOL</button>
   `;
 
@@ -919,17 +1057,52 @@ function renderEvolBuilder(p){
 
   fechaAutoSync = true;
   fld('evolFecha').value = new Date().toISOString().slice(0,10);
-  fld('evolFecha').addEventListener('input', ()=>{ fechaAutoSync = false; });
+  fld('evolFecha').addEventListener('input', ()=>{ fechaAutoSync = false; updateDraftPreview(p); });
 
   fld('evolPlantilla').addEventListener('change', (e)=>{
-    const key = e.target.value;
-    if(!key) return;
-    aplicarPlantilla(p, key);
-    e.target.value='';
+    const raw = e.target.value;
+    const del = fld('borrarPlantillaBtn');
+    if(del) del.style.display = raw.indexOf('custom:')===0 ? '' : 'none';
+    if(!raw) return;
+    const tipo = raw.indexOf('builtin:')===0 ? 'builtin' : (raw.indexOf('custom:')===0 ? 'custom' : '');
+    const key = tipo==='builtin' ? raw.slice('builtin:'.length) : raw.slice('custom:'.length);
+    if(tipo==='builtin') aplicarPlantilla(p, key);
+    else if(tipo==='custom') aplicarPlantillaCustom(p, key);
     const status = fld('status');
     status.textContent = 'Plantilla aplicada — revisá y ajustá los ítems antes de agregar la entrada.';
     setTimeout(()=>status.textContent='',3500);
   });
+
+  fld('guardarPlantillaBtn').addEventListener('click', ()=>{
+    const nombre = (prompt('Nombre para esta plantilla (ej: "Neumonía de la comunidad"):') || '').trim();
+    if(!nombre) return;
+    if(!checklistConfig.customPlantillas) checklistConfig.customPlantillas = {};
+    checklistConfig.customPlantillas[nombre] = {
+      label: nombre,
+      estado: fld('evolEstado').value,
+      set: captureCurrentAsPlantillaSet()
+    };
+    saveCustomLocal();
+    renderEvolBuilder(p);
+    const status = fld('status');
+    status.textContent = `Plantilla "${nombre}" guardada — ya aparece en el selector para todos los pacientes.`;
+    setTimeout(()=>status.textContent='',4000);
+  });
+
+  fld('borrarPlantillaBtn').addEventListener('click', ()=>{
+    const raw = fld('evolPlantilla').value;
+    if(raw.indexOf('custom:')!==0) return;
+    const nombre = raw.slice('custom:'.length);
+    if(!confirm(`¿Eliminar la plantilla "${nombre}"? Esto no borra ninguna evolución ya cargada, solo el atajo para precargar el checklist.`)) return;
+    if(checklistConfig.customPlantillas) delete checklistConfig.customPlantillas[nombre];
+    saveCustomLocal();
+    renderEvolBuilder(p);
+  });
+
+  // Vista previa en vivo: se recalcula ante cualquier cambio dentro del constructor de EVOL.
+  box.addEventListener('input', ()=>updateDraftPreview(p));
+  box.addEventListener('change', ()=>setTimeout(()=>updateDraftPreview(p),0));
+  updateDraftPreview(p);
 }
 
 function pickVariant(item, patient){
@@ -960,25 +1133,130 @@ function trendPhraseFor(key, patient){
   return clauses.length ? (', ' + clauses.join('; ')) : '';
 }
 
-function collectSystemPhrase(key, patient){
+function isChecked(sys, kind, id){
+  const chk = document.querySelector(`[data-sys="${sys}"][data-kind="${kind}"][data-id="${id}"]`);
+  return !!(chk && chk.checked);
+}
+function detailValFor(sys, kind, id){
+  const det = document.querySelector(`[data-detail-for="${id}"][data-sys="${sys}"][data-kind="${kind}"]`);
+  return det ? det.value.trim() : '';
+}
+function itemPhrase(sys, kind, id, patient){
+  const merged = getMergedItems(sys);
+  const list = kind==='normal' ? merged.normal : merged.alteraciones;
+  const item = list.find(i=>i.id===id);
+  if(!item) return '';
+  let t = pickVariant(item, patient);
+  if(item.detail){
+    const det = detailValFor(sys, kind, id);
+    if(det) t += ` (${det})`;
+  }
+  return t;
+}
+function capitalize(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
+function val(id){ const el = fld(id); return el ? el.value.trim() : ''; }
+
+function collectSystemParts(key, patient){
   const merged = getMergedItems(key);
+  const exclude = EXCLUDE_FROM_JOIN[key] || [];
   const parts = [];
   merged.normal.forEach(item=>{
+    if(exclude.indexOf(item.id)!==-1) return;
     const chk = document.querySelector(`[data-sys="${key}"][data-kind="normal"][data-id="${item.id}"]`);
-    if(chk && chk.checked) parts.push(pickVariant(item, patient));
-  });
-  merged.alteraciones.forEach(item=>{
-    const chk = document.querySelector(`[data-sys="${key}"][data-kind="alt"][data-id="${item.id}"]`);
     if(chk && chk.checked){
       let t = pickVariant(item, patient);
       if(item.detail){
-        const det = document.querySelector(`[data-detail-for="${item.id}"][data-sys="${key}"]`);
-        if(det && det.value.trim()) t += ` (${det.value.trim()})`;
+        const det = detailValFor(key,'normal',item.id);
+        if(det) t += ` (${det})`;
       }
       parts.push(t);
     }
   });
-  return parts.join(', ');
+  merged.alteraciones.forEach(item=>{
+    if(exclude.indexOf(item.id)!==-1) return;
+    const chk = document.querySelector(`[data-sys="${key}"][data-kind="alt"][data-id="${item.id}"]`);
+    if(chk && chk.checked){
+      let t = pickVariant(item, patient);
+      if(item.detail){
+        const det = detailValFor(key,'alt',item.id);
+        if(det) t += ` (${det})`;
+      }
+      parts.push(t);
+    }
+  });
+  return parts;
+}
+function collectSystemPhrase(key, patient){
+  return collectSystemParts(key, patient).join(', ');
+}
+
+/* ================= Combinaciones especiales de redacción ================= */
+function buildFlogosisFlebitisClause(patient){
+  const flogPos = isChecked('miembros','normal','sinflogosis');
+  const flebPos = isChecked('miembros','normal','sinflebitis');
+  if(flogPos && flebPos) return 'sin flogosis ni flebitis';
+  if(flogPos) return 'sin flogosis';
+  if(flebPos) return 'sin signos de flebitis';
+  const negParts = [];
+  if(isChecked('miembros','alt','flogosis')) negParts.push(itemPhrase('miembros','alt','flogosis',patient));
+  if(isChecked('miembros','alt','flebitis')) negParts.push(itemPhrase('miembros','alt','flebitis',patient));
+  return negParts.join(' y ');
+}
+function buildMiembrosClause(patient){
+  const parts = collectSystemParts('miembros', patient);
+  const flogFleb = buildFlogosisFlebitisClause(patient);
+  const merged = flogFleb ? [parts[0], flogFleb].concat(parts.slice(1)).filter(Boolean) : parts;
+  if(!merged.length) return '';
+  return `Miembros ${merged.join(', ')}`;
+}
+function buildCatarsisDiuresisClause(patient){
+  const catPos = isChecked('dig','normal','catarsispos');
+  const diuPos = isChecked('renal','normal','diuresispos');
+  const ml = detailValFor('renal','normal','diuresispos');
+  if(catPos && diuPos){
+    return `catarsis y diuresis conservados${ml?` (diuresis ${ml} ml en bolsa colectora)`:''}`;
+  }
+  const parts = [];
+  if(catPos) parts.push('catarsis conservada');
+  else if(isChecked('dig','alt','catarsisneg')) parts.push(itemPhrase('dig','alt','catarsisneg',patient));
+  if(diuPos) parts.push(`diuresis conservada${ml?` (${ml} ml en bolsa colectora)`:''}`);
+  else if(isChecked('renal','alt','oliguria')) parts.push(itemPhrase('renal','alt','oliguria',patient));
+  else if(isChecked('renal','alt','anuria')) parts.push(itemPhrase('renal','alt','anuria',patient));
+  else if(isChecked('renal','alt','diuresisneg')) parts.push(itemPhrase('renal','alt','diuresisneg',patient));
+  return parts.join(' y ');
+}
+function buildCsvLine(){
+  const ta = val('evolTA'), fc = val('evolFC'), sat = val('evolSat'), t = val('evolT');
+  const fio2 = val('evolFio2') || '21';
+  return `CSV: TA:${ta}, FC:${fc}, SatO2:${sat}% (${fio2}%), T°:${t}°C.`;
+}
+function activeMiSummary(p){
+  if(!p || !p.mi || !p.mi.length) return '';
+  return p.mi.filter(i=>!i.resuelto).map(i=>i.text).join('; ');
+}
+function closingEstadoSentence(estado){
+  if(estado === 'estables condiciones generales') return 'Paciente hemodinámicamente estable. Continúa control evolutivo.';
+  if(estado === 'regulares condiciones generales') return 'Paciente en regular estado general. Continúa control evolutivo.';
+  return 'Paciente en mal estado general.';
+}
+
+/* Variedad para los días "sin nada nuevo que contar": si no hubo ningún cambio de
+   estado ni de ningún ítem alterado respecto de ayer, se rota una frase de este banco
+   en vez de repetir siempre el mismo cierre — para que no se lea como copia y pegado. */
+const SIN_CAMBIOS_VARIANTS = [
+  'Permanece estable, sin cambios.',
+  'Sin cambios clínicos significativos respecto de la evaluación previa.',
+  'Evoluciona sin intercurrencias.',
+  'Mantiene parámetros clínicos estables.',
+  'Sin nuevas intercurrencias durante el período evaluado.',
+  'Sin modificaciones respecto de la evaluación previa.'
+];
+function noChangeClause(p, estado){
+  if(!p.lastChecklist) return '';
+  if(p.lastEstado !== estado) return '';
+  const anyTrend = SYS_ORDER.some(key => trendPhraseFor(key, p));
+  if(anyTrend) return '';
+  return ' ' + SIN_CAMBIOS_VARIANTS[(p.evolCount||0) % SIN_CAMBIOS_VARIANTS.length];
 }
 
 function captureChecklistState(estado){
@@ -988,16 +1266,16 @@ function captureChecklistState(estado){
     const sysState = { normal:{}, alt:{} };
     merged.normal.forEach(item=>{
       const chk = document.querySelector(`[data-sys="${key}"][data-kind="normal"][data-id="${item.id}"]`);
-      if(chk) sysState.normal[item.id] = chk.checked;
+      if(chk){
+        sysState.normal[item.id] = chk.checked;
+        if(item.detail) sysState.normal['detail_'+item.id] = detailValFor(key,'normal',item.id);
+      }
     });
     merged.alteraciones.forEach(item=>{
       const chk = document.querySelector(`[data-sys="${key}"][data-kind="alt"][data-id="${item.id}"]`);
       if(chk){
         sysState.alt[item.id] = chk.checked;
-        if(item.detail){
-          const det = document.querySelector(`[data-detail-for="${item.id}"][data-sys="${key}"]`);
-          sysState.alt['detail_'+item.id] = det ? det.value : '';
-        }
+        if(item.detail) sysState.alt['detail_'+item.id] = detailValFor(key,'alt',item.id);
       }
     });
     if(key==='infecto'){
@@ -1009,7 +1287,8 @@ function captureChecklistState(estado){
   return state;
 }
 
-function addEvolEntry(p){
+/* ================= Composición del texto de la evolución (pura — sin efectos secundarios) ================= */
+function buildEvolText(p){
   const fecha = fmtFechaDMY(fld('evolFecha').value) || '(fecha)';
   const estado = fld('evolEstado').value;
 
@@ -1017,45 +1296,52 @@ function addEvolEntry(p){
   const cv = collectSystemPhrase('cv', p);
   const resp = collectSystemPhrase('resp', p);
   const dig = collectSystemPhrase('dig', p);
-  const renal = collectSystemPhrase('renal', p);
-  const miembros = collectSystemPhrase('miembros', p);
+  const miembrosClause = buildMiembrosClause(p);
   const infectoAplica = fld('apply_infecto') && fld('apply_infecto').checked;
   const infecto = infectoAplica ? collectSystemPhrase('infecto', p) : '';
 
-  const estudioTipo = fld('evolEstudioTipo').value;
-  const estudioInforme = fld('evolEstudioInforme').value.trim();
+  const estudioTipo = fld('evolEstudioTipo') ? fld('evolEstudioTipo').value : '';
+  const estudioInforme = fld('evolEstudioInforme') ? fld('evolEstudioInforme').value.trim() : '';
+  const extra = fld('evolExtra') ? fld('evolExtra').value.trim() : '';
 
-  const ta = fld('evolTA').value.trim();
-  const fc = fld('evolFC').value.trim();
-  const sat = fld('evolSat').value.trim();
-  const t = fld('evolT').value.trim();
-  const extra = fld('evolExtra').value.trim();
+  const sexoTxt = p.sexo === 'M' ? 'masculino' : (p.sexo === 'F' ? 'femenino' : '');
+  const miResumen = activeMiSummary(p);
 
-  let intro = `${fecha}: Paciente`;
-  if(p.edad) intro += ` de ${p.edad}`;
-  if(p.ant) intro += `, con antecedentes de ${p.ant}`;
-  intro += `, en ${pickEstadoText(estado, p)}.`;
-  intro += estadoTrendPhrase(p.lastEstado, estado);
+  let intro = `${fecha}: Paciente${sexoTxt?' '+sexoTxt:''}${p.edad?' de '+p.edad:''}${miResumen?', '+miResumen:''}.`;
 
   let out = intro + ' ';
-  if(neuro) out += `Neurológicamente ${neuro}${trendPhraseFor('neuro',p)}. `;
+  if(neuro) out += `${capitalize(neuro)}${trendPhraseFor('neuro',p)}. `;
+  out += buildCsvLine() + ' ';
   if(cv) out += `A nivel cardiovascular, ${cv}${trendPhraseFor('cv',p)}. `;
   if(estudioTipo && estudioInforme) out += `Se recibe informe de ${estudioTipo}: ${estudioInforme}. `;
   if(resp) out += `A nivel pulmonar, ${resp}${trendPhraseFor('resp',p)}. `;
-  if(dig) out += `Abdomen: ${dig}${trendPhraseFor('dig',p)}. `;
-  if(renal) out += `A nivel renal, ${renal}${trendPhraseFor('renal',p)}. `;
-  if(miembros) out += `Miembros: ${miembros}${trendPhraseFor('miembros',p)}. `;
+
+  const digSentence = dig ? `Abdomen ${dig}${trendPhraseFor('dig',p)}.` : '';
+  const catDiu = buildCatarsisDiuresisClause(p);
+  const catDiuSentence = catDiu ? `${capitalize(catDiu)}${trendPhraseFor('renal',p)}.` : '';
+  if(digSentence || catDiuSentence) out += `${digSentence}${digSentence&&catDiuSentence?' ':''}${catDiuSentence} `;
+
+  if(miembrosClause) out += `${miembrosClause}${trendPhraseFor('miembros',p)}. `;
   if(infectoAplica && infecto) out += `Desde el punto de vista infectológico, ${infecto}${trendPhraseFor('infecto',p)}. `;
 
-  const csv = [];
-  if(ta) csv.push('TA '+ta);
-  if(fc) csv.push('FC '+fc);
-  if(sat) csv.push('SAT '+sat+'%');
-  if(t) csv.push('T° '+t);
-  if(csv.length) out += `CSV: ${csv.join(', ')}. `;
-  if(extra) out += extra;
+  out += closingEstadoSentence(estado);
+  out += noChangeClause(p, estado);
+  out += estadoTrendPhrase(p.lastEstado, estado);
+  if(extra) out += ' ' + extra;
 
-  out = out.trim();
+  return out.trim();
+}
+
+function updateDraftPreview(p){
+  const draft = fld('evolDraft');
+  if(!draft || !p) return;
+  draft.value = buildEvolText(p);
+}
+
+function addEvolEntry(p){
+  const out = buildEvolText(p);
+  const estado = fld('evolEstado').value;
+
   p.evol = p.evol ? (out + '\n\n' + p.evol) : out;
   p.evolCount = (p.evolCount||0) + 1;
   p.lastEstado = estado;
@@ -1099,12 +1385,66 @@ document.body.addEventListener('click', (e)=>{
   const input = e.target.previousElementSibling;
   const text = input.value.trim();
   if(!text) return;
-  if(!customItems[sysKey]) customItems[sysKey] = {normal:[], alteraciones:[]};
+  if(!checklistConfig.custom) checklistConfig.custom = {};
+  if(!checklistConfig.custom[sysKey]) checklistConfig.custom[sysKey] = {normal:[], alteraciones:[]};
   const listKey = kind === 'normal' ? 'normal' : 'alteraciones';
-  customItems[sysKey][listKey].push({ id:'custom_'+Date.now(), text: text, antagonistas:[] });
+  checklistConfig.custom[sysKey][listKey].push({ id:'custom_'+Date.now(), text: text, antagonistas:[] });
   saveCustomLocal();
   renderEvolBuilder(getSelected());
 });
+
+/* ================= Editar / eliminar / reordenar ítems del checklist =================
+   Estos cambios son globales (afectan el vocabulario compartido de todos los pacientes
+   y dispositivos), no algo por-paciente — por eso se guardan en checklistConfig. */
+document.body.addEventListener('click', (e)=>{
+  const btn = e.target.closest ? e.target.closest('.chkEditBtn,.chkDelBtn,.chkUpBtn,.chkDownBtn') : null;
+  if(!btn || btn.disabled) return;
+  const wrap = btn.closest('.chk-actions');
+  if(!wrap) return;
+  const sysKey = wrap.dataset.sys, kind = wrap.dataset.kind, id = wrap.dataset.id;
+  const orderKey = kind === 'normal' ? 'normal' : 'alteraciones';
+
+  if(btn.classList.contains('chkDelBtn')){
+    if(!confirm('¿Eliminar esta frase del checklist? Se quita para todos los pacientes y dispositivos (no borra lo que ya está escrito en evoluciones anteriores).')) return;
+    if(!checklistConfig.hidden) checklistConfig.hidden = {};
+    if(!checklistConfig.hidden[sysKey]) checklistConfig.hidden[sysKey] = [];
+    if(checklistConfig.hidden[sysKey].indexOf(id)===-1) checklistConfig.hidden[sysKey].push(id);
+    saveCustomLocal();
+    renderEvolBuilder(getSelected());
+    return;
+  }
+  if(btn.classList.contains('chkEditBtn')){
+    const merged = getMergedItems(sysKey);
+    const list = kind==='normal' ? merged.normal : merged.alteraciones;
+    const item = list.find(i=>i.id===id);
+    const nuevo = prompt('Editar frase del checklist:', item ? item.text : '');
+    if(nuevo === null) return;
+    const texto = nuevo.trim();
+    if(!texto) return;
+    if(!checklistConfig.edits) checklistConfig.edits = {};
+    if(!checklistConfig.edits[sysKey]) checklistConfig.edits[sysKey] = {};
+    checklistConfig.edits[sysKey][id] = texto;
+    saveCustomLocal();
+    renderEvolBuilder(getSelected());
+    return;
+  }
+  if(btn.classList.contains('chkUpBtn') || btn.classList.contains('chkDownBtn')){
+    const dir = btn.classList.contains('chkUpBtn') ? -1 : 1;
+    const merged = getMergedItems(sysKey);
+    const list = (kind==='normal' ? merged.normal : merged.alteraciones).map(i=>i.id);
+    const idx = list.indexOf(id);
+    const swapWith = idx + dir;
+    if(idx===-1 || swapWith<0 || swapWith>=list.length) return;
+    const tmp = list[idx]; list[idx] = list[swapWith]; list[swapWith] = tmp;
+    if(!checklistConfig.order) checklistConfig.order = {};
+    if(!checklistConfig.order[sysKey]) checklistConfig.order[sysKey] = {};
+    checklistConfig.order[sysKey][orderKey] = list;
+    saveCustomLocal();
+    renderEvolBuilder(getSelected());
+    return;
+  }
+});
+
 
 /* ================= Reloj de fecha en tiempo real ================= */
 setInterval(()=>{
@@ -1282,23 +1622,32 @@ function applyRemoteSnapshot(remoteList){
   const remoteById = {};
   remoteList.forEach(r=>{ remoteById[r.id] = { id:r.id, ...r.data }; });
 
+  let selectedPatientDataChanged = false;
   patients = patients.filter(p=>remoteById[p.id]);
   Object.keys(remoteById).forEach(id=>{
     const idx = patients.findIndex(p=>p.id===id);
     if(idx===-1){
       patients.push(remoteById[id]);
+      if(id===selectedId) selectedPatientDataChanged = true;
     } else if(id !== currentlyEditingId){
+      // Evitamos repintar el formulario cuando lo que llegó es el eco de nuestro propio
+      // guardado (datos idénticos): así no se pierden los signos vitales u otros campos
+      // transitorios de la evolución que el usuario está tipeando y todavía no guardó.
+      if(id===selectedId && JSON.stringify(patients[idx]) !== JSON.stringify(remoteById[id])){
+        selectedPatientDataChanged = true;
+      }
       patients[idx] = remoteById[id];
     }
   });
 
   if(!selectedId || !patients.find(p=>p.id===selectedId)){
     selectedId = patients.length ? patients[0].id : null;
+    selectedPatientDataChanged = true;
   }
 
   renderSidebar();
   renderPreview();
-  if(!activeInsideForm) renderForm();
+  if(!activeInsideForm && selectedPatientDataChanged) renderForm();
 }
 
 function iniciarAppPrincipal(){
@@ -1322,11 +1671,14 @@ function iniciarAppPrincipal(){
   fs.onSnapshot(fs.configDocRef, (snap)=>{
     if(snap.exists && snap.exists()){
       const data = snap.data();
-      customItems = (data && typeof data === 'object') ? data : {};
+      checklistConfig = (data && typeof data === 'object')
+        ? { custom: data.custom||{}, edits: data.edits||{}, hidden: data.hidden||{}, order: data.order||{}, customPlantillas: data.customPlantillas||{} }
+        : { custom:{}, edits:{}, hidden:{}, order:{}, customPlantillas:{} };
     } else {
-      customItems = {};
+      checklistConfig = { custom:{}, edits:{}, hidden:{}, order:{}, customPlantillas:{} };
     }
-    if(getSelected()) renderForm();
+    const activeInsideForm = document.activeElement && fld('formCol') && fld('formCol').contains(document.activeElement);
+    if(getSelected() && !activeInsideForm) renderForm();
   }, ()=>{});
 }
 window.iniciarAppPrincipal = iniciarAppPrincipal;
