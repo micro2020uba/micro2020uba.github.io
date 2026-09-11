@@ -450,6 +450,14 @@
   }
   .entry-row-head .rlabel{font-size:.78rem; color:var(--ink); font-weight:500;}
   .rsubtotal{font-size:.8rem; font-weight:700; color:var(--ink);}
+  .entry-prev{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:.68rem;
+    color:var(--ink-soft);
+    margin-top:3px;
+  }
+  .entry-prev:empty{display:none;}
+  .entry-prev .plus{color:var(--ink-soft); margin:0 4px;}
   .entry-chips{
     display:flex;
     flex-wrap:wrap;
@@ -761,6 +769,7 @@
           '<span class="rlabel">' + esc(field.label) + '</span>' +
           '<span class="rsubtotal num" data-role="subtotal">0 ml</span>' +
         '</div>' +
+        '<div class="entry-prev" data-role="prevBreakdown"></div>' +
         '<div class="entry-chips" data-role="chips"></div>' +
         '<div class="entry-form">' +
           '<input type="text" class="entry-desc" data-role="entryDesc" placeholder="detalle (opc.): agua, comida…" autocomplete="off">' +
@@ -945,11 +954,23 @@
       const atbDoseLabel = atbRow.querySelector('[data-role="atbDoseLabel"]');
       atbDoseLabel.textContent = block.atb ? (fmt(ATB_DOSE) + ' ml') : '— ml';
 
-      // multi-entry input rows: subtotal + chips por cada suma cargada
+      // multi-entry input rows: acumulado + desglose de bloques anteriores (por color de hora) + chips del bloque actual
       panel.querySelectorAll('[data-type="inputRow"]').forEach(row=>{
         const key = row.dataset.key;
         const entries = block[key] || [];
-        row.querySelector('[data-role="subtotal"]').textContent = fmt(fieldSubtotal(block, key)) + ' ml';
+        row.querySelector('[data-role="subtotal"]').textContent = fmt(fieldsCumulative(key, i)) + ' ml';
+
+        const prevEl = row.querySelector('[data-role="prevBreakdown"]');
+        const prevParts = [];
+        for (let j=0;j<i;j++){
+          const v = fieldSubtotal(state.blocks[j], key);
+          if (v !== 0) prevParts.push({v, hour: HOURS[j], color: QCOLORS[j]});
+        }
+        prevEl.innerHTML = prevParts.map((p, idx)=>{
+          const num = '<span style="color:' + p.color + '">' + p.hour + 'h ' + fmt(p.v) + '</span>';
+          return idx===0 ? num : '<span class="plus">+</span>' + num;
+        }).join('');
+
         const chipsEl = row.querySelector('[data-role="chips"]');
         chipsEl.innerHTML = entries.map((e, idx)=>{
           const color = entryColor(idx);
