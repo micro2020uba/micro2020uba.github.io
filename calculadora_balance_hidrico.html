@@ -633,6 +633,7 @@
       <label for="atbFreq">Frecuencia</label>
       <select id="atbFreq">
         <option value="6">Cada 6 hs</option>
+        <option value="8">Cada 8 hs</option>
         <option value="12" selected>Cada 12 hs</option>
         <option value="24">Cada 24 hs</option>
         <option value="none">No indicado</option>
@@ -708,6 +709,7 @@
 
   const ATB_DEFAULTS = {
     '6':   [true,true,true,true],
+    '8':   [true,true,true,false],
     '12':  [true,false,true,false],
     '24':  [true,false,false,false],
     'none':[false,false,false,false]
