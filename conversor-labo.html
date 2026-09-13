@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
- Versión: 8 (10/09/2026)
+ Versión: 8 (13/09/2026)
 -->
 <html lang="es">
 <head>
@@ -75,14 +75,8 @@
   .gascalc-result:empty{display:none;}
   .gascalc-result b{color:var(--accent-dark);}
 
-  /* Forzado de fondo blanco puro al copiar con formato: se aplica esta
-     clase al <html> justo antes de copiar (y se retira enseguida después)
-     para que ningún ancestro (body, panel, cuadro de salida) deje pasar su
-     color de fondo habitual (crema/beige) al portapapeles. Sin esto, al
-     pegar en Google Docs quedaba un resaltado amarillento apenas visible
-     detrás del texto, en vez de fondo blanco puro. */
   html.labo-copying, html.labo-copying body, html.labo-copying *{
-    background:#ffffff !important; background-color:#ffffff !important; background-image:none !important;
+    background:transparent !important; background-color:transparent !important; background-image:none !important;
   }
 </style>
 </head>
@@ -165,7 +159,6 @@
 <script>
 function fld(id){ return document.getElementById(id); }
 
-/* ================= Transformador de LABO ================= */
 (function(){
   const $input = fld('laboInput');
   const $fecha = fld('laboFecha');
@@ -178,9 +171,6 @@ function fld(id){ return document.getElementById(id); }
   let laboFullMode = false;
 
   function laboToday(){
-    // Usamos los componentes de fecha LOCALES (no toISOString, que
-    // convierte a UTC) para que en husos horarios detrás de UTC como
-    // Argentina (UTC-3) no se adelante un día durante la noche.
     const t = new Date();
     const y = t.getFullYear();
     const m = String(t.getMonth()+1).padStart(2,'0');
@@ -216,11 +206,6 @@ function fld(id){ return document.getElementById(id); }
     return false;
   }
   function laboParseRange(line, sex){
-    // Algunos parámetros (ej. Troponina) traen dos rangos en el mismo
-    // renglón, uno para "Hombre" y otro para "Mujer". Si detectamos ambos
-    // marcadores, elegimos el que corresponda al sexo del paciente (si lo
-    // sabemos); si no lo sabemos, no evaluamos como alterado/normal para no
-    // arriesgar una lectura equivocada.
     const sLower = line.trim().toLowerCase();
     if(/\bhombre\b/.test(sLower) && /\bmujer\b/.test(sLower)){
       if(!sex) return null;
@@ -234,11 +219,6 @@ function fld(id){ return document.getElementById(id); }
     return laboParseRangeSimple(line);
   }
   function laboParseRangeSimple(line){
-    // Se juntan todos los patrones de rango que matchean en la ventana de
-    // texto y se usa el que aparece primero (más cercano al valor), en vez
-    // de probar los patrones en un orden fijo (eso hacía que a veces se
-    // tomara el rango de OTRO parámetro que aparecía más adelante en el
-    // mismo bloque de texto).
     const s = line.trim().toLowerCase().replace(/,/g,'.');
     const candidates = [];
     let m;
@@ -269,13 +249,6 @@ function fld(id){ return document.getElementById(id); }
     return null;
   }
   function laboDetectAge(flat){
-    // Busca "Edad 94 Años" (o "Edad94 AñosFecha..." tal como pega NextLab,
-    // sin espacios entre palabras). Se usa para calcular la PO2 esperada
-    // por edad (102 - 0.33*edad) y para el resto de la interpretación
-    // gasométrica automática.
-    // Sin \b antes de "edad": en el volcado de NextLab los campos vienen
-    // pegados sin espacio ("...SUSANAEdad94 Años..."), así que la palabra
-    // "Edad" no tiene un límite de palabra real antes.
     const m = flat.match(/edad\s*:?\s*(\d{1,3})\s*a[ñn]os/i);
     if(!m) return null;
     const n = parseInt(m[1], 10);
@@ -287,27 +260,11 @@ function fld(id){ return document.getElementById(id); }
     return `${d}/${m}/${y}`;
   }
   function laboDetectSex(flat){
-    // Busca "Sexo Masculino" / "Sexo Femenino" (tal cual vienen pegados,
-    // sin espacio, en el volcado de NextLab) para poder elegir el rango de
-    // referencia correcto en parámetros que difieren por sexo (ej.
-    // Troponina). Si no se encuentra, se devuelve null (no se puede saber).
-    // Sin \b antes de "sexo": en el volcado de NextLab los campos vienen
-    // pegados sin espacio (ej. "...1932SexoFemenino"), así que no hay un
-    // límite de palabra real antes de "Sexo".
     const m = flat.match(/sexo\s*:?\s*(masculino|femenino)/i);
     if(!m) return null;
     return /femenino/i.test(m[1]) ? 'F' : 'M';
   }
 
-  // ---------------------------------------------------------------------
-  // Catálogo maestro de parámetros. Cada uno indica en qué renglón entra:
-  //   l1 = renglón resumen (comportamiento "de siempre": listado core +
-  //        agregados detectados como alterados fuera de lista)
-  //   l2 = renglón completo (todo lo reconocido y habilitado, siempre,
-  //        estén o no alterados)
-  // cat = categoría para el checklist tildable.
-  // El orden de este arreglo es el orden de salida en ambos renglones.
-  // ---------------------------------------------------------------------
   const LABO_MASTER = [
     {code:'GB',            cat:'hemograma', kind:'std',    l1:true,  l2:true,  aliases:[/\brecuento de gl[oó]bulos blancos\b/i]},
     {code:'N',             cat:'hemograma', kind:'pct',    l1:true,  l2:true,  aliases:[/\bneutrofilos?\s+segmentados\b/i]},
@@ -424,17 +381,6 @@ function fld(id){ return document.getElementById(id); }
     {id:'uroanalisis', label:'Uroanálisis / Urocultivo'},
   ];
 
-  // ---------------------------------------------------------------------
-  // Líquidos de punción (ascítico, y con esta misma estructura se pueden
-  // sumar después pleural, LCR, sinovial, etc.). A diferencia del resto
-  // del catálogo, estos campos solo se buscan si el texto pegado contiene
-  // el encabezado de la sección correspondiente, y arman un renglón
-  // aparte con etiqueta propia (no se mezclan con el renglón completo ni
-  // con el resumen general).
-  //   headerParts = fragmentos que deben aparecer en ese orden en el
-  //                 texto pegado para reconocer el estudio.
-  //   label       = etiqueta con la que se abre el renglón de salida.
-  // ---------------------------------------------------------------------
   const LABO_LIQUIDOS_STUDIES = [
     {
       id:'ascitico',
@@ -443,13 +389,6 @@ function fld(id){ return document.getElementById(id); }
     },
   ];
 
-  // Campos comunes a estos estudios de líquido, en el orden de salida.
-  // "aspecto" no lleva etiqueta de código: va como primer dato suelto.
-  // "range" = valor de referencia orientativo usado para marcar en rojo
-  // (ajustalo si tu criterio clínico usa otros puntos de corte). Prot T y
-  // ALB quedan sin rango propio: en líquido ascítico se interpretan por
-  // comparación con la albuminemia sérica (gradiente séro-ascítico), no
-  // por un corte fijo aislado, así que no se marcan en rojo automáticamente.
   const LABO_LIQUIDOS_FIELDS = [
     {code:null,              key:'aspecto', label:'Aspecto (post-centrifugado)', kind:'liqtext',
       afterHeaderParts:[/post\s*-?\s*centrifugado/i, /\baspecto\b/i]},
@@ -464,27 +403,6 @@ function fld(id){ return document.getElementById(id); }
   ];
   function laboLiqEnabledKey(study, field){ return 'liquidos_puncion|' + study.id + '|' + field.key; }
 
-  // ---------------------------------------------------------------------
-  // Uroanálisis / Urocultivo. A diferencia del catálogo general (valores
-  // numéricos con rango), acá los parámetros son mayormente cualitativos.
-  // Cada estudio (UROANALISIS, MICROBIOLOGIA - UROCULTIVO) se arma en
-  // "chunks": cada chunk sale como su propio renglón con etiqueta en
-  // negrita (ej. "Sedimento Urinario", "EXAMEN MICROSCÓPICO", "CULTIVO").
-  // Cada campo dentro de un chunk tiene un "mode":
-  //   'always'      -> siempre se informa tal cual figura en el laboratorio.
-  //   'skipDefault' -> si el valor coincide con "defaultRe" (el resultado
-  //                    esperable/negativo, ej. "No contiene", "Negativo",
-  //                    "No se observan") NO se informa; si el laboratorio
-  //                    puso otra cosa, se informa en rojo (hallazgo).
-  //   'cross'       -> valores tipo "Positivo +/++/+++"; si el texto es
-  //                    "Negativo"/"No contiene" no se informa; si hay
-  //                    cruces se informa la cantidad de "+", y si en cambio
-  //                    hay un valor numérico se informa ese número, ambos
-  //                    en rojo.
-  // Como estos estudios pueden variar bastante de un paciente a otro, un
-  // campo que no se encuentra en el texto pegado simplemente no aparece en
-  // el resultado (no corta el resto del reconocimiento).
-  // ---------------------------------------------------------------------
   const LABO_TEXT_SEARCH_WINDOW = 260;
 
   const LABO_TEXT_STUDIES = [
@@ -573,19 +491,10 @@ function fld(id){ return document.getElementById(id); }
     }
   ];
   const TEXT_STUDY_ALIAS_ALL = LABO_TEXT_STUDIES.flatMap(s=>s.chunks.flatMap(c=>c.fields.filter(f=>f.labelRe).map(f=>f.labelRe)));
-  // Límites "duros" válidos para cualquier estudio de texto: el encabezado
-  // de cada estudio y el subtítulo de cada chunk. Sirven de tope cuando el
-  // último campo de un chunk no tiene, dentro del propio estudio, ningún
-  // campo posterior que lo acote (ej. "Mucus" en Sedimento Urinario, que es
-  // el último campo antes de que empiece MICROBIOLOGIA - UROCULTIVO).
   const LABO_TEXT_GLOBAL_STOPS = LABO_TEXT_STUDIES.flatMap(s=>
     [s.headerParts[0]].concat(s.chunks.flatMap(c=>c.fields.filter(f=>f.marker).map(f=>f.marker)))
   );
 
-  // Fragmentos de texto que NUNCA deben tomarse como nombre de un parámetro
-  // "extra": nombres de método de laboratorio, descriptores de rango
-  // ("límite superior", "ideal", etc.) y encabezados que quedaban sueltos
-  // en su propia línea al pegar la tabla del laboratorio.
   const EXTRA_STOPWORD_SUBSTR = [
     'metodo','ifcc','segun','formula','calculado','chabrol','charonnat',
     'enzimatico','punto final','tptz','desproteinizacion','quimioluminiscencia',
@@ -621,9 +530,6 @@ function fld(id){ return document.getElementById(id); }
     const win = text.slice(startPos, startPos+maxWindow);
     const m = win.match(/(-?\d+(?:[.,]\d+)?)/);
     if(!m) return null;
-    // Si entre el nombre del parámetro y el número aparece una frase como
-    // "no se realiza" o "no reactivo", ese número pertenece a una oración
-    // explicativa (o al parámetro siguiente), no al valor buscado.
     const before = win.slice(0, m.index).toLowerCase();
     if(/no se realiza|no se efectua|no reactivo|no aplica|pendiente|no corresponde/.test(before)) return null;
     return {value: laboToNumber(m[1]), endPos: startPos + m.index + m[0].length};
@@ -667,9 +573,6 @@ function fld(id){ return document.getElementById(id); }
     }
     return null;
   }
-  // Resultados cualitativos (serologías: reactivo / no reactivo). Solo se
-  // informan cuando dan reactivo/positivo; si da "no reactivo" o "no se
-  // realiza" se considera que no hace falta anotarlo.
   function laboExtractQual(flat, param){
     for(const rx of param.aliases){
       const re = new RegExp(rx.source, rx.flags.replace('g','')+'g');
@@ -686,14 +589,7 @@ function fld(id){ return document.getElementById(id); }
     return null;
   }
 
-  // ---------------------------------------------------------------------
-  // Helpers para los estudios de líquidos de punción (ver
-  // LABO_LIQUIDOS_STUDIES / LABO_LIQUIDOS_FIELDS más arriba).
-  // ---------------------------------------------------------------------
   function laboFindSeqIndex(flat, parts, fromIdx){
-    // Busca cada regex de "parts" en orden, cada una después de donde
-    // terminó la anterior. Devuelve la posición donde termina el último
-    // match (o null si no encuentra alguno de los fragmentos).
     let pos = fromIdx || 0;
     for(const rx of parts){
       const re = new RegExp(rx.source, rx.flags.replace('g','')+'g');
@@ -705,8 +601,6 @@ function fld(id){ return document.getElementById(id); }
     return pos;
   }
   function laboFindWordAfter(flat, startPos, maxWindow){
-    // Captura la primera palabra (o frase corta tipo "no se obs") pegada
-    // después de un rótulo, para valores cualitativos de texto libre.
     const win = flat.slice(startPos, startPos+maxWindow);
     const m = win.match(/^\s*([A-Za-zÁÉÍÓÚÑáéíóúñ][A-Za-zÁÉÍÓÚÑáéíóúñ]*(?:\s+(?:se|no|obs\.?|observ[oó]a?n?)\b)*)/i);
     if(!m || !m[1]) return null;
@@ -719,9 +613,6 @@ function fld(id){ return document.getElementById(id); }
     if(idx==null) return null;
     const w = laboFindWordAfter(flat, idx, 40);
     if(!w) return null;
-    // En líquidos de punción (ascítico, pleural, etc.) el hallazgo esperable
-    // se describe como "claro" o "incoloro" (no "límpido", que es el término
-    // que se usa en orina).
     const abnormal = !/^(l[ií]mpido|claro|incoloro)\b/i.test(w.value.trim());
     return {value:w.value, pos:idx, abnormal};
   }
@@ -802,13 +693,6 @@ function fld(id){ return document.getElementById(id); }
     return blocks;
   }
 
-  // ---------------------------------------------------------------------
-  // GASA (Gradiente de Albúmina Sero-Ascítico). Solo tiene sentido cuando
-  // el texto pegado trae una punción de líquido ascítico con Albúmina
-  // informada; ahí se muestra una segunda caja para pegar el laboratorio
-  // de sangre (plasmático) y se calcula GASA = albúmina sérica − albúmina
-  // del líquido ascítico, con la interpretación clásica (Runyon).
-  // ---------------------------------------------------------------------
   function laboFindAscLiqAlbumina(flat){
     const study = LABO_LIQUIDOS_STUDIES.find(s=>s.id==='ascitico');
     if(!study) return null;
@@ -840,16 +724,6 @@ function fld(id){ return document.getElementById(id); }
       + `(albúmina sérica ${laboFmtNumber(serumAlb)} g/dL − albúmina en líquido ascítico ${laboFmtNumber(ascAlb)} g/dL). ${interp}`;
   }
 
-  // ---------------------------------------------------------------------
-  // Helpers para uroanálisis / urocultivo (ver LABO_TEXT_STUDIES). A
-  // diferencia de los líquidos de punción, acá cada estudio tiene varios
-  // "chunks" con su propia etiqueta en negrita, y cada campo puede faltar
-  // sin romper el resto (los informes de laboratorio varían mucho entre
-  // pacientes). El escaneo recorre el texto una sola vez, en el orden en
-  // que están definidos los campos, acotando cada valor hasta el próximo
-  // campo/subtítulo reconocido (o hasta la palabra suelta "Final", que es
-  // ruido típico de estos informes al copiar y pegar).
-  // ---------------------------------------------------------------------
   function laboScanTextStudy(flat, study, globalStops){
     const startRe = new RegExp(study.headerParts[0].source, study.headerParts[0].flags.replace('g','')+'g');
     const mStart = startRe.exec(flat);
@@ -862,10 +736,10 @@ function fld(id){ return document.getElementById(id); }
     const byChunk = study.chunks.map(()=>[]);
 
     study.chunks.forEach((chunk, ci)=>{
-      const items = chunk.fields; // mezcla de {marker} y campos reales
+      const items = chunk.fields;
       let orientationDecided = false;
-      let reversed = false; // true = "valor, luego etiqueta" (orden invertido)
-      let prevEnd = cursor;  // desde acá arranca el "hueco" del próximo campo
+      let reversed = false;
+      let prevEnd = cursor;
 
       for(let idx=0; idx<items.length; idx++){
         const item = items[idx];
@@ -873,7 +747,7 @@ function fld(id){ return document.getElementById(id); }
         const re = new RegExp(itemRe.source, itemRe.flags.replace('g','')+'g');
         const win = flat.slice(cursor, cursor+LABO_TEXT_SEARCH_WINDOW);
         const m = re.exec(win);
-        if(!m) continue; // no se encontró cerca: se deja afuera, sin cortar el resto
+        if(!m) continue;
         const labelStart = cursor + m.index;
         const labelEnd = labelStart + m[0].length;
 
@@ -884,13 +758,6 @@ function fld(id){ return document.getElementById(id); }
           continue;
         }
 
-        // El primer campo real del chunk decide la orientación: si entre el
-        // final del elemento anterior (marcador o inicio del chunk) y esta
-        // etiqueta hay bastante texto de más, ese texto es el VALOR de este
-        // mismo campo (orden invertido: "valor, luego etiqueta"), un patrón
-        // que aparece en algunos volcados de NextLab para "Sedimento
-        // Urinario" cuando la columna de unidad ("/campo") desordena la
-        // tabla al copiarla como texto plano.
         if(!orientationDecided){
           reversed = (labelStart - prevEnd) > 3;
           orientationDecided = true;
@@ -902,8 +769,6 @@ function fld(id){ return document.getElementById(id); }
           valEnd = labelStart;
         } else {
           valStart = labelEnd;
-          // Límite: el próximo campo/marcador de ESTE chunk que se logre
-          // encontrar más adelante.
           let nextStart = null;
           for(let j=idx+1;j<items.length && nextStart==null;j++){
             const nxt = items[j];
@@ -913,10 +778,6 @@ function fld(id){ return document.getElementById(id); }
             const mN = nre.exec(winN);
             if(mN) nextStart = valStart + mN.index;
           }
-          // Si no hay ninguno más en este chunk (ej. último campo), se
-          // prueba con los límites "duros" de cualquier estudio de texto
-          // (encabezados y subtítulos de TODOS los estudios), para no
-          // comerse el título de la sección siguiente.
           if(nextStart==null && globalStops){
             for(const gre of globalStops){
               const re3 = new RegExp(gre.source, gre.flags.replace('g','')+'g');
@@ -928,8 +789,6 @@ function fld(id){ return document.getElementById(id); }
               }
             }
           }
-          // Última red de contención: ventana chica, por si no hubo ningún
-          // límite reconocible cerca (fin del texto pegado, formato distinto).
           valEnd = nextStart!=null ? nextStart : Math.min(flat.length, valStart+45);
         }
 
@@ -951,9 +810,6 @@ function fld(id){ return document.getElementById(id); }
   }
 
   function laboIsNormalText(v){
-    // Patrones que se consideran "sin alteraciones" para decidir qué se
-    // oculta en la presentación resumida (por defecto) de uroanálisis /
-    // urocultivo. Cubre variantes de redacción típicas de NextLab.
     const s = v.trim().toLowerCase().replace(/\s+/g,' ');
     if(/no\s+se\s+observan?\b/.test(s)) return true;
     if(/^normal$/.test(s)) return true;
@@ -968,7 +824,6 @@ function fld(id){ return document.getElementById(id); }
     return t.charAt(0).toUpperCase() + t.slice(1).toLowerCase();
   }
   function laboFixSpacedRange(s){
-    // "0a1" -> "0 a 1" (algunos volcados pegan el rango sin espacios)
     return s.replace(/(\d)\s*a\s*(\d)/gi, '$1 a $2');
   }
   function laboClassifyTextField(field, rawValue, fullMode){
@@ -980,7 +835,6 @@ function fld(id){ return document.getElementById(id); }
     if(field.mode==='aspectoQual'){
       let v = laboFixSpacedRange(rawValue);
       if(field.lowercase) v = v.toLowerCase();
-      // Corrige la falta de tilde ("Limpido"/"limpido" -> "límpido").
       v = v.replace(/^limpido\b/i, 'límpido');
       const abnormal = !/^(l[ií]mpido|claro|incoloro)\b/i.test(v.trim());
       return {text:v, abnormal, core:true, show:true};
@@ -995,16 +849,10 @@ function fld(id){ return document.getElementById(id); }
           const val = plus ? plus[0] : (num ? num[0].replace(',', '.') : null);
           if(val!=null) return {text:val, abnormal:true, core:false, show:true};
         }
-        // Sin cruces ni número: se informa como un campo condicional común
-        // (ej. "No contiene"), que se oculta en la vista resumida si es lo
-        // esperable.
       }
       const normal = laboIsNormalText(raw);
       const text = laboSentenceCase(raw);
       if(normal) return {text, abnormal:false, core:false, show: !!fullMode};
-      // 'condPlain' son campos que antes eran "always" (nunca se coloreaban
-      // en rojo, solo se ocultaban si el valor era el esperable): mantienen
-      // ese comportamiento y solo ganan la posibilidad de ocultarse.
       const colorRed = field.mode==='cond';
       return {text, abnormal:colorRed, core:false, show:true};
     }
@@ -1058,11 +906,6 @@ function fld(id){ return document.getElementById(id); }
     return {blocks, ranges};
   }
 
-  // ---------------------------------------------------------------------
-  // Checklist de parámetros habilitados/deshabilitados (persistido en
-  // localStorage, ya que este archivo se usa como herramienta local, igual
-  // que extractor.html).
-  // ---------------------------------------------------------------------
   const LABO_ENABLED_KEY = 'labo_conversor_enabled_v1';
   let laboEnabled = {};
   function laboEnabledKey(param){ return param.cat + '|' + param.code; }
@@ -1170,11 +1013,6 @@ function fld(id){ return document.getElementById(id); }
     laboSaveEnabled(); laboBuildChecklist(); laboProcesar();
   });
 
-  // ---------------------------------------------------------------------
-  // Explicación de alteraciones: interpretación clínica breve por parámetro
-  // (o combinación de parámetros), con recomendaciones orientativas para el
-  // ámbito médico. No reemplaza el criterio clínico; es un apoyo rápido.
-  // ---------------------------------------------------------------------
   const LABO_EXPLAIN = {
     'GB':   {alto:'leucocitosis; valorar proceso infeccioso o inflamatorio agudo', bajo:'leucopenia; valorar riesgo infeccioso y considerar aislamiento si es severa'},
     'N':    {alto:'neutrofilia; orienta a proceso infeccioso bacteriano o inflamatorio'},
@@ -1199,6 +1037,9 @@ function fld(id){ return document.getElementById(id); }
     'Ac Lac': {alto:'lactato elevado; considerar hipoperfusión tisular/shock'},
     'PSA':  {alto:'PSA elevado; correlacionar clínicamente y considerar evaluación urológica'},
   };
+  function laboRed(txt){
+    return `<span style="color:#C0392B;font-weight:700;">${txt}</span>`;
+  }
   function laboAnemiaTipo(vcm, hcm){
     const size = vcm==null ? '' : (vcm<80 ? 'microcítica' : (vcm>100 ? 'macrocítica' : 'normocítica'));
     const color = hcm==null ? '' : (hcm<27 ? 'hipocrómica' : 'normocrómica');
@@ -1224,7 +1065,7 @@ function fld(id){ return document.getElementById(id); }
       let extra = '';
       if(/microc[ií]tica/.test(tipo) && /hipocr[oó]mica/.test(tipo)) extra = ' Se sugiere solicitar perfil férrico para descartar ferropenia.';
       else if(/macroc[ií]tica/.test(tipo)) extra = ' Se sugiere solicitar vitamina B12, ácido fólico y perfil tiroideo.';
-      sentences.push(`${partes.join(', ')}: anemia${tipo?(' '+tipo):''}.${extra}`);
+      sentences.push(`${laboRed(partes.join(', '))}: anemia${tipo?(' '+tipo):''}.${extra}`);
       ['HB','HTO','VCM','HCM'].forEach(c=>consumed.add(c));
     }
 
@@ -1234,7 +1075,7 @@ function fld(id){ return document.getElementById(id); }
       if(ureaF) partes.push(`UREA ${ureaF.text}`);
       if(crF) partes.push(`CR ${crF.text}`);
       if(fgF) partes.push(`FG ${fgF.text}`);
-      sentences.push(`${partes.join(', ')}: deterioro de la función renal; ajustar dosis de fármacos de eliminación renal y correlacionar con diuresis y estado de hidratación.`);
+      sentences.push(`${laboRed(partes.join(', '))}: deterioro de la función renal; ajustar dosis de fármacos de eliminación renal y correlacionar con diuresis y estado de hidratación.`);
       ['UREA','CR','FG'].forEach(c=>consumed.add(c));
     }
 
@@ -1244,14 +1085,14 @@ function fld(id){ return document.getElementById(id); }
       if(!f || !f.dir) return;
       const txt = LABO_EXPLAIN[code][f.dir];
       if(!txt) return;
-      sentences.push(`${code} ${f.text}: ${txt}.`);
+      sentences.push(`${laboRed(`${code} ${f.text}`)}: ${txt}.`);
       consumed.add(code);
     });
 
     found.forEach(f=>{
       if(consumed.has(f.code)) return;
       if(f.abnormal && f.text==='Reactivo'){
-        sentences.push(`${f.code}: resultado reactivo; requiere confirmación con técnica complementaria y evaluación clínica.`);
+        sentences.push(`${laboRed(f.code)}: resultado reactivo; requiere confirmación con técnica complementaria y evaluación clínica.`);
         consumed.add(f.code);
       }
     });
@@ -1259,13 +1100,6 @@ function fld(id){ return document.getElementById(id); }
     return sentences;
   }
 
-  // ---------------------------------------------------------------------
-  // Interpretación gasométrica automática (misma lógica que la calculadora
-  // manual de la sección 4), a partir de los valores reconocidos en el
-  // texto pegado. Fórmulas de referencia: Winter (ac. metabólica), 0.6
-  // (alc. metabólica), 0.1/0.3 (ac. respiratoria aguda/corregida), 0.2/0.4
-  // (alc. respiratoria aguda/corregida), PAFI y PO2 esperada por edad.
-  // ---------------------------------------------------------------------
   function laboR1(n){ return Math.round(n*10)/10; }
   function laboWinterExpected(hco3){ return {low: laboR1(1.5*hco3+8-2), high: laboR1(1.5*hco3+8+2)}; }
   function laboBuildAcidBase(v){
@@ -1332,18 +1166,8 @@ function fld(id){ return document.getElementById(id); }
       $status.textContent = 'Pegá primero el texto del laboratorio.';
       return;
     }
-    // Aplanamos tabs y saltos de línea a espacios simples: así no importa en
-    // qué línea haya quedado cada dato al pegar desde la página del laboratorio.
     const flat = raw.replace(/[\t\r\n]+/g,' ').replace(/\s+/g,' ');
 
-    // Los estudios de líquidos de punción (ver LABO_LIQUIDOS_STUDIES) tienen
-    // parámetros que se llaman igual que algunos del catálogo general de
-    // sangre (Glucosa, Proteínas Totales, LDH, Albúmina, Bilirrubina...).
-    // Para que esos valores del líquido no se confundan con valores de
-    // sangre en el renglón general, se "tapa" con espacios (mismo largo,
-    // para no correr posiciones) el tramo de texto que va desde el
-    // encabezado del estudio de líquido hasta el final del texto pegado,
-    // solo a los fines del escaneo del catálogo general/los "extras".
     function laboMaskRanges(str, ranges){
       if(!ranges.length) return str;
       const arr = str.split('');
@@ -1358,9 +1182,6 @@ function fld(id){ return document.getElementById(id); }
       return {start:mStart.index, end:flat.length};
     }).filter(Boolean);
 
-    // Uroanálisis / urocultivo: se tapa solo el tramo propio de cada
-    // estudio (no hasta el final del texto), para no perder de vista datos
-    // de sangre que puedan venir después en el mismo informe.
     const textStudyScan = LABO_TEXT_STUDIES.map(study=>laboScanTextStudy(flat, study, LABO_TEXT_GLOBAL_STOPS)).filter(Boolean);
     const textStudyRanges = textStudyScan.map(s=>({start:s.maskStart, end:s.maskEnd}));
 
@@ -1384,14 +1205,6 @@ function fld(id){ return document.getElementById(id); }
         const r = laboExtractStd(flatMasked, param, sex);
         if(r){ text = `${laboFmtNumber(r.value)}%`; abnormal = laboIsAbnormal(r.value, r.range); dir = laboDir(r.value, r.range); ok = true; pos = r.pos; }
       } else if(param.kind==='gas'){
-        // Parámetros de estado ácido-base: este formato de informe no trae
-        // un valor de referencia propio pegado junto al dato, así que se
-        // evalúan contra rangos fisiológicos fijos en vez de intentar leer
-        // (y potencialmente tomar prestado por error) el rango de texto de
-        // otro parámetro más adelante. La pO2 además se ajusta según la
-        // edad del paciente si se pudo detectar (PO2 esperada = 102 -
-        // 0.33*edad), ya que el límite inferior "80" no aplica igual en
-        // pacientes añosos.
         const r = laboExtractStd(flatMasked, param, sex);
         if(r){
           text = laboFmtNumber(r.value);
@@ -1405,7 +1218,6 @@ function fld(id){ return document.getElementById(id); }
           ok = true; pos = r.pos;
         }
       } else if(param.kind==='qual'){
-        // Serología: solo se informa si dio reactivo/positivo.
         const r = laboExtractQual(flatMasked, param);
         if(r){ text = r.value; abnormal = true; ok = true; pos = r.pos; }
       } else {
@@ -1415,9 +1227,6 @@ function fld(id){ return document.getElementById(id); }
       if(ok) found.push({code:param.code, text, abnormal, l1:param.l1, l2:param.l2, pos, dir});
     });
 
-    // Datos adicionales alterados que no están en el catálogo (ej.
-    // coagulograma u otro estudio no cubierto). Solo alimentan el renglón
-    // resumen, igual que antes.
     const CORE_ALIAS_ALL = LABO_MASTER.flatMap(p=>p.aliases).concat(LABO_LIQUIDOS_FIELDS.flatMap(f=>f.aliases||[])).concat(TEXT_STUDY_ALIAS_ALL);
     const rawLines = raw.split(/\r?\n/);
     const extras = [];
@@ -1458,8 +1267,6 @@ function fld(id){ return document.getElementById(id); }
       cursor = numRes.endPos;
     }
 
-    // Ambos renglones se ordenan según el orden en que cada dato aparece
-    // en el texto pegado (no según el orden fijo del catálogo).
     const byPos = (a,b)=> (a.pos ?? 0) - (b.pos ?? 0);
     const line2Items = found.filter(f=>f.l2).sort(byPos);
     const line1Items = found.filter(f=>f.l1).concat(extras).sort(byPos);
@@ -1468,8 +1275,6 @@ function fld(id){ return document.getElementById(id); }
     const textStudyResult = laboBuildTextStudyBlocks(flat, laboFullMode);
     const textStudyBlocks = textStudyResult.blocks;
 
-    // GASA: si hay líquido ascítico con Albúmina, mostramos la segunda caja
-    // para la albúmina plasmática y, si ya tiene contenido, calculamos.
     const ascAlb = laboFindAscLiqAlbumina(flat);
     let gasaBlock = null;
     if(ascAlb!=null){
@@ -1518,8 +1323,6 @@ function fld(id){ return document.getElementById(id); }
     });
     textStudyBlocks.forEach(b=>{
       if(out) out += '<br><br>';
-      // El bloque ya trae "." al final de cada chunk (uno por línea), así
-      // que acá no se agrega otro punto extra al final.
       out += `<span style="${LABO_FONT}">${prefix}${b}</span>`;
     });
     if(gasaBlock){
@@ -1527,8 +1330,6 @@ function fld(id){ return document.getElementById(id); }
       out += `<span style="${LABO_FONT}">${prefix}${gasaBlock}</span>`;
     }
 
-    // Interpretación gasométrica automática (Winter, compensaciones, PAFI,
-    // PO2 esperada por edad), solo si se reconocieron pH + pCO2 + HCO3.
     const gasV = {
       ph:   (found.find(f=>f.code==='pH')  ? laboToNumber(found.find(f=>f.code==='pH').text)  : null),
       pco2: (found.find(f=>f.code==='pCO2')? laboToNumber(found.find(f=>f.code==='pCO2').text): null),
@@ -1542,8 +1343,6 @@ function fld(id){ return document.getElementById(id); }
       if(out) out += '<br><br>';
       out += `<span style="${LABO_FONT}"><b>Interpretación gasométrica</b>: ${abgInterp}</span>`;
     }
-    // Se precargan los valores en la calculadora manual (sección 4) para
-    // que puedan ajustarse o recalcularse a mano si hace falta.
     if(gasV.ph!=null)  fld('gcPh').value = gasV.ph;
     if(gasV.pco2!=null) fld('gcPco2').value = gasV.pco2;
     if(gasV.hco3!=null) fld('gcHco3').value = gasV.hco3;
@@ -1551,8 +1350,6 @@ function fld(id){ return document.getElementById(id); }
     if(gasV.edad!=null) fld('gcEdad').value = gasV.edad;
     if(gasV.fio2!=null) fld('gcFio2').value = gasV.fio2;
 
-    // Explicación de alteraciones: interpretación clínica + recomendaciones
-    // por parámetro (o grupo de parámetros) alterado.
     const explicaciones = laboBuildExplicaciones(found);
     if(explicaciones.length){
       if(out) out += '<br><br>';
@@ -1605,23 +1402,9 @@ function fld(id){ return document.getElementById(id); }
       return;
     }
 
-    // El HTML "limpio" (fondo blanco explícito, texto negro puro) se usa
-    // como respaldo para el método 2. Para el método 1 no lo usamos: copiar
-    // desde un clon fuera de pantalla hacía que el navegador no calculara
-    // bien los colores anidados y el rojo de los valores alterados se
-    // perdía al pegar. En cambio, copiamos del propio cuadro visible
-    // (#laboOutput), que sí conserva el rojo tal cual se ve en pantalla, y
-    // solo le forzamos un fondo blanco en línea justo antes de copiar (en
-    // vez del crema del panel), restaurándolo enseguida después.
-    const cleanHtml = `<div style="background:#ffffff;color:#000000;font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:12pt;">${$output.innerHTML}</div>`;
+    const cleanHtml = `<div style="background:transparent;color:#000000;font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:12pt;">${$output.innerHTML}</div>`;
     const text = $output.innerText;
 
-    // Método 1 (el más confiable en navegadores móviles, incluido Chrome
-    // Android): seleccionamos de verdad el contenido de #laboOutput y
-    // disparamos el copiado nativo del navegador con execCommand. Se aplica
-    // la clase "labo-copying" a <html> (ver CSS) para forzar fondo blanco
-    // puro en todos los ancestros, no solo en #laboOutput, y evitar que
-    // quede un resaltado amarillento al pegar en Google Docs.
     let copiadoConFormato = false;
     document.documentElement.classList.add('labo-copying');
     try{
@@ -1641,7 +1424,6 @@ function fld(id){ return document.getElementById(id); }
       return;
     }
 
-    // Método 2: Clipboard API moderna con HTML + texto plano.
     try{
       const blobHtml = new Blob([cleanHtml], {type:'text/html'});
       const blobText = new Blob([text], {type:'text/plain'});
@@ -1650,10 +1432,8 @@ function fld(id){ return document.getElementById(id); }
       $status.textContent = 'Copiado con formato al portapapeles.';
       return;
     }catch(e){
-      // sigue al método 3
     }
 
-    // Método 3: solo texto plano (sin negrita/rojo).
     try{
       await navigator.clipboard.writeText(text);
       $status.textContent = 'Copiado como texto simple (el formato con color no se pudo copiar en este navegador).';
@@ -1662,10 +1442,6 @@ function fld(id){ return document.getElementById(id); }
     }
   });
 
-  // Auto-conversión: apenas se pega o se escribe texto en el cuadro de
-  // entrada, se procesa solo, sin necesidad de tocar "Procesar". Al llegar
-  // texto nuevo al cuadro principal, se vuelve a la vista resumida (LAB
-  // Completo hay que pedirla de nuevo a propósito).
   let laboAutoTimer = null;
   function laboAutoProcesar(){
     if(laboAutoTimer) clearTimeout(laboAutoTimer);
@@ -1684,11 +1460,6 @@ function fld(id){ return document.getElementById(id); }
   $gasaInput.addEventListener('input', laboAutoProcesarGasa);
   $gasaInput.addEventListener('paste', laboAutoProcesarGasa);
 
-  // ---------------------------------------------------------------------
-  // Calculadora manual de gases en sangre (sección 4). Usa las mismas
-  // funciones (laboBuildAcidBase) que la interpretación automática, para
-  // que ambas sean siempre consistentes entre sí.
-  // ---------------------------------------------------------------------
   const $gcResultado = fld('gcResultado');
   function laboNumInput(id){
     const v = fld(id).value;
