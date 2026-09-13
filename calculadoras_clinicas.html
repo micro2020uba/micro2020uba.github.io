@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<!--
+ Calculadoras clínicas: ECG (frecuencia y eje), GASA, SOFA, Medio interno/Oximetría.
+ Versión: 1 (13/09/2026)
+-->
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadoras clínicas</title>
+
+<style>
+  :root{
+    --ink:#23302c; --paper:#faf7f0; --panel:#fff; --muted:#7a7468;
+    --line-soft:#dcd6c8; --field-bg:#fcfbf7; --accent-dark:#2f5d5a; --accent:#3f7a76;
+    --danger:#c0392b; --ok:#2f5d5a; --warn:#b8860b;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);color:var(--ink);
+    font-family:'IBM Plex Sans',Arial,sans-serif;padding:14px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;background:var(--panel);border:2px solid var(--ink);border-radius:4px;box-shadow:0 8px 26px rgba(0,0,0,.15);}
+  .head{padding:14px 20px;border-bottom:2px solid var(--ink);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+  .head h1{margin:0 0 4px;font-size:16px;}
+  .head .sub{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);}
+  .body{padding:18px 20px 22px;}
+
+  /* ---- botón volver ---- */
+  .backBtn{
+    display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px solid var(--ink);
+    color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;
+    padding:6px 11px;border-radius:2px;cursor:pointer;text-transform:uppercase;letter-spacing:.05em;
+    margin-bottom:14px;
+  }
+  .backBtn:hover{background:var(--ink);color:var(--paper);}
+
+  /* ---- grilla de accesos (home) ---- */
+  .intro p{color:var(--muted);font-size:13px;line-height:1.5;max-width:680px;margin:0 0 20px;}
+  .tool-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;}
+  .tool-card{
+    display:flex;flex-direction:column;align-items:flex-start;gap:10px;text-align:left;
+    background:var(--panel);border:2px solid var(--ink);border-radius:4px;
+    padding:20px;cursor:pointer;box-shadow:2px 3px 0 rgba(0,0,0,.06);
+    font-family:inherit;color:var(--ink);width:100%;
+    transition:transform .08s ease, box-shadow .08s ease;
+  }
+  .tool-card:hover{transform:translateY(-2px);box-shadow:3px 5px 0 rgba(0,0,0,.1);}
+  .tool-card:active{transform:translateY(0);box-shadow:1px 2px 0 rgba(0,0,0,.1);}
+  .tool-card .icon{
+    width:44px;height:44px;border-radius:4px;background:var(--accent-dark);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .tool-card .icon svg{width:24px;height:24px;fill:#fff;}
+  .tool-card h2{font-size:14.5px;margin:0;font-weight:700;}
+  .tool-card p{font-size:12px;color:var(--muted);line-height:1.45;margin:0;}
+  .tool-card .go{
+    margin-top:auto;font-family:'IBM Plex Mono',monospace;font-size:10.5px;
+    letter-spacing:.06em;text-transform:uppercase;color:var(--accent-dark);font-weight:700;
+  }
+
+  /* ---- genéricos de formulario ---- */
+  h2.viewTitle{font-size:17px;margin:0 0 4px;}
+  p.viewSub{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin:0 0 18px;}
+  .panel-box{border:1px solid var(--line-soft);border-radius:4px;background:var(--field-bg);padding:14px 16px;margin-bottom:16px;}
+  .panel-box h3{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-dark);margin:0 0 10px;}
+  .field-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;}
+  .field-grid label{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--muted);font-weight:600;}
+  .field-grid input, .field-grid select{
+    font-family:'IBM Plex Mono',monospace;font-size:12.5px;padding:7px 8px;border:1px solid var(--line-soft);
+    background:#fff;border-radius:2px;color:var(--ink);
+  }
+  .field-grid label.wide{grid-column:1/-1;}
+  .row-controls{display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap;}
+  .btn-primary{font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:11.5px;padding:8px 14px;border-radius:2px;cursor:pointer;border:none;background:var(--accent-dark);color:#fff;}
+  .btn-primary:hover{opacity:.85;}
+  .btn-secondary{font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:11.5px;padding:8px 14px;border-radius:2px;cursor:pointer;border:1px solid var(--ink);background:transparent;color:var(--ink);}
+  .btn-secondary:hover{background:var(--ink);color:var(--paper);}
+  .btn-secondary.active{background:var(--accent-dark) !important;border-color:var(--accent-dark) !important;color:#fff;}
+  .btn-toggle-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+
+  .result-box{border:1px solid var(--line-soft);border-radius:4px;background:#fff;padding:14px 16px;margin-top:6px;font-size:13px;line-height:1.65;}
+  .result-box:empty{display:none;}
+  .result-big{font-size:26px;font-weight:700;color:var(--accent-dark);margin:0 0 4px;font-family:'IBM Plex Mono',monospace;}
+  .badge{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;letter-spacing:.03em;}
+  .badge-ok{background:#e4efe9;color:var(--accent-dark);}
+  .badge-warn{background:#faf1de;color:var(--warn);}
+  .badge-danger{background:#f7e3e0;color:var(--danger);}
+  .note{font-size:10.5px;color:var(--muted);margin-top:10px;line-height:1.5;}
+  table.mini{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:8px;}
+  table.mini th, table.mini td{border:1px solid var(--line-soft);padding:5px 7px;text-align:center;}
+  table.mini th{background:var(--field-bg);font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.03em;color:var(--accent-dark);}
+  table.mini td.hl{background:#e4efe9;font-weight:700;}
+  .causes-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:10px;}
+  @media (max-width:700px){.causes-grid{grid-template-columns:1fr;}}
+  .causes-col h4{margin:0 0 6px;font-size:11.5px;color:var(--accent-dark);}
+  .causes-col ul{margin:0;padding-left:18px;font-size:11.5px;color:var(--ink);line-height:1.55;}
+
+  [data-view]{display:none;}
+  [data-view].active{display:block;}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="head">
+    <div>
+      <h1>Calculadoras clínicas</h1>
+      <div class="sub">ECG · GASA · SOFA · medio interno y oximetría — acceso libre, sin necesidad de iniciar sesión</div>
+    </div>
+  </div>
+
+  <div class="body">
+
+    <!-- ============ HOME: GRILLA DE ACCESOS ============ -->
+    <div data-view="home" class="active">
+      <div class="intro">
+        <p>Elegí una calculadora para empezar. Cada una es independiente: se abre en esta misma página y podés volver a este panel en cualquier momento con "← Volver".</p>
+      </div>
+      <div class="tool-grid">
+
+        <button type="button" class="tool-card" data-open="fc">
+          <div class="icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 12h4l2-7 4 14 2-9 2 2h4v0h-3.2l-1.4-1.4-2.6 11.6L8 6l-1.6 6H3v0Z"/></svg></div>
+          <h2>ECG — Frecuencia cardíaca</h2>
+          <p>Calculá la FC contando cuadraditos grandes o chicos entre complejos, o QRS en tira de 6/10 s. Indica si es normal, bradicardia o taquicardia.</p>
+          <span class="go">Abrir →</span>
+        </button>
+
+        <button type="button" class="tool-card" data-open="eje">
+          <div class="icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2v20M2 12h20" stroke="#fff" stroke-width="1.6"/><circle cx="12" cy="12" r="9" fill="none" stroke="#fff" stroke-width="1.6"/><path d="M12 12 L18 6" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg></div>
+          <h2>ECG — Eje cardíaco</h2>
+          <p>Calculadora dinámica y visual: ingresá amplitudes de I y aVF, o arrastrá el vector sobre el diagrama hexaxial, y obtené el eje y su interpretación.</p>
+          <span class="go">Abrir →</span>
+        </button>
+
+        <button type="button" class="tool-card" data-open="gasa">
+          <div class="icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C9 6.5 5.5 11.2 5.5 15a6.5 6.5 0 0 0 13 0C18.5 11.2 15 6.5 12 2Zm0 17.5A4.5 4.5 0 0 1 7.5 15c0-2.4 2.2-6 4.5-9.6 2.3 3.6 4.5 7.2 4.5 9.6a4.5 4.5 0 0 1-4.5 4.5Z"/></svg></div>
+          <h2>GASA</h2>
+          <p>Gradiente de albúmina suero-ascítico. Diferencia hipertensión portal de otras causas de ascitis, con interpretación didáctica y gráfico de umbral.</p>
+          <span class="go">Abrir →</span>
+        </button>
+
+        <button type="button" class="tool-card" data-open="sofa">
+          <div class="icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2 4 5v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V5l-8-3Zm0 2.2 6 2.2v4.6c0 4-2.6 7-6 8.1-3.4-1.1-6-4.1-6-8.1V6.4l6-2.2Z"/><path d="M9 12h2v4H9v-4Zm4-3h2v7h-2V9Z"/></svg></div>
+          <h2>SOFA</h2>
+          <p>Score completo de falla orgánica por 6 sistemas, con interpretación de mortalidad estimada y criterios de sepsis / shock séptico (Sepsis-3).</p>
+          <span class="go">Abrir →</span>
+        </button>
+
+        <button type="button" class="tool-card" data-open="gases">
+          <div class="icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4 10c2 0 2-3 4-3s2 3 4 3 2-3 4-3 2 3 4 3M4 15c2 0 2-3 4-3s2 3 4 3 2-3 4-3 2 3 4 3" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg></div>
+          <h2>Medio interno y oximetría</h2>
+          <p>Winter, compensación respiratoria aguda/crónica, PAFI y PO2 esperada por edad. Interpretación automática del trastorno ácido-base.</p>
+          <span class="go">Abrir →</span>
+        </button>
+
+      </div>
+    </div>
+
+    <!-- ============ VISTA: ECG FRECUENCIA ============ -->
+    <div data-view="fc">
+      <button type="button" class="backBtn" data-back>← Volver</button>
+      <h2 class="viewTitle">ECG — Frecuencia cardíaca</h2>
+      <p class="viewSub">A partir del conteo de cuadraditos en papel de ECG estándar (25 mm/s)</p>
+
+      <div class="panel-box">
+        <h3>Método</h3>
+        <div class="btn-toggle-row" id="fcMethodRow">
+          <button type="button" class="btn-secondary active" data-fcmethod="big">R-R regular · cuadrados grandes</button>
+          <button type="button" class="btn-secondary" data-fcmethod="small">R-R regular · cuadrados chicos</button>
+          <button type="button" class="btn-secondary" data-fcmethod="qrs6">Ritmo irregular · QRS en 6 s</button>
+          <button type="button" class="btn-secondary" data-fcmethod="qrs10">Ritmo irregular · QRS en 10 s</button>
+        </div>
+
+        <div class="field-grid">
+          <label id="fcInputBigWrap">Cuadrados grandes entre dos R-R
+            <input type="number" step="0.1" min="0.1" id="fcInputBig" placeholder="ej: 4">
+          </label>
+          <label id="fcInputSmallWrap" style="display:none;">Cuadrados chicos entre dos R-R
+            <input type="number" step="1" min="1" id="fcInputSmall" placeholder="ej: 20">
+          </label>
+          <label id="fcInputQrs6Wrap" style="display:none;">Cantidad de QRS en tira de 6 segundos
+            <input type="number" step="1" min="1" id="fcInputQrs6" placeholder="ej: 8">
+          </label>
+          <label id="fcInputQrs10Wrap" style="display:none;">Cantidad de QRS en tira de 10 segundos
+            <input type="number" step="1" min="1" id="fcInputQrs10" placeholder="ej: 13">
+          </label>
+        </div>
+        <div class="row-controls">
+          <button type="button" class="btn-primary" id="fcCalcularBtn">Calcular</button>
+          <button type="button" class="btn-secondary" id="fcLimpiarBtn">Limpiar</button>
+        </div>
+        <p class="note">Papel a 25 mm/s: 1 cuadrado grande = 5 mm = 0,2 s · 1 cuadrado chico = 1 mm = 0,04 s (5 chicos por cada grande). Fórmulas para ritmo regular: FC = 300 ÷ cuadrados grandes entre R-R, o FC = 1500 ÷ cuadrados chicos entre R-R. Para ritmo irregular, se cuentan los complejos QRS en una tira de 6 s (×10) o de 10 s (×6).</p>
+      </div>
+
+      <div id="fcResultado" class="result-box"></div>
+    </div>
+
+    <!-- ============ VISTA: ECG EJE ============ -->
+    <div data-view="eje">
+      <button type="button" class="backBtn" data-back>← Volver</button>
+      <h2 class="viewTitle">ECG — Eje cardíaco</h2>
+      <p class="viewSub">Método de las derivaciones I y aVF — calculadora dinámica: escribí las amplitudes o arrastrá el vector</p>
+
+      <div style="display:grid;grid-template-columns:minmax(260px,340px) 1fr;gap:20px;align-items:start;" id="ejeGridWrap">
+        <div>
+          <div class="panel-box">
+            <h3>Amplitudes netas (QRS)</h3>
+            <div class="field-grid">
+              <label>Derivación I (mm) <input type="number" step="0.5" id="ejeI" placeholder="ej: 5"></label>
+              <label>Derivación aVF (mm) <input type="number" step="0.5" id="ejeAvf" placeholder="ej: 5"></label>
+            </div>
+            <p class="note">Amplitud neta = altura de la onda R positiva menos la profundidad de la onda S/Q negativa, en esa derivación. También podés arrastrar directamente la punta de la flecha sobre el círculo.</p>
+            <div class="row-controls">
+              <button type="button" class="btn-secondary" id="ejeLimpiarBtn">Limpiar</button>
+            </div>
+          </div>
+          <div id="ejeResultado" class="result-box"></div>
+        </div>
+        <div class="panel-box" style="display:flex;flex-direction:column;align-items:center;">
+          <h3 style="align-self:flex-start;">Diagrama hexaxial</h3>
+          <svg id="ejeSvg" viewBox="0 0 320 320" style="width:100%;max-width:380px;touch-action:none;user-select:none;"></svg>
+          <p class="note" style="text-align:center;">Arrastrá la punta de la flecha (círculo verde) para estimar el eje visualmente.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ VISTA: GASA ============ -->
+    <div data-view="gasa">
+      <button type="button" class="backBtn" data-back>← Volver</button>
+      <h2 class="viewTitle">GASA — Gradiente de albúmina suero-ascítico</h2>
+      <p class="viewSub">GASA = Albúmina sérica − Albúmina del líquido ascítico</p>
+
+      <div class="panel-box">
+        <h3>Datos</h3>
+        <div class="field-grid">
+          <label>Albúmina sérica (g/dL) <input type="number" step="0.1" id="gasaSerica" placeholder="ej: 3.8"></label>
+          <label>Albúmina líquido ascítico (g/dL) <input type="number" step="0.1" id="gasaAscitica" placeholder="ej: 1.2"></label>
+          <label>Proteínas totales líq. ascítico (g/dL) <span style="font-weight:400;">(opcional, refina la interpretación)</span>
+            <input type="number" step="0.1" id="gasaProteinas" placeholder="ej: 2.0"></label>
+        </div>
+        <div class="row-controls">
+          <button type="button" class="btn-primary" id="gasaCalcularBtn">Calcular</button>
+          <button type="button" class="btn-secondary" id="gasaLimpiarBtn">Limpiar</button>
+        </div>
+      </div>
+
+      <div id="gasaResultado" class="result-box"></div>
+    </div>
+
+    <!-- ============ VISTA: SOFA ============ -->
+    <div data-view="sofa">
+      <button type="button" class="backBtn" data-back>← Volver</button>
+      <h2 class="viewTitle">SOFA — Sequential Organ Failure Assessment</h2>
+      <p class="viewSub">Se usa el valor más anormal de las últimas 24 horas en cada sistema. Puntaje 0–4 por sistema, total 0–24.</p>
+
+      <div class="panel-box">
+        <h3>1. Respiratorio</h3>
+        <div class="btn-toggle-row" id="sofaRespModeRow">
+          <button type="button" class="btn-secondary active" data-respmode="pafi">PaO₂/FiO₂ (PAFI)</button>
+          <button type="button" class="btn-secondary" data-respmode="safi">SaO₂/FiO₂</button>
+        </div>
+        <div class="field-grid">
+          <label id="sofaPafiWrap">PaO₂/FiO₂ (mmHg) <input type="number" step="1" id="sofaPafi" placeholder="ej: 280"></label>
+          <label id="sofaSafiWrap" style="display:none;">SaO₂/FiO₂ <input type="number" step="1" id="sofaSafi" placeholder="ej: 250"></label>
+          <label style="justify-content:center;flex-direction:row;align-items:center;gap:8px;">
+            <input type="checkbox" id="sofaVentSoporte" style="width:auto;"> Con soporte ventilatorio (VM o CPAP)
+          </label>
+        </div>
+        <p class="note">Los puntajes 3 y 4 respiratorios requieren soporte ventilatorio. Si el cociente es ≤300 pero no hay soporte ventilatorio, el puntaje se limita a 2.</p>
+      </div>
+
+      <div class="panel-box">
+        <h3>2. Coagulación</h3>
+        <div class="field-grid">
+          <label>Plaquetas (×10³/mm³) <input type="number" step="1" id="sofaPlaquetas" placeholder="ej: 130"></label>
+        </div>
+      </div>
+
+      <div class="panel-box">
+        <h3>3. Hígado</h3>
+        <div class="field-grid">
+          <label>Bilirrubina total (mg/dL) <input type="number" step="0.1" id="sofaBili" placeholder="ej: 1.5"></label>
+        </div>
+      </div>
+
+      <div class="panel-box">
+        <h3>4. Cardiovascular</h3>
+        <div class="field-grid">
+          <label>PAM (mmHg) <input type="number" step="1" id="sofaPam" placeholder="ej: 65"></label>
+          <label>Dopamina (mcg/kg/min) <input type="number" step="0.1" id="sofaDopa" placeholder="0 si no recibe"></label>
+          <label>Dobutamina <span style="font-weight:400;">(cualquier dosis)</span>
+            <input type="number" step="0.1" id="sofaDobu" placeholder="0 si no recibe"></label>
+          <label>Adrenalina / Epinefrina (mcg/kg/min) <input type="number" step="0.01" id="sofaEpi" placeholder="0 si no recibe"></label>
+          <label>Noradrenalina / Norepinefrina (mcg/kg/min) <input type="number" step="0.01" id="sofaNorepi" placeholder="0 si no recibe"></label>
+          <label style="justify-content:center;flex-direction:row;align-items:center;gap:8px;">
+            <input type="checkbox" id="sofaVaso1h" style="width:auto;"> Vasopresores administrados ≥ 1 hora
+          </label>
+        </div>
+        <p class="note">Si hay dosis de vasopresores cargada pero no se marca "≥1 hora", no se computa ese puntaje (se usa solo la PAM).</p>
+      </div>
+
+      <div class="panel-box">
+        <h3>5. Sistema nervioso central</h3>
+        <div class="field-grid">
+          <label>Escala de Glasgow (GCS) <input type="number" step="1" min="3" max="15" id="sofaGcs" placeholder="ej: 15"></label>
+        </div>
+      </div>
+
+      <div class="panel-box">
+        <h3>6. Renal</h3>
+        <div class="field-grid">
+          <label>Creatinina (mg/dL) <input type="number" step="0.1" id="sofaCrea" placeholder="ej: 1.0"></label>
+          <label>Diuresis (mL/día) <input type="number" step="10" id="sofaDiuresis" placeholder="ej: 1500"></label>
+        </div>
+      </div>
+
+      <div class="row-controls">
+        <button type="button" class="btn-primary" id="sofaCalcularBtn">Calcular SOFA</button>
+        <button type="button" class="btn-secondary" id="sofaLimpiarBtn">Limpiar</button>
+      </div>
+
+      <div id="sofaResultado" class="result-box"></div>
+
+      <div class="panel-box" style="margin-top:16px;">
+        <h3>Criterios de Sepsis-3 (opcional)</h3>
+        <div class="field-grid">
+          <label>SOFA basal (si se conoce) <input type="number" step="1" id="sofaBasal" placeholder="0 si no hay dato previo"></label>
+          <label style="justify-content:center;flex-direction:row;align-items:center;gap:8px;">
+            <input type="checkbox" id="sofaInfeccion" style="width:auto;"> Sospecha o evidencia de infección
+          </label>
+          <label style="justify-content:center;flex-direction:row;align-items:center;gap:8px;">
+            <input type="checkbox" id="sofaVasoShock" style="width:auto;"> Requiere vasopresores para PAM ≥65 mmHg pese a reanimación hídrica
+          </label>
+          <label>Lactato (mmol/L) <input type="number" step="0.1" id="sofaLactato" placeholder="ej: 3.2"></label>
+        </div>
+        <div class="row-controls">
+          <button type="button" class="btn-primary" id="sofaSepsisBtn">Evaluar Sepsis-3</button>
+        </div>
+        <div id="sofaSepsisResultado" class="result-box"></div>
+      </div>
+    </div>
+
+    <!-- ============ VISTA: MEDIO INTERNO Y OXIMETRÍA ============ -->
+    <div data-view="gases">
+      <button type="button" class="backBtn" data-back>← Volver</button>
+      <h2 class="viewTitle">Medio interno y oximetría</h2>
+      <p class="viewSub">Winter · compensación respiratoria aguda/crónica · PAFI · PO2 esperada por edad</p>
+
+      <div class="panel-box">
+        <h3>Gases en sangre</h3>
+        <div class="field-grid">
+          <label>pH <input type="number" step="0.001" id="giPh"></label>
+          <label>pCO2 (mmHg) <input type="number" step="0.1" id="giPco2"></label>
+          <label>HCO3 (mEq/L) <input type="number" step="0.1" id="giHco3"></label>
+          <label>pO2 (mmHg) <input type="number" step="0.1" id="giPo2"></label>
+          <label>FiO2 (%) <input type="number" step="1" id="giFio2" placeholder="21 = aire ambiente"></label>
+          <label>Edad (años) <input type="number" step="1" id="giEdad"></label>
+        </div>
+        <div class="row-controls">
+          <button type="button" class="btn-primary" id="giCalcularBtn">Calcular</button>
+          <button type="button" class="btn-secondary" id="giLimpiarBtn">Limpiar</button>
+        </div>
+        <p class="note">Se recalcula automáticamente a medida que se cargan los valores. Fórmulas: Ac. Met. (Winter) pCO2 esp. = 1.5×HCO3 + 8 ± 2 · Alc. Met. ΔpCO2 = ΔHCO3 × 0.6 · Ac. Resp. aguda ΔHCO3 = ΔpCO2 × 0.1 (corregida ×0.3) · Alc. Resp. aguda ΔHCO3 = ΔpCO2 × 0.2 (corregida ×0.4) · PAFI = pO2/FiO2 × 100 · PO2 esperada por edad = 102 − (0.33 × edad).</p>
+      </div>
+
+      <div id="giResultado" class="result-box"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function fld(id){ return document.getElementById(id); }
+
+/* ===================== NAVEGACIÓN ENTRE VISTAS ===================== */
+(function(){
+  const views = document.querySelectorAll('[data-view]');
+  function showView(name){
+    views.forEach(v=>v.classList.toggle('active', v.getAttribute('data-view')===name));
+    window.scrollTo({top:0, behavior:'instant' in window ? 'instant' : 'auto'});
+  }
+  document.querySelectorAll('[data-open]').forEach(btn=>{
+    btn.addEventListener('click', ()=> showView(btn.getAttribute('data-open')));
+  });
+  document.querySelectorAll('[data-back]').forEach(btn=>{
+    btn.addEventListener('click', ()=> showView('home'));
+  });
+})();
+
+function fmt(n, dec){
+  if(n==null || isNaN(n)) return '';
+  dec = dec==null ? 1 : dec;
+  return n.toFixed(dec).replace('.', ',').replace(/,0+$/,'').replace(/(,\d*?)0+$/,'$1').replace(/,$/,'');
+}
+function fmtFixed(n, dec){
+  if(n==null || isNaN(n)) return '';
+  return n.toFixed(dec).replace('.', ',');
+}
+
+/* ===================== ECG: FRECUENCIA CARDÍACA ===================== */
+(function(){
+  const $row = fld('fcMethodRow');
+  const wraps = {
+    big: fld('fcInputBigWrap'), small: fld('fcInputSmallWrap'),
+    qrs6: fld('fcInputQrs6Wrap'), qrs10: fld('fcInputQrs10Wrap')
+  };
+  const inputs = {
+    big: fld('fcInputBig'), small: fld('fcInputSmall'),
+    qrs6: fld('fcInputQrs6'), qrs10: fld('fcInputQrs10')
+  };
+  const $resultado = fld('fcResultado');
+  let method = 'big';
+
+  $row.querySelectorAll('[data-fcmethod]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      method = btn.getAttribute('data-fcmethod');
+      $row.querySelectorAll('[data-fcmethod]').forEach(b=>b.classList.toggle('active', b===btn));
+      Object.keys(wraps).forEach(k=> wraps[k].style.display = (k===method) ? '' : 'none');
+    });
+  });
+
+  function classifyFc(fc){
+    if(fc < 60) return {label:'Bradicardia', cls:'badge-warn', txt:'frecuencia por debajo de 60 lpm.'};
+    if(fc > 100) return {label:'Taquicardia', cls:'badge-danger', txt:'frecuencia por encima de 100 lpm.'};
+    return {label:'Frecuencia normal', cls:'badge-ok', txt:'dentro del rango normal (60–100 lpm).'};
+  }
+
+  function calcularFc(){
+    let fc = null, detalle = '';
+    if(method==='big'){
+      const n = parseFloat(inputs.big.value);
+      if(!n || n<=0){ $resultado.innerHTML = '<p class="note" style="margin:0;">Ingresá la cantidad de cuadrados grandes entre dos ondas R consecutivas.</p>'; return; }
+      fc = 300/n;
+      detalle = `FC = 300 ÷ ${fmt(n,2)} cuadrados grandes = <b>${fmt(fc)}</b> lpm (asume ritmo regular).`;
+    } else if(method==='small'){
+      const n = parseFloat(inputs.small.value);
+      if(!n || n<=0){ $resultado.innerHTML = '<p class="note" style="margin:0;">Ingresá la cantidad de cuadrados chicos entre dos ondas R consecutivas.</p>'; return; }
+      fc = 1500/n;
+      detalle = `FC = 1500 ÷ ${fmt(n,2)} cuadrados chicos = <b>${fmt(fc)}</b> lpm (asume ritmo regular).`;
+    } else if(method==='qrs6'){
+      const n = parseFloat(inputs.qrs6.value);
+      if(!n || n<=0){ $resultado.innerHTML = '<p class="note" style="margin:0;">Ingresá la cantidad de complejos QRS contados en la tira de 6 segundos.</p>'; return; }
+      fc = n*10;
+      detalle = `FC = ${fmt(n,0)} QRS × 10 = <b>${fmt(fc,0)}</b> lpm (método para ritmo irregular, ej. fibrilación auricular).`;
+    } else if(method==='qrs10'){
+      const n = parseFloat(inputs.qrs10.value);
+      if(!n || n<=0){ $resultado.innerHTML = '<p class="note" style="margin:0;">Ingresá la cantidad de complejos QRS contados en la tira de 10 segundos.</p>'; return; }
+      fc = n*6;
+      detalle = `FC = ${fmt(n,0)} QRS × 6 = <b>${fmt(fc,0)}</b> lpm (método para ritmo irregular, ej. fibrilación auricular).`;
+    }
+    const clasif = classifyFc(fc);
+    $resultado.innerHTML = `
+      <div class="result-big">${fmt(fc,0)} lpm</div>
+      <span class="badge ${clasif.cls}">${clasif.label}</span>
+      <p style="margin:10px 0 0;">${detalle}</p>
+      <p class="note" style="margin-top:8px;">${clasif.txt} Recordá correlacionar siempre con la clínica: dolor, síncope, inestabilidad hemodinámica o síntomas asociados definen la conducta, no el número aislado.</p>
+    `;
+  }
+
+  fld('fcCalcularBtn').addEventListener('click', calcularFc);
+  fld('fcLimpiarBtn').addEventListener('click', ()=>{
+    Object.values(inputs).forEach(i=>i.value='');
+    $resultado.innerHTML = '';
+  });
+  Object.values(inputs).forEach(inp=>{
+    inp.addEventListener('keydown', e=>{ if(e.key==='Enter') calcularFc(); });
+  });
+})();
+
+/* ===================== ECG: EJE CARDÍACO ===================== */
+(function(){
+  const svg = fld('ejeSvg');
+  const $I = fld('ejeI'), $aVF = fld('ejeAvf');
+  const $resultado = fld('ejeResultado');
+  const NS = 'http://www.w3.org/2000/svg';
+  const cx=160, cy=160, R=120, SCALE=12; // SCALE: px por mm de amplitud (radio máx ~10mm)
+
+  const leads = [
+    {ang:0,   pos:'I',   neg:''},
+    {ang:60,  pos:'II',  neg:''},
+    {ang:120, pos:'III', neg:''},
+    {ang:90,  pos:'aVF', neg:''},
+    {ang:-30, pos:'aVL', neg:''},
+    {ang:-150,pos:'aVR', neg:''}
+  ];
+
+  function pt(ang, r){
+    const rad = ang*Math.PI/180;
+    return {x: cx + r*Math.cos(rad), y: cy + r*Math.sin(rad)};
+  }
+  function el(tag, attrs){
+    const e = document.createElementNS(NS, tag);
+    Object.keys(attrs).forEach(k=> e.setAttribute(k, attrs[k]));
+    return e;
+  }
+
+  // fondo: círculos guía + líneas de derivaciones + marcas de grados
+  function buildStatic(){
+    svg.innerHTML = '';
+    // círculos guía
+    [40,80,120].forEach(r=>{
+      svg.appendChild(el('circle', {cx, cy, r, fill:'none', stroke:'#dcd6c8', 'stroke-width':1}));
+    });
+    // líneas de derivaciones (diámetro completo)
+    leads.forEach(l=>{
+      const p1 = pt(l.ang, R+14), p2 = pt(l.ang+180, R+14);
+      svg.appendChild(el('line', {x1:p1.x, y1:p1.y, x2:p2.x, y2:p2.y, stroke:'#c9c4b8', 'stroke-width':1, 'stroke-dasharray':'2 3'}));
+      const lp = pt(l.ang, R+26);
+      const lbl = el('text', {x:lp.x, y:lp.y, 'text-anchor':'middle', 'dominant-baseline':'middle', 'font-size':'11', 'font-family':'IBM Plex Mono, monospace', 'font-weight':'700', fill:'#2f5d5a'});
+      lbl.textContent = l.pos;
+      svg.appendChild(lbl);
+    });
+    // ejes principales I / aVF resaltados
+    const pI1=pt(0,R+14), pI2=pt(180,R+14);
+    svg.appendChild(el('line',{x1:pI1.x,y1:pI1.y,x2:pI2.x,y2:pI2.y,stroke:'#7a7468','stroke-width':1.4}));
+    const pF1=pt(90,R+14), pF2=pt(270,R+14);
+    svg.appendChild(el('line',{x1:pF1.x,y1:pF1.y,x2:pF2.x,y2:pF2.y,stroke:'#7a7468','stroke-width':1.4}));
+    // centro
+    svg.appendChild(el('circle',{cx,cy,r:2.5,fill:'#23302c'}));
+
+    // flecha (grupo)
+    const arrowLine = el('line', {id:'ejeArrowLine', x1:cx, y1:cy, x2:cx, y2:cy, stroke:'#c0392b', 'stroke-width':3, 'stroke-linecap':'round'});
+    svg.appendChild(arrowLine);
+    const handle = el('circle', {id:'ejeHandle', cx, cy, r:9, fill:'#2f5d5a', stroke:'#fff', 'stroke-width':2, style:'cursor:grab;'});
+    svg.appendChild(handle);
+    return {arrowLine, handle};
+  }
+  const {arrowLine, handle} = buildStatic();
+
+  function normAngle(a){
+    a = a % 360;
+    if(a > 180) a -= 360;
+    if(a <= -180) a += 360;
+    return a;
+  }
+
+  function classifyAxis(angle){
+    if(angle>=-30 && angle<=90) return {
+      label:'Eje normal', cls:'badge-ok',
+      rango:'-30° a +90°',
+      causas:['Variante de la normalidad en la mayoría de los adultos.']
+    };
+    if(angle<-30 && angle>-90) return {
+      label:'Desviación del eje a la izquierda', cls:'badge-warn',
+      rango:'-30° a -90°',
+      causas:['Hipertrofia ventricular izquierda','Bloqueo fascicular anterior izquierdo (hemibloqueo anterior)','IAM inferior previo (Q patológicas)','WPW con vía accesoria posteroseptal','Embarazo / obesidad / ascitis (elevación diafragmática)','Marcapasos ventricular derecho']
+    };
+    if(angle>90 && angle<=180) return {
+      label:'Desviación del eje a la derecha', cls:'badge-warn',
+      rango:'+90° a +180°',
+      causas:['Hipertrofia ventricular derecha','Bloqueo fascicular posterior izquierdo (hemibloqueo posterior)','TEP agudo / cor pulmonale','EPOC avanzado','IAM lateral extenso','WPW con vía accesoria anteroseptal','Dextrocardia · niños y personas longilíneas (variante leve)']
+    };
+    return {
+      label:'Eje extremo / indeterminado ("no man\'s land")', cls:'badge-danger',
+      rango:'-90° a -180° (o +180° a +270°)',
+      causas:['Taquicardia ventricular','Hiperpotasemia grave','Marcapasos ventricular / ritmo de escape','Inversión de electrodos de miembros (artefacto)','Cardiopatía estructural avanzada']
+    };
+  }
+
+  function renderFromAngleMag(angle, mag){
+    const rPix = Math.max(6, Math.min(R, mag*SCALE));
+    const p = pt(angle, rPix);
+    arrowLine.setAttribute('x2', p.x); arrowLine.setAttribute('y2', p.y);
+    handle.setAttribute('cx', p.x); handle.setAttribute('cy', p.y);
+  }
+
+  function renderResultado(angle){
+    const c = classifyAxis(angle);
+    $resultado.innerHTML = `
+      <div class="result-big">${fmt(angle,0)}°</div>
+      <span class="badge ${c.cls}">${c.label}</span>
+      <p style="margin:10px 0 0;">Rango correspondiente: <b>${c.rango}</b>.</p>
+      <div class="causes-grid" style="grid-template-columns:1fr;">
+        <div class="causes-col">
+          <h4>Causas / contextos asociados</h4>
+          <ul>${c.causas.map(x=>`<li>${x}</li>`).join('')}</ul>
+        </div>
+      </div>
+    `;
+  }
+
+  function calcFromInputs(){
+    const I = parseFloat($I.value), aVF = parseFloat($aVF.value);
+    if(isNaN(I) || isNaN(aVF) || (I===0 && aVF===0)){ return; }
+    const angle = normAngle(Math.atan2(aVF, I)*180/Math.PI);
+    const mag = Math.min(10, Math.max(3, Math.hypot(I,aVF)));
+    renderFromAngleMag(angle, mag);
+    renderResultado(angle);
+  }
+  $I.addEventListener('input', calcFromInputs);
+  $aVF.addEventListener('input', calcFromInputs);
+  fld('ejeLimpiarBtn').addEventListener('click', ()=>{
+    $I.value=''; $aVF.value=''; $resultado.innerHTML='';
+    renderFromAngleMag(0, 0.001);
+  });
+
+  // arrastre del handle
+  let dragging = false;
+  function svgPoint(evt){
+    const rect = svg.getBoundingClientRect();
+    const vb = svg.viewBox.baseVal;
+    const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+    const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+    const x = (clientX - rect.left) / rect.width * vb.width;
+    const y = (clientY - rect.top) / rect.height * vb.height;
+    return {x,y};
+  }
+  function onDragMove(evt){
+    if(!dragging) return;
+    evt.preventDefault();
+    const p = svgPoint(evt);
+    const dx = p.x - cx, dy = p.y - cy;
+    let dist = Math.hypot(dx,dy);
+    dist = Math.max(20, Math.min(R, dist));
+    const angle = normAngle(Math.atan2(dy,dx)*180/Math.PI);
+    const rad = angle*Math.PI/180;
+    const nx = cx + dist*Math.cos(rad), ny = cy + dist*Math.sin(rad);
+    arrowLine.setAttribute('x2', nx); arrowLine.setAttribute('y2', ny);
+    handle.setAttribute('cx', nx); handle.setAttribute('cy', ny);
+    // actualizar inputs numéricos aproximados (proyección en mm, radio máx ~ 10mm)
+    const mag = dist/SCALE;
+    $I.value = fmt(mag*Math.cos(rad),1);
+    $aVF.value = fmt(mag*Math.sin(rad),1);
+    renderResultado(angle);
+  }
+  function onDragEnd(){ dragging = false; handle.style.cursor='grab'; }
+  handle.addEventListener('mousedown', e=>{ dragging=true; handle.style.cursor='grabbing'; onDragMove(e); });
+  handle.addEventListener('touchstart', e=>{ dragging=true; onDragMove(e); }, {passive:false});
+  window.addEventListener('mousemove', onDragMove);
+  window.addEventListener('touchmove', onDragMove, {passive:false});
+  window.addEventListener('mouseup', onDragEnd);
+  window.addEventListener('touchend', onDragEnd);
+
+  // estado inicial
+  renderFromAngleMag(0, 0.001);
+})();
+
+/* ===================== GASA ===================== */
+(function(){
+  const $serica = fld('gasaSerica'), $ascitica = fld('gasaAscitica'), $prot = fld('gasaProteinas');
+  const $resultado = fld('gasaResultado');
+
+  function calcular(){
+    const serica = parseFloat($serica.value), ascitica = parseFloat($ascitica.value);
+    if(isNaN(serica) || isNaN(ascitica)){
+      $resultado.innerHTML = '<p class="note" style="margin:0;">Completá la albúmina sérica y la del líquido ascítico.</p>';
+      return;
+    }
+    const gasa = Math.round((serica-ascitica)*100)/100;
+    const esHTP = gasa >= 1.1;
+    const prot = parseFloat($prot.value);
+    const hasProt = !isNaN(prot);
+
+    // barra visual: escala 0 a 3 g/dL, umbral en 1.1
+    const maxEscala = 3;
+    const pctUmbral = Math.min(100, (1.1/maxEscala)*100);
+    const pctValor = Math.min(100, Math.max(0, (Math.max(0,gasa)/maxEscala)*100));
+
+    let interpHtml = '';
+    if(esHTP){
+      interpHtml = `<p style="margin:10px 0 0;"><b>GASA ≥ 1,1 g/dL:</b> indica hipertensión portal (sensibilidad aproximada 97%).</p>`;
+      let refina = '';
+      if(hasProt){
+        refina = prot >= 2.5
+          ? `Además, las proteínas totales del líquido son ≥2,5 g/dL, lo que orienta a <b>causa cardíaca</b> (insuficiencia cardíaca congestiva, pericarditis constrictiva) más que a cirrosis.`
+          : `Además, las proteínas totales del líquido son &lt;2,5 g/dL, lo que orienta a <b>cirrosis hepática</b> como causa más probable, por encima de otras etiologías con hipertensión portal.`;
+      }
+      interpHtml += `<div class="causes-grid">
+        <div class="causes-col">
+          <h4>Causas más frecuentes (hipertensión portal)</h4>
+          <ul>
+            <li>Cirrosis hepática (la más frecuente, ~80%)</li>
+            <li>Insuficiencia cardíaca congestiva</li>
+            <li>Hepatitis alcohólica</li>
+            <li>Síndrome de Budd-Chiari / trombosis portal</li>
+            <li>Metástasis hepáticas masivas</li>
+            <li>Mixedema</li>
+          </ul>
+        </div>
+        <div class="causes-col">
+          <h4>Refinamiento con proteínas totales</h4>
+          <p style="font-size:11.5px;line-height:1.55;margin:0;">${refina || 'Cargá las proteínas totales del líquido ascítico para diferenciar causa cardíaca de cirrosis.'}</p>
+        </div>
+      </div>`;
+    } else {
+      interpHtml = `<p style="margin:10px 0 0;"><b>GASA &lt; 1,1 g/dL:</b> sugiere causas no relacionadas con hipertensión portal.</p>`;
+      let refina = '';
+      if(hasProt){
+        refina = prot < 2.5
+          ? `Con proteínas totales &lt;2,5 g/dL, orienta especialmente a <b>síndrome nefrótico</b>.`
+          : `Con proteínas totales ≥2,5 g/dL, orienta a <b>carcinomatosis peritoneal, tuberculosis peritoneal, pancreatitis o serositis</b>.`;
+      }
+      interpHtml += `<div class="causes-grid">
+        <div class="causes-col">
+          <h4>Causas más frecuentes (no HTP)</h4>
+          <ul>
+            <li>Carcinomatosis peritoneal</li>
+            <li>Tuberculosis peritoneal</li>
+            <li>Pancreatitis</li>
+            <li>Síndrome nefrótico</li>
+            <li>Serositis por enfermedad del tejido conectivo</li>
+            <li>Obstrucción o infarto intestinal</li>
+          </ul>
+        </div>
+        <div class="causes-col">
+          <h4>Refinamiento con proteínas totales</h4>
+          <p style="font-size:11.5px;line-height:1.55;margin:0;">${refina || 'Cargá las proteínas totales del líquido ascítico para orientar mejor la etiología.'}</p>
+        </div>
+      </div>`;
+    }
+
+    $resultado.innerHTML = `
+      <div class="result-big">GASA = ${fmt(gasa,2)} g/dL</div>
+      <span class="badge ${esHTP?'badge-ok':'badge-warn'}">${esHTP?'Sugiere hipertensión portal':'No sugiere hipertensión portal'}</span>
+      <p class="note" style="margin:8px 0 4px;">GASA = albúmina sérica (${fmt(serica,1)} g/dL) − albúmina ascítica (${fmt(ascitica,1)} g/dL) = ${fmt(gasa,2)} g/dL</p>
+      <div style="position:relative;height:34px;margin:14px 0 6px;border-radius:4px;overflow:hidden;background:linear-gradient(to right, #f7e3e0 0%, #f7e3e0 ${pctUmbral}%, #e4efe9 ${pctUmbral}%, #e4efe9 100%);border:1px solid var(--line-soft);">
+        <div style="position:absolute;top:0;bottom:0;left:${pctUmbral}%;width:2px;background:#23302c;"></div>
+        <div style="position:absolute;top:100%;left:${pctUmbral}%;transform:translateX(-50%);font-size:9.5px;font-family:'IBM Plex Mono',monospace;color:var(--muted);margin-top:2px;">1,1</div>
+        <div style="position:absolute;top:4px;bottom:4px;left:calc(${pctValor}% - 2px);width:4px;background:#23302c;border-radius:2px;"></div>
+      </div>
+      <p class="note" style="margin-top:16px;">← Otras causas (exudado/mixto) &nbsp;|&nbsp; Hipertensión portal (trasudado) →</p>
+      ${interpHtml}
+    `;
+  }
+  fld('gasaCalcularBtn').addEventListener('click', calcular);
+  fld('gasaLimpiarBtn').addEventListener('click', ()=>{
+    $serica.value=''; $ascitica.value=''; $prot.value=''; $resultado.innerHTML='';
+  });
+  [$serica,$ascitica,$prot].forEach(inp=> inp.addEventListener('keydown', e=>{ if(e.key==='Enter') calcular(); }));
+})();
+
+/* ===================== SOFA ===================== */
+(function(){
+  let respMode = 'pafi';
+  const $pafiWrap = fld('sofaPafiWrap'), $safiWrap = fld('sofaSafiWrap');
+  fld('sofaRespModeRow').querySelectorAll('[data-respmode]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      respMode = btn.getAttribute('data-respmode');
+      fld('sofaRespModeRow').querySelectorAll('[data-respmode]').forEach(b=>b.classList.toggle('active', b===btn));
+      $pafiWrap.style.display = respMode==='pafi' ? '' : 'none';
+      $safiWrap.style.display = respMode==='safi' ? '' : 'none';
+    });
+  });
+
+  function scoreResp(){
+    const vent = fld('sofaVentSoporte').checked;
+    let val, isPafi = respMode==='pafi';
+    val = parseFloat(isPafi ? fld('sofaPafi').value : fld('sofaSafi').value);
+    if(isNaN(val)) return null;
+    let raw;
+    if(isPafi){
+      if(val>400) raw=0; else if(val>300) raw=1; else if(val>200) raw=2; else if(val>100) raw=3; else raw=4;
+    } else {
+      if(val>301) raw=0; else if(val>=221) raw=1; else if(val>=142) raw=2; else if(val>=67) raw=3; else raw=4;
+    }
+    if(raw>=3 && !vent) raw=2;
+    return {score:raw, detalle: `${isPafi?'PaO₂/FiO₂':'SaO₂/FiO₂'} = ${fmt(val,0)}${(raw>=3&&!vent)?' (limitado a 2 por falta de soporte ventilatorio)':''}`};
+  }
+  function scoreCoag(){
+    const v = parseFloat(fld('sofaPlaquetas').value);
+    if(isNaN(v)) return null;
+    let s; if(v>150) s=0; else if(v>100) s=1; else if(v>50) s=2; else if(v>20) s=3; else s=4;
+    return {score:s, detalle:`Plaquetas = ${fmt(v,0)} ×10³/mm³`};
+  }
+  function scoreHigado(){
+    const v = parseFloat(fld('sofaBili').value);
+    if(isNaN(v)) return null;
+    let s; if(v<1.2) s=0; else if(v<2.0) s=1; else if(v<6.0) s=2; else if(v<12.0) s=3; else s=4;
+    return {score:s, detalle:`Bilirrubina = ${fmt(v,1)} mg/dL`};
+  }
+  function scoreCV(){
+    const pam = parseFloat(fld('sofaPam').value);
+    const dopa = parseFloat(fld('sofaDopa').value)||0;
+    const dobu = parseFloat(fld('sofaDobu').value)||0;
+    const epi = parseFloat(fld('sofaEpi').value)||0;
+    const norepi = parseFloat(fld('sofaNorepi').value)||0;
+    const vaso1h = fld('sofaVaso1h').checked;
+    if(isNaN(pam) && dopa===0 && dobu===0 && epi===0 && norepi===0) return null;
+    let s = 0, detalle = [];
+    if(!isNaN(pam)){
+      s = pam<70 ? 1 : 0;
+      detalle.push(`PAM = ${fmt(pam,0)} mmHg`);
+    }
+    if(vaso1h){
+      if(dopa>15 || epi>0.1 || norepi>0.1){ s=4; detalle.push('dosis altas de vasopresores'); }
+      else if(dopa>5 || (epi>0 && epi<=0.1) || (norepi>0 && norepi<=0.1)){ s=Math.max(s,3); detalle.push('dosis moderadas de vasopresores'); }
+      else if((dopa>0 && dopa<=5) || dobu>0){ s=Math.max(s,2); detalle.push('dopamina a dosis bajas o dobutamina'); }
+    } else if(dopa>0 || dobu>0 || epi>0 || norepi>0){
+      detalle.push('hay dosis cargada pero no se marcó "≥1 hora": no se computa por fármacos');
+    }
+    return {score:s, detalle:detalle.join(', ')};
+  }
+  function scoreSNC(){
+    const v = parseFloat(fld('sofaGcs').value);
+    if(isNaN(v)) return null;
+    let s; if(v===15) s=0; else if(v>=13) s=1; else if(v>=10) s=2; else if(v>=6) s=3; else s=4;
+    return {score:s, detalle:`Glasgow = ${fmt(v,0)}`};
+  }
+  function scoreRenal(){
+    const crea = parseFloat(fld('sofaCrea').value);
+    const diur = parseFloat(fld('sofaDiuresis').value);
+    if(isNaN(crea) && isNaN(diur)) return null;
+    let sCrea = null, sDiur = null;
+    if(!isNaN(crea)){ if(crea<1.2) sCrea=0; else if(crea<2.0) sCrea=1; else if(crea<3.5) sCrea=2; else if(crea<5.0) sCrea=3; else sCrea=4; }
+    if(!isNaN(diur)){ if(diur<200) sDiur=4; else if(diur<500) sDiur=3; else sDiur=0; }
+    const s = Math.max(sCrea==null?-1:sCrea, sDiur==null?-1:sDiur);
+    const detalle = [];
+    if(sCrea!=null) detalle.push(`creatinina ${fmt(crea,1)} mg/dL`);
+    if(sDiur!=null) detalle.push(`diuresis ${fmt(diur,0)} mL/día`);
+    return {score:s, detalle:detalle.join(', ')};
+  }
+
+  function interpretTotal(total){
+    if(total<=6) return {label:'Disfunción leve o ausente', mort:'~10%', cls:'badge-ok'};
+    if(total<=9) return {label:'Disfunción moderada', mort:'~15–20%', cls:'badge-warn'};
+    if(total<=12) return {label:'Disfunción grave', mort:'~40–50%', cls:'badge-warn'};
+    if(total<=14) return {label:'Fallo orgánico severo', mort:'~50–60%', cls:'badge-danger'};
+    return {label:'Fallo orgánico extremo', mort:'>80%', cls:'badge-danger'};
+  }
+
+  let lastTotal = null;
+  function calcularSofa(){
+    const resp = scoreResp(), coag = scoreCoag(), higado = scoreHigado(), cv = scoreCV(), snc = scoreSNC(), renal = scoreRenal();
+    const sistemas = [
+      {nombre:'Respiratorio', r:resp}, {nombre:'Coagulación', r:coag}, {nombre:'Hígado', r:higado},
+      {nombre:'Cardiovascular', r:cv}, {nombre:'SNC', r:snc}, {nombre:'Renal', r:renal}
+    ];
+    if(sistemas.every(s=>s.r==null)){
+      fld('sofaResultado').innerHTML = '<p class="note" style="margin:0;">Completá al menos un sistema para calcular el score.</p>';
+      return;
+    }
+    let total = 0;
+    const filas = sistemas.map(s=>{
+      const val = s.r ? s.r.score : 0;
+      total += val;
+      return `<tr><td style="text-align:left;">${s.nombre}</td><td class="hl">${val}</td><td style="text-align:left;font-size:10.5px;color:var(--muted);">${s.r ? s.r.detalle : 'sin datos (asumido 0)'}</td></tr>`;
+    }).join('');
+    lastTotal = total;
+    const interp = interpretTotal(total);
+    fld('sofaResultado').innerHTML = `
+      <div class="result-big">SOFA total = ${total} / 24</div>
+      <span class="badge ${interp.cls}">${interp.label}</span>
+      <p style="margin:8px 0 0;">Mortalidad estimada aproximada: <b>${interp.mort}</b>.</p>
+      <table class="mini">
+        <thead><tr><th>Sistema</th><th>Puntaje</th><th>Detalle</th></tr></thead>
+        <tbody>${filas}</tbody>
+      </table>
+      <p class="note">Los sistemas no completados se asumen en 0 para el total. Se recomienda usar el peor valor registrado en las últimas 24 horas.</p>
+    `;
+  }
+  fld('sofaCalcularBtn').addEventListener('click', calcularSofa);
+  fld('sofaLimpiarBtn').addEventListener('click', ()=>{
+    ['sofaPafi','sofaSafi','sofaPlaquetas','sofaBili','sofaPam','sofaDopa','sofaDobu','sofaEpi','sofaNorepi',
+     'sofaGcs','sofaCrea','sofaDiuresis','sofaBasal','sofaLactato'].forEach(id=>fld(id).value='');
+    ['sofaVentSoporte','sofaVaso1h','sofaInfeccion','sofaVasoShock'].forEach(id=>fld(id).checked=false);
+    fld('sofaResultado').innerHTML=''; fld('sofaSepsisResultado').innerHTML='';
+    lastTotal = null;
+  });
+
+  fld('sofaSepsisBtn').addEventListener('click', ()=>{
+    if(lastTotal==null){
+      fld('sofaSepsisResultado').innerHTML = '<p class="note" style="margin:0;">Primero calculá el SOFA total.</p>';
+      return;
+    }
+    const basal = parseFloat(fld('sofaBasal').value) || 0;
+    const infeccion = fld('sofaInfeccion').checked;
+    const delta = lastTotal - basal;
+    const cumpleSepsis = infeccion && delta>=2;
+    const vasoShock = fld('sofaVasoShock').checked;
+    const lactato = parseFloat(fld('sofaLactato').value);
+    const cumpleShock = cumpleSepsis && vasoShock && !isNaN(lactato) && lactato>2;
+    let html = `<p style="margin:0 0 6px;">Δ SOFA = ${lastTotal} − ${fmt(basal,0)} = <b>${delta}</b></p>`;
+    html += infeccion
+      ? (cumpleSepsis
+          ? `<span class="badge badge-danger">Cumple criterios de Sepsis (Sepsis-3)</span>`
+          : `<span class="badge badge-ok">No cumple criterios de Sepsis-3</span> (se requiere aumento ≥2 puntos respecto al basal, en contexto de infección)`)
+      : `<span class="badge badge-ok">Sin sospecha de infección marcada</span> — no se puede evaluar Sepsis-3 sin ese dato`;
+    if(cumpleSepsis){
+      html += `<p style="margin:10px 0 0;">Shock séptico: ${cumpleShock ? '<b>Sí</b> — requiere vasopresores para PAM ≥65 mmHg y lactato >2 mmol/L pese a reanimación hídrica adecuada (mortalidad >40%).' : '<b>No confirmado</b> con los datos cargados (requiere necesidad de vasopresores + lactato >2 mmol/L).'}</p>`;
+    }
+    fld('sofaSepsisResultado').innerHTML = html;
+  });
+})();
+
+/* ===================== MEDIO INTERNO Y OXIMETRÍA ===================== */
+(function(){
+  function r1(n){ return Math.round(n*10)/10; }
+  function winterExpected(hco3){ return {low: r1(1.5*hco3+8-2), high: r1(1.5*hco3+8+2)}; }
+
+  function buildAcidBase(v){
+    if(v.ph==null || v.pco2==null || v.hco3==null) return null;
+    const ph=v.ph, pco2=v.pco2, hco3=v.hco3;
+    const acidemia = ph<7.35, alcalemia = ph>7.45;
+    let primario, compensacion = '';
+    if(acidemia){
+      primario = (hco3<22) ? 'acidosis metabólica' : ((pco2>45) ? 'acidosis respiratoria' : 'acidemia (trastorno mixto, a definir con clínica)');
+    } else if(alcalemia){
+      primario = (hco3>26) ? 'alcalosis metabólica' : ((pco2<35) ? 'alcalosis respiratoria' : 'alcalemia (trastorno mixto, a definir con clínica)');
+    } else if(pco2>45 && hco3>26){
+      primario = `trastorno mixto opuesto [acidosis respiratoria (pCO2: ${fmt(pco2,1)}) + alcalosis metabólica (HCO3: ${fmt(hco3,1)})] con pH compensado`;
+    } else if(pco2<35 && hco3<22){
+      primario = `trastorno mixto opuesto [alcalosis respiratoria (pCO2: ${fmt(pco2,1)}) + acidosis metabólica (HCO3: ${fmt(hco3,1)})] con pH compensado`;
+    } else {
+      primario = 'equilibrio ácido-base dentro de parámetros normales';
+    }
+    if(primario==='acidosis metabólica'){
+      const exp = winterExpected(hco3);
+      if(pco2 < exp.low) compensacion = `la pCO2 (${fmt(pco2,1)}) está por debajo de la esperada (${fmt(exp.low,1)}–${fmt(exp.high,1)} mmHg, fórmula de Winter), lo que sugiere una alcalosis respiratoria sobreagregada`;
+      else if(pco2 > exp.high) compensacion = `la pCO2 (${fmt(pco2,1)}) está por encima de la esperada (${fmt(exp.low,1)}–${fmt(exp.high,1)} mmHg, fórmula de Winter), lo que sugiere una acidosis respiratoria sobreagregada (trastorno mixto)`;
+      else compensacion = `la pCO2 (${fmt(pco2,1)}) es la esperada para el grado de acidosis metabólica (${fmt(exp.low,1)}–${fmt(exp.high,1)} mmHg, fórmula de Winter), compatible con compensación respiratoria adecuada`;
+    } else if(primario==='alcalosis metabólica'){
+      const expPco2 = r1(40 + (hco3-24)*0.6);
+      compensacion = `la pCO2 esperada por compensación respiratoria es de aprox. ${fmt(expPco2,1)} mmHg (ΔpCO2 = ΔHCO3 × 0.6); la pCO2 medida es ${fmt(pco2,1)} mmHg`;
+    } else if(primario==='acidosis respiratoria'){
+      const dpco2 = pco2-40;
+      const expAcute = r1(24 + dpco2*0.1), expChronic = r1(24 + dpco2*0.3);
+      const fase = hco3<=expAcute+2 ? 'un componente predominantemente agudo' : (hco3>=expChronic-2 ? 'un componente crónico/corregido' : 'un cuadro parcialmente compensado (mixto)');
+      compensacion = `con ΔHCO3 = ΔpCO2 × 0.1 (aguda) el HCO3 esperado es ≈${fmt(expAcute,1)} mEq/L, y con ΔHCO3 = ΔpCO2 × 0.3 (crónica/corregida) sería ≈${fmt(expChronic,1)} mEq/L; el HCO3 medido (${fmt(hco3,1)} mEq/L) orienta a ${fase}`;
+    } else if(primario==='alcalosis respiratoria'){
+      const dpco2 = 40-pco2;
+      const expAcute = r1(24 - dpco2*0.2), expChronic = r1(24 - dpco2*0.4);
+      compensacion = `con ΔHCO3 = ΔpCO2 × 0.2 (aguda) el HCO3 esperado es ≈${fmt(expAcute,1)} mEq/L, y con ΔHCO3 = ΔpCO2 × 0.4 (crónica/corregida) sería ≈${fmt(expChronic,1)} mEq/L; el HCO3 medido es ${fmt(hco3,1)} mEq/L`;
+    }
+    const parts = [`Trastorno primario sugerido: <b>${primario}</b>${compensacion ? ('. Compensación: '+compensacion+'.') : '.'}`];
+
+    if(v.po2!=null){
+      let hipoxTxt = '';
+      if(v.edad!=null){
+        const esperado = r1(102-(0.33*v.edad));
+        hipoxTxt = `PO2 esperada para la edad [102 − (0,33 × ${fmt(v.edad,0)} años)] ≈ ${fmt(esperado,1)} mmHg; PO2 medida ${fmt(v.po2,1)} mmHg`;
+        if(v.po2 < esperado-10) hipoxTxt += ', compatible con hipoxemia significativa para la edad.';
+        else if(v.po2 < esperado) hipoxTxt += ', levemente por debajo de lo esperado para la edad.';
+        else hipoxTxt += ', dentro de lo esperado para la edad.';
+      } else if(v.po2<80){
+        hipoxTxt = `PO2 ${fmt(v.po2,1)} mmHg: hipoxemia.`;
+      }
+      if(v.fio2!=null && v.fio2>0){
+        const pafi = Math.round((v.po2/v.fio2)*10000)/100;
+        const clasif = pafi>300 ? 'sin criterio de injuria pulmonar' : (pafi>200 ? 'injuria pulmonar leve' : (pafi>100 ? 'compatible con SDRA moderado' : 'compatible con SDRA severo'));
+        hipoxTxt += (hipoxTxt?' ':'') + `PAFI (pO2/FiO2 × 100) = ${fmt(pafi,1)}: ${clasif}.`;
+      }
+      if(hipoxTxt) parts.push(hipoxTxt);
+    }
+    return parts.join(' ');
+  }
+
+  function buildEquationsList(v){
+    const lines = [];
+    if(v.hco3!=null){
+      const win = winterExpected(v.hco3);
+      lines.push(`Ac. Met. (Winter): pCO2 esp. = 1.5×HCO3 + 8 ± 2 = 1.5×${fmt(v.hco3,1)} + 8 ± 2 ≈ ${fmt(win.low,1)}–${fmt(win.high,1)} mmHg`);
+      const dHco3Alc = r1(v.hco3-24);
+      const expPco2Alc = r1(40 + dHco3Alc*0.6);
+      lines.push(`Alc. Met.: ΔpCO2 = ΔHCO3 × 0.6 = (${fmt(v.hco3,1)}−24) × 0.6 ≈ ${fmt(r1(dHco3Alc*0.6),1)} → pCO2 esp. ≈ ${fmt(expPco2Alc,1)} mmHg`);
+    }
+    if(v.pco2!=null){
+      const dAg = r1(v.pco2-40);
+      const expAcuteResp = r1(24 + dAg*0.1), expChronicResp = r1(24 + dAg*0.3);
+      lines.push(`Ac. Resp. aguda: ΔHCO3 = ΔpCO2 × 0.1 (corregida ×0.3) = (${fmt(v.pco2,1)}−40) × 0.1/0.3 → HCO3 esp. ≈ ${fmt(expAcuteResp,1)} mEq/L (aguda) / ≈ ${fmt(expChronicResp,1)} mEq/L (corregida)`);
+      const dAl = r1(40-v.pco2);
+      const expAcuteAlc = r1(24 - dAl*0.2), expChronicAlc = r1(24 - dAl*0.4);
+      lines.push(`Alc. Resp. aguda: ΔHCO3 = ΔpCO2 × 0.2 (corregida ×0.4) = (40−${fmt(v.pco2,1)}) × 0.2/0.4 → HCO3 esp. ≈ ${fmt(expAcuteAlc,1)} mEq/L (aguda) / ≈ ${fmt(expChronicAlc,1)} mEq/L (corregida)`);
+    }
+    if(v.po2!=null && v.fio2!=null && v.fio2>0){
+      const pafi = Math.round((v.po2/v.fio2)*10000)/100;
+      lines.push(`PAFI = pO2/FiO2 × 100 = ${fmt(v.po2,1)}/${fmt(v.fio2,1)} × 100 ≈ ${fmt(pafi,1)}`);
+    }
+    if(v.edad!=null){
+      const esp = r1(102-(0.33*v.edad));
+      const extra = v.po2!=null ? `; PO2 medida ${fmt(v.po2,1)} mmHg` : '';
+      lines.push(`PO2 esperada por edad = 102 − (0.33 × ${fmt(v.edad,0)}) ≈ ${fmt(esp,1)} mmHg${extra}`);
+    }
+    return lines;
+  }
+
+  function numOrNull(id){
+    const v = parseFloat(fld(id).value);
+    return isNaN(v) ? null : v;
+  }
+
+  function calcularGases(){
+    const v = { ph:numOrNull('giPh'), pco2:numOrNull('giPco2'), hco3:numOrNull('giHco3'),
+                po2:numOrNull('giPo2'), fio2:numOrNull('giFio2'), edad:numOrNull('giEdad') };
+    const $resultado = fld('giResultado');
+    const interp = buildAcidBase(v);
+    if(!interp){
+      $resultado.innerHTML = '<p class="note" style="margin:0;">Completá al menos pH, pCO2 y HCO3 para la interpretación ácido-base (pO2, FiO2 y edad son opcionales para PAFI y PO2 esperada).</p>';
+      return;
+    }
+    const eqLines = buildEquationsList(v);
+    let html = `<p style="margin:0;">${interp}</p>`;
+    if(eqLines.length){
+      html += `<p class="note" style="margin-top:12px;"><b>Ecuaciones y datos del paciente</b>:<br>` + eqLines.map(l=>`• ${l}`).join('<br>') + `</p>`;
+    }
+    $resultado.innerHTML = html;
+  }
+  ['giPh','giPco2','giHco3','giPo2','giFio2','giEdad'].forEach(id=>{
+    fld(id).addEventListener('input', calcularGases);
+  });
+  fld('giCalcularBtn').addEventListener('click', calcularGases);
+  fld('giLimpiarBtn').addEventListener('click', ()=>{
+    ['giPh','giPco2','giHco3','giPo2','giFio2','giEdad'].forEach(id=>fld(id).value='');
+    fld('giResultado').innerHTML='';
+  });
+})();
+</script>
+</body>
+</html>
