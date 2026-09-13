@@ -48,15 +48,25 @@
     padding:20px 20px 60px;
   }
   .num{font-family:'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums;}
-  .wrap{max-width:1180px; margin:0 auto;}
+  .wrap{max-width:1340px; margin:0 auto;}
 
   /* ---------- Header ---------- */
   h1{font-size:1.05rem; letter-spacing:.01em; margin:0 0 4px; font-weight:700;}
   .sub{color:var(--ink-soft); font-size:.82rem; margin:0 0 18px;}
+  .page-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  .page-head .sub{margin-bottom:14px;}
+  .page-head button{flex-shrink:0;}
 
   .hero{
     display:grid;
-    grid-template-columns: 1fr 300px;
+    grid-template-columns: 1fr 460px;
+    align-items:start;
     gap:14px;
     margin-bottom:14px;
   }
@@ -70,7 +80,7 @@
     overflow:hidden;
   }
   .patient-section{
-    padding:16px 22px;
+    padding:12px 18px;
     display:flex;
     flex-direction:column;
     justify-content:center;
@@ -79,9 +89,9 @@
   .patient-section.ids{
     flex:0 0 auto;
     flex-direction:row;
-    gap:16px;
+    gap:14px;
   }
-  .patient-section.php-section{ flex:0 0 232px; }
+  .patient-section.php-section{ flex:0 0 220px; }
   .patient-section.bh-section{
     flex:1;
     padding:0;
@@ -89,12 +99,12 @@
     align-items:stretch;
   }
   .bh-goal, .bh-actual{
-    padding:16px 22px;
+    padding:12px 18px;
     display:flex;
     flex-direction:column;
     justify-content:center;
   }
-  .bh-goal{ flex:0 0 270px; }
+  .bh-goal{ flex:0 0 auto; }
   .bh-goal select{ width:100%; }
   .bh-actual{
     flex:1;
@@ -120,8 +130,9 @@
     background:#fff;
     color:var(--ink);
   }
-  .field-cama input{ width:78px; }
-  .field-peso input{ width:64px; }
+  .field-nombre input{ width:150px; }
+  .field-cama input{ width:70px; }
+  .field-peso input{ width:56px; }
   .php-section select{ width:100%; }
   .field input:focus, .field select:focus{
     outline:2px solid var(--egreso);
@@ -178,6 +189,8 @@
     font-weight:700;
   }
   table.ref-table{width:100%; border-collapse:collapse; font-size:.82rem;}
+  table.ref-table.ref-table-split .ref-col2{padding-left:16px;}
+  table.ref-table.ref-table-split th.ref-col2, table.ref-table.ref-table-split td.ref-col2{border-left:1px solid var(--border);}
   table.ref-table th{
     text-align:left;
     font-size:.65rem;
@@ -193,7 +206,7 @@
     font-family:'IBM Plex Mono', monospace;
     color:var(--ink);
   }
-  table.ref-table tr.active td{
+  table.ref-table td.active{
     background:var(--egreso-soft);
     color:var(--egreso);
     font-weight:700;
@@ -224,6 +237,148 @@
   }
   .atb-card .field{min-width:150px;}
   .atb-hint{font-size:.76rem; color:var(--ink-soft); flex:1; min-width:220px;}
+
+  /* ---------- Balance previo (continuar un balance ya iniciado) ---------- */
+  .baseline-card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:14px 18px;
+    margin-bottom:16px;
+  }
+  .baseline-card h2{
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    color:var(--ink-soft);
+    margin:0 0 10px;
+    font-weight:700;
+  }
+  .baseline-toggle{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:.86rem;
+    font-weight:600;
+    cursor:pointer;
+    user-select:none;
+  }
+  .baseline-toggle input{width:16px; height:16px; cursor:pointer; accent-color:var(--egreso);}
+  .baseline-fields{
+    display:flex;
+    gap:16px;
+    flex-wrap:wrap;
+    align-items:flex-end;
+    margin-top:12px;
+    padding-top:12px;
+    border-top:1px dashed var(--border);
+  }
+  .baseline-fields .field input, .baseline-fields .field select{width:150px;}
+  .baseline-manual{
+    display:flex;
+    gap:24px;
+    flex-wrap:wrap;
+    width:100%;
+    margin-top:4px;
+  }
+  .baseline-manual .col{flex:1; min-width:220px;}
+  .baseline-manual .col-title{
+    font-size:.72rem;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    font-weight:700;
+    margin:0 0 6px;
+  }
+  .baseline-manual .col-title.ing{color:var(--ingreso);}
+  .baseline-manual .col-title.egr{color:var(--egreso);}
+  .baseline-manual .row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    margin-bottom:6px;
+  }
+  .baseline-manual .rlabel{font-size:.8rem; color:var(--ink-soft);}
+  .baseline-manual .rinput{width:90px;}
+  .baseline-readout{
+    font-size:.78rem;
+    font-weight:700;
+    font-family:'IBM Plex Mono', monospace;
+    padding:6px 10px;
+    border-radius:7px;
+    background:var(--egreso-soft);
+    color:var(--egreso);
+  }
+  .atb-hint.baseline-hint{width:100%; margin-top:10px;}
+
+  /* ---------- Bloques bloqueados por balance previo ---------- */
+  .panel.locked{background:#F7F9FB;}
+  .panel.locked .panel-head{opacity:.55;}
+  .lock-note{
+    display:none;
+    padding:14px;
+    font-size:.8rem;
+    color:var(--ink-soft);
+    font-style:italic;
+    line-height:1.5;
+  }
+  .lock-note strong{color:var(--ink); font-style:normal;}
+  .panel.locked .panel-body, .panel.locked .panel-foot.hide-when-locked{display:none;}
+  .panel.locked .lock-note{display:block;}
+
+  /* ---------- Historial ---------- */
+  .hist-card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:16px 18px;
+    margin-top:16px;
+  }
+  .hist-card h2{
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    color:var(--ink-soft);
+    margin:0 0 10px;
+    font-weight:700;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .hist-empty{color:var(--ink-soft); font-style:italic; font-size:.84rem;}
+  .hist-item{
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:10px 12px;
+    margin-bottom:8px;
+    background:#F7F9FB;
+  }
+  .hist-item-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .hist-item-title{font-size:.84rem; font-weight:700;}
+  .hist-item-sub{font-size:.72rem; color:var(--ink-soft); font-family:'IBM Plex Mono', monospace;}
+  .hist-item-actions{display:flex; gap:6px;}
+  button.btn.small{padding:5px 10px; font-size:.72rem;}
+  .hist-report{
+    margin-top:8px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:.78rem;
+    line-height:1.5;
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:8px 10px;
+    white-space:pre-wrap;
+    display:none;
+  }
+  .hist-report.show{display:block;}
 
   /* ---------- Quarters grid: un solo panel dividido en 4 cuadrantes ---------- */
   .quarters{
@@ -310,6 +465,15 @@
   .row .atb-inline{display:flex; align-items:center; gap:6px;}
   .row .atb-inline input[type=checkbox]{accent-color:var(--atb); width:15px; height:15px; cursor:pointer;}
   .row .atb-dose{font-family:'IBM Plex Mono', monospace; font-size:.78rem; color:var(--atb); font-weight:700;}
+
+  .breakdown{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:.68rem;
+    text-align:right;
+    margin-top:1px;
+    letter-spacing:.01em;
+  }
+  .breakdown .plus{color:var(--ink-soft); margin:0 1px;}
 
   .col-total{
     display:flex;
@@ -406,134 +570,6 @@
     transition:opacity .2s;
   }
   .toast.show{opacity:1;}
-  .save-indicator{
-    font-size:.72rem;
-    color:var(--ink-soft);
-    margin-left:auto;
-    display:flex;
-    align-items:center;
-    gap:5px;
-  }
-  .save-indicator::before{
-    content:'';
-    width:6px; height:6px; border-radius:50%;
-    background:var(--ingreso);
-    flex:0 0 auto;
-  }
-
-  /* ---------- Restore banner ---------- */
-  .restore-banner{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    flex-wrap:wrap;
-    background:var(--egreso-soft);
-    border:1px solid #C7DBF3;
-    color:var(--egreso);
-    border-radius:var(--radius);
-    padding:10px 14px;
-    font-size:.82rem;
-    font-weight:500;
-    margin-bottom:14px;
-  }
-  .restore-banner .rb-actions{display:flex; gap:8px; margin-left:auto;}
-  .restore-banner button.btn{padding:5px 10px; font-size:.74rem;}
-
-  /* ---------- Multi-entry rows (sumas dentro de un bloque) ---------- */
-  .entry-row{padding:6px 0; border-bottom:1px dashed var(--border);}
-  .entry-row:last-of-type{border-bottom:none;}
-  .entry-row-head{
-    display:flex;
-    align-items:baseline;
-    justify-content:space-between;
-    gap:8px;
-  }
-  .entry-row-head .rlabel{font-size:.78rem; color:var(--ink); font-weight:500;}
-  .rsubtotal{font-size:.8rem; font-weight:700; color:var(--ink);}
-  .entry-prev{
-    font-family:'IBM Plex Mono', monospace;
-    font-size:.68rem;
-    color:var(--ink-soft);
-    margin-top:3px;
-  }
-  .entry-prev:empty{display:none;}
-  .entry-prev .plus{color:var(--ink-soft); margin:0 4px;}
-  .entry-chips{
-    display:flex;
-    flex-wrap:wrap;
-    gap:4px;
-    margin:5px 0 0;
-  }
-  .entry-chip{
-    display:inline-flex;
-    align-items:center;
-    font-family:'IBM Plex Mono', monospace;
-    font-size:.7rem;
-    font-weight:600;
-    padding:3px 6px;
-    border-radius:12px;
-    line-height:1.3;
-    max-width:100%;
-  }
-  .entry-chip button{
-    border:none;
-    background:none;
-    cursor:pointer;
-    font-weight:700;
-    font-family:'IBM Plex Sans', sans-serif;
-    padding:0 0 0 5px;
-    margin:0;
-    line-height:1;
-    color:inherit;
-    opacity:.6;
-    font-size:.85rem;
-  }
-  .entry-chip button:hover{opacity:1;}
-  .entry-form{
-    display:flex;
-    gap:5px;
-    margin-top:6px;
-  }
-  .entry-form .entry-desc{
-    flex:1;
-    min-width:0;
-    padding:5px 7px;
-    border:1px solid var(--border-strong);
-    border-radius:6px;
-    font-family:'IBM Plex Sans', sans-serif;
-    font-size:.74rem;
-    background:#fff;
-    color:var(--ink);
-  }
-  .entry-form .entry-val{
-    width:64px;
-    flex:0 0 auto;
-    padding:5px 7px;
-    border:1px solid var(--border-strong);
-    border-radius:6px;
-    font-family:'IBM Plex Mono', monospace;
-    font-size:.78rem;
-    text-align:right;
-    background:#fff;
-    color:var(--ink);
-  }
-  .entry-form .entry-desc:focus, .entry-form .entry-val:focus{
-    outline:2px solid var(--egreso);
-    outline-offset:1px;
-  }
-  .entry-form .entry-add{
-    flex:0 0 auto;
-    width:28px;
-    border:1px solid var(--egreso);
-    background:var(--egreso);
-    color:#fff;
-    border-radius:6px;
-    font-size:.95rem;
-    font-weight:700;
-    cursor:pointer;
-    line-height:1;
-  }
-  .entry-form .entry-add:hover{background:#17529E;}
 
   footer.disclaimer{
     margin-top:16px;
@@ -555,20 +591,21 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>Calculadora de balance hídrico</h1>
-  <p class="sub">Cargá lo nuevo registrado en cada bloque de 6 hs — el acumulado, el PHP, el agua endógena y las pérdidas insensibles se calculan solos.</p>
-
-  <div class="restore-banner" id="restoreBanner" style="display:none;">
-    <span id="restoreBannerText"></span>
-    <span class="rb-actions">
-      <button type="button" class="btn ghost" id="dismissRestoreBtn">Continuar con este</button>
-      <button type="button" class="btn ghost" id="newBalanceBtn">Iniciar balance nuevo</button>
-    </span>
+  <div class="page-head">
+    <div>
+      <h1>Calculadora de balance hídrico</h1>
+      <p class="sub">Cargá lo nuevo registrado en cada bloque de 6 hs — el acumulado, el PHP, el agua endógena y las pérdidas insensibles se calculan solos.</p>
+    </div>
+    <button class="btn ghost" id="newCalcBtnTop" type="button">+ Nuevo cálculo</button>
   </div>
 
   <div class="hero">
     <div class="patient-card">
       <div class="patient-section ids">
+        <div class="field field-nombre">
+          <label for="nombrePaciente">Nombre</label>
+          <input type="text" id="nombrePaciente" placeholder="Apellido, Nombre">
+        </div>
         <div class="field field-cama">
           <label for="cama">Cama</label>
           <input type="text" id="cama" placeholder="132">
@@ -613,15 +650,12 @@
 
     <div class="ref-card">
       <h2>Velocidad de infusión</h2>
-      <table class="ref-table" id="refTable">
-        <thead><tr><th>Macrogotas/min</th><th>Volumen/24h</th></tr></thead>
+      <table class="ref-table ref-table-split" id="refTable">
+        <thead><tr><th>Macrogotas/min</th><th>Volumen/24h</th><th class="ref-col2">Macrogotas/min</th><th>Volumen/24h</th></tr></thead>
         <tbody>
-          <tr data-vol="500"><td>7</td><td>500 ml</td></tr>
-          <tr data-vol="1000"><td>14</td><td>1000 ml</td></tr>
-          <tr data-vol="1500"><td>21</td><td>1500 ml</td></tr>
-          <tr data-vol="2000"><td>28</td><td>2000 ml</td></tr>
-          <tr data-vol="2500"><td>35</td><td>2500 ml</td></tr>
-          <tr data-vol="3000"><td>42</td><td>3000 ml</td></tr>
+          <tr><td data-vol="500">7</td><td>500 ml</td><td class="ref-col2" data-vol="2000">28</td><td>2000 ml</td></tr>
+          <tr><td data-vol="1000">14</td><td>1000 ml</td><td class="ref-col2" data-vol="2500">35</td><td>2500 ml</td></tr>
+          <tr><td data-vol="1500">21</td><td>1500 ml</td><td class="ref-col2" data-vol="3000">42</td><td>3000 ml</td></tr>
         </tbody>
       </table>
     </div>
@@ -639,7 +673,41 @@
         <option value="none">No indicado</option>
       </select>
     </div>
-    <div class="atb-hint">La frecuencia marca automáticamente en qué bloques se administra el ATB — tildá o destildá cada casillero si el horario real difiere.</div>
+    <div class="atb-hint">La frecuencia marca automáticamente en qué bloques se administra el ATB — tildá o destildá cada casillero si el horario real difiere. Con "Cada 8 hs" (dosis a las 8, 16 y 24 hs) el casillero queda marcado en los cuadrantes de 12, 18 y 24 hs, porque la dosis de las 16 hs cae dentro del bloque 12–18 hs.</div>
+  </div>
+
+  <div class="baseline-card" id="baselineCard">
+    <h2>Continuar un balance ya iniciado</h2>
+    <label class="baseline-toggle"><input type="checkbox" id="baselineEnabled"> Me dieron un plan empezado (por ejemplo, para terminar de completar desde las 12 hs)</label>
+    <div class="baseline-fields" id="baselineFields" style="display:none">
+      <div class="field">
+        <label for="baselineHour">Empezar a completar desde</label>
+        <select id="baselineHour">
+          <option value="0">6 hs</option>
+          <option value="1" selected>12 hs</option>
+          <option value="2">18 hs</option>
+        </select>
+      </div>
+      <div class="baseline-readout" id="baselineReadout">BH previo: 0 ml</div>
+      <div class="atb-hint baseline-hint">El PHP, el agua endógena, las pérdidas insensibles y el ATB por horario se calculan solos para la hora elegida — no hace falta cargarlos. Cargá acá solamente lo que sí te hayan dado como dato manual (lo que tomó/hizo el paciente hasta ese momento), porque eso no se puede recalcular solo.</div>
+      <div class="baseline-manual" id="baselinePrevFields">
+        <div class="col">
+          <p class="col-title ing">Ingresos previos (manuales)</p>
+          <div class="row"><span class="rlabel">Vía oral (VO):</span><input type="number" class="rinput" data-prev-key="vo" value="0" min="0" step="any"></div>
+          <div class="row"><span class="rlabel">Alim. parenteral:</span><input type="number" class="rinput" data-prev-key="alim" value="0" min="0" step="any"></div>
+          <div class="row"><span class="rlabel">Antibióticos (ATB):</span><input type="number" class="rinput" data-prev-key="atb" value="0" min="0" step="any"></div>
+          <div class="row"><span class="rlabel">Transfusiones:</span><input type="number" class="rinput" data-prev-key="transf" value="0" min="0" step="any"></div>
+          <div class="row"><span class="rlabel">Expansiones:</span><input type="number" class="rinput" data-prev-key="exp" value="0" min="0" step="any"></div>
+        </div>
+        <div class="col">
+          <p class="col-title egr">Egresos previos (manuales)</p>
+          <div class="row"><span class="rlabel">Diuresis (D):</span><input type="number" class="rinput" data-prev-key="diuresis" value="0" min="0" step="any"></div>
+          <div class="row"><span class="rlabel">Catarsis/Diarrea:</span><input type="number" class="rinput" data-prev-key="catarsis" value="0" min="0" step="any"></div>
+          <div class="row"><span class="rlabel">Vómitos:</span><input type="number" class="rinput" data-prev-key="vomitos" value="0" min="0" step="any"></div>
+          <div class="row"><span class="rlabel">Drenajes:</span><input type="number" class="rinput" data-prev-key="drenajes" value="0" min="0" step="any"></div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <main class="quarters" id="quarters"></main>
@@ -649,13 +717,19 @@
     <div id="reportText"><span class="report-empty">Confirmá el primer bloque (6 hs) para empezar a generar el informe.</span></div>
     <div class="report-actions">
       <button class="btn primary" id="copyBtn">Copiar informe</button>
-      <button class="btn ghost" id="resetBtn">Reiniciar todo</button>
+      <button class="btn" id="saveHistBtn">Guardar registro</button>
+      <button class="btn ghost" id="resetBtn">Nuevo cálculo</button>
       <span class="toast" id="toast">Copiado ✓</span>
-      <span class="save-indicator" id="saveIndicator">Sin guardar aún</span>
+      <span class="toast" id="toastSave">Guardado ✓</span>
     </div>
   </div>
 
-  <footer class="disclaimer">Herramienta de apoyo al cálculo — no reemplaza el criterio clínico. Balance neutro (+): 0 a +499 ml · Positivo: ≥ +500 ml · Neutro (−): 0 a −499 ml · Negativo: ≤ −500 ml.</footer>
+  <div class="hist-card">
+    <h2>Registros guardados <button class="btn ghost small" id="clearHistBtn" type="button">Vaciar historial</button></h2>
+    <div id="historialList"><span class="hist-empty">Todavía no guardaste ningún registro.</span></div>
+  </div>
+
+  <footer class="disclaimer">Herramienta de apoyo al cálculo — no reemplaza el criterio clínico. Balance neutro (+): 0 a +499 ml · Positivo: ≥ +500 ml · Neutro (−): 0 a −499 ml · Negativo: ≤ −500 ml. Los datos cargados y el historial se guardan solo en este dispositivo/navegador; los registros del historial se borran solos a los 30 días.</footer>
 </div>
 
 <script>
@@ -666,7 +740,7 @@
   const ATB_DOSE = 100; // los ATB siempre se disuelven en 100 ml — constante, no editable
 
   const ING_FIELDS = [
-    {key:'vo',    label:'Vía oral (VO)',        type:'input'},
+    {key:'vo',    label:'Vía oral (VO)',        type:'input', expr:true},
     {key:'php',   label:'PHP',                  type:'auto'},
     {key:'alim',  label:'Alim. parenteral',     type:'input'},
     {key:'atb',   label:'Antibióticos (ATB)',   type:'atb'},
@@ -682,39 +756,138 @@
     {key:'pi',       label:'Pérdidas insens. (PI)', type:'auto'},
   ];
 
-  const LS_KEY = 'balanceHidricoState_v3';
-  const ENTRY_COLORS = ['#1C64C9','#1B8F63','#F2A93B','#C4362F','#7C3AED','#0F9B8E','#C1660C','#5B7083'];
-  function entryColor(i){ return ENTRY_COLORS[i % ENTRY_COLORS.length]; }
-  function esc(s){
-    return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  }
-
-  function emptyBlocks(){
-    return [0,1,2,3].map(()=>({
-      vo:[], alim:[], transf:[], exp:[],
-      diuresis:[], catarsis:[], vomitos:[], drenajes:[],
-      atb:false,
-      confirmed:false
-    }));
-  }
-
   const state = {
+    nombre: '',
     cama: '',
     peso: 60,
     phpPlan: 21,
     atbFreq: '12',
     bhGoal: 'neutro-pos',
-    blocks: emptyBlocks()
+    baseline: { enabled:false, hourIndex:1, prev:{ vo:0, alim:0, transf:0, exp:0, atb:0, diuresis:0, catarsis:0, vomitos:0, drenajes:0 } },
+    blocks: [0,1,2,3].map(()=>({
+      vo:'0', alim:0, transf:0, exp:0,
+      diuresis:0, catarsis:0, vomitos:0, drenajes:0,
+      atb:false,
+      confirmed:false
+    }))
   };
+
+  const STORAGE_KEY = 'bh_calc_estado_v1';
+  const HISTORY_KEY = 'bh_calc_historial_v1';
+
+  function loadSavedState(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    }catch(e){ return null; }
+  }
+  function saveState(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+  }
+  function loadHistorial(){
+    try{ return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }catch(e){ return []; }
+  }
+  function saveHistorial(list){
+    try{ localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); }catch(e){}
+  }
+
+  // ---------- sincronización opcional con Firebase (nube) ----------
+  // El historial funciona igual sin conexión: todo esto es un agregado sobre
+  // localStorage, nunca un reemplazo. Ver window.__bhFirestore, expuesto por
+  // el módulo de Firebase al final del archivo.
+  const HISTORIAL_DIAS = 30;
+  function fb(){
+    return (window.__bhFirestore && window.__bhFirestore.ready) ? window.__bhFirestore : null;
+  }
+  function fsRecordToLocal(id, data){
+    return {
+      id: Number(id),
+      ts: data.ts || new Date().toISOString(),
+      nombre: data.nombre || '',
+      cama: data.cama || '',
+      peso: (data.peso===undefined || data.peso===null) ? null : data.peso,
+      bhSigned: data.bhSigned || '',
+      reportText: data.reportText || '',
+      snapshot: data.snapshot || {}
+    };
+  }
+  function syncRecordToFirestore(rec){
+    const f = fb();
+    if (!f) return;
+    const payload = {
+      ts: rec.ts, nombre: rec.nombre||'', cama: rec.cama||'',
+      peso: (rec.peso===undefined || rec.peso===null) ? null : rec.peso,
+      bhSigned: rec.bhSigned||'', reportText: rec.reportText||'', snapshot: rec.snapshot||{},
+      expiraEn: f.Timestamp.fromMillis(Date.now() + HISTORIAL_DIAS*24*60*60*1000)
+    };
+    f.setDoc(f.doc(f.historialCol, String(rec.id)), payload).catch(err=>{
+      console.error('No se pudo guardar el registro en Firebase (queda guardado localmente):', err);
+    });
+  }
+  function deleteRecordFromFirestore(id){
+    const f = fb();
+    if (!f) return;
+    f.deleteDoc(f.doc(f.historialCol, String(id))).catch(err=>{
+      console.error('No se pudo borrar el registro en Firebase:', err);
+    });
+  }
+  // Se llama una vez que la sesión anónima de Firebase queda lista (la invoca
+  // el módulo de Firebase, ver window.attachBhFirestoreSync más abajo).
+  function attachFirestoreSync(){
+    const f = fb();
+    if (!f) return;
+    f.onSnapshot(f.historialCol, snapshot=>{
+      const remoteList = [];
+      snapshot.forEach(d=> remoteList.push(fsRecordToLocal(d.id, d.data())));
+      const localList = loadHistorial();
+      const remoteIds = new Set(remoteList.map(r=>r.id));
+      // lo que se guardó localmente sin conexión todavía no está en la nube: se sube ahora
+      localList.filter(r=>!remoteIds.has(r.id)).forEach(r=> syncRecordToFirestore(r));
+      const merged = remoteList.concat(localList.filter(r=>!remoteIds.has(r.id)));
+      merged.sort((a,b)=>a.id-b.id);
+      saveHistorial(merged);
+      renderHistorial();
+    }, err=>{
+      console.error('Error escuchando el historial en Firebase (se sigue usando el local):', err);
+    });
+  }
+
+  let _blocksRestored = false;
+  (function restoreFromStorage(){
+    const saved = loadSavedState();
+    if (!saved) return;
+    if (typeof saved.cama === 'string') state.cama = saved.cama;
+    if (typeof saved.nombre === 'string') state.nombre = saved.nombre;
+    if (saved.peso) state.peso = saved.peso;
+    if (saved.phpPlan) state.phpPlan = saved.phpPlan;
+    if (saved.atbFreq) state.atbFreq = saved.atbFreq;
+    if (saved.bhGoal) state.bhGoal = saved.bhGoal;
+    if (saved.baseline){
+      state.baseline.enabled = !!saved.baseline.enabled;
+      state.baseline.hourIndex = (saved.baseline.hourIndex!==undefined) ? Number(saved.baseline.hourIndex) : 1;
+      if (saved.baseline.prev) Object.assign(state.baseline.prev, saved.baseline.prev);
+    }
+    if (Array.isArray(saved.blocks) && saved.blocks.length === 4){
+      state.blocks = saved.blocks.map(b=>({
+        vo: (b.vo===undefined || b.vo===null) ? '0' : String(b.vo),
+        alim:Number(b.alim)||0, transf:Number(b.transf)||0, exp:Number(b.exp)||0,
+        diuresis:Number(b.diuresis)||0, catarsis:Number(b.catarsis)||0,
+        vomitos:Number(b.vomitos)||0, drenajes:Number(b.drenajes)||0,
+        atb:!!b.atb, confirmed:!!b.confirmed
+      }));
+      _blocksRestored = true;
+    }
+  })();
 
   const ATB_DEFAULTS = {
     '6':   [true,true,true,true],
-    '8':   [true,true,true,false],
+    '8':   [false,true,true,true],
     '12':  [true,false,true,false],
     '24':  [true,false,false,false],
     'none':[false,false,false,false]
   };
-  applyAtbDefaults('12');
+  if (!_blocksRestored) applyAtbDefaults(state.atbFreq);
   function applyAtbDefaults(freq){
     const pattern = ATB_DEFAULTS[freq] || ATB_DEFAULTS.none;
     state.blocks.forEach((b,i)=> b.atb = pattern[i]);
@@ -724,30 +897,42 @@
   function fmt(n){ return nf.format(Math.round(n)); }
   function signed(n){ const r = Math.round(n); return (r>=0?'+':'') + fmt(r); }
 
+  // Permite cargar la vía oral como suma, p.ej. "200+300" -> 500
+  function parseAmount(raw){
+    if (raw === undefined || raw === null) return 0;
+    const s = String(raw).trim();
+    if (s === '') return 0;
+    const parts = s.split('+').map(p=>p.trim().replace(',', '.')).filter(p=>p!=='');
+    let sum = 0;
+    parts.forEach(p=>{ const n = parseFloat(p); if (!isNaN(n)) sum += n; });
+    return sum;
+  }
+  function valueOf(key, block){
+    return key === 'vo' ? parseAmount(block.vo) : (Number(block[key]) || 0);
+  }
+  function getStartIndex(){
+    return state.baseline.enabled ? (Number(state.baseline.hourIndex) + 1) : 0;
+  }
+
   const quartersEl = document.getElementById('quarters');
 
   function buildRow(field, side){
     const row = document.createElement('div');
-    row.dataset.side = side;
+    row.className = 'row';
+    const label = document.createElement('span');
+    label.className = 'rlabel';
+    label.textContent = field.label + ':';
+    row.appendChild(label);
 
     if (field.type === 'auto'){
-      row.className = 'row';
-      row.dataset.type = 'auto';
-      row.dataset.autoKey = field.key;
-      const label = document.createElement('span');
-      label.className = 'rlabel';
-      label.textContent = field.label + ':';
-      row.appendChild(label);
       const auto = document.createElement('span');
       auto.className = 'rauto';
+      auto.id = null;
+      row.dataset.autoKey = field.key;
+      row.dataset.side = side;
+      row.dataset.type = 'auto';
       row.appendChild(auto);
     } else if (field.type === 'atb'){
-      row.className = 'row';
-      row.dataset.type = 'atbRow';
-      const label = document.createElement('span');
-      label.className = 'rlabel';
-      label.textContent = field.label + ':';
-      row.appendChild(label);
       const wrap = document.createElement('span');
       wrap.className = 'atb-inline';
       const cb = document.createElement('input');
@@ -761,25 +946,38 @@
       wrap.appendChild(cb);
       wrap.appendChild(dose);
       row.appendChild(wrap);
+      row.dataset.side = side;
+      row.dataset.type = 'atbRow';
     } else {
-      // Fila de suma múltiple: permite ir cargando varios valores (ej. agua 200 ml + comida 300 ml)
-      row.className = 'entry-row';
+      const inp = document.createElement('input');
+      inp.className = 'rinput';
+      if (field.expr){
+        inp.type = 'text';
+        inp.inputMode = 'decimal';
+        inp.placeholder = 'ej. 200+300';
+        inp.dataset.expr = 'true';
+        inp.value = '0';
+      } else {
+        inp.type = 'number';
+        inp.min = '0';
+        inp.step = 'any';
+        inp.value = 0;
+      }
+      inp.dataset.side = side;
+      inp.dataset.key = field.key;
+      inp.dataset.type = 'delta';
+      row.appendChild(inp);
+      row.dataset.side = side;
       row.dataset.type = 'inputRow';
-      row.dataset.key = field.key;
-      row.innerHTML =
-        '<div class="entry-row-head">' +
-          '<span class="rlabel">' + esc(field.label) + '</span>' +
-          '<span class="rsubtotal num" data-role="subtotal">0 ml</span>' +
-        '</div>' +
-        '<div class="entry-prev" data-role="prevBreakdown"></div>' +
-        '<div class="entry-chips" data-role="chips"></div>' +
-        '<div class="entry-form">' +
-          '<input type="text" class="entry-desc" data-role="entryDesc" placeholder="detalle (opc.): agua, comida…" autocomplete="off">' +
-          '<input type="number" class="entry-val" data-role="entryVal" placeholder="ml" min="0" step="any" inputmode="decimal">' +
-          '<button type="button" class="entry-add" data-role="entryAdd" title="Agregar">+</button>' +
-        '</div>';
     }
     return row;
+  }
+
+  function buildBreakdownRow(field){
+    const bd = document.createElement('div');
+    bd.className = 'breakdown';
+    bd.dataset.breakdownKey = field.key;
+    return bd;
   }
 
   function buildPanel(qIndex){
@@ -799,6 +997,11 @@
     head.appendChild(confirmLabel);
     panel.appendChild(head);
 
+    const lockNote = document.createElement('div');
+    lockNote.className = 'lock-note';
+    lockNote.dataset.role = 'lockNote';
+    panel.appendChild(lockNote);
+
     const body = document.createElement('div');
     body.className = 'panel-body';
 
@@ -808,6 +1011,7 @@
     const ingRowsWrap = document.createElement('div');
     ING_FIELDS.forEach(f=>{
       ingRowsWrap.appendChild(buildRow(f,'ing'));
+      if (f.type==='input') ingRowsWrap.appendChild(buildBreakdownRow(f));
     });
     colIng.appendChild(ingRowsWrap);
     const ingTotal = document.createElement('div');
@@ -821,6 +1025,7 @@
     const egrRowsWrap = document.createElement('div');
     EGR_FIELDS.forEach(f=>{
       egrRowsWrap.appendChild(buildRow(f,'egr'));
+      if (f.type==='input') egrRowsWrap.appendChild(buildBreakdownRow(f));
     });
     colEgr.appendChild(egrRowsWrap);
     const egrTotal = document.createElement('div');
@@ -846,41 +1051,34 @@
   for (let i=0;i<4;i++) quartersEl.appendChild(buildPanel(i));
 
   // ---------- calculation ----------
-  function fieldSubtotal(block, key){
-    const entries = block[key];
-    if (!Array.isArray(entries)) return 0;
-    let sum = 0;
-    for (let j=0;j<entries.length;j++) sum += Number(entries[j].v) || 0;
-    return sum;
-  }
+  // Nota sobre "balance previo": cuando está activo, los bloques hasta la hora
+  // recibida quedan bloqueados (sin detalle propio) y el cálculo de los bloques
+  // siguientes arranca sumando incrementos de a 6 hs sobre el acumulado dado,
+  // en vez de sumar desde 0.
   function fieldsCumulative(key, uptoIndex){
+    const start = getStartIndex();
     let sum = 0;
-    for (let i=0;i<=uptoIndex;i++) sum += fieldSubtotal(state.blocks[i], key);
+    for (let i=start;i<=uptoIndex;i++) sum += valueOf(key, state.blocks[i]);
     return sum;
-  }
-  function addEntry(qIndex, key, value, desc){
-    if (!(value > 0)) return;
-    state.blocks[qIndex][key].push({v:value, d:(desc||'').trim()});
-    recalcAll();
-  }
-  function removeEntry(qIndex, key, idx){
-    state.blocks[qIndex][key].splice(idx,1);
-    recalcAll();
   }
 
   function atbDeltaFor(i){
     return state.blocks[i].atb ? ATB_DOSE : 0;
   }
   function atbCumulative(uptoIndex){
+    const start = getStartIndex();
     let sum=0;
-    for (let i=0;i<=uptoIndex;i++) sum += atbDeltaFor(i);
+    for (let i=start;i<=uptoIndex;i++) sum += atbDeltaFor(i);
     return sum;
   }
 
+  // PHP, agua endógena y pérdidas insensibles: siempre acumulados desde el inicio
+  // del plan (hora 0) según la fórmula, sin importar si hay un balance previo
+  // cargado — no dependen de qué tan detallado esté el registro anterior.
   function autoValues(hour){
     const peso = Number(state.peso)||0;
-    const frac = hour/24;
     const plan = PLAN_VOLUMES[state.phpPlan] || 0;
+    const frac = hour/24;
     return {
       php: plan*frac,
       ae: peso*5*frac,
@@ -890,22 +1088,67 @@
 
   function computeQuarter(i){
     const hour = HOURS[i];
+    const baseline = state.baseline;
+    const baselineIdx = Number(baseline.hourIndex);
+    const prev = baseline.prev;
+
+    if (baseline.enabled && i < baselineIdx){
+      // bloque anterior al dato recibido: sin detalle propio disponible
+      return {
+        hour, locked:true, isBaselinePoint:false,
+        auto:{php:0, ae:0, pi:0},
+        vo:0, alim:0, transf:0, exp:0, atb:0,
+        diuresis:0, catarsis:0, vomitos:0, drenajes:0,
+        ingreso:0, egreso:0, bh:0
+      };
+    }
+
+    if (baseline.enabled && i === baselineIdx){
+      // el bloque del dato recibido: PHP/AE/PI se calculan solos para esa hora,
+      // el resto son los valores manuales previos que cargó el usuario
+      const auto = autoValues(hour);
+      const vo = Number(prev.vo)||0, alim = Number(prev.alim)||0,
+            transf = Number(prev.transf)||0, exp = Number(prev.exp)||0, atb = Number(prev.atb)||0,
+            diuresis = Number(prev.diuresis)||0, catarsis = Number(prev.catarsis)||0,
+            vomitos = Number(prev.vomitos)||0, drenajes = Number(prev.drenajes)||0;
+      const ingreso = vo + auto.php + alim + atb + auto.ae + transf + exp;
+      const egreso = diuresis + catarsis + vomitos + drenajes + auto.pi;
+      return {
+        hour, locked:true, isBaselinePoint:true,
+        auto, vo, alim, transf, exp, atb, diuresis, catarsis, vomitos, drenajes,
+        ingreso, egreso, bh: ingreso-egreso
+      };
+    }
+
     const auto = autoValues(hour);
-    const vo = fieldsCumulative('vo', i);
-    const alim = fieldsCumulative('alim', i);
-    const transf = fieldsCumulative('transf', i);
-    const exp = fieldsCumulative('exp', i);
-    const atb = atbCumulative(i);
-    const diuresis = fieldsCumulative('diuresis', i);
-    const catarsis = fieldsCumulative('catarsis', i);
-    const vomitos = fieldsCumulative('vomitos', i);
-    const drenajes = fieldsCumulative('drenajes', i);
+    const prevIng = baseline.enabled ? { vo:Number(prev.vo)||0, alim:Number(prev.alim)||0, transf:Number(prev.transf)||0, exp:Number(prev.exp)||0, atb:Number(prev.atb)||0 } : { vo:0, alim:0, transf:0, exp:0, atb:0 };
+    const prevEgr = baseline.enabled ? { diuresis:Number(prev.diuresis)||0, catarsis:Number(prev.catarsis)||0, vomitos:Number(prev.vomitos)||0, drenajes:Number(prev.drenajes)||0 } : { diuresis:0, catarsis:0, vomitos:0, drenajes:0 };
+
+    const vo = prevIng.vo + fieldsCumulative('vo', i);
+    const alim = prevIng.alim + fieldsCumulative('alim', i);
+    const transf = prevIng.transf + fieldsCumulative('transf', i);
+    const exp = prevIng.exp + fieldsCumulative('exp', i);
+    const atb = prevIng.atb + atbCumulative(i);
+    const diuresis = prevEgr.diuresis + fieldsCumulative('diuresis', i);
+    const catarsis = prevEgr.catarsis + fieldsCumulative('catarsis', i);
+    const vomitos = prevEgr.vomitos + fieldsCumulative('vomitos', i);
+    const drenajes = prevEgr.drenajes + fieldsCumulative('drenajes', i);
 
     const ingreso = vo + auto.php + alim + atb + auto.ae + transf + exp;
     const egreso = diuresis + catarsis + vomitos + drenajes + auto.pi;
     const bh = ingreso - egreso;
 
-    return {hour, auto, vo, alim, transf, exp, atb, diuresis, catarsis, vomitos, drenajes, ingreso, egreso, bh};
+    return {hour, locked:false, auto, vo, alim, transf, exp, atb, diuresis, catarsis, vomitos, drenajes, ingreso, egreso, bh};
+  }
+
+  function getLastConfirmed(){
+    const baseline = state.baseline;
+    let lastConfirmed = baseline.enabled ? Number(baseline.hourIndex) : -1;
+    for (let i=0;i<4;i++){
+      const locked = baseline.enabled && i <= Number(baseline.hourIndex);
+      if (!locked && state.blocks[i].confirmed) lastConfirmed = i;
+    }
+    return lastConfirmed;
   }
 
   function classify(bh){
@@ -927,81 +1170,122 @@
     'neutro-neg': 'Neutro (−)',
   };
 
+  function renderBreakdown(el, key, uptoIndex){
+    const start = getStartIndex();
+    const parts = [];
+    if (state.baseline.enabled && state.baseline.prev[key] !== undefined){
+      const prevVal = Number(state.baseline.prev[key]) || 0;
+      if (prevVal !== 0) parts.push({v:prevVal, prev:true});
+    }
+    for (let i=start;i<=uptoIndex;i++){
+      const v = valueOf(key, state.blocks[i]);
+      if (v !== 0) parts.push({v, i});
+    }
+    if (parts.length === 0){ el.innerHTML = ''; return; }
+    el.innerHTML = parts.map((p,idx)=>{
+      const num = p.prev
+        ? `<span style="color:var(--ink-soft)">${fmt(p.v)} (previo)</span>`
+        : `<span style="color:${QCOLORS[p.i]}">${fmt(p.v)}</span>`;
+      return idx===0 ? num : `<span class="plus">+</span>${num}`;
+    }).join('');
+  }
+
   function recalcAll(){
     // sync PHP readout
     const plan = PLAN_VOLUMES[state.phpPlan]||0;
     document.getElementById('phpReadout').textContent = fmt(plan/4) + ' ml cada 6 hs';
 
-    let lastConfirmed = -1;
+    // sync balance previo (baseline) UI
+    const baseline = state.baseline;
+    const baselineIdx = Number(baseline.hourIndex);
+    document.getElementById('baselineFields').style.display = baseline.enabled ? 'flex' : 'none';
+    if (baseline.enabled){
+      const bq0 = computeQuarter(baselineIdx);
+      document.getElementById('baselineReadout').textContent =
+        `BH previo a las ${bq0.hour}hs: ${signed(bq0.bh)} ml (Ingresos ${fmt(bq0.ingreso)} ml · Egresos ${fmt(bq0.egreso)} ml)`;
+    }
+    document.querySelectorAll('#baselinePrevFields [data-prev-key]').forEach(inp=>{
+      if (document.activeElement !== inp) inp.value = state.baseline.prev[inp.dataset.prevKey];
+    });
+
+    let lastConfirmed = getLastConfirmed();
 
     for (let i=0;i<4;i++){
       const panel = quartersEl.children[i];
       const q = computeQuarter(i);
       const block = state.blocks[i];
 
-      panel.classList.toggle('unconfirmed', !block.confirmed);
-      if (block.confirmed) lastConfirmed = i;
+      panel.classList.toggle('locked', q.locked);
+      panel.classList.toggle('unconfirmed', !q.locked && !block.confirmed);
 
-      // auto fields
-      panel.querySelectorAll('[data-type="auto"]').forEach(row=>{
-        const key = row.dataset.autoKey;
-        const box = row.querySelector('.rauto');
-        box.textContent = fmt(q.auto[key]) + ' ml';
-      });
+      const foot = panel.querySelector('.panel-foot');
+      const confirmLabel = panel.querySelector('.confirm');
+      const confirmCb = panel.querySelector('[data-role="confirm"]');
+      const lockNote = panel.querySelector('[data-role="lockNote"]');
 
-      // atb row
-      const atbRow = panel.querySelector('[data-type="atbRow"]');
-      const atbCb = atbRow.querySelector('input[type=checkbox]');
-      atbCb.checked = block.atb;
-      const atbDoseLabel = atbRow.querySelector('[data-role="atbDoseLabel"]');
-      atbDoseLabel.textContent = block.atb ? (fmt(ATB_DOSE) + ' ml') : '— ml';
-
-      // multi-entry input rows: acumulado + desglose de bloques anteriores (por color de hora) + chips del bloque actual
-      panel.querySelectorAll('[data-type="inputRow"]').forEach(row=>{
-        const key = row.dataset.key;
-        const entries = block[key] || [];
-        row.querySelector('[data-role="subtotal"]').textContent = fmt(fieldsCumulative(key, i)) + ' ml';
-
-        const prevEl = row.querySelector('[data-role="prevBreakdown"]');
-        const prevParts = [];
-        for (let j=0;j<i;j++){
-          const v = fieldSubtotal(state.blocks[j], key);
-          if (v !== 0) prevParts.push({v, hour: HOURS[j], color: QCOLORS[j]});
+      if (q.locked){
+        confirmLabel.style.display = 'none';
+        confirmCb.disabled = true;
+        if (q.isBaselinePoint){
+          foot.classList.remove('hide-when-locked');
+          lockNote.innerHTML = `<strong>Dato recibido hasta las ${q.hour} hs.</strong> Ingresos ${fmt(q.ingreso)} ml · Egresos ${fmt(q.egreso)} ml · BH ${signed(q.bh)} ml. Este bloque no se edita: es el punto de partida cargado arriba.`;
+        } else {
+          foot.classList.add('hide-when-locked');
+          lockNote.innerHTML = `Incluido en el acumulado recibido hasta las ${HOURS[baselineIdx]} hs — sin detalle propio disponible.`;
         }
-        prevEl.innerHTML = prevParts.map((p, idx)=>{
-          const num = '<span style="color:' + p.color + '">' + p.hour + 'h ' + fmt(p.v) + '</span>';
-          return idx===0 ? num : '<span class="plus">+</span>' + num;
-        }).join('');
+        // deja los inputs del bloque bloqueados sin poder editarse
+        panel.querySelectorAll('input').forEach(inp=>{ if (inp.dataset.type==='delta' || inp.dataset.type==='atbCheckbox') inp.disabled = true; });
+      } else {
+        confirmLabel.style.display = '';
+        confirmCb.disabled = false;
+        confirmCb.checked = !!block.confirmed;
+        foot.classList.remove('hide-when-locked');
+        panel.querySelectorAll('input').forEach(inp=>{ if (inp.dataset.type==='delta' || inp.dataset.type==='atbCheckbox') inp.disabled = false; });
 
-        const chipsEl = row.querySelector('[data-role="chips"]');
-        chipsEl.innerHTML = entries.map((e, idx)=>{
-          const color = entryColor(idx);
-          const label = e.d ? esc(e.d) + ': ' : '';
-          return '<span class="entry-chip" style="background:' + color + '1A;color:' + color + ';border:1px solid ' + color + '44">' +
-            label + fmt(e.v) + ' ml' +
-            '<button type="button" data-role="entryRemove" data-q="' + i + '" data-key="' + key + '" data-idx="' + idx + '" aria-label="Quitar">×</button>' +
-            '</span>';
-        }).join('');
-      });
+        // auto fields
+        panel.querySelectorAll('[data-type="auto"]').forEach(row=>{
+          const key = row.dataset.autoKey;
+          const box = row.querySelector('.rauto');
+          box.textContent = fmt(q.auto[key]) + ' ml';
+        });
 
-      // totals
-      panel.querySelector('[data-role="ingTotal"]').textContent = fmt(q.ingreso) + ' ml';
-      panel.querySelector('[data-role="egrTotal"]').textContent = fmt(q.egreso) + ' ml';
+        // atb row
+        const atbRow = panel.querySelector('[data-type="atbRow"]');
+        const atbCb = atbRow.querySelector('input[type=checkbox]');
+        atbCb.checked = block.atb;
+        const atbDoseLabel = atbRow.querySelector('[data-role="atbDoseLabel"]');
+        atbDoseLabel.textContent = block.atb ? (fmt(ATB_DOSE) + ' ml') : '— ml';
 
-      // BH chip
-      const cls = classify(q.bh);
-      const colors = CLASS_COLORS[cls.cls];
-      const chip = panel.querySelector('[data-role="bhChip"]');
-      chip.innerHTML = `BH ${q.hour}h: ${signed(q.bh)} ml <span class="tag" data-role="bhTag">${cls.tag}</span>`;
-      chip.style.background = colors.bg;
-      chip.style.color = colors.fg;
+        // input rows + breakdowns
+        panel.querySelectorAll('[data-type="delta"]').forEach(inp=>{
+          if (document.activeElement !== inp){
+            inp.value = block[inp.dataset.key];
+          }
+        });
+        panel.querySelectorAll('[data-breakdown-key]').forEach(bd=>{
+          renderBreakdown(bd, bd.dataset.breakdownKey, i);
+        });
 
-      // diuresis rate
-      const peso = Number(state.peso)||1;
-      const rate = q.diuresis / (peso * q.hour);
-      const rateEl = panel.querySelector('[data-role="diuresisRate"]');
-      const inRange = rate >= 1.5 && rate <= 3.5;
-      rateEl.innerHTML = `Ritmo diurético: <span class="${inRange?'flag-ok':'flag-warn'}">${rate.toFixed(1)} ml/kg/h</span>`;
+        // totals
+        panel.querySelector('[data-role="ingTotal"]').textContent = fmt(q.ingreso) + ' ml';
+        panel.querySelector('[data-role="egrTotal"]').textContent = fmt(q.egreso) + ' ml';
+
+        // BH chip
+        const cls = classify(q.bh);
+        const colors = CLASS_COLORS[cls.cls];
+        const chip = panel.querySelector('[data-role="bhChip"]');
+        chip.innerHTML = `BH ${q.hour}h: ${signed(q.bh)} ml <span class="tag" data-role="bhTag">${cls.tag}</span>`;
+        chip.style.background = colors.bg;
+        chip.style.color = colors.fg;
+
+        // diuresis rate (desde el arranque real de este tramo: 0 hs, o la hora del acumulado recibido)
+        const peso = Number(state.peso)||1;
+        const elapsed = baseline.enabled ? (q.hour - HOURS[baselineIdx]) : q.hour;
+        const rate = elapsed > 0 ? (q.diuresis / (peso * elapsed)) : 0;
+        const rateEl = panel.querySelector('[data-role="diuresisRate"]');
+        const inRange = rate >= 1.5 && rate <= 3.5;
+        rateEl.innerHTML = `Ritmo diurético: <span class="${inRange?'flag-ok':'flag-warn'}">${rate.toFixed(1)} ml/kg/h</span>`;
+      }
     }
 
     // header BH type badge
@@ -1035,12 +1319,14 @@
     }
 
     // reference table active row
-    document.querySelectorAll('#refTable tr[data-vol]').forEach(tr=>{
-      tr.classList.toggle('active', Number(tr.dataset.vol) === plan);
+    document.querySelectorAll('#refTable td[data-vol]').forEach(td=>{
+      const isActive = Number(td.dataset.vol) === plan;
+      td.classList.toggle('active', isActive);
+      td.nextElementSibling.classList.toggle('active', isActive);
     });
 
     buildReport(lastConfirmed);
-    scheduleSave();
+    saveState();
   }
 
   function buildReport(lastConfirmed){
@@ -1050,16 +1336,19 @@
       return;
     }
     const lines = [];
-    for (let i=0;i<=lastConfirmed;i++){
+    if (state.baseline.enabled){
+      const bq = computeQuarter(Number(state.baseline.hourIndex));
+      lines.push(`Balance acumulado a las ${bq.hour}hs (dato recibido): ${signed(bq.bh)} ml (Ingresos ${fmt(bq.ingreso)} ml · Egresos ${fmt(bq.egreso)} ml).`);
+    }
+    const start = getStartIndex();
+    for (let i=start;i<=lastConfirmed;i++){
       if (!state.blocks[i].confirmed) continue;
       const q = computeQuarter(i);
       let line = `BH ${q.hour}hs: ${signed(q.bh)} ml (D: ${fmt(q.diuresis)} ml)`;
       const events = [];
       const b = state.blocks[i];
-      const expTotal = fieldSubtotal(b, 'exp');
-      const transfTotal = fieldSubtotal(b, 'transf');
-      if (expTotal > 0) events.push(`se indica expansión de ${fmt(expTotal)} ml con SF`);
-      if (transfTotal > 0) events.push(`se transfunden ${fmt(transfTotal)} ml`);
+      if (Number(b.exp) > 0) events.push(`se indica expansión de ${fmt(b.exp)} ml con SF`);
+      if (Number(b.transf) > 0) events.push(`se transfunden ${fmt(b.transf)} ml`);
       if (events.length){
         const cap = events.map(e => e.charAt(0).toUpperCase()+e.slice(1));
         line += '. ' + cap.join('. ') + '.';
@@ -1072,9 +1361,18 @@
   }
 
   // ---------- events ----------
+  function attachClearZero(el, getValueFn){
+    el.addEventListener('focus', ()=>{ if (el.value === '0') el.value = ''; });
+    el.addEventListener('blur', ()=>{ if (el.value.trim() === '') el.value = String(getValueFn()); });
+  }
+
+  document.getElementById('nombrePaciente').addEventListener('input', e=>{
+    state.nombre = e.target.value;
+    saveState();
+  });
   document.getElementById('cama').addEventListener('input', e=>{
     state.cama = e.target.value;
-    scheduleSave();
+    saveState();
   });
   document.getElementById('peso').addEventListener('input', e=>{
     state.peso = Number(e.target.value)||0;
@@ -1093,42 +1391,53 @@
     state.bhGoal = e.target.value;
     recalcAll();
   });
+  attachClearZero(document.getElementById('peso'), ()=>state.peso);
 
-  function submitEntryFrom(row, panel){
-    const q = Number(panel.dataset.q);
-    const key = row.dataset.key;
-    const descInp = row.querySelector('[data-role="entryDesc"]');
-    const valInp = row.querySelector('[data-role="entryVal"]');
-    const val = Number(valInp.value);
-    if (val > 0){
-      addEntry(q, key, val, descInp.value);
-      descInp.value = '';
-      valInp.value = '';
-      valInp.focus();
-    }
-  }
-
-  quartersEl.addEventListener('click', e=>{
+  // ---------- balance previo (baseline) ----------
+  document.getElementById('baselineEnabled').addEventListener('change', e=>{
+    state.baseline.enabled = e.target.checked;
+    recalcAll();
+  });
+  document.getElementById('baselineHour').addEventListener('change', e=>{
+    state.baseline.hourIndex = Number(e.target.value);
+    recalcAll();
+  });
+  const baselinePrevFieldsEl = document.getElementById('baselinePrevFields');
+  baselinePrevFieldsEl.addEventListener('input', e=>{
     const t = e.target;
-    if (t.dataset.role === 'entryAdd'){
-      const row = t.closest('.entry-row');
-      const panel = t.closest('.panel');
-      submitEntryFrom(row, panel);
-    }
-    if (t.dataset.role === 'entryRemove'){
-      const q = Number(t.dataset.q);
-      const key = t.dataset.key;
-      const idx = Number(t.dataset.idx);
-      removeEntry(q, key, idx);
+    if (t.dataset.prevKey){
+      state.baseline.prev[t.dataset.prevKey] = Number(t.value)||0;
+      recalcAll();
     }
   });
-  quartersEl.addEventListener('keydown', e=>{
-    if (e.key === 'Enter' && e.target.dataset.role === 'entryVal'){
-      e.preventDefault();
-      const row = e.target.closest('.entry-row');
-      const panel = e.target.closest('.panel');
-      submitEntryFrom(row, panel);
+  baselinePrevFieldsEl.addEventListener('focusin', e=>{
+    if (e.target.matches('.rinput') && e.target.value === '0') e.target.value = '';
+  });
+  baselinePrevFieldsEl.addEventListener('focusout', e=>{
+    if (e.target.matches('.rinput')) recalcAll();
+  });
+
+  quartersEl.addEventListener('input', e=>{
+    const t = e.target;
+    if (t.dataset.type === 'delta'){
+      const panel = t.closest('.panel');
+      const q = Number(panel.dataset.q);
+      if (t.dataset.expr === 'true'){
+        const cleaned = t.value.replace(/[^0-9+.\s]/g, '');
+        if (cleaned !== t.value) t.value = cleaned;
+        state.blocks[q][t.dataset.key] = t.value;
+      } else {
+        state.blocks[q][t.dataset.key] = Number(t.value)||0;
+      }
+      recalcAll();
     }
+  });
+  // el cero de referencia desaparece al enfocar la caja para poder escribir directo
+  quartersEl.addEventListener('focusin', e=>{
+    if (e.target.matches('.rinput') && e.target.value === '0') e.target.value = '';
+  });
+  quartersEl.addEventListener('focusout', e=>{
+    if (e.target.matches('.rinput')) recalcAll();
   });
   quartersEl.addEventListener('change', e=>{
     const t = e.target;
@@ -1155,113 +1464,236 @@
     });
   });
 
-  function doReset(){
+  function startNewCalculation(){
+    const lastConfirmed = getLastConfirmed();
+    if (lastConfirmed !== -1){
+      if (confirm('¿Guardar este cálculo en el historial antes de empezar uno nuevo?')){
+        saveCurrentToHistorial();
+      } else if (!confirm('¿Seguro que querés borrar los datos cargados sin guardarlos?')){
+        return; // se arrepintió, no se toca nada
+      }
+    } else if (!confirm('¿Empezar un cálculo nuevo? Se borran los datos cargados.')){
+      return;
+    }
+    state.nombre = '';
     state.cama = '';
     state.peso = 60;
     state.phpPlan = 21;
     state.atbFreq = '12';
     state.bhGoal = 'neutro-pos';
-    state.blocks = emptyBlocks();
+    state.baseline = { enabled:false, hourIndex:1, prev:{ vo:0, alim:0, transf:0, exp:0, atb:0, diuresis:0, catarsis:0, vomitos:0, drenajes:0 } };
+    state.blocks = [0,1,2,3].map(()=>({
+      vo:'0', alim:0, transf:0, exp:0,
+      diuresis:0, catarsis:0, vomitos:0, drenajes:0,
+      atb:false, confirmed:false
+    }));
     applyAtbDefaults('12');
-    document.getElementById('cama').value = '';
-    document.getElementById('peso').value = 60;
-    document.getElementById('phpPlan').value = '21';
-    document.getElementById('atbFreq').value = '12';
-    document.getElementById('bhGoal').value = 'neutro-pos';
+    syncFormFromState();
     quartersEl.querySelectorAll('[data-role="confirm"]').forEach(cb=>cb.checked=false);
-    try{ localStorage.removeItem(LS_KEY); }catch(err){}
     recalcAll();
   }
+  document.getElementById('resetBtn').addEventListener('click', startNewCalculation);
+  document.getElementById('newCalcBtnTop').addEventListener('click', startNewCalculation);
 
-  document.getElementById('resetBtn').addEventListener('click', ()=>{
-    if (!confirm('¿Reiniciar todos los datos cargados? Se borrará también el balance guardado.')) return;
-    doReset();
+  // ---------- historial de registros guardados ----------
+  const historialListEl = document.getElementById('historialList');
+
+  function showToast(id){
+    const toast = document.getElementById(id);
+    toast.classList.add('show');
+    setTimeout(()=>toast.classList.remove('show'), 1500);
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // Los registros de más de 30 días se borran solos; el borrado manual (por ítem
+  // o "Vaciar historial") funciona en cualquier momento, no depende de esto.
+  function purgeHistorialVencido(){
+    const list = loadHistorial();
+    const limite = Date.now() - HISTORIAL_DIAS*24*60*60*1000;
+    const vigentes = list.filter(r=> new Date(r.ts).getTime() >= limite);
+    if (vigentes.length !== list.length){
+      list.filter(r=> new Date(r.ts).getTime() < limite).forEach(r=> deleteRecordFromFirestore(r.id));
+      saveHistorial(vigentes);
+    }
+    return vigentes;
+  }
+
+  function renderHistorial(){
+    const list = purgeHistorialVencido();
+    if (!list.length){
+      historialListEl.innerHTML = '<span class="hist-empty">Todavía no guardaste ningún registro.</span>';
+      return;
+    }
+    historialListEl.innerHTML = '';
+    list.slice().reverse().forEach(rec=>{
+      const item = document.createElement('div');
+      item.className = 'hist-item';
+      const fecha = new Date(rec.ts).toLocaleString('es-AR');
+      const quien = [rec.nombre, rec.cama ? ('Cama ' + rec.cama) : ''].filter(Boolean).map(escapeHtml).join(' · ') || 'Sin nombre/cama';
+      item.innerHTML = `
+        <div class="hist-item-head">
+          <div>
+            <div class="hist-item-title">${quien} — BH ${rec.bhSigned} ml</div>
+            <div class="hist-item-sub">${fecha}${rec.peso ? ' · ' + rec.peso + ' kg' : ''}</div>
+          </div>
+          <div class="hist-item-actions">
+            <button class="btn small" data-act="ver" data-id="${rec.id}" type="button">Ver informe</button>
+            <button class="btn small" data-act="cargar" data-id="${rec.id}" type="button">Cargar</button>
+            <button class="btn small ghost" data-act="borrar" data-id="${rec.id}" type="button">Eliminar</button>
+          </div>
+        </div>
+        <div class="hist-report" data-role="histReport">${rec.reportText || ''}</div>
+      `;
+      historialListEl.appendChild(item);
+    });
+  }
+
+  historialListEl.addEventListener('click', e=>{
+    const btn = e.target.closest('button[data-act]');
+    if (!btn) return;
+    const id = Number(btn.dataset.id);
+    const list = loadHistorial();
+    const rec = list.find(r=>r.id === id);
+    if (!rec) return;
+
+    if (btn.dataset.act === 'ver'){
+      const box = btn.closest('.hist-item').querySelector('[data-role="histReport"]');
+      box.classList.toggle('show');
+    } else if (btn.dataset.act === 'cargar'){
+      if (!confirm('¿Cargar este registro? Se reemplazan los datos que estás cargando ahora (podés guardarlos antes si querés conservarlos).')) return;
+      Object.assign(state, JSON.parse(JSON.stringify(rec.snapshot)));
+      syncFormFromState();
+      recalcAll();
+    } else if (btn.dataset.act === 'borrar'){
+      if (!confirm('¿Eliminar este registro del historial?')) return;
+      saveHistorial(list.filter(r=>r.id !== id));
+      deleteRecordFromFirestore(id);
+      renderHistorial();
+    }
   });
 
-  // ---------- persistencia (guardado automático en este navegador) ----------
-  let saveTimer = null;
-  function scheduleSave(){
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(saveState, 300);
+  function saveCurrentToHistorial(){
+    const lastConfirmed = getLastConfirmed();
+    if (lastConfirmed === -1) return false;
+    const q = computeQuarter(lastConfirmed);
+    const rec = {
+      id: Date.now(),
+      ts: new Date().toISOString(),
+      nombre: state.nombre || '',
+      cama: state.cama || '',
+      peso: state.peso,
+      bhSigned: signed(q.bh),
+      reportText: document.getElementById('reportText').textContent,
+      snapshot: JSON.parse(JSON.stringify(state))
+    };
+    const list = loadHistorial();
+    list.push(rec);
+    saveHistorial(list);
+    syncRecordToFirestore(rec);
+    renderHistorial();
+    return true;
   }
-  function saveState(){
-    try{
-      const payload = Object.assign({}, state, {savedAt: Date.now()});
-      localStorage.setItem(LS_KEY, JSON.stringify(payload));
-      updateSaveIndicator(payload.savedAt);
-    }catch(err){
-      const el = document.getElementById('saveIndicator');
-      if (el) el.textContent = 'No se pudo guardar en este navegador';
+
+  document.getElementById('saveHistBtn').addEventListener('click', ()=>{
+    if (!saveCurrentToHistorial()){
+      alert('Todavía no hay ningún bloque confirmado (ni un acumulado previo cargado) para guardar.');
+      return;
     }
-  }
-  function updateSaveIndicator(ts){
-    const el = document.getElementById('saveIndicator');
-    if (!el) return;
-    const d = new Date(ts);
-    el.textContent = 'Guardado automáticamente · ' + d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
-  }
-  function loadSaved(){
-    try{
-      const raw = localStorage.getItem(LS_KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      if (!parsed || !Array.isArray(parsed.blocks) || parsed.blocks.length !== 4) return null;
-      return parsed;
-    }catch(err){ return null; }
-  }
-  function hasMeaningfulData(saved){
-    if (!saved) return false;
-    const keys = ['vo','alim','transf','exp','diuresis','catarsis','vomitos','drenajes'];
-    return saved.blocks.some(b => b.confirmed || keys.some(k => Array.isArray(b[k]) && b[k].length > 0));
-  }
-  function restoreFromSaved(saved){
-    state.cama = saved.cama || '';
-    state.peso = Number(saved.peso) || state.peso;
-    state.phpPlan = Number(saved.phpPlan) || state.phpPlan;
-    state.atbFreq = saved.atbFreq || state.atbFreq;
-    state.bhGoal = saved.bhGoal || state.bhGoal;
-    state.blocks = saved.blocks.map(b=>({
-      vo: Array.isArray(b.vo)?b.vo:[], alim: Array.isArray(b.alim)?b.alim:[],
-      transf: Array.isArray(b.transf)?b.transf:[], exp: Array.isArray(b.exp)?b.exp:[],
-      diuresis: Array.isArray(b.diuresis)?b.diuresis:[], catarsis: Array.isArray(b.catarsis)?b.catarsis:[],
-      vomitos: Array.isArray(b.vomitos)?b.vomitos:[], drenajes: Array.isArray(b.drenajes)?b.drenajes:[],
-      atb: !!b.atb, confirmed: !!b.confirmed
-    }));
-    document.getElementById('cama').value = state.cama;
+    showToast('toastSave');
+  });
+
+  document.getElementById('clearHistBtn').addEventListener('click', ()=>{
+    if (!confirm('¿Vaciar todo el historial de registros guardados? Esta acción no se puede deshacer.')) return;
+    loadHistorial().forEach(r=> deleteRecordFromFirestore(r.id));
+    saveHistorial([]);
+    renderHistorial();
+  });
+
+  // ---------- sincronizar los campos del formulario con el estado ----------
+  function syncFormFromState(){
+    document.getElementById('nombrePaciente').value = state.nombre || '';
+    document.getElementById('cama').value = state.cama || '';
     document.getElementById('peso').value = state.peso;
     document.getElementById('phpPlan').value = state.phpPlan;
     document.getElementById('atbFreq').value = state.atbFreq;
     document.getElementById('bhGoal').value = state.bhGoal;
-    quartersEl.querySelectorAll('[data-role="confirm"]').forEach(cb=>{
-      const q = Number(cb.dataset.q);
-      cb.checked = state.blocks[q].confirmed;
+    document.getElementById('baselineEnabled').checked = state.baseline.enabled;
+    document.getElementById('baselineHour').value = state.baseline.hourIndex;
+    document.querySelectorAll('#baselinePrevFields [data-prev-key]').forEach(inp=>{
+      inp.value = state.baseline.prev[inp.dataset.prevKey];
     });
   }
-  function showRestoreNotice(savedAt, cama){
-    const banner = document.getElementById('restoreBanner');
-    const text = document.getElementById('restoreBannerText');
-    const d = savedAt ? new Date(savedAt) : null;
-    const when = d ? d.toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
-    text.textContent = 'Se restauró el balance en curso' + (cama ? ' (cama ' + cama + ')' : '') + (when ? ' — guardado ' + when + '.' : '.');
-    banner.style.display = 'flex';
-  }
-  document.getElementById('dismissRestoreBtn').addEventListener('click', ()=>{
-    document.getElementById('restoreBanner').style.display = 'none';
-  });
-  document.getElementById('newBalanceBtn').addEventListener('click', ()=>{
-    if (!confirm('¿Iniciar un balance nuevo? Se perderá el balance guardado actual.')) return;
-    doReset();
-    document.getElementById('restoreBanner').style.display = 'none';
-  });
 
-  const saved = loadSaved();
-  if (saved){
-    restoreFromSaved(saved);
-    if (hasMeaningfulData(saved)) showRestoreNotice(saved.savedAt, saved.cama);
-  }
-
+  syncFormFromState();
+  renderHistorial();
   recalcAll();
+
+  // El módulo de Firebase (más abajo) llama a esto apenas la sesión anónima
+  // queda lista. Si Firebase no está configurado o falla, esto nunca se llama
+  // y todo sigue funcionando solo con localStorage, como hasta ahora.
+  window.attachBhFirestoreSync = attachFirestoreSync;
 })();
+</script>
+
+<script type="module">
+/* =========================================================================
+   Firestore: historial de balance hídrico en la nube (opcional)
+   =========================================================================
+   Mismo proyecto de Firebase que pase_guardia.html. Usa sesión anónima
+   (signInAnonymously) porque esta calculadora es de acceso libre — no pide
+   login, pero igual cumple con la regla "request.auth != null" de Firestore.
+
+   Para que esto funcione hace falta agregar en la consola de Firebase
+   (Firestore Database → Reglas) un bloque para la colección nueva, dentro
+   de "service cloud.firestore { match /databases/{database}/documents { ... } }":
+
+     match /balance_historial/{docId} {
+       allow read, write: if request.auth != null;
+     }
+
+   Y para que los registros se borren solos a los 30 días del lado del
+   servidor (además del borrado local que ya hace esta página), conviene
+   activar una política de TTL: Firestore Database → TTL → colección
+   "balance_historial" → campo "expiraEn". Sin esto la limpieza automática
+   sigue funcionando igual, pero solo mientras alguien abra la página en
+   algún dispositivo (el borrado local dispara también el borrado remoto). */
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+import {
+  getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, Timestamp
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDrBZV9QSlG27Sl0rXbwP7HGWBHQTYe56I",
+  authDomain: "pases-c121c.firebaseapp.com",
+  projectId: "pases-c121c",
+  storageBucket: "pases-c121c.firebasestorage.app",
+  messagingSenderId: "261660416072",
+  appId: "1:261660416072:web:e500450ad82c33de1be07d"
+};
+
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+window.__bhFirestore = {
+  ready: false,
+  doc, setDoc, deleteDoc, onSnapshot, Timestamp,
+  historialCol: collection(db, 'balance_historial')
+};
+
+onAuthStateChanged(auth, (user)=>{
+  if (user && !window.__bhFirestore.ready){
+    window.__bhFirestore.ready = true;
+    if (typeof window.attachBhFirestoreSync === 'function') window.attachBhFirestoreSync();
+  }
+});
+signInAnonymously(auth).catch(err=>{
+  console.error('No se pudo iniciar sesión anónima en Firebase — el historial de balance hídrico sigue funcionando solo en este dispositivo.', err);
+});
 </script>
 </body>
 </html>
