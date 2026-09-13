@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
- Versión: 8 (13/09/2026)
+ Versión: 9 (13/09/2026)
 -->
 <html lang="es">
 <head>
@@ -127,17 +127,8 @@
       </div>
     </div>
 
-    <details class="checklist-wrap">
-      <summary>3. Parámetros a incluir (tildados por defecto)</summary>
-      <div class="checklist-toolbar">
-        <button type="button" class="btn-tiny" id="laboMarcarTodos">Marcar todos</button>
-        <button type="button" class="btn-tiny" id="laboDesmarcarTodos">Desmarcar todos</button>
-      </div>
-      <div class="checklist-grid" id="laboChecklistGrid"></div>
-    </details>
-
-    <details class="checklist-wrap">
-      <summary>4. Calculadora de gases en sangre (uso manual)</summary>
+    <details class="checklist-wrap" id="laboGasCalcDetails">
+      <summary>3. Calculadora de gases en sangre (uso manual)</summary>
       <div class="gascalc-grid">
         <label>pH <input type="number" step="0.001" id="gcPh"></label>
         <label>pCO2 (mmHg) <input type="number" step="0.1" id="gcPco2"></label>
@@ -151,7 +142,16 @@
         <button type="button" class="btn-secondary" id="gcLimpiarBtn">Limpiar</button>
       </div>
       <div id="gcResultado" class="gascalc-result"></div>
-      <p class="note">Se autocompleta con los valores reconocidos al pegar un laboratorio con gases en sangre; también se puede cargar y calcular a mano. Fórmulas: Ac. Met. (Winter) pCO2 esp. = 1.5×HCO3 + 8 ± 2 · Alc. Met. ΔpCO2 = ΔHCO3 × 0.6 · Ac. Resp. aguda ΔHCO3 = ΔpCO2 × 0.1 (corregida ×0.3) · Alc. Resp. aguda ΔHCO3 = ΔpCO2 × 0.2 (corregida ×0.4) · PAFI = pO2/FiO2 × 100 · PO2 esperada por edad = 102 − (0.33 × edad).</p>
+      <p class="note">Se autocompleta y calcula solo al pegar un laboratorio con gases en sangre; también se puede cargar y calcular a mano (se recalcula solo, a medida que se van cargando los valores). Fórmulas: Ac. Met. (Winter) pCO2 esp. = 1.5×HCO3 + 8 ± 2 · Alc. Met. ΔpCO2 = ΔHCO3 × 0.6 · Ac. Resp. aguda ΔHCO3 = ΔpCO2 × 0.1 (corregida ×0.3) · Alc. Resp. aguda ΔHCO3 = ΔpCO2 × 0.2 (corregida ×0.4) · PAFI = pO2/FiO2 × 100 · PO2 esperada por edad = 102 − (0.33 × edad).</p>
+    </details>
+
+    <details class="checklist-wrap">
+      <summary>4. Parámetros a incluir (tildados por defecto)</summary>
+      <div class="checklist-toolbar">
+        <button type="button" class="btn-tiny" id="laboMarcarTodos">Marcar todos</button>
+        <button type="button" class="btn-tiny" id="laboDesmarcarTodos">Desmarcar todos</button>
+      </div>
+      <div class="checklist-grid" id="laboChecklistGrid"></div>
     </details>
   </div>
 </div>
@@ -168,6 +168,8 @@ function fld(id){ return document.getElementById(id); }
   const $gasaWrap = fld('laboGasaWrap');
   const $gasaInput = fld('laboGasaInput');
   const $labCompletoBtn = fld('laboLabCompletoBtn');
+  const $gasCalcDetails = fld('laboGasCalcDetails');
+  const $gcResultado = fld('gcResultado');
   let laboFullMode = false;
 
   function laboToday(){
@@ -1032,6 +1034,8 @@ function fld(id){ return document.getElementById(id); }
     'BT':   {alto:'hiperbilirrubinemia total'},
     'BD':   {alto:'bilirrubina directa elevada; sugiere componente colestásico'},
     'ALB':  {bajo:'hipoalbuminemia; valorar estado nutricional y pérdidas'},
+    'Prot T': {bajo:'hipoproteinemia total; valorar estado nutricional, pérdidas renales (proteinuria) o hepáticas', alto:'hiperproteinemia; considerar deshidratación o gammapatía, correlacionar con proteinograma'},
+    'No HDL': {alto:'colesterol no-HDL elevado; asociado a mayor riesgo cardiovascular, valorar perfil lipídico completo y riesgo cardiovascular global', bajo:'colesterol no-HDL muy bajo (hipocolesterolemia); en el contexto de un paciente internado suele ser marcador de desnutrición, inflamación o síndrome de respuesta inflamatoria/hepatopatía más que un hallazgo lipídico aislado; correlacionar con albúmina y proteínas totales'},
     'CPK':  {alto:'CPK elevada; considerar daño muscular (rabdomiólisis) o isquemia miocárdica'},
     'Troponina': {alto:'troponina elevada; correlacionar con clínica y ECG para descartar síndrome coronario agudo'},
     'Ac Lac': {alto:'lactato elevado; considerar hipoperfusión tisular/shock'},
@@ -1079,6 +1083,42 @@ function fld(id){ return document.getElementById(id); }
       ['UREA','CR','FG'].forEach(c=>consumed.add(c));
     }
 
+    const feF = byCode['Fe'], transfF = byCode['transferrina'], satF = byCode['Sat Transf'],
+          tibcF = byCode['TIBC'], uibcF = byCode['UIBC'], ferrF = byCode['ferritina'];
+    if([feF,transfF,satF,tibcF,uibcF,ferrF].some(f=>f && f.dir)){
+      const partes = [];
+      if(feF) partes.push(`Fe ${feF.text}`);
+      if(transfF) partes.push(`transferrina ${transfF.text}`);
+      if(satF) partes.push(`Sat Transf ${satF.text}`);
+      if(tibcF) partes.push(`TIBC ${tibcF.text}`);
+      if(uibcF) partes.push(`UIBC ${uibcF.text}`);
+      if(ferrF) partes.push(`ferritina ${ferrF.text}`);
+
+      const patronInflamatorio = ferrF && ferrF.dir==='alto' &&
+        ((feF && feF.dir==='bajo') || (transfF && transfF.dir==='bajo') || (tibcF && tibcF.dir==='bajo'));
+      const patronFerropenico = feF && feF.dir==='bajo' &&
+        ((transfF && transfF.dir==='alto') || (tibcF && tibcF.dir==='alto')) &&
+        (!satF || satF.dir==='bajo') && (!ferrF || ferrF.dir!=='alto');
+
+      let interp;
+      if(patronInflamatorio){
+        interp = 'perfil férrico compatible con anemia de trastornos crónicos/inflamación (hierro y transferrina/TIBC bajos con ferritina elevada como reactante de fase aguda); correlacionar con PCR y proceso inflamatorio o infeccioso de base, no indicar suplementación de hierro sin estudio adicional';
+      } else if(patronFerropenico){
+        interp = 'perfil férrico compatible con ferropenia (hierro bajo con transferrina/TIBC elevados y saturación baja); investigar causa de pérdida (ej. sangrado digestivo) y valorar suplementación de hierro';
+      } else {
+        const bits = [];
+        if(feF && feF.dir) bits.push(feF.dir==='bajo' ? 'hierro sérico bajo' : 'hierro sérico elevado');
+        if(transfF && transfF.dir) bits.push(transfF.dir==='bajo' ? 'transferrina baja' : 'transferrina elevada');
+        if(satF && satF.dir) bits.push(satF.dir==='bajo' ? 'saturación de transferrina baja' : 'saturación de transferrina elevada');
+        if(tibcF && tibcF.dir) bits.push(tibcF.dir==='bajo' ? 'TIBC baja' : 'TIBC elevada');
+        if(uibcF && uibcF.dir) bits.push(uibcF.dir==='bajo' ? 'UIBC baja' : 'UIBC elevada');
+        if(ferrF && ferrF.dir) bits.push(ferrF.dir==='bajo' ? 'ferritina baja (depósitos disminuidos)' : 'ferritina elevada (reactante de fase aguda o sobrecarga)');
+        interp = `alteración del metabolismo del hierro (${bits.join(', ')}); correlacionar hierro, transferrina/TIBC, saturación y ferritina en conjunto para diferenciar ferropenia de anemia de trastornos crónicos`;
+      }
+      sentences.push(`${laboRed(partes.join(', '))}: ${interp}.`);
+      ['Fe','transferrina','Sat Transf','TIBC','UIBC','ferritina'].forEach(c=>consumed.add(c));
+    }
+
     Object.keys(LABO_EXPLAIN).forEach(code=>{
       if(consumed.has(code)) return;
       const f = byCode[code];
@@ -1102,7 +1142,8 @@ function fld(id){ return document.getElementById(id); }
 
   function laboR1(n){ return Math.round(n*10)/10; }
   function laboWinterExpected(hco3){ return {low: laboR1(1.5*hco3+8-2), high: laboR1(1.5*hco3+8+2)}; }
-  function laboBuildAcidBase(v){
+  function laboBuildAcidBase(v, opts){
+    opts = opts || {};
     if(v.ph==null || v.pco2==null || v.hco3==null) return null;
     const ph=v.ph, pco2=v.pco2, hco3=v.hco3;
     const acidemia = ph<7.35, alcalemia = ph>7.45;
@@ -1112,9 +1153,13 @@ function fld(id){ return document.getElementById(id); }
     } else if(alcalemia){
       primario = (hco3>26) ? 'alcalosis metabólica' : ((pco2<35) ? 'alcalosis respiratoria' : 'alcalemia (trastorno mixto, a definir con clínica)');
     } else if(pco2>45 && hco3>26){
-      primario = 'trastorno mixto (acidosis respiratoria + alcalosis metabólica) con pH compensado';
+      primario = opts.showMixedValues
+        ? `trastorno mixto opuesto [acidosis respiratoria (pCO2: ${laboFmtNumber(pco2)}) + alcalosis metabólica (HCO3: ${laboFmtNumber(hco3)})] con pH compensado`
+        : 'trastorno mixto opuesto (acidosis respiratoria + alcalosis metabólica) con pH compensado';
     } else if(pco2<35 && hco3<22){
-      primario = 'trastorno mixto (alcalosis respiratoria + acidosis metabólica) con pH compensado';
+      primario = opts.showMixedValues
+        ? `trastorno mixto opuesto [alcalosis respiratoria (pCO2: ${laboFmtNumber(pco2)}) + acidosis metabólica (HCO3: ${laboFmtNumber(hco3)})] con pH compensado`
+        : 'trastorno mixto opuesto (alcalosis respiratoria + acidosis metabólica) con pH compensado';
     } else {
       primario = 'equilibrio ácido-base dentro de parámetros normales';
     }
@@ -1157,6 +1202,47 @@ function fld(id){ return document.getElementById(id); }
       if(hipoxTxt) parts.push(hipoxTxt);
     }
     return parts.join(' ');
+  }
+
+  function laboBuildEquationsList(v){
+    const f = laboFmtNumber;
+    const lines = [];
+    if(v.hco3!=null){
+      const win = laboWinterExpected(v.hco3);
+      lines.push(`Ac. Met. (Winter): pCO2 esp. = 1.5×HCO3 + 8 ± 2 = 1.5×${f(v.hco3)} + 8 ± 2 ≈ ${f(win.low)}–${f(win.high)} mmHg`);
+      const dHco3Alc = laboR1(v.hco3-24);
+      const expPco2Alc = laboR1(40 + dHco3Alc*0.6);
+      lines.push(`Alc. Met.: ΔpCO2 = ΔHCO3 × 0.6 = (${f(v.hco3)}−24) × 0.6 ≈ ${f(laboR1(dHco3Alc*0.6))} → pCO2 esp. ≈ ${f(expPco2Alc)} mmHg`);
+    }
+    if(v.pco2!=null){
+      const dAg = laboR1(v.pco2-40);
+      const expAcuteResp = laboR1(24 + dAg*0.1), expChronicResp = laboR1(24 + dAg*0.3);
+      lines.push(`Ac. Resp. aguda: ΔHCO3 = ΔpCO2 × 0.1 (corregida ×0.3) = (${f(v.pco2)}−40) × 0.1/0.3 → HCO3 esp. ≈ ${f(expAcuteResp)} mEq/L (aguda) / ≈ ${f(expChronicResp)} mEq/L (corregida)`);
+      const dAl = laboR1(40-v.pco2);
+      const expAcuteAlc = laboR1(24 - dAl*0.2), expChronicAlc = laboR1(24 - dAl*0.4);
+      lines.push(`Alc. Resp. aguda: ΔHCO3 = ΔpCO2 × 0.2 (corregida ×0.4) = (40−${f(v.pco2)}) × 0.2/0.4 → HCO3 esp. ≈ ${f(expAcuteAlc)} mEq/L (aguda) / ≈ ${f(expChronicAlc)} mEq/L (corregida)`);
+    }
+    if(v.po2!=null && v.fio2!=null && v.fio2>0){
+      const pafi = Math.round((v.po2/v.fio2)*10000)/100;
+      lines.push(`PAFI = pO2/FiO2 × 100 = ${f(v.po2)}/${f(v.fio2)} × 100 ≈ ${f(pafi)}`);
+    }
+    if(v.edad!=null){
+      const esp = laboR1(102-(0.33*v.edad));
+      const extra = v.po2!=null ? `; PO2 medida ${f(v.po2)} mmHg` : '';
+      lines.push(`PO2 esperada por edad = 102 − (0.33 × ${f(v.edad)}) ≈ ${f(esp)} mmHg${extra}`);
+    }
+    return lines;
+  }
+
+  function laboBuildGasResultHtml(v, opts){
+    const interp = laboBuildAcidBase(v, opts);
+    if(!interp) return '';
+    const eqLines = laboBuildEquationsList(v);
+    let html = interp;
+    if(eqLines.length){
+      html += `<br><br><b>Ecuaciones y datos del paciente</b>:<br>` + eqLines.map(l=>`• ${l}`).join('<br>');
+    }
+    return html;
   }
 
   function laboProcesar(){
@@ -1269,7 +1355,7 @@ function fld(id){ return document.getElementById(id); }
 
     const byPos = (a,b)=> (a.pos ?? 0) - (b.pos ?? 0);
     const line2Items = found.filter(f=>f.l2).sort(byPos);
-    const line1Items = found.filter(f=>f.l1).concat(extras).sort(byPos);
+    const line1Items = found.filter(f=>f.l1 || f.abnormal).concat(extras).sort(byPos);
 
     const liquidosBlocks = laboBuildLiquidosBlocks(flat);
     const textStudyResult = laboBuildTextStudyBlocks(flat, laboFullMode);
@@ -1311,7 +1397,7 @@ function fld(id){ return document.getElementById(id); }
     }
 
     const line2Html = buildLine(line2Items);
-    const line1Html = buildLine(line1Items.filter(x=>x.l1));
+    const line1Html = buildLine(line1Items.filter(x=>x.l1 || x.abnormal));
 
     let out = '';
     if(line2Html) out += `<span style="${LABO_FONT}"><b>LABORATORIO COMPLETO:</b><br>${line2Html}</span>`;
@@ -1338,10 +1424,10 @@ function fld(id){ return document.getElementById(id); }
       edad: age,
       fio2: fio2,
     };
-    const abgInterp = laboBuildAcidBase(gasV);
+    const abgInterp = laboBuildAcidBase(gasV, {showMixedValues:true});
     if(abgInterp){
       if(out) out += '<br><br>';
-      out += `<span style="${LABO_FONT}"><b>Interpretación gasométrica</b>: ${abgInterp}</span>`;
+      out += `<span style="${LABO_FONT}"><b>INTERPRETACIÓN GASOMÉTRICA</b>: ${abgInterp}</span>`;
     }
     if(gasV.ph!=null)  fld('gcPh').value = gasV.ph;
     if(gasV.pco2!=null) fld('gcPco2').value = gasV.pco2;
@@ -1349,6 +1435,11 @@ function fld(id){ return document.getElementById(id); }
     if(gasV.po2!=null)  fld('gcPo2').value = gasV.po2;
     if(gasV.edad!=null) fld('gcEdad').value = gasV.edad;
     if(gasV.fio2!=null) fld('gcFio2').value = gasV.fio2;
+
+    if(gasV.ph!=null && gasV.pco2!=null && gasV.hco3!=null){
+      $gasCalcDetails.open = true;
+      $gcResultado.innerHTML = laboBuildGasResultHtml(gasV, {showMixedValues:false});
+    }
 
     const explicaciones = laboBuildExplicaciones(found);
     if(explicaciones.length){
@@ -1359,12 +1450,13 @@ function fld(id){ return document.getElementById(id); }
     $output.innerHTML = out;
 
     const extrasCount = extras.length;
-    const line1CoreCount = line1Items.length - extrasCount;
+    const catalogAlteradosFueraCore = found.filter(f=>!f.l1 && f.abnormal).length;
+    const line1CoreCount = found.filter(f=>f.l1).length;
     const liqTxt = liquidosBlocks.length ? ` Líquidos de punción: ${liquidosBlocks.length} estudio(s).` : '';
     const uroTxt = textStudyBlocks.length ? ` Uroanálisis/urocultivo: ${textStudyBlocks.length} estudio(s).` : '';
     const gasaTxt = gasaBlock ? ' GASA calculado.' : (ascAlb!=null ? ' Falta el laboratorio plasmático para calcular el GASA.' : '');
     const abgTxt = abgInterp ? ' Se detectó y analizó el estado ácido-base (ver sección 4 para ajustar a mano).' : '';
-    $status.textContent = `Listo. Renglón completo: ${line2Items.length} dato(s). Renglón resumen: ${line1CoreCount} del listado + ${extrasCount} adicional(es) alterado(s).${liqTxt}${uroTxt}${gasaTxt}${abgTxt}`;
+    $status.textContent = `Listo. Renglón completo: ${line2Items.length} dato(s). Renglón resumen: ${line1CoreCount} del listado + ${catalogAlteradosFueraCore} alterado(s) adicionales del catálogo + ${extrasCount} adicional(es) alterado(s) fuera de catálogo.${liqTxt}${uroTxt}${gasaTxt}${abgTxt}`;
   }
 
   const SECTION_STOPWORDS = [
@@ -1460,14 +1552,13 @@ function fld(id){ return document.getElementById(id); }
   $gasaInput.addEventListener('input', laboAutoProcesarGasa);
   $gasaInput.addEventListener('paste', laboAutoProcesarGasa);
 
-  const $gcResultado = fld('gcResultado');
   function laboNumInput(id){
     const v = fld(id).value;
     if(v==='' || v==null) return null;
     const n = parseFloat(v.toString().replace(',', '.'));
     return isNaN(n) ? null : n;
   }
-  fld('gcCalcularBtn').addEventListener('click', ()=>{
+  function laboGcCalcular(){
     const v = {
       ph: laboNumInput('gcPh'),
       pco2: laboNumInput('gcPco2'),
@@ -1476,12 +1567,25 @@ function fld(id){ return document.getElementById(id); }
       fio2: laboNumInput('gcFio2'),
       edad: laboNumInput('gcEdad'),
     };
+    if(v.ph==null && v.pco2==null && v.hco3==null && v.po2==null && v.fio2==null && v.edad==null){
+      $gcResultado.innerHTML = '';
+      return;
+    }
     if(v.ph==null || v.pco2==null || v.hco3==null){
       $gcResultado.innerHTML = 'Cargá al menos pH, pCO2 y HCO3 para calcular.';
       return;
     }
-    const interp = laboBuildAcidBase(v);
-    $gcResultado.innerHTML = interp || 'No se pudo calcular con los valores cargados.';
+    const html = laboBuildGasResultHtml(v, {showMixedValues:false});
+    $gcResultado.innerHTML = html || 'No se pudo calcular con los valores cargados.';
+  }
+  fld('gcCalcularBtn').addEventListener('click', laboGcCalcular);
+  let gcAutoTimer = null;
+  function laboGcAutoCalcular(){
+    if(gcAutoTimer) clearTimeout(gcAutoTimer);
+    gcAutoTimer = setTimeout(laboGcCalcular, 150);
+  }
+  ['gcPh','gcPco2','gcHco3','gcPo2','gcFio2','gcEdad'].forEach(id=>{
+    fld(id).addEventListener('input', laboGcAutoCalcular);
   });
   fld('gcLimpiarBtn').addEventListener('click', ()=>{
     ['gcPh','gcPco2','gcHco3','gcPo2','gcFio2','gcEdad'].forEach(id=>{ fld(id).value = ''; });
