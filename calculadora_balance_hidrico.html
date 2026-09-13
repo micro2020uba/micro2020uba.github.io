@@ -68,7 +68,7 @@
 
   .hero{
     display:grid;
-    grid-template-columns: 1fr 460px;
+    grid-template-columns: 1fr 360px;
     align-items:start;
     gap:14px;
     margin-bottom:14px;
@@ -94,7 +94,7 @@
     flex-direction:row;
     gap:14px;
   }
-  .patient-section.php-section{ flex:0 0 220px; }
+  .patient-section.php-section{ flex:0 0 190px; }
   .patient-section.bh-section{
     flex:1;
     padding:0;
@@ -106,7 +106,8 @@
     display:flex;
     flex-direction:column;
     justify-content:center;
-    flex:0 0 auto;
+    flex:1 1 auto;
+    min-width:180px;
   }
   .bh-goal select{ width:100%; }
   .bh-actual{
@@ -190,31 +191,31 @@
     border:1px solid var(--border);
     border-radius:var(--radius);
     box-shadow:var(--shadow);
-    padding:12px 14px;
+    padding:9px 11px;
   }
   .ref-card h2{
-    font-size:.68rem;
+    font-size:.64rem;
     text-transform:uppercase;
     letter-spacing:.05em;
     color:var(--ink-soft);
-    margin:0 0 8px;
+    margin:0 0 6px;
     font-weight:700;
   }
-  table.ref-table{width:100%; border-collapse:collapse; font-size:.82rem;}
-  table.ref-table.ref-table-split .ref-col2{padding-left:16px;}
+  table.ref-table{width:100%; border-collapse:collapse; font-size:.72rem;}
+  table.ref-table.ref-table-split .ref-col2{padding-left:9px;}
   table.ref-table.ref-table-split th.ref-col2, table.ref-table.ref-table-split td.ref-col2{border-left:1px solid var(--border);}
   table.ref-table th{
     text-align:left;
-    font-size:.65rem;
+    font-size:.58rem;
     color:var(--ink-soft);
     text-transform:uppercase;
-    letter-spacing:.03em;
+    letter-spacing:.02em;
     font-weight:600;
-    padding:2px 4px 5px;
+    padding:1px 3px 4px;
     border-bottom:1px solid var(--border);
   }
   table.ref-table td{
-    padding:3px 4px;
+    padding:2px 3px;
     font-family:'IBM Plex Mono', monospace;
     color:var(--ink);
   }
@@ -583,6 +584,60 @@
   }
   .toast.show{opacity:1;}
 
+  /* ---------- Cómo se calculan AE y PI ---------- */
+  .formula-card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:16px 18px;
+    margin-top:16px;
+  }
+  .formula-card h2{
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    color:var(--ink-soft);
+    margin:0 0 6px;
+    font-weight:700;
+  }
+  .formula-desc{
+    font-size:.8rem;
+    color:var(--ink-soft);
+    margin:0 0 14px;
+    line-height:1.5;
+  }
+  .formula-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:22px;
+  }
+  .formula-item + .formula-item{border-left:1px solid var(--border); padding-left:22px;}
+  .formula-eq{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:.86rem;
+    font-weight:600;
+    background:#F7F9FB;
+    border:1px solid var(--border);
+    border-radius:7px;
+    padding:8px 10px;
+    margin-bottom:10px;
+  }
+  .formula-eq .fname{font-weight:700; color:var(--auto);}
+  .formula-live{display:flex; flex-direction:column; gap:3px;}
+  .formula-line{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:.78rem;
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
+  }
+  .formula-line strong{font-weight:700;}
+  @media (max-width: 640px){
+    .formula-grid{grid-template-columns:1fr;}
+    .formula-item + .formula-item{border-left:none; padding-left:0; border-top:1px solid var(--border); padding-top:14px; margin-top:4px;}
+  }
+
   footer.disclaimer{
     margin-top:16px;
     font-size:.72rem;
@@ -677,7 +732,36 @@
         <option value="none">No indicado</option>
       </select>
     </div>
-    <div class="atb-hint">La frecuencia marca automáticamente en qué bloques se administra el ATB — tildá o destildá cada casillero si el horario real difiere. Con "Cada 8 hs" (dosis a las 8, 16 y 24 hs) el casillero queda marcado en los cuadrantes de 12, 18 y 24 hs, porque la dosis de las 16 hs cae dentro del bloque 12–18 hs.</div>
+    <div class="field">
+      <label for="atbStartHour">Hora real de inicio</label>
+      <select id="atbStartHour">
+        <option value="0" selected>00:00 hs</option>
+        <option value="1">01:00 hs</option>
+        <option value="2">02:00 hs</option>
+        <option value="3">03:00 hs</option>
+        <option value="4">04:00 hs</option>
+        <option value="5">05:00 hs</option>
+        <option value="6">06:00 hs</option>
+        <option value="7">07:00 hs</option>
+        <option value="8">08:00 hs</option>
+        <option value="9">09:00 hs</option>
+        <option value="10">10:00 hs</option>
+        <option value="11">11:00 hs</option>
+        <option value="12">12:00 hs</option>
+        <option value="13">13:00 hs</option>
+        <option value="14">14:00 hs</option>
+        <option value="15">15:00 hs</option>
+        <option value="16">16:00 hs</option>
+        <option value="17">17:00 hs</option>
+        <option value="18">18:00 hs</option>
+        <option value="19">19:00 hs</option>
+        <option value="20">20:00 hs</option>
+        <option value="21">21:00 hs</option>
+        <option value="22">22:00 hs</option>
+        <option value="23">23:00 hs</option>
+      </select>
+    </div>
+    <div class="atb-hint">Es la hora del reloj a la que arranca tu cuadrante "6 hs" (por ejemplo, si tu primer bloque cargado va de 6 a 12, poné 06:00). Con esa hora y la frecuencia, la calculadora asume que el ATB se da a horarios fijos del reloj (p. ej. cada 8 hs → 8, 16 y 24 hs) y tilda sola los cuadrantes que corresponden. Tildá o destildá cualquier casillero si el horario real difiere.</div>
   </div>
 
   <div class="baseline-card" id="baselineCard">
@@ -742,6 +826,21 @@
     <div id="historialList"><span class="hist-empty">Todavía no guardaste ningún registro.</span></div>
   </div>
 
+  <div class="formula-card">
+    <h2>Cómo se calculan el agua endógena (AE) y las pérdidas insensibles (PI)</h2>
+    <p class="formula-desc">Los dos dependen solo del <strong>peso</strong> cargado arriba y de las horas transcurridas desde el inicio del plan (6, 12, 18 y 24 hs) — no de lo que cargues en los bloques. Acá abajo se ve, con los valores actuales, cómo se llega al número que aparece en cada cuadrante.</p>
+    <div class="formula-grid">
+      <div class="formula-item">
+        <div class="formula-eq"><span class="fname">AE</span> = Peso (kg) × 5 ml/kg/día × (hora ÷ 24)</div>
+        <div class="formula-live" id="aeFormulaLive"></div>
+      </div>
+      <div class="formula-item">
+        <div class="formula-eq"><span class="fname">PI</span> = Peso (kg) × 10 ml/kg/día × (hora ÷ 24)</div>
+        <div class="formula-live" id="piFormulaLive"></div>
+      </div>
+    </div>
+  </div>
+
   <footer class="disclaimer">Herramienta de apoyo al cálculo — no reemplaza el criterio clínico. Balance neutro (+): 0 a +499 ml · Positivo: ≥ +500 ml · Neutro (−): 0 a −499 ml · Negativo: ≤ −500 ml. Los datos cargados y el historial se guardan solo en este dispositivo/navegador; los registros del historial se borran solos a los 30 días.</footer>
 </div>
 
@@ -749,6 +848,7 @@
 (function(){
   const PLAN_VOLUMES = {7:500, 14:1000, 21:1500, 28:2000};
   const HOURS = [6,12,18,24];
+  const HOUR_RANGES = ['00-6hs','6-12hs','12-18hs','18-00hs'];
   const QCOLORS = ['#2F9E44','#1C7ED6','#C2410C','#152A52'];
   const ATB_DOSE = 100; // los ATB siempre se disuelven en 100 ml — constante, no editable
 
@@ -775,6 +875,7 @@
     peso: 60,
     phpPlan: 21,
     atbFreq: '12',
+    atbStartHour: 0,
     bhGoal: 'neutro-pos',
     baseline: { enabled:false, hourIndex:1, prev:{ vo:0, alim:0, transf:0, exp:0, atb:0, diuresis:0, catarsis:0, vomitos:0, drenajes:0 } },
     blocks: [0,1,2,3].map(()=>({
@@ -875,6 +976,7 @@
     if (saved.peso) state.peso = saved.peso;
     if (saved.phpPlan) state.phpPlan = saved.phpPlan;
     if (saved.atbFreq) state.atbFreq = saved.atbFreq;
+    if (saved.atbStartHour !== undefined) state.atbStartHour = Number(saved.atbStartHour) || 0;
     if (saved.bhGoal) state.bhGoal = saved.bhGoal;
     if (saved.baseline){
       state.baseline.enabled = !!saved.baseline.enabled;
@@ -893,16 +995,25 @@
     }
   })();
 
-  const ATB_DEFAULTS = {
-    '6':   [true,true,true,true],
-    '8':   [false,true,true,true],
-    '12':  [false,true,false,true],
-    '24':  [false,false,false,true],
-    'none':[false,false,false,false]
-  };
+  // Calcula, para cada uno de los 4 cuadrantes, si le corresponde una dosis de
+  // ATB — asumiendo que el ATB se administra a horarios fijos del reloj que son
+  // múltiplos de la frecuencia (p. ej. cada 8 hs -> 8, 16, 24 hs), y que el
+  // cuadrante "6 hs" arranca en atbStartHour (hora real del reloj).
+  function computeAtbPattern(freq, startHour){
+    const n = Number(freq);
+    if (freq === 'none' || !n) return [false,false,false,false];
+    const start = ((Number(startHour)||0) % 24 + 24) % 24;
+    return [0,1,2,3].map(i=>{
+      for (let e = 6*i + 1; e <= 6*(i+1); e++){
+        const h = (start + e) % 24;
+        if (h % n === 0) return true;
+      }
+      return false;
+    });
+  }
   if (!_blocksRestored) applyAtbDefaults(state.atbFreq);
   function applyAtbDefaults(freq){
-    const pattern = ATB_DEFAULTS[freq] || ATB_DEFAULTS.none;
+    const pattern = computeAtbPattern(freq, state.atbStartHour);
     state.blocks.forEach((b,i)=> b.atb = pattern[i]);
   }
 
@@ -995,6 +1106,7 @@
 
   function buildPanel(qIndex){
     const hour = HOURS[qIndex];
+    const range = HOUR_RANGES[qIndex];
     const color = QCOLORS[qIndex];
     const panel = document.createElement('div');
     panel.className = 'panel unconfirmed';
@@ -1003,7 +1115,7 @@
     const head = document.createElement('div');
     head.className = 'panel-head';
     head.style.background = color;
-    head.innerHTML = `<span class="hour">${hour} hs</span>`;
+    head.innerHTML = `<span class="hour">${hour} hs (${range})</span>`;
     const confirmLabel = document.createElement('label');
     confirmLabel.className = 'confirm';
     confirmLabel.innerHTML = `<input type="checkbox" data-role="confirm" data-q="${qIndex}"> Confirmar bloque`;
@@ -1024,7 +1136,7 @@
     const ingRowsWrap = document.createElement('div');
     ING_FIELDS.forEach(f=>{
       ingRowsWrap.appendChild(buildRow(f,'ing'));
-      if (f.type==='input') ingRowsWrap.appendChild(buildBreakdownRow(f));
+      if (f.type==='input' || f.type==='atb') ingRowsWrap.appendChild(buildBreakdownRow(f));
     });
     colIng.appendChild(ingRowsWrap);
     const ingTotal = document.createElement('div');
@@ -1183,6 +1295,21 @@
     'neutro-neg': 'Neutro (−)',
   };
 
+  function renderFormulaLive(){
+    const peso = Number(state.peso)||0;
+    const aeEl = document.getElementById('aeFormulaLive');
+    const piEl = document.getElementById('piFormulaLive');
+    if (!aeEl || !piEl) return;
+    aeEl.innerHTML = HOURS.map((h,i)=>{
+      const val = peso*5*(h/24);
+      return `<div class="formula-line" style="color:${QCOLORS[i]}"><span>${fmt(peso)} × 5 × (${h}÷24) =</span><strong>${fmt(val)} ml</strong></div>`;
+    }).join('');
+    piEl.innerHTML = HOURS.map((h,i)=>{
+      const val = peso*10*(h/24);
+      return `<div class="formula-line" style="color:${QCOLORS[i]}"><span>${fmt(peso)} × 10 × (${h}÷24) =</span><strong>${fmt(val)} ml</strong></div>`;
+    }).join('');
+  }
+
   function renderBreakdown(el, key, uptoIndex){
     const start = getStartIndex();
     const parts = [];
@@ -1191,7 +1318,7 @@
       if (prevVal !== 0) parts.push({v:prevVal, prev:true});
     }
     for (let i=start;i<=uptoIndex;i++){
-      const v = valueOf(key, state.blocks[i]);
+      const v = key === 'atb' ? atbDeltaFor(i) : valueOf(key, state.blocks[i]);
       if (v !== 0) parts.push({v, i});
     }
     if (parts.length === 0){ el.innerHTML = ''; return; }
@@ -1338,6 +1465,7 @@
       td.nextElementSibling.classList.toggle('active', isActive);
     });
 
+    renderFormulaLive();
     buildReport(lastConfirmed);
     saveState();
   }
@@ -1397,6 +1525,11 @@
   });
   document.getElementById('atbFreq').addEventListener('change', e=>{
     state.atbFreq = e.target.value;
+    applyAtbDefaults(state.atbFreq);
+    recalcAll();
+  });
+  document.getElementById('atbStartHour').addEventListener('change', e=>{
+    state.atbStartHour = Number(e.target.value) || 0;
     applyAtbDefaults(state.atbFreq);
     recalcAll();
   });
@@ -1493,6 +1626,7 @@
     state.peso = 60;
     state.phpPlan = 21;
     state.atbFreq = '12';
+    state.atbStartHour = 0;
     state.bhGoal = 'neutro-pos';
     state.baseline = { enabled:false, hourIndex:1, prev:{ vo:0, alim:0, transf:0, exp:0, atb:0, diuresis:0, catarsis:0, vomitos:0, drenajes:0 } };
     state.blocks = [0,1,2,3].map(()=>({
@@ -1632,6 +1766,7 @@
     document.getElementById('peso').value = state.peso;
     document.getElementById('phpPlan').value = state.phpPlan;
     document.getElementById('atbFreq').value = state.atbFreq;
+    document.getElementById('atbStartHour').value = state.atbStartHour;
     document.getElementById('bhGoal').value = state.bhGoal;
     document.getElementById('baselineEnabled').checked = state.baseline.enabled;
     document.getElementById('baselineHour').value = state.baseline.hourIndex;
