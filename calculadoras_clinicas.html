@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <!--
- Calculadoras clínicas: ECG (frecuencia y eje), GASA, SOFA, Medio interno/Oximetría.
- Versión: 1 (13/09/2026)
+  Versión: 10 (13/09/2026)
 -->
 <html lang="es-AR">
 <head>
@@ -201,30 +200,97 @@
     <div data-view="eje">
       <button type="button" class="backBtn" data-back>← Volver</button>
       <h2 class="viewTitle">ECG — Eje cardíaco</h2>
-      <p class="viewSub">Método de las derivaciones I y aVF — calculadora dinámica: escribí las amplitudes o arrastrá el vector</p>
+      <p class="viewSub">Calculadora dinámica y visual, con dos métodos posibles</p>
 
-      <div style="display:grid;grid-template-columns:minmax(260px,340px) 1fr;gap:20px;align-items:start;" id="ejeGridWrap">
+      <div class="btn-toggle-row" id="ejeMethodRow">
+        <button type="button" class="btn-secondary active" data-ejemethod="amp">Método por amplitudes (preciso)</button>
+        <button type="button" class="btn-secondary" data-ejemethod="quad">Método rápido por cuadrantes (+/−)</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:minmax(280px,360px) 1fr;gap:20px;align-items:start;" id="ejeGridWrap">
         <div>
-          <div class="panel-box">
-            <h3>Amplitudes netas (QRS)</h3>
-            <div class="field-grid">
-              <label>Derivación I (mm) <input type="number" step="0.5" id="ejeI" placeholder="ej: 5"></label>
-              <label>Derivación aVF (mm) <input type="number" step="0.5" id="ejeAvf" placeholder="ej: 5"></label>
+
+          <!-- ---- Sub-vista: método por amplitudes ---- -->
+          <div id="ejeAmpPanel">
+            <div class="panel-box">
+              <h3>Amplitudes netas (QRS)</h3>
+              <div class="field-grid">
+                <label>Derivación I (mm) <input type="number" step="0.5" id="ejeI" placeholder="ej: 5"></label>
+                <label>Derivación aVF (mm) <input type="number" step="0.5" id="ejeAvf" placeholder="ej: 5"></label>
+              </div>
+              <p class="note">Se calcula automáticamente a medida que escribís los valores. También podés arrastrar directamente la punta de la flecha sobre el círculo.</p>
+              <div class="row-controls">
+                <button type="button" class="btn-secondary" id="ejeLimpiarBtn">Limpiar</button>
+              </div>
             </div>
-            <p class="note">Amplitud neta = altura de la onda R positiva menos la profundidad de la onda S/Q negativa, en esa derivación. También podés arrastrar directamente la punta de la flecha sobre el círculo.</p>
-            <div class="row-controls">
-              <button type="button" class="btn-secondary" id="ejeLimpiarBtn">Limpiar</button>
-            </div>
+
+            <details class="panel-box" style="cursor:default;">
+              <summary style="cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-dark);">¿Cómo medir la amplitud neta? — instrucciones paso a paso</summary>
+              <ol style="font-size:11.5px;line-height:1.6;padding-left:18px;margin:10px 0 0;">
+                <li>Elegí el complejo QRS más representativo (bien formado, sin artefactos) en la derivación I.</li>
+                <li>Medí en milímetros la altura de la onda <b>R</b> (deflexión positiva) usando los cuadraditos chicos del papel (1 cuadradito = 1 mm).</li>
+                <li>Medí en milímetros la profundidad de las ondas <b>Q y/o S</b> (deflexiones negativas) del mismo complejo.</li>
+                <li>Calculá la <b>amplitud neta</b> = R − (Q + S). Si el complejo es solo positivo, Q y S valen 0. Si es solo negativo, R vale 0 y el resultado da negativo.</li>
+                <li>Repetí los pasos 1 a 4 para la derivación <b>aVF</b>.</li>
+                <li>Cargá ambos valores (con su signo) en los campos de la izquierda.</li>
+              </ol>
+              <p class="note" style="margin-top:10px;"><b>Ejemplo:</b> en la derivación I hay una onda R de 8 mm y una onda S de 2 mm → amplitud neta = 8 − 2 = <b>+6 mm</b>. En aVF hay una onda R de 3 mm y una onda S de 7 mm → amplitud neta = 3 − 7 = <b>−4 mm</b>. Con esos valores, el eje quedaría en un ángulo negativo (hacia la izquierda).</p>
+              <p class="note">Cuanto más grande (en valor absoluto) sea la amplitud cargada, más "estirado" se dibuja el vector hacia el borde del círculo; el ángulo resultante no depende de la magnitud, solo de la relación entre ambos valores.</p>
+            </details>
+
+            <div id="ejeResultado" class="result-box"></div>
           </div>
-          <div id="ejeResultado" class="result-box"></div>
+
+          <!-- ---- Sub-vista: método rápido por cuadrantes ---- -->
+          <div id="ejeQuadPanel" style="display:none;">
+            <div class="panel-box">
+              <h3>Polaridad del QRS</h3>
+              <p class="note" style="margin-top:0;">Mirá el complejo QRS en cada derivación y marcá si predomina la deflexión positiva, la negativa, o si es isodifásico (R y S de amplitud similar).</p>
+
+              <div style="margin-bottom:12px;">
+                <div style="font-size:11px;font-weight:700;color:var(--ink);margin-bottom:6px;">Derivación I</div>
+                <div class="btn-toggle-row" id="ejeQuadIRow">
+                  <button type="button" class="btn-secondary" data-quadi="pos">Positivo</button>
+                  <button type="button" class="btn-secondary" data-quadi="neg">Negativo</button>
+                  <button type="button" class="btn-secondary" data-quadi="iso">Isodifásico</button>
+                </div>
+              </div>
+
+              <div style="margin-bottom:6px;">
+                <div style="font-size:11px;font-weight:700;color:var(--ink);margin-bottom:6px;">Derivación aVF</div>
+                <div class="btn-toggle-row" id="ejeQuadFRow">
+                  <button type="button" class="btn-secondary" data-quadf="pos">Positivo</button>
+                  <button type="button" class="btn-secondary" data-quadf="neg">Negativo</button>
+                  <button type="button" class="btn-secondary" data-quadf="iso">Isodifásico</button>
+                </div>
+              </div>
+
+              <div id="ejeQuadIIWrap" style="display:none;margin-top:12px;border-top:1px dashed var(--accent-dark);padding-top:10px;">
+                <div style="font-size:11px;font-weight:700;color:var(--accent-dark);margin-bottom:6px;">Zona ambigua (I positivo, aVF negativo): revisá la derivación II para precisar</div>
+                <div class="btn-toggle-row" id="ejeQuadIIRow">
+                  <button type="button" class="btn-secondary" data-quadii="pos">II Positivo</button>
+                  <button type="button" class="btn-secondary" data-quadii="neg">II Negativo</button>
+                  <button type="button" class="btn-secondary" data-quadii="iso">II Isodifásico</button>
+                </div>
+              </div>
+
+              <div class="row-controls">
+                <button type="button" class="btn-secondary" id="ejeQuadLimpiarBtn">Limpiar</button>
+              </div>
+              <p class="note">Este método es rápido pero aproximado: ubica el eje dentro de un rango (cuadrante), no en un valor exacto. Para un ángulo preciso, usá el método por amplitudes.</p>
+            </div>
+            <div id="ejeQuadResultado" class="result-box"></div>
+          </div>
+
         </div>
         <div class="panel-box" style="display:flex;flex-direction:column;align-items:center;">
           <h3 style="align-self:flex-start;">Diagrama hexaxial</h3>
           <svg id="ejeSvg" viewBox="0 0 320 320" style="width:100%;max-width:380px;touch-action:none;user-select:none;"></svg>
-          <p class="note" style="text-align:center;">Arrastrá la punta de la flecha (círculo verde) para estimar el eje visualmente.</p>
+          <p class="note" id="ejeSvgNote" style="text-align:center;">Arrastrá la punta de la flecha (círculo verde) para estimar el eje visualmente.</p>
         </div>
       </div>
     </div>
+
 
     <!-- ============ VISTA: GASA ============ -->
     <div data-view="gasa">
@@ -259,16 +325,23 @@
         <h3>1. Respiratorio</h3>
         <div class="btn-toggle-row" id="sofaRespModeRow">
           <button type="button" class="btn-secondary active" data-respmode="pafi">PaO₂/FiO₂ (PAFI)</button>
-          <button type="button" class="btn-secondary" data-respmode="safi">SaO₂/FiO₂</button>
+          <button type="button" class="btn-secondary" data-respmode="safi">SaO₂/FiO₂ (SAFI)</button>
         </div>
-        <div class="field-grid">
-          <label id="sofaPafiWrap">PaO₂/FiO₂ (mmHg) <input type="number" step="1" id="sofaPafi" placeholder="ej: 280"></label>
-          <label id="sofaSafiWrap" style="display:none;">SaO₂/FiO₂ <input type="number" step="1" id="sofaSafi" placeholder="ej: 250"></label>
+        <div class="field-grid" id="sofaPafiWrap">
+          <label>PaO₂ (mmHg) <input type="number" step="1" id="sofaPao2" placeholder="ej: 90"></label>
+          <label>FiO₂ (%) <input type="number" step="1" id="sofaFio2Pafi" placeholder="21 = aire ambiente"></label>
+        </div>
+        <div class="field-grid" id="sofaSafiWrap" style="display:none;">
+          <label>SaO₂ (%) <input type="number" step="1" id="sofaSao2" placeholder="ej: 96"></label>
+          <label>FiO₂ (%) <input type="number" step="1" id="sofaFio2Safi" placeholder="21 = aire ambiente"></label>
+        </div>
+        <div class="field-grid" style="margin-top:10px;">
           <label style="justify-content:center;flex-direction:row;align-items:center;gap:8px;">
             <input type="checkbox" id="sofaVentSoporte" style="width:auto;"> Con soporte ventilatorio (VM o CPAP)
           </label>
         </div>
-        <p class="note">Los puntajes 3 y 4 respiratorios requieren soporte ventilatorio. Si el cociente es ≤300 pero no hay soporte ventilatorio, el puntaje se limita a 2.</p>
+        <div id="sofaRespCalc" class="note" style="margin-top:8px;"></div>
+        <p class="note">Los puntajes 3 y 4 respiratorios requieren soporte ventilatorio. Si el cociente es ≤300 pero no hay soporte ventilatorio, el puntaje se limita a 2. Usá SaO₂/FiO₂ como alternativa cuando no haya gasometría arterial.</p>
       </div>
 
       <div class="panel-box">
@@ -418,6 +491,7 @@ function fmtFixed(n, dec){
       method = btn.getAttribute('data-fcmethod');
       $row.querySelectorAll('[data-fcmethod]').forEach(b=>b.classList.toggle('active', b===btn));
       Object.keys(wraps).forEach(k=> wraps[k].style.display = (k===method) ? '' : 'none');
+      calcularFc(true);
     });
   });
 
@@ -427,26 +501,26 @@ function fmtFixed(n, dec){
     return {label:'Frecuencia normal', cls:'badge-ok', txt:'dentro del rango normal (60–100 lpm).'};
   }
 
-  function calcularFc(){
+  function calcularFc(silent){
     let fc = null, detalle = '';
     if(method==='big'){
       const n = parseFloat(inputs.big.value);
-      if(!n || n<=0){ $resultado.innerHTML = '<p class="note" style="margin:0;">Ingresá la cantidad de cuadrados grandes entre dos ondas R consecutivas.</p>'; return; }
+      if(!n || n<=0){ if(!silent) $resultado.innerHTML = '<p class="note" style="margin:0;">Ingresá la cantidad de cuadrados grandes entre dos ondas R consecutivas.</p>'; else $resultado.innerHTML=''; return; }
       fc = 300/n;
       detalle = `FC = 300 ÷ ${fmt(n,2)} cuadrados grandes = <b>${fmt(fc)}</b> lpm (asume ritmo regular).`;
     } else if(method==='small'){
       const n = parseFloat(inputs.small.value);
-      if(!n || n<=0){ $resultado.innerHTML = '<p class="note" style="margin:0;">Ingresá la cantidad de cuadrados chicos entre dos ondas R consecutivas.</p>'; return; }
+      if(!n || n<=0){ if(!silent) $resultado.innerHTML = '<p class="note" style="margin:0;">Ingresá la cantidad de cuadrados chicos entre dos ondas R consecutivas.</p>'; else $resultado.innerHTML=''; return; }
       fc = 1500/n;
       detalle = `FC = 1500 ÷ ${fmt(n,2)} cuadrados chicos = <b>${fmt(fc)}</b> lpm (asume ritmo regular).`;
     } else if(method==='qrs6'){
       const n = parseFloat(inputs.qrs6.value);
-      if(!n || n<=0){ $resultado.innerHTML = '<p class="note" style="margin:0;">Ingresá la cantidad de complejos QRS contados en la tira de 6 segundos.</p>'; return; }
+      if(!n || n<=0){ if(!silent) $resultado.innerHTML = '<p class="note" style="margin:0;">Ingresá la cantidad de complejos QRS contados en la tira de 6 segundos.</p>'; else $resultado.innerHTML=''; return; }
       fc = n*10;
       detalle = `FC = ${fmt(n,0)} QRS × 10 = <b>${fmt(fc,0)}</b> lpm (método para ritmo irregular, ej. fibrilación auricular).`;
     } else if(method==='qrs10'){
       const n = parseFloat(inputs.qrs10.value);
-      if(!n || n<=0){ $resultado.innerHTML = '<p class="note" style="margin:0;">Ingresá la cantidad de complejos QRS contados en la tira de 10 segundos.</p>'; return; }
+      if(!n || n<=0){ if(!silent) $resultado.innerHTML = '<p class="note" style="margin:0;">Ingresá la cantidad de complejos QRS contados en la tira de 10 segundos.</p>'; else $resultado.innerHTML=''; return; }
       fc = n*6;
       detalle = `FC = ${fmt(n,0)} QRS × 6 = <b>${fmt(fc,0)}</b> lpm (método para ritmo irregular, ej. fibrilación auricular).`;
     }
@@ -454,18 +528,19 @@ function fmtFixed(n, dec){
     $resultado.innerHTML = `
       <div class="result-big">${fmt(fc,0)} lpm</div>
       <span class="badge ${clasif.cls}">${clasif.label}</span>
-      <p style="margin:10px 0 0;">${detalle}</p>
+      <p style="margin:10px 0 0;"><b>Cálculo:</b> ${detalle}</p>
       <p class="note" style="margin-top:8px;">${clasif.txt} Recordá correlacionar siempre con la clínica: dolor, síncope, inestabilidad hemodinámica o síntomas asociados definen la conducta, no el número aislado.</p>
     `;
   }
 
-  fld('fcCalcularBtn').addEventListener('click', calcularFc);
+  fld('fcCalcularBtn').addEventListener('click', ()=>calcularFc(false));
   fld('fcLimpiarBtn').addEventListener('click', ()=>{
     Object.values(inputs).forEach(i=>i.value='');
     $resultado.innerHTML = '';
   });
   Object.values(inputs).forEach(inp=>{
-    inp.addEventListener('keydown', e=>{ if(e.key==='Enter') calcularFc(); });
+    inp.addEventListener('input', ()=>calcularFc(true));
+    inp.addEventListener('keydown', e=>{ if(e.key==='Enter') calcularFc(false); });
   });
 })();
 
@@ -474,8 +549,10 @@ function fmtFixed(n, dec){
   const svg = fld('ejeSvg');
   const $I = fld('ejeI'), $aVF = fld('ejeAvf');
   const $resultado = fld('ejeResultado');
+  const $svgNote = fld('ejeSvgNote');
   const NS = 'http://www.w3.org/2000/svg';
   const cx=160, cy=160, R=120, SCALE=12; // SCALE: px por mm de amplitud (radio máx ~10mm)
+  let activeMethod = 'amp';
 
   const leads = [
     {ang:0,   pos:'I',   neg:''},
@@ -497,12 +574,16 @@ function fmtFixed(n, dec){
   }
 
   // fondo: círculos guía + líneas de derivaciones + marcas de grados
+  let wedgePath, arrowLine, handle;
   function buildStatic(){
     svg.innerHTML = '';
     // círculos guía
     [40,80,120].forEach(r=>{
       svg.appendChild(el('circle', {cx, cy, r, fill:'none', stroke:'#dcd6c8', 'stroke-width':1}));
     });
+    // sector sombreado (método de cuadrantes) — se dibuja detrás de las líneas de derivación
+    wedgePath = el('path', {d:'', fill:'#2f5d5a', 'fill-opacity':'0.14', stroke:'#2f5d5a', 'stroke-width':1, 'stroke-dasharray':'3 3'});
+    svg.appendChild(wedgePath);
     // líneas de derivaciones (diámetro completo)
     leads.forEach(l=>{
       const p1 = pt(l.ang, R+14), p2 = pt(l.ang+180, R+14);
@@ -520,14 +601,13 @@ function fmtFixed(n, dec){
     // centro
     svg.appendChild(el('circle',{cx,cy,r:2.5,fill:'#23302c'}));
 
-    // flecha (grupo)
-    const arrowLine = el('line', {id:'ejeArrowLine', x1:cx, y1:cy, x2:cx, y2:cy, stroke:'#c0392b', 'stroke-width':3, 'stroke-linecap':'round'});
+    // flecha
+    arrowLine = el('line', {id:'ejeArrowLine', x1:cx, y1:cy, x2:cx, y2:cy, stroke:'#c0392b', 'stroke-width':3, 'stroke-linecap':'round'});
     svg.appendChild(arrowLine);
-    const handle = el('circle', {id:'ejeHandle', cx, cy, r:9, fill:'#2f5d5a', stroke:'#fff', 'stroke-width':2, style:'cursor:grab;'});
+    handle = el('circle', {id:'ejeHandle', cx, cy, r:9, fill:'#2f5d5a', stroke:'#fff', 'stroke-width':2, style:'cursor:grab;'});
     svg.appendChild(handle);
-    return {arrowLine, handle};
   }
-  const {arrowLine, handle} = buildStatic();
+  buildStatic();
 
   function normAngle(a){
     a = a % 360;
@@ -559,19 +639,31 @@ function fmtFixed(n, dec){
     };
   }
 
+  function clearWedge(){ wedgePath.setAttribute('d',''); }
+  function drawWedge(a1, a2){
+    // dibuja un sector desde a1 a a2 (a1<a2, delta<=180), sentido horario
+    const p1 = pt(a1, R), p2 = pt(a2, R);
+    const large = (a2-a1) > 180 ? 1 : 0;
+    const d = `M${cx},${cy} L${p1.x},${p1.y} A${R},${R} 0 ${large} 1 ${p2.x},${p2.y} Z`;
+    wedgePath.setAttribute('d', d);
+  }
+
   function renderFromAngleMag(angle, mag){
+    clearWedge();
     const rPix = Math.max(6, Math.min(R, mag*SCALE));
     const p = pt(angle, rPix);
     arrowLine.setAttribute('x2', p.x); arrowLine.setAttribute('y2', p.y);
     handle.setAttribute('cx', p.x); handle.setAttribute('cy', p.y);
   }
 
-  function renderResultado(angle){
+  /* ---------- Método por amplitudes ---------- */
+  function renderResultadoAmp(angle, I, aVF){
     const c = classifyAxis(angle);
     $resultado.innerHTML = `
       <div class="result-big">${fmt(angle,0)}°</div>
       <span class="badge ${c.cls}">${c.label}</span>
-      <p style="margin:10px 0 0;">Rango correspondiente: <b>${c.rango}</b>.</p>
+      <p style="margin:10px 0 0;"><b>Cálculo:</b> ángulo = atan2(aVF, I) = atan2(${fmt(aVF,1)} mm, ${fmt(I,1)} mm) ≈ <b>${fmt(angle,0)}°</b></p>
+      <p style="margin:6px 0 0;">Rango correspondiente: <b>${c.rango}</b>.</p>
       <div class="causes-grid" style="grid-template-columns:1fr;">
         <div class="causes-col">
           <h4>Causas / contextos asociados</h4>
@@ -580,14 +672,14 @@ function fmtFixed(n, dec){
       </div>
     `;
   }
-
   function calcFromInputs(){
+    if(activeMethod!=='amp') return;
     const I = parseFloat($I.value), aVF = parseFloat($aVF.value);
-    if(isNaN(I) || isNaN(aVF) || (I===0 && aVF===0)){ return; }
+    if(isNaN(I) || isNaN(aVF) || (I===0 && aVF===0)){ $resultado.innerHTML=''; renderFromAngleMag(0,0.001); return; }
     const angle = normAngle(Math.atan2(aVF, I)*180/Math.PI);
     const mag = Math.min(10, Math.max(3, Math.hypot(I,aVF)));
     renderFromAngleMag(angle, mag);
-    renderResultado(angle);
+    renderResultadoAmp(angle, I, aVF);
   }
   $I.addEventListener('input', calcFromInputs);
   $aVF.addEventListener('input', calcFromInputs);
@@ -596,7 +688,7 @@ function fmtFixed(n, dec){
     renderFromAngleMag(0, 0.001);
   });
 
-  // arrastre del handle
+  // arrastre del handle (disponible siempre, ambos métodos comparten el diagrama)
   let dragging = false;
   function svgPoint(evt){
     const rect = svg.getBoundingClientRect();
@@ -610,6 +702,7 @@ function fmtFixed(n, dec){
   function onDragMove(evt){
     if(!dragging) return;
     evt.preventDefault();
+    if(activeMethod!=='amp') return; // el arrastre libre solo aplica al método por amplitudes
     const p = svgPoint(evt);
     const dx = p.x - cx, dy = p.y - cy;
     let dist = Math.hypot(dx,dy);
@@ -617,13 +710,14 @@ function fmtFixed(n, dec){
     const angle = normAngle(Math.atan2(dy,dx)*180/Math.PI);
     const rad = angle*Math.PI/180;
     const nx = cx + dist*Math.cos(rad), ny = cy + dist*Math.sin(rad);
+    clearWedge();
     arrowLine.setAttribute('x2', nx); arrowLine.setAttribute('y2', ny);
     handle.setAttribute('cx', nx); handle.setAttribute('cy', ny);
     // actualizar inputs numéricos aproximados (proyección en mm, radio máx ~ 10mm)
     const mag = dist/SCALE;
     $I.value = fmt(mag*Math.cos(rad),1);
     $aVF.value = fmt(mag*Math.sin(rad),1);
-    renderResultado(angle);
+    renderResultadoAmp(angle, parseFloat($I.value), parseFloat($aVF.value));
   }
   function onDragEnd(){ dragging = false; handle.style.cursor='grab'; }
   handle.addEventListener('mousedown', e=>{ dragging=true; handle.style.cursor='grabbing'; onDragMove(e); });
@@ -632,6 +726,140 @@ function fmtFixed(n, dec){
   window.addEventListener('touchmove', onDragMove, {passive:false});
   window.addEventListener('mouseup', onDragEnd);
   window.addEventListener('touchend', onDragEnd);
+
+  /* ---------- Método rápido por cuadrantes (+/−) ---------- */
+  let quadI = null, quadF = null, quadII = null;
+  const $quadIIWrap = fld('ejeQuadIIWrap');
+  const $quadResultado = fld('ejeQuadResultado');
+
+  function setActiveBtn(row, attr, value){
+    row.querySelectorAll('button').forEach(b=> b.classList.toggle('active', b.getAttribute(attr)===value));
+  }
+
+  function calcQuad(){
+    if(quadI==null || quadF==null){ $quadResultado.innerHTML=''; renderFromAngleMag(0,0.001); return; }
+    $quadIIWrap.style.display = (quadI==='pos' && quadF==='neg') ? '' : 'none';
+
+    let range, label, cls, logica, causas;
+
+    if(quadI==='pos' && quadF==='pos'){
+      range=[0,90]; label='Eje normal'; cls='badge-ok';
+      logica = 'I positivo → el eje apunta hacia 0° (o más allá). aVF positivo → el eje apunta hacia +90° (o más allá). Ambas condiciones a la vez ubican el eje en el cuadrante entre 0° y +90°.';
+      causas=['Variante de la normalidad en la mayoría de los adultos.'];
+    } else if(quadI==='neg' && quadF==='pos'){
+      range=[90,180]; label='Desviación del eje a la derecha'; cls='badge-warn';
+      logica = 'I negativo → el eje apunta en contra de 0°, es decir hacia el semiplano de +90° a -180°/+180°. aVF positivo → el eje apunta hacia +90° o más allá. Combinado, el eje cae entre +90° y +180°.';
+      causas=['Hipertrofia ventricular derecha','Bloqueo fascicular posterior izquierdo','TEP agudo / cor pulmonale','EPOC avanzado','IAM lateral extenso','Dextrocardia · niños y personas longilíneas (variante leve)'];
+    } else if(quadI==='neg' && quadF==='neg'){
+      range=[-180,-90]; label='Eje extremo / indeterminado'; cls='badge-danger';
+      logica = 'I negativo y aVF negativo: el eje apunta en contra de ambas derivaciones a la vez, lo que solo es posible en el cuadrante superior izquierdo extremo, entre -90° y -180° (zona "no man\'s land").';
+      causas=['Taquicardia ventricular','Hiperpotasemia grave','Marcapasos ventricular / ritmo de escape','Inversión de electrodos de miembros (artefacto)'];
+    } else if(quadI==='pos' && quadF==='neg'){
+      // zona ambigua entre -90 y 0: se resuelve (o no) con II
+      if(quadII==='pos'){
+        range=[-30,0]; label='Eje normal (límite inferior)'; cls='badge-ok';
+        logica = 'I positivo + aVF negativo ubican el eje entre -90° y 0°. Al ser II (60°) también positivo, el eje debe estar del lado de 60°, es decir por encima de -30°: queda acotado entre -30° y 0°, dentro de lo normal.';
+        causas=['Variante de la normalidad.'];
+      } else if(quadII==='neg'){
+        range=[-90,-30]; label='Desviación del eje a la izquierda'; cls='badge-warn';
+        logica = 'I positivo + aVF negativo ubican el eje entre -90° y 0°. Al ser II (60°) negativo, el eje apunta en contra de esa derivación, o sea por debajo de -30°: queda acotado entre -90° y -30°, desviación izquierda.';
+        causas=['Hipertrofia ventricular izquierda','Bloqueo fascicular anterior izquierdo','IAM inferior previo (Q patológicas)','Embarazo / obesidad (elevación diafragmática)'];
+      } else {
+        range=[-90,0]; label='Zona ambigua — falta definir con derivación II'; cls='badge-warn';
+        logica = 'I positivo + aVF negativo ubican el eje en algún punto entre -90° y 0° (puede ser normal o desviación izquierda, según esté antes o después de -30°). Marcá la polaridad de la derivación II para precisar.';
+        causas=['Definí la polaridad de II para diferenciar eje normal de desviación izquierda.'];
+      }
+    } else {
+      // casos con isodifásico en I o aVF
+      if(quadI==='iso' && quadF!=='iso'){
+        const a = quadF==='pos' ? 90 : -90;
+        range=[a-0.01,a+0.01];
+        label = quadF==='pos' ? 'Límite eje normal / desviación derecha (≈ +90°)' : 'Límite desviación izquierda / eje extremo (≈ -90°)';
+        cls='badge-warn';
+        logica = `I isodifásico → el eje es perpendicular a I, es decir ≈ ±90°. Como aVF es ${quadF==='pos'?'positivo':'negativo'}, el eje apunta hacia ${quadF==='pos'?'+90°':'-90°'}.`;
+        causas=['Eje límite: revisar con método por amplitudes para mayor precisión.'];
+      } else if(quadF==='iso' && quadI!=='iso'){
+        const a = quadI==='pos' ? 0 : 180;
+        range=[a-0.01,a+0.01];
+        label = quadI==='pos' ? 'Eje normal (≈ 0°)' : 'Eje muy desviado (≈ 180°, infrecuente — revisar electrodos)';
+        cls = quadI==='pos' ? 'badge-ok' : 'badge-danger';
+        logica = `aVF isodifásico → el eje es perpendicular a aVF, es decir ≈ 0°/180°. Como I es ${quadI==='pos'?'positivo':'negativo'}, el eje apunta hacia ${quadI==='pos'?'0°':'180°'}.`;
+        causas=['Eje límite: revisar con método por amplitudes para mayor precisión.'];
+      } else {
+        range=null; label='Datos insuficientes'; cls='badge-warn';
+        logica = 'Con I y aVF isodifásicos a la vez no se puede estimar el eje por este método; usá el método por amplitudes o buscá otra derivación de referencia.';
+        causas=[];
+      }
+    }
+
+    if(range){
+      drawWedge(range[0], range[1]);
+      const mid = (range[0]+range[1])/2;
+      const p = pt(mid, R*0.62);
+      arrowLine.setAttribute('x2', p.x); arrowLine.setAttribute('y2', p.y);
+      handle.setAttribute('cx', p.x); handle.setAttribute('cy', p.y);
+    } else {
+      clearWedge();
+      renderFromAngleMag(0,0.001);
+    }
+
+    $quadResultado.innerHTML = `
+      <span class="badge ${cls}">${label}</span>
+      ${range ? `<p style="margin:10px 0 0;">Rango aproximado: <b>${fmt(range[0],0)}° a ${fmt(range[1],0)}°</b></p>` : ''}
+      <p style="margin:8px 0 0;"><b>Razonamiento aplicado:</b> ${logica}</p>
+      ${causas.length ? `<div class="causes-col" style="margin-top:10px;"><h4>Causas / contextos asociados</h4><ul>${causas.map(x=>`<li>${x}</li>`).join('')}</ul></div>` : ''}
+    `;
+  }
+
+  fld('ejeQuadIRow').querySelectorAll('[data-quadi]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      quadI = btn.getAttribute('data-quadi'); quadII=null;
+      setActiveBtn(fld('ejeQuadIRow'),'data-quadi',quadI);
+      setActiveBtn(fld('ejeQuadIIRow'),'data-quadii','');
+      calcQuad();
+    });
+  });
+  fld('ejeQuadFRow').querySelectorAll('[data-quadf]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      quadF = btn.getAttribute('data-quadf'); quadII=null;
+      setActiveBtn(fld('ejeQuadFRow'),'data-quadf',quadF);
+      setActiveBtn(fld('ejeQuadIIRow'),'data-quadii','');
+      calcQuad();
+    });
+  });
+  fld('ejeQuadIIRow').querySelectorAll('[data-quadii]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      quadII = btn.getAttribute('data-quadii');
+      setActiveBtn(fld('ejeQuadIIRow'),'data-quadii',quadII);
+      calcQuad();
+    });
+  });
+  fld('ejeQuadLimpiarBtn').addEventListener('click', ()=>{
+    quadI=null; quadF=null; quadII=null;
+    ['ejeQuadIRow','ejeQuadFRow','ejeQuadIIRow'].forEach(id=> fld(id).querySelectorAll('button').forEach(b=>b.classList.remove('active')));
+    $quadIIWrap.style.display='none';
+    $quadResultado.innerHTML='';
+    clearWedge();
+    renderFromAngleMag(0,0.001);
+  });
+
+  /* ---------- Alternancia entre métodos ---------- */
+  fld('ejeMethodRow').querySelectorAll('[data-ejemethod]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      activeMethod = btn.getAttribute('data-ejemethod');
+      fld('ejeMethodRow').querySelectorAll('[data-ejemethod]').forEach(b=>b.classList.toggle('active', b===btn));
+      fld('ejeAmpPanel').style.display = activeMethod==='amp' ? '' : 'none';
+      fld('ejeQuadPanel').style.display = activeMethod==='quad' ? '' : 'none';
+      clearWedge();
+      if(activeMethod==='amp'){
+        $svgNote.textContent = 'Arrastrá la punta de la flecha (círculo verde) para estimar el eje visualmente.';
+        calcFromInputs();
+      } else {
+        $svgNote.textContent = 'El área sombreada muestra el rango aproximado del eje según la polaridad marcada.';
+        calcQuad();
+      }
+    });
+  });
 
   // estado inicial
   renderFromAngleMag(0, 0.001);
@@ -741,14 +969,27 @@ function fmtFixed(n, dec){
       fld('sofaRespModeRow').querySelectorAll('[data-respmode]').forEach(b=>b.classList.toggle('active', b===btn));
       $pafiWrap.style.display = respMode==='pafi' ? '' : 'none';
       $safiWrap.style.display = respMode==='safi' ? '' : 'none';
+      if(!scoreResp()) fld('sofaRespCalc').innerHTML = '';
     });
   });
 
   function scoreResp(){
     const vent = fld('sofaVentSoporte').checked;
-    let val, isPafi = respMode==='pafi';
-    val = parseFloat(isPafi ? fld('sofaPafi').value : fld('sofaSafi').value);
-    if(isNaN(val)) return null;
+    const isPafi = respMode==='pafi';
+    let val, formula;
+    if(isPafi){
+      const pao2 = parseFloat(fld('sofaPao2').value);
+      const fio2 = parseFloat(fld('sofaFio2Pafi').value);
+      if(isNaN(pao2) || isNaN(fio2) || fio2<=0) return null;
+      val = pao2/(fio2/100);
+      formula = `PaO₂/FiO₂ = ${fmt(pao2,0)} ÷ (${fmt(fio2,0)}/100) = <b>${fmt(val,0)}</b>`;
+    } else {
+      const sao2 = parseFloat(fld('sofaSao2').value);
+      const fio2 = parseFloat(fld('sofaFio2Safi').value);
+      if(isNaN(sao2) || isNaN(fio2) || fio2<=0) return null;
+      val = sao2/(fio2/100);
+      formula = `SaO₂/FiO₂ = ${fmt(sao2,0)} ÷ (${fmt(fio2,0)}/100) = <b>${fmt(val,0)}</b>`;
+    }
     let raw;
     if(isPafi){
       if(val>400) raw=0; else if(val>300) raw=1; else if(val>200) raw=2; else if(val>100) raw=3; else raw=4;
@@ -756,8 +997,13 @@ function fmtFixed(n, dec){
       if(val>301) raw=0; else if(val>=221) raw=1; else if(val>=142) raw=2; else if(val>=67) raw=3; else raw=4;
     }
     if(raw>=3 && !vent) raw=2;
+    fld('sofaRespCalc').innerHTML = `<b>Cálculo:</b> ${formula}${(raw>=3&&!vent)?' — puntaje limitado a 2 por falta de soporte ventilatorio' : ''}`;
     return {score:raw, detalle: `${isPafi?'PaO₂/FiO₂':'SaO₂/FiO₂'} = ${fmt(val,0)}${(raw>=3&&!vent)?' (limitado a 2 por falta de soporte ventilatorio)':''}`};
   }
+  ['sofaPao2','sofaFio2Pafi','sofaSao2','sofaFio2Safi','sofaVentSoporte'].forEach(id=>{
+    fld(id).addEventListener('input', ()=>{ if(!scoreResp()) fld('sofaRespCalc').innerHTML=''; });
+    fld(id).addEventListener('change', ()=>{ if(!scoreResp()) fld('sofaRespCalc').innerHTML=''; });
+  });
   function scoreCoag(){
     const v = parseFloat(fld('sofaPlaquetas').value);
     if(isNaN(v)) return null;
@@ -852,10 +1098,10 @@ function fmtFixed(n, dec){
   }
   fld('sofaCalcularBtn').addEventListener('click', calcularSofa);
   fld('sofaLimpiarBtn').addEventListener('click', ()=>{
-    ['sofaPafi','sofaSafi','sofaPlaquetas','sofaBili','sofaPam','sofaDopa','sofaDobu','sofaEpi','sofaNorepi',
+    ['sofaPao2','sofaFio2Pafi','sofaSao2','sofaFio2Safi','sofaPlaquetas','sofaBili','sofaPam','sofaDopa','sofaDobu','sofaEpi','sofaNorepi',
      'sofaGcs','sofaCrea','sofaDiuresis','sofaBasal','sofaLactato'].forEach(id=>fld(id).value='');
     ['sofaVentSoporte','sofaVaso1h','sofaInfeccion','sofaVasoShock'].forEach(id=>fld(id).checked=false);
-    fld('sofaResultado').innerHTML=''; fld('sofaSepsisResultado').innerHTML='';
+    fld('sofaResultado').innerHTML=''; fld('sofaSepsisResultado').innerHTML=''; fld('sofaRespCalc').innerHTML='';
     lastTotal = null;
   });
 
