@@ -134,6 +134,31 @@
       <span class="go">Abrir →</span>
     </button>
 
+    <!-- CALCULADORAS CLÍNICAS: se abre como modal con un iframe hacia
+         calculadoras_clinicas.html (ECG, GASA, SOFA, medio interno),
+         accesible para cualquiera sin necesidad de iniciar sesión
+         (mismo patrón que Laboratorio y Balance hídrico). -->
+    <button type="button" class="tool-card" id="openCalcBtn">
+      <div class="icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 12h4l2-7 4 14 2-9 2 2h4" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <h2>Calculadoras clínicas</h2>
+      <p>ECG (frecuencia y eje cardíaco), GASA, SOFA y medio interno/oximetría, cada una con acceso independiente. Acceso libre, sin necesidad de iniciar sesión.</p>
+      <span class="go">Abrir →</span>
+    </button>
+
+    <!-- GUARDIAS: navega de página completa a guardias.html, sin login
+         (mismo patrón de navegación que "Pase de guardia" pero de acceso
+         libre, como Laboratorio/Balance hídrico/Calculadoras). -->
+    <button type="button" class="tool-card" id="openGuardiasBtn">
+      <div class="icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 4h2v16H3V4Zm3 9h15a2 2 0 0 1 2 2v5h-2v-3H6v3H4v-8a2 2 0 0 1 2-2Zm2 2v2h5v-2H8Zm10.5-9A2.5 2.5 0 1 1 16 8.5 2.5 2.5 0 0 1 18.5 6Z"/></svg>
+      </div>
+      <h2>Guardias</h2>
+      <p>Pendientes por cama durante la guardia: HGT, balances, curvas, controles y estudios, con resumen automático por tipo de pendiente. Acceso libre, sin necesidad de iniciar sesión.</p>
+      <span class="go">Abrir →</span>
+    </button>
+
     <!-- Para sumar una herramienta nueva más adelante, copiá uno de los
          .tool-card de arriba (o el placeholder de abajo) y armá su propio
          acceso: navegación de página completa (como Pase de guardia) o
@@ -161,6 +186,19 @@
       <button type="button" class="labo-standalone-close" id="laboStandaloneCloseBtn" title="Cerrar">×</button>
     </div>
     <iframe id="laboStandaloneFrame" title="Transformador de laboratorio" src=""></iframe>
+  </div>
+</div>
+
+<div class="labo-standalone-overlay" id="calcStandaloneOverlay">
+  <div class="labo-standalone-modal">
+    <div class="labo-standalone-header">
+      <span>
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 12h4l2-7 4 14 2-9 2 2h4" stroke="currentColor" style="color:var(--accent-dark);" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        CALCULADORAS CLÍNICAS — ECG · GASA · SOFA · medio interno
+      </span>
+      <button type="button" class="labo-standalone-close" id="calcStandaloneCloseBtn" title="Cerrar">×</button>
+    </div>
+    <iframe id="calcStandaloneFrame" title="Calculadoras clínicas" src=""></iframe>
   </div>
 </div>
 
@@ -199,10 +237,17 @@
   const PASE_VERSION = '2026-09-02-1';
   const LABO_VERSION = '2026-09-02-4';
   const BH_VERSION = '2026-09-03-1';
+  const CALC_VERSION = '2026-09-13-1';
+  const GUARDIAS_VERSION = '2026-09-13-1';
 
 /* ---- Pase de guardia: navegación de página completa ---- */
 document.getElementById('openPaseBtn').addEventListener('click', ()=>{
   window.location.href = 'pase_guardia.html?v=' + encodeURIComponent(PASE_VERSION);
+});
+
+/* ---- Guardias: navegación de página completa (sin login) ---- */
+document.getElementById('openGuardiasBtn').addEventListener('click', ()=>{
+  window.location.href = 'guardias.html?v=' + encodeURIComponent(GUARDIAS_VERSION);
 });
 
 /* ---- Laboratorio: modal con iframe hacia conversor-labo.html ---- */
@@ -230,6 +275,34 @@ document.getElementById('openPaseBtn').addEventListener('click', ()=>{
   });
   document.addEventListener('keydown', (e)=>{
     if(e.key === 'Escape' && overlay.classList.contains('open')) closeLaboStandalone();
+  });
+})();
+
+/* ---- Calculadoras clínicas: modal con iframe hacia calculadoras_clinicas.html ---- */
+(function(){
+  const overlay = document.getElementById('calcStandaloneOverlay');
+  const frame = document.getElementById('calcStandaloneFrame');
+  const openBtn = document.getElementById('openCalcBtn');
+  const closeBtn = document.getElementById('calcStandaloneCloseBtn');
+
+  function openCalcStandalone(){
+    if(!frame.dataset.loaded){
+      frame.src = 'calculadoras_clinicas.html?v=' + encodeURIComponent(CALC_VERSION);
+      frame.dataset.loaded = '1';
+    }
+    overlay.classList.add('open');
+  }
+  function closeCalcStandalone(){
+    overlay.classList.remove('open');
+  }
+
+  openBtn.addEventListener('click', openCalcStandalone);
+  closeBtn.addEventListener('click', closeCalcStandalone);
+  overlay.addEventListener('click', (e)=>{
+    if(e.target === overlay) closeCalcStandalone();
+  });
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape' && overlay.classList.contains('open')) closeCalcStandalone();
   });
 })();
 
