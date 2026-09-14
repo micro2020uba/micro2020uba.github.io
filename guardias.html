@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-   Versión: 1 (13/09/2026)
+   Versión: 10 (13/09/2026)
    Herramienta: Guardias — pendientes por cama
 
    Notas de arquitectura para el futuro (leer antes de tocar el código):
@@ -104,6 +104,10 @@
     display:inline-flex;align-items:center;gap:5px;background:#e8dcb5;border:1px solid #cbb98a;
     border-radius:12px;padding:3px 4px 3px 9px;font-size:11px;font-weight:600;color:#4a3f1e;line-height:1.3;
   }
+  .chip input.chip-check{margin:0 1px 0 0;cursor:pointer;}
+  .chip .chip-label{cursor:default;}
+  .chip.done{background:#e7e6e0;border-color:#c9c4b8;color:#8a877c;}
+  .chip.done .chip-label{text-decoration:line-through;}
   .chip .x{background:none;border:none;color:#8a3324;font-weight:700;font-size:13px;cursor:pointer;padding:0 5px;line-height:1;}
   .chip .x:hover{color:#fff;background:#8a3324;border-radius:50%;}
   .add-manejo-btn{
@@ -113,8 +117,8 @@
   .add-manejo-btn:hover{background:var(--accent-dark);color:#fff;}
 
   .manejo-pop{
-    display:none;position:absolute;z-index:30;top:calc(100% + 4px);left:0;min-width:220px;max-width:280px;
-    background:#fff;border:2px solid var(--ink);border-radius:4px;box-shadow:3px 5px 0 rgba(0,0,0,.15);padding:10px;
+    display:none;position:fixed;z-index:1000;min-width:220px;max-width:280px;max-height:min(60vh,420px);
+    overflow-y:auto;background:#ffffff;border:2px solid var(--ink);border-radius:4px;box-shadow:3px 5px 0 rgba(0,0,0,.15);padding:10px;
   }
   .manejo-pop.open{display:block;}
   .manejo-pop .opt{display:flex;align-items:center;gap:7px;padding:4px 2px;font-size:12px;border-radius:2px;}
@@ -132,8 +136,20 @@
   .dato-line{margin-bottom:6px;}
   .dato-line:last-child{margin-bottom:0;}
   .dato-line .lbl{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:700;color:var(--accent-dark);display:block;margin-bottom:1px;}
+  .dato-line.done .lbl{color:#8a877c;text-decoration:line-through;}
+  .dato-line.done [contenteditable]{opacity:.65;}
   .dato-line [contenteditable]{min-height:18px;font-size:12px;}
   .datos-empty{color:#b7b3a6;font-size:11.5px;font-style:italic;}
+
+  /* ===== DATOS de HGT: sub-bloques por momento (predesayuno, prealmuerzo, etc.) ===== */
+  .hgt-block{margin:3px 0 7px 8px;padding-left:8px;border-left:2px solid var(--line-soft);}
+  .hgt-block-title{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;color:var(--accent-dark);margin-bottom:2px;}
+  .dato-line.hgt-datos.done .hgt-block-title{color:#8a877c;text-decoration:line-through;}
+  .hgt-sub{display:flex;align-items:baseline;gap:6px;margin-bottom:2px;}
+  .hgt-sub .hgt-sub-lbl{color:var(--muted);font-size:10px;flex-shrink:0;min-width:118px;}
+  .dato-line.hgt-datos.done .hgt-sub-lbl{text-decoration:line-through;}
+  .hgt-sub [contenteditable]{flex:1;min-height:16px;font-size:12px;padding:1px 4px;border-bottom:1px dotted var(--line-soft);}
+  .hgt-legacy{margin-bottom:5px;}
 
   /* ===== Resumen ===== */
   .summary-box{margin-top:22px;background:var(--panel);border:2px solid var(--ink);border-radius:4px;padding:16px 18px;box-shadow:2px 3px 0 rgba(0,0,0,.05);}
@@ -157,6 +173,17 @@
     tbody td[data-label="Cama"]{background:#efece2;}
     .divider-row td::before{display:none;}
   }
+
+  @media print{
+    *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;}
+    header, .toolbar, footer, .manejo-pop, .add-manejo-btn, .chip .x, .chip input.chip-check{display:none !important;}
+    body{background:#fff;}
+    main{padding:0;max-width:none;}
+    .table-wrap{border:1px solid #000;box-shadow:none;}
+    .summary-box{border:1px solid #000;box-shadow:none;page-break-inside:avoid;margin-top:14px;}
+    .chip.done .chip-label{text-decoration:line-through;}
+    tbody tr{page-break-inside:avoid;}
+  }
 </style>
 </head>
 <body>
@@ -171,6 +198,8 @@
   </div>
   <div class="header-actions">
     <span id="syncTag">verificando conexión…</span>
+    <button class="btn small" id="descargarWordBtn" type="button" title="Descarga un archivo .doc (compatible con Word) con la tabla completa y el resumen">⬇ Word</button>
+    <button class="btn small" id="descargarPdfBtn" type="button" title="Abre el diálogo de impresión: elegí 'Guardar como PDF' como destino">⬇ PDF</button>
     <button class="btn danger" id="limpiarBtn" type="button">Limpiar para próxima guardia</button>
     <a class="back" href="index.html">← Panel principal</a>
   </div>
@@ -200,9 +229,19 @@
   <div class="summary-box">
     <h2>Resumen de pendientes</h2>
     <div id="summaryList" class="summary-list"></div>
-    <div class="summary-legend">Los números de cama en color corresponden a camas con más de un pendiente (cada cama repetida mantiene el mismo color en todo el resumen).</div>
+    <div class="summary-legend">Los números de cama en color corresponden a camas con más de un pendiente (cada cama repetida mantiene el mismo color en todo el resumen). Tildar el check de un ítem lo marca como resuelto (se tacha) sin borrarlo.</div>
   </div>
 </main>
+
+<!-- Popover único de MANEJO: se reutiliza para todas las camas, insertado fuera
+     de la tabla para no heredar problemas de recorte (overflow) ni de orden de
+     apilamiento (z-index) propios de las celdas de una tabla. -->
+<div class="manejo-pop" id="manejoPop">
+  <button type="button" class="close-pop" id="popCloseBtn">×</button>
+  <div class="pop-options" id="popOptions"></div>
+  <div class="sep"></div>
+  <div class="add-row"><input type="text" placeholder="Nueva opción…" id="popNewItem"><button type="button" id="popAddBtn">Sumar</button></div>
+</div>
 
 <footer>guardias.html — los datos se guardan solos en este dispositivo, y en la nube cuando hay conexión</footer>
 
@@ -251,6 +290,46 @@ try{
 
   const FIXED_ITEMS = ["HGT","BH (+)","BH(-)","BH-N(+)","BH-N(-)","Curva T°","RAO","CC","LABO","TAC","Informe TAC"];
 
+  // HGT tiene 4 momentos fijos, cada uno con glucemia + corrección de insulina,
+  // en vez de una sola línea de texto libre como el resto de los ítems.
+  const HGT_MOMENTS = [
+    {key:'predesayuno', label:'Predesayuno'},
+    {key:'prealmuerzo', label:'Prealmuerzo'},
+    {key:'premerienda', label:'Premerienda'},
+    {key:'precena', label:'Precena'}
+  ];
+
+  // Asegura que c.datos.HGT tenga la forma {predesayuno:{glu,corr}, ...}.
+  // Si había texto libre cargado de antes (versión vieja), se conserva en
+  // "_legacy" para no perder nada, aunque ya no se siga cargando ahí.
+  function ensureHgtDatos(c){
+    const cur = c.datos['HGT'];
+    if(!cur || typeof cur !== 'object' || Array.isArray(cur)){
+      const legacyText = (typeof cur === 'string' && cur.trim()) ? cur : '';
+      const fresh = {};
+      HGT_MOMENTS.forEach(m => fresh[m.key] = {glu:'', corr:''});
+      if(legacyText) fresh._legacy = legacyText;
+      c.datos['HGT'] = fresh;
+    }else{
+      HGT_MOMENTS.forEach(m=>{
+        if(!cur[m.key] || typeof cur[m.key] !== 'object'){ cur[m.key] = {glu:'', corr:''}; }
+        else{
+          if(typeof cur[m.key].glu !== 'string') cur[m.key].glu = '';
+          if(typeof cur[m.key].corr !== 'string') cur[m.key].corr = '';
+        }
+      });
+    }
+    return c.datos['HGT'];
+  }
+
+  // Texto de HGT en formato lista, usado por las exportaciones (Word / PDF)
+  function hgtDatosLines(c){
+    const hgt = ensureHgtDatos(c);
+    return HGT_MOMENTS.map(m =>
+      m.label+': '+(hgt[m.key].glu || '—')+' mg% de glucemia — Corrección: '+(hgt[m.key].corr || '—')+' UI'
+    );
+  }
+
   // Datos iniciales tomados de "Machete Guardia.md" — solo se usan la primera
   // vez que se abre la herramienta (si ya hay algo guardado, no se pisa nada).
   const SEED = {
@@ -283,11 +362,10 @@ try{
   let lastLocalEdit = {}; // { camaNum: timestampMs } — para no dejar que un onSnapshot atrasado pise una edición reciente
   const saveDebouncers = {}; // debounce de escritura a Firestore por cama
   let itemsSaveTimer = null;
-  let openPopoverBed = null; // qué popover de MANEJO está abierto
 
   function masterItems(){ return FIXED_ITEMS.concat(state.customItems); }
 
-  function blankCama(){ return {paciente:'', mi:'', manejo:[], datos:{}}; }
+  function blankCama(){ return {paciente:'', mi:'', manejo:[], datos:{}, hechos:{}}; }
 
   function loadLocal(){
     try{
@@ -303,10 +381,11 @@ try{
     BED_NUMBERS.forEach(b=>{
       if(!state.camas[b]){
         const seed = SEED[b] || {paciente:'',mi:''};
-        state.camas[b] = { paciente: seed.paciente||'', mi: seed.mi||'', manejo: [], datos: {} };
+        state.camas[b] = { paciente: seed.paciente||'', mi: seed.mi||'', manejo: [], datos: {}, hechos: {} };
       }
       if(!Array.isArray(state.camas[b].manejo)) state.camas[b].manejo = [];
       if(!state.camas[b].datos || typeof state.camas[b].datos !== 'object') state.camas[b].datos = {};
+      if(!state.camas[b].hechos || typeof state.camas[b].hechos !== 'object') state.camas[b].hechos = {};
     });
   }
 
@@ -331,7 +410,7 @@ try{
       const fs = window.__guardiaFs;
       const c = state.camas[bed];
       fs.setDoc(fs.doc(fs.camasCol, bed), {
-        paciente: c.paciente, mi: c.mi, manejo: c.manejo, datos: c.datos,
+        paciente: c.paciente, mi: c.mi, manejo: c.manejo, datos: c.datos, hechos: c.hechos,
         updatedAt: Date.now()
       }).catch(err=>{
         console.warn('No se pudo sincronizar la cama '+bed+' con la nube.', err);
@@ -377,7 +456,8 @@ try{
           paciente: remote.paciente ?? state.camas[bed].paciente,
           mi: remote.mi ?? state.camas[bed].mi,
           manejo: Array.isArray(remote.manejo) ? remote.manejo : state.camas[bed].manejo,
-          datos: (remote.datos && typeof remote.datos==='object') ? remote.datos : state.camas[bed].datos
+          datos: (remote.datos && typeof remote.datos==='object') ? remote.datos : state.camas[bed].datos,
+          hechos: (remote.hechos && typeof remote.hechos==='object') ? remote.hechos : state.camas[bed].hechos
         };
         changed = true;
       });
@@ -448,23 +528,46 @@ try{
     return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
+  // Bloque especial de DATOS para HGT: 4 momentos (predesayuno, prealmuerzo,
+  // premerienda, precena), cada uno con glucemia + corrección de insulina,
+  // como sub-ítems debajo del título "HGT".
+  function hgtDatoLineHtml(bed, c, done){
+    const hgt = ensureHgtDatos(c);
+    let legacyHtml = '';
+    if(hgt._legacy){
+      legacyHtml = '<div class="hgt-legacy"><span class="lbl">Nota anterior:</span> '+
+        '<div contenteditable="true" data-hgt-legacy="1" data-placeholder="...">'+esc(hgt._legacy)+'</div></div>';
+    }
+    const blocks = HGT_MOMENTS.map(m=>{
+      const v = hgt[m.key];
+      return '<div class="hgt-block">'+
+        '<div class="hgt-block-title">'+m.label+'</div>'+
+        '<div class="hgt-sub"><span class="hgt-sub-lbl">Glucemia (mg%)</span>'+
+          '<div contenteditable="true" data-hgt="'+m.key+'.glu" data-bed="'+bed+'" data-placeholder="valor">'+esc(v.glu)+'</div></div>'+
+        '<div class="hgt-sub"><span class="hgt-sub-lbl">Corrección (UI)</span>'+
+          '<div contenteditable="true" data-hgt="'+m.key+'.corr" data-bed="'+bed+'" data-placeholder="UI">'+esc(v.corr)+'</div></div>'+
+      '</div>';
+    }).join('');
+    return '<div class="dato-line hgt-datos'+(done?' done':'')+'"><span class="lbl">HGT:</span>'+legacyHtml+blocks+'</div>';
+  }
+
   function rowHtml(bed, items, noPend){
     const c = state.camas[bed];
-    const chips = c.manejo.map(name =>
-      '<span class="chip" data-item="'+esc(name)+'">'+esc(name)+
-      '<button type="button" class="x" data-action="removeItem" data-item="'+esc(name)+'" title="Quitar">×</button></span>'
-    ).join('');
-
-    const popOptions = items.map((name, idx)=>{
-      const checked = c.manejo.includes(name) ? 'checked' : '';
-      const id = 'opt-'+bed+'-'+idx;
-      return '<div class="opt"><input type="checkbox" id="'+id+'" data-item="'+esc(name)+'" '+checked+'>'+
-             '<label for="'+id+'">'+esc(name)+'</label></div>';
+    const chips = c.manejo.map((name, idx)=>{
+      const done = !!c.hechos[name];
+      const cid = 'chk-'+bed+'-'+idx;
+      return '<span class="chip'+(done?' done':'')+'" data-item="'+esc(name)+'">'+
+        '<input type="checkbox" class="chip-check" id="'+cid+'" data-action="toggleDone" data-item="'+esc(name)+'" '+(done?'checked':'')+' title="Marcar como resuelto">'+
+        '<label class="chip-label" for="'+cid+'">'+esc(name)+'</label>'+
+        '<button type="button" class="x" data-action="removeItem" data-item="'+esc(name)+'" title="Quitar">×</button>'+
+      '</span>';
     }).join('');
 
     const datosLines = items.filter(name => c.manejo.includes(name)).map(name=>{
+      const done = !!c.hechos[name];
+      if(name === 'HGT') return hgtDatoLineHtml(bed, c, done);
       const val = c.datos[name] || '';
-      return '<div class="dato-line"><span class="lbl">'+esc(name)+':</span>'+
+      return '<div class="dato-line'+(done?' done':'')+'"><span class="lbl">'+esc(name)+':</span>'+
              '<div contenteditable="true" data-datos="'+esc(name)+'" data-placeholder="escribir...">'+esc(val)+'</div></div>';
     }).join('');
 
@@ -477,12 +580,6 @@ try{
       '<td data-label="Manejo"><div class="manejo-cell">'+
         '<div class="chip-row">'+chips+'</div>'+
         '<button type="button" class="add-manejo-btn" data-action="openPop">+ Agregar</button>'+
-        '<div class="manejo-pop" data-pop>'+
-          '<button type="button" class="close-pop" data-action="closePop">×</button>'+
-          popOptions+
-          '<div class="sep"></div>'+
-          '<div class="add-row"><input type="text" placeholder="Nueva opción…" data-newitem><button type="button" data-action="addCustom">Sumar</button></div>'+
-        '</div>'+
       '</div></td>'+
       '<td data-label="Datos">'+(datosLines || '<span class="datos-empty">— sin pendientes —</span>')+'</td>'+
     '</tr>';
@@ -514,6 +611,31 @@ try{
       }, 250));
     });
 
+    // Sub-campos de HGT (glucemia / corrección por cada momento)
+    tbody.querySelectorAll('[data-hgt]').forEach(el=>{
+      el.addEventListener('input', debounce(function(){
+        const bed = this.closest('tr').dataset.bed;
+        const [moment, sub] = this.dataset.hgt.split('.');
+        const c = state.camas[bed];
+        ensureHgtDatos(c);
+        c.datos['HGT'][moment][sub] = this.textContent;
+        lastLocalEdit[bed] = Date.now();
+        saveLocal();
+        scheduleFsSaveCama(bed);
+      }, 250));
+    });
+    tbody.querySelectorAll('[data-hgt-legacy]').forEach(el=>{
+      el.addEventListener('input', debounce(function(){
+        const bed = this.closest('tr').dataset.bed;
+        const c = state.camas[bed];
+        ensureHgtDatos(c);
+        c.datos['HGT']._legacy = this.textContent;
+        lastLocalEdit[bed] = Date.now();
+        saveLocal();
+        scheduleFsSaveCama(bed);
+      }, 250));
+    });
+
     // Quitar un ítem de manejo (chip con x)
     tbody.querySelectorAll('[data-action="removeItem"]').forEach(btn=>{
       btn.addEventListener('click', function(e){
@@ -529,96 +651,158 @@ try{
       });
     });
 
-    // Abrir / cerrar el selector de manejo
-    tbody.querySelectorAll('[data-action="openPop"]').forEach(btn=>{
-      btn.addEventListener('click', function(e){
-        e.stopPropagation();
-        const bed = this.closest('tr').dataset.bed;
-        togglePopover(bed);
-      });
-    });
-    tbody.querySelectorAll('[data-action="closePop"]').forEach(btn=>{
-      btn.addEventListener('click', function(e){
-        e.stopPropagation();
-        closeAllPopovers();
-      });
-    });
-
-    // Checkboxes dentro del selector
-    tbody.querySelectorAll('.manejo-pop input[type="checkbox"]').forEach(chk=>{
+    // Marcar/desmarcar un ítem de manejo como resuelto (se tacha, no se borra)
+    tbody.querySelectorAll('[data-action="toggleDone"]').forEach(chk=>{
+      chk.addEventListener('click', function(e){ e.stopPropagation(); });
       chk.addEventListener('change', function(){
-        const tr = this.closest('tr');
-        const bed = tr.dataset.bed;
+        const bed = this.closest('tr').dataset.bed;
         const item = this.dataset.item;
         const c = state.camas[bed];
-        if(this.checked){
-          if(!c.manejo.includes(item)) c.manejo.push(item);
-        }else{
-          c.manejo = c.manejo.filter(x => x !== item);
-        }
+        if(this.checked){ c.hechos[item] = true; } else { delete c.hechos[item]; }
         lastLocalEdit[bed] = Date.now();
         saveLocal();
         scheduleFsSaveCama(bed);
         render();
-        // Reabrir el popover de esa cama para que se pueda seguir tildando
-        openPopoverBed = bed;
-        requestAnimationFrame(()=>{
-          const newTr = document.querySelector('tr[data-bed="'+bed+'"]');
-          if(newTr) newTr.querySelector('[data-pop]').classList.add('open');
-        });
       });
     });
 
-    // Agregar opción nueva a la lista maestra
-    tbody.querySelectorAll('[data-action="addCustom"]').forEach(btn=>{
+    // Abrir / cerrar el selector de manejo (popover único, ver más abajo)
+    tbody.querySelectorAll('[data-action="openPop"]').forEach(btn=>{
       btn.addEventListener('click', function(e){
         e.stopPropagation();
-        const tr = this.closest('tr');
-        const bed = tr.dataset.bed;
-        const input = tr.querySelector('[data-newitem]');
-        const name = (input.value||'').trim();
-        if(!name) return;
-        if(!masterItems().includes(name)){
-          state.customItems.push(name);
-          scheduleFsSaveItems();
+        const bed = this.closest('tr').dataset.bed;
+        if(popoverBed === bed && manejoPopEl.classList.contains('open')){
+          closeManejoPopover();
+        }else{
+          openManejoPopover(bed, this);
         }
-        const c = state.camas[bed];
-        if(!c.manejo.includes(name)) c.manejo.push(name);
-        lastLocalEdit[bed] = Date.now();
-        saveLocal();
-        openPopoverBed = bed;
-        render();
-        requestAnimationFrame(()=>{
-          const newTr = document.querySelector('tr[data-bed="'+bed+'"]');
-          if(newTr) newTr.querySelector('[data-pop]').classList.add('open');
-        });
       });
     });
+  }
 
-    // Reabrir popover si estaba abierto antes del último render
-    if(openPopoverBed){
-      const tr = document.querySelector('tr[data-bed="'+openPopoverBed+'"]');
-      if(tr) tr.querySelector('[data-pop]').classList.add('open');
+  /* ============================= Popover único de MANEJO =============================
+     Antes había un popover por cada fila, posicionado dentro de la celda de la
+     tabla (position:absolute). Eso traía 3 problemas: se veía "transparente"
+     (se filtraban los botones "+ Agregar" de filas de abajo por temas de
+     apilamiento/z-index propios de las tablas), se podía interactuar con esos
+     botones de abajo en vez de con la lista, y en la cama 140 el popover
+     quedaba recortado por el overflow:hidden de .table-wrap.
+     Ahora hay UN SOLO popover, fuera de la tabla (hijo directo de <main>/<body>),
+     que se reposiciona con position:fixed según qué botón "+ Agregar" lo abrió.
+     Al no vivir dentro de la tabla, no hereda ninguno de esos problemas. */
+  let popoverBed = null;
+  const manejoPopEl = document.getElementById('manejoPop');
+  const popOptionsEl = document.getElementById('popOptions');
+  const popNewItemInput = document.getElementById('popNewItem');
+  const popAddBtn = document.getElementById('popAddBtn');
+  const popCloseBtn = document.getElementById('popCloseBtn');
+
+  function renderPopoverOptions(){
+    const bed = popoverBed;
+    if(!bed) return;
+    const c = state.camas[bed];
+    const items = masterItems();
+    popOptionsEl.innerHTML = items.map((name, idx)=>{
+      const checked = c.manejo.includes(name) ? 'checked' : '';
+      const id = 'popopt-'+idx;
+      return '<div class="opt"><input type="checkbox" id="'+id+'" data-item="'+esc(name)+'" '+checked+'>'+
+             '<label for="'+id+'">'+esc(name)+'</label></div>';
+    }).join('');
+  }
+
+  function openManejoPopover(bed, btn){
+    popoverBed = bed;
+    renderPopoverOptions();
+    popNewItemInput.value = '';
+    manejoPopEl.classList.add('open');
+    positionManejoPopover(btn);
+  }
+
+  function closeManejoPopover(){
+    manejoPopEl.classList.remove('open');
+    popoverBed = null;
+  }
+
+  // Ubica el popover con position:fixed en base al botón "+ Agregar" que lo
+  // abrió, y lo acomoda para que siempre quede completo dentro de la ventana
+  // visible (arriba o abajo del botón, y sin salirse por los costados).
+  function positionManejoPopover(btn){
+    const rect = btn.getBoundingClientRect();
+    const margin = 8;
+    const popRect = manejoPopEl.getBoundingClientRect();
+
+    let top = rect.bottom + 4;
+    if(top + popRect.height > window.innerHeight - margin){
+      const topAbove = rect.top - popRect.height - 4;
+      top = topAbove >= margin ? topAbove : Math.max(margin, window.innerHeight - popRect.height - margin);
     }
+
+    let left = rect.left;
+    if(left + popRect.width > window.innerWidth - margin){
+      left = window.innerWidth - popRect.width - margin;
+    }
+    if(left < margin) left = margin;
+
+    manejoPopEl.style.top = top + 'px';
+    manejoPopEl.style.left = left + 'px';
   }
 
-  function togglePopover(bed){
-    const tr = document.querySelector('tr[data-bed="'+bed+'"]');
-    const pop = tr.querySelector('[data-pop]');
-    const willOpen = !pop.classList.contains('open');
-    closeAllPopovers();
-    if(willOpen){ pop.classList.add('open'); openPopoverBed = bed; }
+  // Tildar/destildar un ítem de manejo desde el popover
+  popOptionsEl.addEventListener('change', function(e){
+    const input = e.target;
+    if(!input.matches('input[type="checkbox"]')) return;
+    const bed = popoverBed;
+    if(!bed) return;
+    const item = input.dataset.item;
+    const c = state.camas[bed];
+    if(input.checked){
+      if(!c.manejo.includes(item)) c.manejo.push(item);
+    }else{
+      c.manejo = c.manejo.filter(x => x !== item);
+      delete c.hechos[item]; // si se destilda el manejo, no tiene sentido dejarlo marcado como resuelto
+    }
+    lastLocalEdit[bed] = Date.now();
+    saveLocal();
+    scheduleFsSaveCama(bed);
+    render(); // el popover no forma parte de la tabla, así que se mantiene abierto
+  });
+
+  // Agregar una opción nueva a la lista maestra desde el popover
+  function addCustomFromPopover(){
+    const bed = popoverBed;
+    if(!bed) return;
+    const name = (popNewItemInput.value||'').trim();
+    if(!name) return;
+    if(!masterItems().includes(name)){
+      state.customItems.push(name);
+      scheduleFsSaveItems();
+    }
+    const c = state.camas[bed];
+    if(!c.manejo.includes(name)) c.manejo.push(name);
+    lastLocalEdit[bed] = Date.now();
+    saveLocal();
+    popNewItemInput.value = '';
+    renderPopoverOptions();
+    render();
   }
-  function closeAllPopovers(){
-    document.querySelectorAll('.manejo-pop.open').forEach(p=>p.classList.remove('open'));
-    openPopoverBed = null;
-  }
+  popAddBtn.addEventListener('click', function(e){ e.stopPropagation(); addCustomFromPopover(); });
+  popNewItemInput.addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ e.preventDefault(); addCustomFromPopover(); }
+  });
+  popCloseBtn.addEventListener('click', function(e){ e.stopPropagation(); closeManejoPopover(); });
+
   document.addEventListener('click', function(e){
-    if(!e.target.closest('.manejo-cell')) closeAllPopovers();
+    if(e.target.closest('.manejo-pop')) return; // click dentro del popover: no cerrar
+    closeManejoPopover();
   });
   document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape') closeAllPopovers();
+    if(e.key === 'Escape') closeManejoPopover();
   });
+  // El popover es position:fixed relativo al botón que lo abrió; si la página
+  // hace scroll o la ventana cambia de tamaño, lo más simple y seguro es
+  // cerrarlo en vez de intentar reposicionarlo en cada evento.
+  window.addEventListener('scroll', function(){ closeManejoPopover(); }, true);
+  window.addEventListener('resize', function(){ closeManejoPopover(); });
 
   function renderSummary(){
     const box = document.getElementById('summaryList');
@@ -634,7 +818,11 @@ try{
       anyPending = true;
       const bedsHtml = beds.map(b=>{
         const color = colorMap[b];
-        return color ? '<b style="color:'+color+'">'+b+'</b>' : b;
+        const done = !!state.camas[b].hechos[name];
+        let style = '';
+        if(color) style += 'color:'+color+';font-weight:700;';
+        if(done) style += 'text-decoration:line-through;opacity:.55;';
+        return style ? '<b style="'+style+'">'+b+'</b>' : b;
       }).join(', ');
       html += '<div class="summary-item"><span class="name">'+esc(name)+':</span> <span class="beds">'+bedsHtml+'</span></div>';
     });
@@ -649,11 +837,248 @@ try{
     BED_NUMBERS.forEach(b=>{
       state.camas[b].manejo = [];
       state.camas[b].datos = {};
+      state.camas[b].hechos = {};
       lastLocalEdit[b] = Date.now();
       scheduleFsSaveCama(b);
     });
     saveLocal();
     render();
+  });
+
+  /* ============================= Exportar (Word / PDF) =============================
+     Es una página estática sin servidor, así que la exportación se resuelve
+     del lado del navegador:
+     - Word: se arma un documento HTML con la tabla completa + el resumen +
+       el estado del checklist (☑/☐) + los colores de cama del resumen, y se
+       descarga con extensión .doc y tipo "application/msword". Word lo abre
+       y edita sin problemas; no es un .docx (OOXML) real, pero no depende de
+       ninguna librería ni de internet en el momento de exportar.
+     - PDF: se genera el archivo directamente con la librería jsPDF (+
+       autoTable), que se carga on-demand desde un CDN la primera vez que se
+       usa el botón. Se eligió generarlo así, en vez de con el diálogo de
+       impresión del navegador (window.print), porque en algunas
+       computadoras — sobre todo institucionales, como puede pasar en un
+       hospital — la impresión/"Guardar como PDF" del navegador puede estar
+       restringida o directamente no abrir nada. Si no hay internet en ese
+       momento y la librería no llega a cargar, se usa el diálogo de
+       impresión como respaldo. */
+  function formatFechaHora(){
+    try{ return new Date().toLocaleString('es-AR', {dateStyle:'short', timeStyle:'short'}); }
+    catch(err){ return new Date().toLocaleString(); }
+  }
+
+  function hexToRgb(hex){
+    hex = String(hex||'').replace('#','');
+    const num = parseInt(hex, 16);
+    if(isNaN(num)) return [20,20,20];
+    return [(num>>16)&255, (num>>8)&255, num&255];
+  }
+
+  // HTML de la columna "Datos" para una cama, ítem por ítem (usado en Word)
+  function datosHtmlForBed(c){
+    if(!c.manejo.length) return '';
+    return c.manejo.map(name=>{
+      if(name === 'HGT'){
+        return '<b>HGT:</b><br>&nbsp;&nbsp;'+hgtDatosLines(c).map(esc).join('<br>&nbsp;&nbsp;');
+      }
+      return '<b>'+esc(name)+':</b> '+esc(c.datos[name] || '—');
+    }).join('<br>');
+  }
+
+  function buildExportHtml(){
+    const items = masterItems();
+    const fecha = formatFechaHora();
+    const colorMap = computeMultiColorMap();
+
+    const rows = BED_NUMBERS.map(bed=>{
+      const c = state.camas[bed];
+      const manejoHtml = c.manejo.length
+        ? c.manejo.map(name => (c.hechos[name] ? '☑ ' : '☐ ') + esc(name)).join('<br>')
+        : '<span style="color:#999;font-style:italic;">— sin pendientes —</span>';
+      return '<tr>'+
+        '<td style="text-align:center;font-weight:bold;">'+bed+'</td>'+
+        '<td>'+esc(c.paciente || 'sin nombre')+'</td>'+
+        '<td>'+esc(c.mi || '')+'</td>'+
+        '<td>'+manejoHtml+'</td>'+
+        '<td>'+datosHtmlForBed(c)+'</td>'+
+      '</tr>';
+    }).join('');
+
+    let resumen = '';
+    items.forEach(name=>{
+      const beds = BED_NUMBERS.filter(b => state.camas[b].manejo.includes(name))
+                               .sort((a,b)=> Number(a)-Number(b));
+      if(!beds.length) return;
+      const bedsHtml = beds.map(b=>{
+        const done = !!state.camas[b].hechos[name];
+        const color = colorMap[b];
+        let style = '';
+        if(color) style += 'color:'+color+';font-weight:bold;';
+        if(done) style += 'text-decoration:line-through;color:#888;';
+        return style ? '<span style="'+style+'">'+b+'</span>' : b;
+      }).join(', ');
+      resumen += '<div style="margin-bottom:4px;"><b>'+esc(name)+':</b> '+bedsHtml+'</div>';
+    });
+    if(!resumen) resumen = '<div style="font-style:italic;color:#666;">No hay pendientes cargados todavía.</div>';
+
+    return '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Guardias - pendientes</title></head>'+
+      '<body style="font-family:Calibri,Arial,sans-serif;font-size:12px;color:#111;">'+
+      '<h2 style="margin-bottom:2px;">Guardias — pendientes por cama</h2>'+
+      '<div style="color:#555;margin-bottom:14px;">HGT · balances · curvas · controles y estudios pendientes — generado '+esc(fecha)+'</div>'+
+      '<table border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse;width:100%;">'+
+        '<thead><tr style="background:#1e403d;color:#fff;">'+
+          '<th>Cama</th><th>Paciente</th><th>MI</th><th>Manejo (checklist)</th><th>Datos</th>'+
+        '</tr></thead>'+
+        '<tbody>'+rows+'</tbody>'+
+      '</table>'+
+      '<h3 style="margin-top:24px;">Resumen de pendientes</h3>'+
+      resumen+
+      '</body></html>';
+  }
+
+  document.getElementById('descargarWordBtn').addEventListener('click', function(){
+    const html = buildExportHtml();
+    const blob = new Blob(['\ufeff', html], {type:'application/msword'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'guardia_pendientes_'+new Date().toISOString().slice(0,10)+'.doc';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  // --- PDF: carga on-demand de jsPDF + autoTable, con respaldo a impresión ---
+  function loadScriptOnce(src){
+    return new Promise((resolve, reject)=>{
+      if(document.querySelector('script[data-dyn-src="'+src+'"]')){ resolve(); return; }
+      const s = document.createElement('script');
+      s.src = src;
+      s.async = true;
+      s.dataset.dynSrc = src;
+      s.onload = ()=>resolve();
+      s.onerror = ()=>reject(new Error('No se pudo cargar '+src));
+      document.head.appendChild(s);
+    });
+  }
+
+  async function ensurePdfLibs(){
+    if(window.jspdf && window.jspdf.jsPDF && window.jspdf.jsPDF.API && window.jspdf.jsPDF.API.autoTable) return;
+    await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+    await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js');
+  }
+
+  function generatePdf(){
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation:'landscape', unit:'pt', format:'a4' });
+    const items = masterItems();
+    const colorMap = computeMultiColorMap();
+    const fecha = formatFechaHora();
+
+    doc.setFontSize(14);
+    doc.text('Guardias — pendientes por cama', 40, 34);
+    doc.setFontSize(9);
+    doc.setTextColor(90,90,90);
+    doc.text('HGT · balances · curvas · controles y estudios pendientes — generado '+fecha, 40, 48);
+    doc.setTextColor(20,20,20);
+
+    const body = BED_NUMBERS.map(bed=>{
+      const c = state.camas[bed];
+      const manejoTxt = c.manejo.length
+        ? c.manejo.map(name => (c.hechos[name] ? '[x] ' : '[ ] ') + name).join('\n')
+        : '— sin pendientes —';
+      const datosTxt = c.manejo.length
+        ? c.manejo.map(name => name === 'HGT'
+            ? 'HGT:\n  '+hgtDatosLines(c).join('\n  ')
+            : name+': '+(c.datos[name] || '—')
+          ).join('\n')
+        : '';
+      return [bed, c.paciente || 'sin nombre', c.mi || '', manejoTxt, datosTxt];
+    });
+
+    doc.autoTable({
+      head: [['Cama','Paciente','MI','Manejo (checklist)','Datos']],
+      body: body,
+      startY: 60,
+      styles:{ fontSize:8, cellPadding:4, valign:'top', overflow:'linebreak' },
+      headStyles:{ fillColor:[30,64,61], textColor:255 },
+      columnStyles:{ 0:{cellWidth:34}, 1:{cellWidth:80}, 2:{cellWidth:60} },
+      didParseCell: function(data){
+        if(data.section === 'body' && data.column.index === 0){
+          const bed = String(data.cell.raw);
+          const color = colorMap[bed];
+          if(color){
+            data.cell.styles.textColor = hexToRgb(color);
+            data.cell.styles.fontStyle = 'bold';
+          }
+        }
+      }
+    });
+
+    // Resumen de pendientes, con los mismos colores de cama que en pantalla
+    let y = doc.lastAutoTable.finalY + 24;
+    const pageHeight = doc.internal.pageSize.getHeight();
+    doc.setFontSize(12);
+    doc.setTextColor(20,20,20);
+    doc.text('Resumen de pendientes', 40, y);
+    y += 16;
+    doc.setFontSize(9);
+
+    let any = false;
+    items.forEach(name=>{
+      const beds = BED_NUMBERS.filter(b => state.camas[b].manejo.includes(name))
+                               .sort((a,b)=> Number(a)-Number(b));
+      if(!beds.length) return;
+      any = true;
+      if(y > pageHeight - 40){ doc.addPage(); y = 40; }
+
+      doc.setTextColor(20,20,20);
+      doc.setFont(undefined,'bold');
+      doc.text(name+':', 40, y);
+      let x = 40 + doc.getTextWidth(name+': ') + 6;
+      doc.setFont(undefined,'normal');
+
+      beds.forEach((b,i)=>{
+        const done = !!state.camas[b].hechos[name];
+        const color = colorMap[b];
+        const txt = b + (i < beds.length-1 ? ', ' : '');
+        if(color){ doc.setTextColor.apply(doc, hexToRgb(color)); doc.setFont(undefined,'bold'); }
+        else{ doc.setTextColor(20,20,20); doc.setFont(undefined,'normal'); }
+        doc.text(txt, x, y);
+        if(done){
+          const w = doc.getTextWidth(txt);
+          doc.setDrawColor(150,150,150);
+          doc.line(x, y-3, x+w, y-3);
+        }
+        x += doc.getTextWidth(txt);
+      });
+      y += 14;
+    });
+    if(!any){
+      doc.setTextColor(90,90,90);
+      doc.text('No hay pendientes cargados todavía.', 40, y);
+    }
+
+    doc.save('guardia_pendientes_'+new Date().toISOString().slice(0,10)+'.pdf');
+  }
+
+  document.getElementById('descargarPdfBtn').addEventListener('click', async function(){
+    const btn = this;
+    closeManejoPopover();
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Generando…';
+    try{
+      await ensurePdfLibs();
+      generatePdf();
+    }catch(err){
+      console.warn('No se pudo generar el PDF con la librería (¿sin conexión?). Se usa impresión del navegador como respaldo.', err);
+      window.print();
+    }finally{
+      btn.disabled = false;
+      btn.textContent = original;
+    }
   });
 
   /* ============================= Arranque ============================= */
