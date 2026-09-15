@@ -199,7 +199,7 @@
   <div class="header-actions">
     <span id="syncTag">verificando conexión…</span>
     <button class="btn small" id="descargarWordBtn" type="button" title="Descarga un archivo .doc (compatible con Word) con la tabla completa y el resumen">⬇ Word</button>
-    <button class="btn small" id="descargarPdfBtn" type="button" title="Abre el diálogo de impresión: elegí 'Guardar como PDF' como destino">⬇ PDF</button>
+    <button class="btn small" id="descargarPdfBtn" type="button" title="Genera un PDF con checkboxes y campos de texto editables (para completar en Adobe Acrobat Reader)">⬇ PDF</button>
     <button class="btn danger" id="limpiarBtn" type="button">Limpiar para próxima guardia</button>
     <a class="back" href="index.html">← Panel principal</a>
   </div>
@@ -964,87 +964,191 @@ try{
   }
 
   async function ensurePdfLibs(){
-    if(window.jspdf && window.jspdf.jsPDF && window.jspdf.jsPDF.API && window.jspdf.jsPDF.API.autoTable) return;
+    if(window.jspdf && window.jspdf.jsPDF) return;
     await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
-    await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js');
   }
 
-  function generatePdf(){
+  // PDF rellenable: cada ítem de manejo tiene un checkbox real (tildable en
+  // Acrobat) y los valores de datos son campos de texto reales (editables).
+  // No incluye tachado automático al tildar: la librería que genera el PDF
+  // no permite engancharle una acción de JavaScript a los campos, y hacerlo
+  // "a mano" contra el archivo no se puede probar en un Acrobat real desde
+  // acá — se prefirió no entregar algo no verificado.
+  function generateFillablePdf(){
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ orientation:'landscape', unit:'pt', format:'a4' });
-    const items = masterItems();
+    const doc = new jsPDF({ orientation:'portrait', unit:'pt', format:'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const marginL = 40, marginR = 40, marginT = 40, marginB = 40;
+    const contentW = pageW - marginL - marginR;
     const colorMap = computeMultiColorMap();
-    const fecha = formatFechaHora();
+    let y = marginT;
+    let fieldSeq = 0;
 
-    doc.setFontSize(14);
-    doc.text('Guardias — pendientes por cama', 40, 34);
-    doc.setFontSize(9);
-    doc.setTextColor(90,90,90);
-    doc.text('HGT · balances · curvas · controles y estudios pendientes — generado '+fecha, 40, 48);
-    doc.setTextColor(20,20,20);
+    function setColor(hex){
+      if(hex) doc.setTextColor.apply(doc, hexToRgb(hex));
+      else doc.setTextColor(20,20,20);
+    }
 
-    const body = BED_NUMBERS.map(bed=>{
-      const c = state.camas[bed];
-      const manejoTxt = c.manejo.length
-        ? c.manejo.map(name => (c.hechos[name] ? '[x] ' : '[ ] ') + name).join('\n')
-        : '— sin pendientes —';
-      const datosTxt = c.manejo.length
-        ? c.manejo.map(name => name === 'HGT'
-            ? 'HGT:\n  '+hgtDatosLines(c).join('\n  ')
-            : name+': '+(c.datos[name] || '—')
-          ).join('\n')
-        : '';
-      return [bed, c.paciente || 'sin nombre', c.mi || '', manejoTxt, datosTxt];
-    });
+    function pageTitle(sub){
+      doc.setFontSize(13);
+      doc.setFont(undefined,'bold');
+      setColor(null);
+      doc.text('Guardias — pendientes por cama', marginL, y);
+      doc.setFont(undefined,'normal');
+      y += 14;
+      doc.setFontSize(8.5);
+      doc.setTextColor(120,120,120);
+      doc.text(sub, marginL, y);
+      doc.setTextColor(20,20,20);
+      y += 12;
+      doc.setDrawColor(30,64,61);
+      doc.setLineWidth(1);
+      doc.line(marginL, y, pageW - marginR, y);
+      y += 16;
+    }
 
-    doc.autoTable({
-      head: [['Cama','Paciente','MI','Manejo (checklist)','Datos']],
-      body: body,
-      startY: 60,
-      styles:{ fontSize:8, cellPadding:4, valign:'top', overflow:'linebreak' },
-      headStyles:{ fillColor:[30,64,61], textColor:255 },
-      columnStyles:{ 0:{cellWidth:34}, 1:{cellWidth:80}, 2:{cellWidth:60} },
-      didParseCell: function(data){
-        if(data.section === 'body' && data.column.index === 0){
-          const bed = String(data.cell.raw);
-          const color = colorMap[bed];
-          if(color){
-            data.cell.styles.textColor = hexToRgb(color);
-            data.cell.styles.fontStyle = 'bold';
-          }
-        }
+    function ensureSpace(h){
+      if(y + h > pageH - marginB){
+        doc.addPage();
+        y = marginT;
+        pageTitle('continuación');
       }
+    }
+
+    // Dibuja una línea de base (para que se note que ahí se puede escribir)
+    // y registra el campo de texto real, editable en Acrobat.
+    function addTextField(fieldName, value, x, y0, width){
+      doc.setDrawColor(190,190,180);
+      doc.setLineWidth(0.5);
+      doc.line(x, y0 + 2, x + width, y0 + 2);
+      const tf = new doc.AcroFormTextField();
+      tf.fieldName = fieldName;
+      tf.value = value || '';
+      tf.Rect = [x, y0 - 8, width, 11];
+      tf.fontSize = 8;
+      doc.addField(tf);
+    }
+
+    pageTitle('HGT · balances · curvas · controles y estudios pendientes — generado '+formatFechaHora());
+
+    BED_NUMBERS.forEach(bed=>{
+      const c = state.camas[bed];
+      ensureSpace(20);
+
+      doc.setFontSize(10.5);
+      doc.setFont(undefined,'bold');
+      setColor(colorMap[bed]);
+      doc.text('Cama '+bed, marginL, y);
+      const wCama = doc.getTextWidth('Cama '+bed+' — ');
+      doc.setFont(undefined,'normal');
+      setColor(null);
+      doc.text((c.paciente || 'sin nombre') + (c.mi ? ' — '+c.mi : ''), marginL + wCama, y);
+      y += 13;
+
+      if(!c.manejo.length){
+        doc.setFontSize(8.5);
+        doc.setTextColor(160,160,160);
+        doc.text('— sin pendientes —', marginL + 12, y);
+        doc.setTextColor(20,20,20);
+        y += 12;
+      }else{
+        c.manejo.forEach(name=>{
+          ensureSpace(name === 'HGT' ? 14 + 4*11 : 14 + 12);
+
+          const cbSize = 9;
+          const cbX = marginL + 10, cbY = y - cbSize + 1;
+          doc.setDrawColor(120,120,120);
+          doc.setLineWidth(0.6);
+          doc.rect(cbX, cbY, cbSize, cbSize); // marco visible del checkbox
+          const cb = new doc.AcroFormCheckBox();
+          cb.fieldName = 'chk_'+bed+'_'+(fieldSeq++);
+          cb.Rect = [cbX, cbY, cbSize, cbSize];
+          const isDone = !!c.hechos[name];
+          cb.appearanceState = isDone ? 'On' : 'Off';
+          cb.value = isDone ? 'On' : 'Off';
+          doc.addField(cb);
+
+          doc.setFontSize(9.5);
+          doc.setTextColor(20,20,20);
+          doc.text(name, marginL + 10 + cbSize + 6, y);
+          y += 13;
+
+          if(name === 'HGT'){
+            const hgt = ensureHgtDatos(c);
+            HGT_MOMENTS.forEach(m=>{
+              const labelX = marginL + 26;
+              doc.setFontSize(8);
+              doc.setTextColor(100,100,100);
+              doc.text(m.label, labelX, y);
+              doc.setTextColor(20,20,20);
+
+              const gluLblX = labelX + 76;
+              const gluLbl = 'Glucemia (mg%):';
+              doc.setFontSize(7.5);
+              doc.text(gluLbl, gluLblX, y);
+              const gluFieldX = gluLblX + doc.getTextWidth(gluLbl) + 3;
+              addTextField('hgt_'+bed+'_'+m.key+'_glu', hgt[m.key].glu || '', gluFieldX, y, 34);
+
+              const corrLblX = gluFieldX + 34 + 10;
+              const corrLbl = 'Corrección (UI):';
+              doc.text(corrLbl, corrLblX, y);
+              const corrFieldX = corrLblX + doc.getTextWidth(corrLbl) + 3;
+              addTextField('hgt_'+bed+'_'+m.key+'_corr', hgt[m.key].corr || '', corrFieldX, y, 28);
+
+              y += 11;
+            });
+            y += 3;
+          }else{
+            const dLblX = marginL + 26;
+            doc.setFontSize(8);
+            doc.setTextColor(100,100,100);
+            doc.text('Datos:', dLblX, y);
+            doc.setTextColor(20,20,20);
+            const dFieldX = dLblX + doc.getTextWidth('Datos: ') + 3;
+            addTextField('datos_'+bed+'_'+(fieldSeq++), c.datos[name] || '', dFieldX, y, marginL + contentW - dFieldX);
+            y += 12;
+          }
+        });
+      }
+
+      y += 5;
+      doc.setDrawColor(224,220,208);
+      doc.setLineWidth(0.5);
+      doc.line(marginL, y, pageW - marginR, y);
+      y += 10;
     });
 
-    // Resumen de pendientes, con los mismos colores de cama que en pantalla
-    let y = doc.lastAutoTable.finalY + 24;
-    const pageHeight = doc.internal.pageSize.getHeight();
+    // Resumen de pendientes (texto, con los mismos colores de cama que en pantalla)
+    ensureSpace(24);
     doc.setFontSize(12);
-    doc.setTextColor(20,20,20);
-    doc.text('Resumen de pendientes', 40, y);
+    doc.setFont(undefined,'bold');
+    setColor(null);
+    doc.text('Resumen de pendientes', marginL, y);
+    doc.setFont(undefined,'normal');
     y += 16;
     doc.setFontSize(9);
 
+    const items = masterItems();
     let any = false;
     items.forEach(name=>{
       const beds = BED_NUMBERS.filter(b => state.camas[b].manejo.includes(name))
                                .sort((a,b)=> Number(a)-Number(b));
       if(!beds.length) return;
       any = true;
-      if(y > pageHeight - 40){ doc.addPage(); y = 40; }
+      ensureSpace(14);
 
-      doc.setTextColor(20,20,20);
+      setColor(null);
       doc.setFont(undefined,'bold');
-      doc.text(name+':', 40, y);
-      let x = 40 + doc.getTextWidth(name+': ') + 6;
+      doc.text(name+':', marginL, y);
+      let x = marginL + doc.getTextWidth(name+': ') + 6;
       doc.setFont(undefined,'normal');
 
       beds.forEach((b,i)=>{
         const done = !!state.camas[b].hechos[name];
-        const color = colorMap[b];
         const txt = b + (i < beds.length-1 ? ', ' : '');
-        if(color){ doc.setTextColor.apply(doc, hexToRgb(color)); doc.setFont(undefined,'bold'); }
-        else{ doc.setTextColor(20,20,20); doc.setFont(undefined,'normal'); }
+        setColor(colorMap[b]);
+        if(colorMap[b]) doc.setFont(undefined,'bold'); else doc.setFont(undefined,'normal');
         doc.text(txt, x, y);
         if(done){
           const w = doc.getTextWidth(txt);
@@ -1056,8 +1160,8 @@ try{
       y += 14;
     });
     if(!any){
-      doc.setTextColor(90,90,90);
-      doc.text('No hay pendientes cargados todavía.', 40, y);
+      doc.setTextColor(120,120,120);
+      doc.text('No hay pendientes cargados todavía.', marginL, y);
     }
 
     doc.save('guardia_pendientes_'+new Date().toISOString().slice(0,10)+'.pdf');
@@ -1071,9 +1175,9 @@ try{
     btn.textContent = 'Generando…';
     try{
       await ensurePdfLibs();
-      generatePdf();
+      generateFillablePdf();
     }catch(err){
-      console.warn('No se pudo generar el PDF con la librería (¿sin conexión?). Se usa impresión del navegador como respaldo.', err);
+      console.warn('No se pudo generar el PDF (¿sin conexión?). Se usa impresión del navegador como respaldo.', err);
       window.print();
     }finally{
       btn.disabled = false;
