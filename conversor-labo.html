@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
- Versión: 9 (13/09/2026)
+ Versión: 12 (15/09/2026)
 -->
 <html lang="es">
 <head>
@@ -11,7 +11,7 @@
 <style>
   :root{
     --ink:#23302c; --paper:#faf7f0; --panel:#fff; --muted:#7a7468;
-    --line-soft:#dcd6c8; --field-bg:#fcfbf7; --accent-dark:#2f5d5a; --danger:#c0392b;
+    --line-soft:#dcd6c8; --field-bg:#fcfbf7; --accent-dark:#2f5d5a; --danger:#ff0000;
   }
   *{box-sizing:border-box;}
   body{
@@ -95,9 +95,8 @@
         <div class="controls">
           <label for="laboFecha">Fecha:</label>
           <input type="date" id="laboFecha">
-          <button type="button" class="btn-primary" id="laboProcesarBtn">Procesar</button>
           <button type="button" class="btn-secondary" id="laboLimpiarBtn">Limpiar</button>
-          <button type="button" class="btn-secondary" id="laboLabCompletoBtn">LAB Completo</button>
+          <button type="button" class="btn-secondary" id="laboLabCompletoBtn" title="Muestra también los valores normales del uroanálisis/urocultivo (aparte de los alterados). No tiene relación con el encabezado &quot;LABORATORIO COMPLETO&quot; del renglón numérico, que ya se genera solo.">Detalle uroanálisis</button>
         </div>
         <div class="gasa-wrap" id="laboGasaWrap">
           <div class="gasa-label">Se detectó una punción de líquido ascítico con Albúmina. Para calcular el GASA, pegá acá el laboratorio de sangre (plasmático) que incluya Albúmina:</div>
@@ -123,7 +122,6 @@
           <button type="button" class="btn-secondary" id="laboCopiarBtn">Copiar con formato</button>
           <span id="laboStatus"></span>
         </div>
-        <p class="note">"Copiar con formato" copia negrita y rojo, letra negra pura y sin fondo de color, para pegar directo en Google Docs. El texto de arriba también es editable antes de copiarlo. Arriba va el renglón completo (todos los parámetros habilitados); abajo, separado por una línea en blanco, va el renglón resumen (listado core + hallazgos alterados fuera de lista).</p>
       </div>
     </div>
 
@@ -427,7 +425,7 @@ function fld(id){ return document.getElementById(id); }
             {key:'hb',        out:'Hb', mode:'cond', labelRe:/\bhemoglobina\b/i},
             {key:'nitritos',  out:'Nitritos', mode:'cond', labelRe:/\bnitritos\b/i},
             {key:'urobil',    out:'Urobilinógeno', mode:'condPlain', labelRe:/\burobilin[oó]geno\b/i},
-            {key:'esterasa',  out:'Esterasa leucocitaria', mode:'condPlain', labelRe:/\besterasa\s+leucocitaria\b/i},
+            {key:'esterasa',  out:'Esterasa leucocitaria', mode:'cond', labelRe:/\besterasa\s+leucocitaria\b/i},
           ]
         },
         {
@@ -435,11 +433,12 @@ function fld(id){ return document.getElementById(id); }
           fields:[
             {marker:/\bsedimento\s+urinario\b/i},
             {key:'cel_epit', out:'Células epiteliales', mode:'condPlain', labelRe:/\bc[eé]lulas\s+epiteliales\b/i},
-            {key:'hematies', out:'Hematíes', mode:'condPlain', labelRe:/\bhemat[ií]es\b/i},
-            {key:'leucos',   out:'leucocitos', mode:'condPlain', labelRe:/\bleucocitos\b/i},
+            {key:'hematies', out:'Hematíes', mode:'condPlain', labelRe:/\bhemat[ií]es\b/i, countThreshold:5},
+            {key:'leucos',   out:'leucocitos', mode:'condPlain', labelRe:/\bleucocitos\b/i, countThreshold:5},
             {key:'cilindros',out:'Cilindros', mode:'cond', labelRe:/\bcilindros\b/i},
             {key:'cristales',out:'Cristales', mode:'cond', labelRe:/\bcristales\b/i},
             {key:'mucus_s',  out:'Mucus', mode:'condPlain', labelRe:/\bmucus\b/i},
+            {key:'bacterias',out:'Bacterias', mode:'condPlain', labelRe:/\bbacterias\b/i, qualCheck: laboUroBacteriasQual},
           ]
         }
       ]
@@ -687,7 +686,7 @@ function fld(id){ return document.getElementById(id); }
         else r = laboExtractLiqStd(flat, field, sectionIdx);
         if(r && r.value!=null && r.value!==''){
           const txt = field.code ? `${field.code}: ${r.value}` : r.value;
-          itemsHtml.push(r.abnormal ? `<span style="color:#C0392B;font-weight:700;">${txt}</span>` : txt);
+          itemsHtml.push(r.abnormal ? `<span style="color:#FF0000;font-weight:700;">${txt}</span>` : txt);
         }
       });
       if(itemsHtml.length>0) blocks.push(`${study.label}: ${itemsHtml.join(', ')}`);
@@ -718,7 +717,7 @@ function fld(id){ return document.getElementById(id); }
     const gasa = Math.round((serumAlb - ascAlb) * 100) / 100;
     const esHTP = gasa >= 1.1;
     const gasaTxtRaw = `${laboFmtNumber(gasa)} g/dL`;
-    const gasaTxt = `<span style="color:#C0392B;font-weight:700;">${gasaTxtRaw}</span>`;
+    const gasaTxt = `<span style="color:#FF0000;font-weight:700;">${gasaTxtRaw}</span>`;
     const interp = esHTP
       ? 'GASA ≥ 1.1 g/dL: indica hipertensión portal (sensibilidad aproximada 97%). La causa más frecuente es la cirrosis hepática; también se ve en insuficiencia cardíaca congestiva, hepatitis alcohólica, síndrome de Budd-Chiari, trombosis de la vena porta, metástasis hepáticas masivas y mixedema. Si además las proteínas totales del líquido son ≥2,5 g/dL orienta a causa cardíaca; si son &lt;2,5 g/dL orienta a cirrosis.'
       : 'GASA &lt; 1.1 g/dL: sugiere causas no relacionadas con hipertensión portal, como carcinomatosis peritoneal, tuberculosis peritoneal, pancreatitis, síndrome nefrótico, serositis por enfermedades del tejido conectivo, u obstrucción/infarto intestinal.';
@@ -811,6 +810,55 @@ function fld(id){ return document.getElementById(id); }
     return {byChunk, maskStart: mStart.index, maskEnd: Math.max(lastPos, startPos+20)};
   }
 
+  function laboUroCountAbnormal(raw, threshold){
+    const s = (raw||'').toLowerCase();
+    if(/abundante|regular\s+cantidad/.test(s)) return true;
+    const nums = s.match(/-?\d+(?:[.,]\d+)?/g);
+    if(!nums || !nums.length) return false;
+    const max = Math.max(...nums.map(n=>parseFloat(n.replace(',', '.'))));
+    return max > threshold;
+  }
+  function laboUroBacteriasQual(raw){
+    const s = (raw||'').toLowerCase();
+    if(/abundante|regular\s+cantidad|moderada\s+cantidad/.test(s)) return true;
+    if(/no\s+se\s+observ|escasa\s+cantidad|negativ/.test(s)) return false;
+    return null;
+  }
+  function laboUroFlagPositive(raw){
+    if(raw==null) return false;
+    const s = raw.trim().toLowerCase();
+    if(/no\s+contiene|negativo|no\s+se\s+observ|^normal$/.test(s)) return false;
+    return true;
+  }
+  function laboBuildUroInterpretacion(entriesByKey){
+    const nitritos = entriesByKey['nitritos'];
+    const esterasa = entriesByKey['esterasa'];
+    const hb = entriesByKey['hb'];
+    const leucos = entriesByKey['leucos'];
+    const hematies = entriesByKey['hematies'];
+    const bacterias = entriesByKey['bacterias'];
+
+    const nitritosPos = nitritos && laboUroFlagPositive(nitritos);
+    const esterasaPos = esterasa && laboUroFlagPositive(esterasa);
+    const leucosAb = leucos && laboUroCountAbnormal(leucos, 5);
+    const hbPos = hb && laboUroFlagPositive(hb);
+    const hematiesAb = (hematies && laboUroCountAbnormal(hematies, 5)) || hbPos;
+    const bacteriasAb = bacterias && laboUroBacteriasQual(bacterias)===true;
+
+    const sentences = [];
+    if(nitritosPos || esterasaPos || leucosAb || bacteriasAb){
+      const hallazgos = [];
+      if(nitritosPos) hallazgos.push('nitritos positivos');
+      if(esterasaPos) hallazgos.push('esterasa leucocitaria positiva');
+      if(leucosAb) hallazgos.push('leucocituria');
+      if(bacteriasAb) hallazgos.push('bacteriuria');
+      sentences.push(`${laboRed(hallazgos.join(', '))}: hallazgos de sedimento urinario sugestivos de infección urinaria; correlacionar con la clínica y solicitar urocultivo antes de iniciar o ajustar el tratamiento antibiótico empírico.`);
+    }
+    if(hematiesAb){
+      sentences.push(`${laboRed('hematuria')}: correlacionar con sondaje vesical traumático, litiasis, o proceso inflamatorio/infeccioso del tracto urinario.`);
+    }
+    return sentences;
+  }
   function laboIsNormalText(v){
     const s = v.trim().toLowerCase().replace(/\s+/g,' ');
     if(/no\s+se\s+observan?\b/.test(s)) return true;
@@ -852,10 +900,21 @@ function fld(id){ return document.getElementById(id); }
           if(val!=null) return {text:val, abnormal:true, core:false, show:true};
         }
       }
-      const normal = laboIsNormalText(raw);
+      let normal, colorRed;
+      if(field.countThreshold!=null){
+        const ab = laboUroCountAbnormal(raw, field.countThreshold);
+        normal = !ab; colorRed = ab;
+      } else if(field.qualCheck){
+        const ab = field.qualCheck(raw);
+        if(ab===true){ normal=false; colorRed=true; }
+        else if(ab===false){ normal=true; colorRed=false; }
+        else { normal = laboIsNormalText(raw); colorRed = field.mode==='cond' && !normal; }
+      } else {
+        normal = laboIsNormalText(raw);
+        colorRed = field.mode==='cond' && !normal;
+      }
       const text = laboSentenceCase(raw);
       if(normal) return {text, abnormal:false, core:false, show: !!fullMode};
-      const colorRed = field.mode==='cond';
       return {text, abnormal:colorRed, core:false, show:true};
     }
     return null;
@@ -883,7 +942,7 @@ function fld(id){ return document.getElementById(id); }
           const cls = laboClassifyTextField(e.field, e.value, fullMode);
           if(!cls) return;
           const txt = e.field.out ? (e.field.noColon ? `${e.field.out} ${cls.text}` : `${e.field.out}: ${cls.text}`) : cls.text;
-          const html = cls.abnormal ? `<span style="color:#C0392B;font-weight:700;">${txt}</span>` : txt;
+          const html = cls.abnormal ? `<span style="color:#FF0000;font-weight:700;">${txt}</span>` : txt;
           if(cls.core){
             hasCoreField = true;
             coreParts.push(html);
@@ -903,7 +962,21 @@ function fld(id){ return document.getElementById(id); }
         }
         if(chunkText) chunkTexts.push(chunkText);
       });
-      if(chunkTexts.length>0) blocks.push(chunkTexts.join('<br>'));
+
+      if(chunkTexts.length>0){
+        const flatEntries = {};
+        scan.byChunk.forEach(arr=>arr.forEach(e=>{ flatEntries[e.field.key] = e.value; }));
+        if(study.id === 'uroanalisis'){
+          const interp = laboBuildUroInterpretacion(flatEntries);
+          if(interp.length) chunkTexts.push(`<b>Interpretación</b>: ${interp.join(' ')}`);
+        } else if(study.id === 'urocultivo'){
+          const resultado = flatEntries['resultado'];
+          if(resultado && !/sin\s+desarrollo|negativo|no\s+se\s+aisl/i.test(resultado)){
+            chunkTexts.push(`<b>Interpretación</b>: ${laboRed('urocultivo positivo')} (${laboSentenceCase(resultado)}); ajustar antibioticoterapia según antibiograma y sensibilidad.`);
+          }
+        }
+        blocks.push(chunkTexts.join('<br>'));
+      }
     });
     return {blocks, ranges};
   }
@@ -1040,9 +1113,23 @@ function fld(id){ return document.getElementById(id); }
     'Troponina': {alto:'troponina elevada; correlacionar con clínica y ECG para descartar síndrome coronario agudo'},
     'Ac Lac': {alto:'lactato elevado; considerar hipoperfusión tisular/shock'},
     'PSA':  {alto:'PSA elevado; correlacionar clínicamente y considerar evaluación urológica'},
+    'TP%':  {bajo:'tiempo de protrombina prolongado (% descendido); evaluar función hepática y/o uso de anticoagulantes orales, considerar corrección con vitamina K si corresponde'},
+    'RIN':  {alto:'RIN elevado; evaluar anticoagulación con antagonistas de vitamina K o coagulopatía de causa hepática, correlacionar con riesgo de sangrado'},
+    'KPTT': {alto:'KPTT prolongado; evaluar déficit de factores de la vía intrínseca, uso de heparina o inhibidor lúpico, correlacionar con clínica de sangrado', bajo:'KPTT acortado; de escasa relevancia clínica aislada, valorar estado protrombótico o error preanalítico'},
+    'HbA1c': {alto:'hemoglobina glicosilada elevada; sugiere mal control glucémico en los últimos 3 meses, reforzar el esquema hipoglucemiante'},
+    'PCR':  {alto:'PCR elevada; reactante de fase aguda, sugiere proceso inflamatorio o infeccioso activo'},
+    'LDH':  {alto:'LDH elevada; marcador inespecífico de daño celular (hemólisis, isquemia, neoplasia); correlacionar con la clínica'},
+    'Amilasemia': {alto:'hiperamilasemia; considerar pancreatitis aguda u otras causas (patología de glándulas salivales, insuficiencia renal)'},
+    'GGT':  {alto:'GGT elevada; sugiere colestasis o consumo de alcohol; correlacionar con FAL'},
+    'colesterol T': {alto:'hipercolesterolemia; valorar riesgo cardiovascular global y perfil lipídico completo'},
+    'HDL':  {bajo:'HDL bajo; factor de riesgo cardiovascular adicional'},
+    'LDL':  {alto:'LDL elevado; valorar riesgo cardiovascular e indicación de estatinas según objetivo'},
+    'Tg':   {alto:'hipertrigliceridemia; si es severa (>500-1000 mg/dl) considerar riesgo de pancreatitis'},
+    'vitamina B12': {bajo:'déficit de vitamina B12; considerar como causa de anemia macrocítica y valorar suplementación'},
+    'Ac Fólico': {bajo:'déficit de ácido fólico; considerar como causa de anemia macrocítica y valorar suplementación'},
   };
   function laboRed(txt){
-    return `<span style="color:#C0392B;font-weight:700;">${txt}</span>`;
+    return `<span style="color:#FF0000;font-weight:700;">${txt}</span>`;
   }
   function laboAnemiaTipo(vcm, hcm){
     const size = vcm==null ? '' : (vcm<80 ? 'microcítica' : (vcm>100 ? 'macrocítica' : 'normocítica'));
@@ -1246,13 +1333,21 @@ function fld(id){ return document.getElementById(id); }
   }
 
   function laboProcesar(){
-    const raw = $input.value;
+    let raw = $input.value;
     if(!raw.trim()){
       $output.innerHTML = '';
       $status.textContent = 'Pegá primero el texto del laboratorio.';
       return;
     }
-    const flat = raw.replace(/[\t\r\n]+/g,' ').replace(/\s+/g,' ');
+    let pendingList = '';
+    const pendMatch = raw.match(/an[aá]lisis\s+pendientes\s*:\s*([^\n]+)/i);
+    if(pendMatch) pendingList = pendMatch[1].trim().replace(/\s*\|\s*/g, ', ');
+    raw = raw.replace(/an[aá]lisis\s+pendientes\s*:[^\n]*\n?/gi, ' ');
+    raw = raw.replace(/podr[aá]\s+imprimir\/?\s*descargar[^\n]*\n?/gi, ' ');
+    raw = raw.replace(/esta\s+orden\s+tiene\s+resultados\s+pendientes/gi, ' ');
+
+    let flat = raw.replace(/[\t\r\n]+/g,' ').replace(/\s+/g,' ');
+    flat = flat.replace(/\b(grafico|evolucion|item)\b/gi, ' ').replace(/\s+/g,' ').trim();
 
     function laboMaskRanges(str, ranges){
       if(!ranges.length) return str;
@@ -1306,6 +1401,9 @@ function fld(id){ return document.getElementById(id); }
       } else if(param.kind==='qual'){
         const r = laboExtractQual(flatMasked, param);
         if(r){ text = r.value; abnormal = true; ok = true; pos = r.pos; }
+      } else if(param.kind==='raw'){
+        const r = laboExtractStd(flatMasked, param, sex);
+        if(r){ text = laboFmtNumber(r.value); abnormal = false; dir = null; ok = true; pos = r.pos; }
       } else {
         const r = laboExtractStd(flatMasked, param, sex);
         if(r){ text = laboFmtNumber(r.value); abnormal = laboIsAbnormal(r.value, r.range); dir = laboDir(r.value, r.range); ok = true; pos = r.pos; }
@@ -1390,7 +1488,7 @@ function fld(id){ return document.getElementById(id); }
       const parts = items.map(r=>{
         const txt = `${r.code}: ${r.text}`;
         return r.abnormal
-          ? `<span style="color:#C0392B;font-weight:700;">${txt}</span>`
+          ? `<span style="color:#FF0000;font-weight:700;">${txt}</span>`
           : txt;
       });
       return prefix + parts.join(', ') + '.';
@@ -1456,7 +1554,8 @@ function fld(id){ return document.getElementById(id); }
     const uroTxt = textStudyBlocks.length ? ` Uroanálisis/urocultivo: ${textStudyBlocks.length} estudio(s).` : '';
     const gasaTxt = gasaBlock ? ' GASA calculado.' : (ascAlb!=null ? ' Falta el laboratorio plasmático para calcular el GASA.' : '');
     const abgTxt = abgInterp ? ' Se detectó y analizó el estado ácido-base (ver sección 4 para ajustar a mano).' : '';
-    $status.textContent = `Listo. Renglón completo: ${line2Items.length} dato(s). Renglón resumen: ${line1CoreCount} del listado + ${catalogAlteradosFueraCore} alterado(s) adicionales del catálogo + ${extrasCount} adicional(es) alterado(s) fuera de catálogo.${liqTxt}${uroTxt}${gasaTxt}${abgTxt}`;
+    const pendTxt = pendingList ? ` Ojo: esta orden tiene estudios aún pendientes de resultado (${pendingList}), no incluidos en la conversión.` : '';
+    $status.textContent = `Listo. Renglón completo: ${line2Items.length} dato(s). Renglón resumen: ${line1CoreCount} del listado + ${catalogAlteradosFueraCore} alterado(s) adicionales del catálogo + ${extrasCount} adicional(es) alterado(s) fuera de catálogo.${liqTxt}${uroTxt}${gasaTxt}${abgTxt}${pendTxt}`;
   }
 
   const SECTION_STOPWORDS = [
@@ -1468,11 +1567,6 @@ function fld(id){ return document.getElementById(id); }
     'paciente','fecha','medico','servicio','sala','sexo','edad'
   ];
 
-  fld('laboProcesarBtn').addEventListener('click', ()=>{
-    laboFullMode = false;
-    $labCompletoBtn.classList.remove('active');
-    laboProcesar();
-  });
   $labCompletoBtn.addEventListener('click', ()=>{
     laboFullMode = true;
     $labCompletoBtn.classList.add('active');
@@ -1488,6 +1582,26 @@ function fld(id){ return document.getElementById(id); }
     $status.textContent = '';
     $input.focus();
   });
+  $output.addEventListener('copy', (e)=>{
+    const sel = window.getSelection();
+    if(!sel || sel.rangeCount===0 || sel.isCollapsed) return;
+    const range = sel.getRangeAt(0);
+    if(!$output.contains(range.commonAncestorContainer)) return;
+    const container = document.createElement('div');
+    container.appendChild(range.cloneContents());
+    container.querySelectorAll('*').forEach(el=>{
+      el.style.background = 'transparent';
+      el.style.backgroundColor = 'transparent';
+    });
+    const html = `<div style="background:transparent;color:#000000;font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:12pt;">${container.innerHTML}</div>`;
+    const text = container.innerText;
+    if(e.clipboardData){
+      e.clipboardData.setData('text/html', html);
+      e.clipboardData.setData('text/plain', text);
+      e.preventDefault();
+    }
+  });
+
   fld('laboCopiarBtn').addEventListener('click', async ()=>{
     if(!$output.innerHTML.trim()){
       $status.textContent = 'No hay nada para copiar todavía.';
