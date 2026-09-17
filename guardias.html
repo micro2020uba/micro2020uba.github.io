@@ -871,9 +871,18 @@ try{
   });
   // El popover es position:fixed relativo al botón que lo abrió; si la página
   // hace scroll o la ventana cambia de tamaño, lo más simple y seguro es
-  // cerrarlo en vez de intentar reposicionarlo en cada evento.
-  window.addEventListener('scroll', function(){ closeManejoPopover(); }, true);
-  window.addEventListener('resize', function(){ closeManejoPopover(); });
+  // cerrarlo en vez de intentar reposicionarlo en cada evento. OJO: en el
+  // celular, tocar el campo "agregar opción nueva" para escribir abre el
+  // teclado, y eso por sí solo ya dispara scroll/resize (el navegador
+  // mueve la vista para que el campo quede visible) — si cerráramos el
+  // popover en ese momento, nunca se podría escribir ni agregar nada
+  // nuevo. Por eso, mientras el foco esté dentro del popover (el usuario
+  // está escribiendo ahí) no se cierra por estos dos eventos.
+  function focoDentroDelPopover(){
+    return !!(document.activeElement && manejoPopEl.contains(document.activeElement));
+  }
+  window.addEventListener('scroll', function(){ if(focoDentroDelPopover()) return; closeManejoPopover(); }, true);
+  window.addEventListener('resize', function(){ if(focoDentroDelPopover()) return; closeManejoPopover(); });
 
   function renderSummary(){
     const box = document.getElementById('summaryList');
