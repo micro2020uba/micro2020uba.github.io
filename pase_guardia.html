@@ -222,29 +222,83 @@
   .glosario-term dd{margin:2px 0 0;font-size:12px;line-height:1.5;}
   .glosario-term .ejemplo{font-style:italic;color:var(--muted);display:block;margin-top:3px;}
 
-  /* ===== Modal "Listado de pacientes" (cama / DNI / nombre / edad, del pase de sala) ===== */
+  /* ===== Modal "Listado de pacientes" (cama / DNI / nombre / edad / MI, del pase de sala) ===== */
   .pat-list-content{flex:1;overflow:auto;padding:16px 20px;background:var(--paper);}
   .pat-list-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
   .pat-list-toolbar input{flex:1;min-width:180px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;
     padding:8px 10px;border:1px solid var(--line-soft);border-radius:2px;background:var(--panel);color:var(--ink);}
-  .pat-list-note{font-size:11px;color:var(--muted);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:10px;}
-  table.pat-list-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .pat-list-note{font-size:11px;color:var(--muted);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+
+  /* --- Barra de "Mis pacientes" (prioridad de orden) --- */
+  .pat-priority-bar{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:12px;padding:8px 10px;
+    background:var(--panel);border:1px solid var(--line-soft);border-radius:3px;}
+  .pat-priority-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);
+    font-weight:700;margin-right:2px;white-space:nowrap;}
+  .pat-priority-chip{display:inline-flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;font-weight:700;color:var(--accent-dark);background:#eef4f2;border:1px solid var(--accent);
+    border-radius:12px;padding:3px 6px 3px 10px;}
+  .pat-priority-chip button{background:none;border:none;color:var(--accent-dark);font-size:13px;cursor:pointer;
+    line-height:1;padding:0 2px;}
+  .pat-priority-chip button:hover{color:var(--danger);}
+  .pat-priority-empty{font-size:11px;color:var(--muted);font-style:italic;}
+  .pat-priority-add{display:flex;align-items:center;gap:5px;margin-left:auto;}
+  .pat-priority-add input{width:70px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;
+    padding:4px 6px;border:1px solid var(--line-soft);border-radius:2px;background:var(--field-bg);color:var(--ink);}
+  .pat-priority-add button{font-size:11px;font-weight:600;border:1px solid var(--ink);background:var(--panel);
+    color:var(--ink);border-radius:2px;padding:4px 8px;cursor:pointer;}
+  .pat-priority-add button:hover{background:var(--ink);color:var(--paper);}
+
+  table.pat-list-table{width:100%;border-collapse:collapse;font-size:12.5px;table-layout:fixed;}
+  table.pat-list-table col.col-cama{width:15%;}
+  table.pat-list-table col.col-dni{width:20%;}
+  table.pat-list-table col.col-nombre{width:26%;}
+  table.pat-list-table col.col-edad{width:10%;}
+  table.pat-list-table col.col-mi{width:23%;}
+  table.pat-list-table col.col-del{width:6%;}
   table.pat-list-table th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.03em;
     color:var(--muted);border-bottom:2px solid var(--ink);padding:6px 8px;position:sticky;top:0;background:var(--paper);}
-  table.pat-list-table td{padding:6px 8px;border-bottom:1px solid var(--line-soft);}
+  table.pat-list-table td{padding:6px 8px;border-bottom:1px solid var(--line-soft);vertical-align:top;}
   table.pat-list-table tr:hover td{background:var(--panel);}
-  table.pat-list-table td.cama-cell{white-space:nowrap;}
-  table.pat-list-table td.dni-cell{white-space:nowrap;}
+  table.pat-list-table tr.priority-row td.cama-cell{position:relative;}
+  table.pat-list-table tr.priority-row td.cama-cell::before{content:'★';color:var(--accent-dark);font-size:10px;
+    position:absolute;left:0;top:9px;}
+  table.pat-list-table tr.priority-row td.cama-cell .pat-row-input{padding-left:12px;}
   table.pat-list-table td.del-cell{width:28px;text-align:center;}
   .pat-list-empty{padding:20px 4px;color:var(--muted);font-size:12.5px;}
   .pat-row-input{width:100%;font-family:'IBM Plex Mono',monospace;font-size:12.5px;
-    padding:5px 6px;border:1px solid transparent;border-radius:2px;background:transparent;color:var(--ink);}
+    padding:5px 6px;border:1px solid transparent;border-radius:2px;background:transparent;color:var(--ink);
+    white-space:normal;word-break:break-word;}
+  .pat-row-input.mi-input{font-family:'IBM Plex Sans',sans-serif;resize:vertical;min-height:20px;
+    line-height:1.35;overflow:hidden;}
   .pat-row-input:hover{border-color:var(--line-soft);}
   .pat-row-input:focus{outline:none;border-color:var(--accent-dark);background:var(--panel);}
   .pat-row-input.cama-input{font-weight:700;color:var(--accent-dark);}
   .pat-row-del-btn{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;line-height:1;padding:2px 4px;}
   .pat-row-del-btn:hover{color:var(--danger);}
   .pat-list-savestatus{font-size:11px;color:var(--muted);margin-left:8px;white-space:nowrap;}
+  .pat-list-import-btn{font-size:11px;font-weight:600;border:1px solid var(--accent-dark);background:var(--panel);
+    color:var(--accent-dark);border-radius:2px;padding:6px 10px;cursor:pointer;white-space:nowrap;}
+  .pat-list-import-btn:hover{background:var(--accent-dark);color:#fff;}
+
+  /* --- Debajo de ~680px: cada fila pasa a verse como una tarjeta apilada
+     (cama/DNI/nombre no cabían enteros en una tabla de 5-6 columnas en un
+     celular). Cada celda muestra su etiqueta arriba del valor. --- */
+  @media (max-width:680px){
+    table.pat-list-table thead{display:none;}
+    table.pat-list-table, table.pat-list-table tbody, table.pat-list-table tr, table.pat-list-table td{
+      display:block;width:100%;
+    }
+    table.pat-list-table tr{border:1px solid var(--line-soft);border-radius:4px;margin-bottom:10px;
+      padding:8px 34px 4px 10px;position:relative;background:var(--panel);}
+    table.pat-list-table tr.priority-row{border-color:var(--accent);border-width:2px;}
+    table.pat-list-table td{border-bottom:none;padding:5px 0;}
+    table.pat-list-table td::before{content:attr(data-label);display:block;font-size:10px;
+      text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;margin-bottom:2px;}
+    table.pat-list-table tr.priority-row td.cama-cell::before{content:'★ CAMA';}
+    table.pat-list-table td.cama-cell .pat-row-input{padding-left:6px;}
+    table.pat-list-table td.del-cell{position:absolute;top:6px;right:4px;width:auto;padding:0;}
+    table.pat-list-table td.del-cell::before{content:none;}
+  }
 
   /* ===== Login (Firebase Auth) ===== */
   body:not(.auth-in) header, body:not(.auth-in) main, body:not(.auth-in) footer, body:not(.auth-in) #printSingleTarget{
@@ -326,8 +380,17 @@
       <button type="button" class="labo-standalone-close" id="listadoPacientesCloseBtn" title="Cerrar">×</button>
     </div>
     <div class="pat-list-content" id="listadoPacientesContent">
+      <div class="pat-priority-bar" id="patPriorityBar">
+        <span class="pat-priority-label">★ Mis pacientes:</span>
+        <div id="patPriorityChips" style="display:contents;"></div>
+        <div class="pat-priority-add">
+          <input type="text" id="patPriorityInput" placeholder="cama" inputmode="numeric">
+          <button type="button" id="patPriorityAddBtn">+ Agregar</button>
+        </div>
+      </div>
       <div class="pat-list-toolbar">
         <input type="text" id="patListSearch" placeholder="Buscar por cama, DNI o nombre...">
+        <button type="button" class="pat-list-import-btn" id="patListImportMiBtn" title="Completa el motivo de internación de las camas 101-140 buscando por DNI en el último listado de internados cargado">⇩ Importar MI (101-140)</button>
         <button type="button" class="secondary small" id="patListAddBtn">+ Agregar paciente</button>
       </div>
       <div class="pat-list-note" id="patListNote"></div>
@@ -2075,11 +2138,26 @@ function iniciarAppPrincipal(){
     if(rosterSavePending) return; // no pisar lo que el usuario está escribiendo ahora mismo
     if(snap.exists && snap.exists()){
       const data = snap.data();
-      patientRoster = Array.isArray(data && data.items) ? data.items : [];
+      const remoteVersion = data && data.rosterSyncVersion;
+      if(remoteVersion === ROSTER_SEED_VERSION){
+        // Ya está sincronizado con la foto de pase de sala más nueva: usar
+        // lo que hay guardado (incluye toda edición manual posterior).
+        patientRoster = Array.isArray(data && data.items) ? data.items : [];
+        if(Array.isArray(data && data.priorityBeds)) priorityBeds = data.priorityBeds.map(String);
+      } else if(!rosterMigrated){
+        // El doc existe pero es de un pase de sala más viejo (o nunca tuvo
+        // versión): se actualiza una sola vez con la semilla nueva
+        // (patientRoster ya trae la foto del 16/09/2026 cargada arriba).
+        // priorityBeds del usuario se conserva si ya las había configurado.
+        if(Array.isArray(data && data.priorityBeds) && data.priorityBeds.length) priorityBeds = data.priorityBeds.map(String);
+        rosterMigrated = true;
+        scheduleRosterSave();
+      }
     } else if(!rosterMigrated){
       // Primera vez que corre esto: el doc todavía no existe en Firestore, así que
-      // subimos la semilla inicial (patientRoster ya trae la foto del 11/09/2026)
-      // para que desde acá en más quede persistida y editable para todos.
+      // subimos la semilla inicial (patientRoster y priorityBeds ya traen sus
+      // valores por defecto) para que desde acá en más quede persistida y
+      // editable para todos.
       rosterMigrated = true;
       scheduleRosterSave();
     }
@@ -2087,6 +2165,7 @@ function iniciarAppPrincipal(){
     const overlay = document.getElementById('listadoPacientesOverlay');
     const searchInput = document.getElementById('patListSearch');
     if(overlay && overlay.classList.contains('open')){
+      renderPriorityBar();
       renderPatientRosterTable(searchInput ? searchInput.value : '');
     }
   }, ()=>{});
@@ -2158,52 +2237,119 @@ window.iniciarAppPrincipal = iniciarAppPrincipal;
   });
 })();
 
-/* ================= Listado de pacientes (cama / DNI / nombre / edad) =================
+/* ================= Listado de pacientes (cama / DNI / nombre / edad / MI) =================
    Editable desde la app y compartido entre dispositivos vía Firestore
-   (doc config/patientRoster, campo "items"). Arranca con la foto extraída del
-   pase de sala de Clínica Médica del 11/09/2026 como semilla inicial: la primera
-   vez que corre en un dispositivo con sesión iniciada, esa semilla se sube a
-   Firestore (si el doc todavía no existe) y desde ahí ya queda editable y
-   sincronizado para todos — no hace falta tocar este array a mano nunca más. */
+   (doc config/patientRoster, campos "items", "priorityBeds" y
+   "rosterSyncVersion"). La semilla de acá abajo es la foto del pase de sala
+   de Clínica Médica del 16/09/2026 (las 24 camas 101-140 que figuraban ese
+   día, con DNI, nombre y motivo de internación tal como están en ese
+   documento). Si el doc de Firestore todavía no existe, esta semilla se
+   sube tal cual la primera vez. Si ya existía de antes (con datos de un
+   pase más viejo), ROSTER_SEED_VERSION fuerza una actualización única con
+   esta foto más nueva la primera vez que corre este archivo — después de
+   eso ya queda editable y sincronizado a mano para todos, sin volver a
+   pisarse solo. Para traer un pase más nuevo en el futuro: reemplazar este
+   array y subir ROSTER_SEED_VERSION a una fecha distinta. */
+const ROSTER_SEED_VERSION = '2026-09-16-pase-sala';
 let patientRoster = [
-  {id:'seed_c101',cama:'C101',dni:'2748267',nombre:'Alvarez Laura',edad:'87'},
-  {id:'seed_c103',cama:'C103',dni:'95409850',nombre:'Garces Bertha',edad:'80'},
-  {id:'seed_c104',cama:'C104',dni:'4579456',nombre:'Arreguez Martha Nora',edad:'83'},
-  {id:'seed_c105',cama:'C105',dni:'10488725',nombre:'Luis Luna',edad:'73'},
-  {id:'seed_c106',cama:'C106',dni:'22574575',nombre:'Leguizamon Ignacio',edad:'54'},
-  {id:'seed_c107',cama:'C107',dni:'4395327',nombre:'Longinotti Antonio',edad:'84'},
-  {id:'seed_c109',cama:'C109',dni:'10424858',nombre:'Gallo Jorge',edad:'74'},
-  {id:'seed_c111',cama:'C111',dni:'38028096',nombre:'Seco Ezequiel',edad:'32'},
-  {id:'seed_c112',cama:'C112',dni:'4448459',nombre:'Gonzalez Alicia',edad:'84'},
-  {id:'seed_c114',cama:'C114',dni:'10930311',nombre:'Pabla Duarte',edad:'73'},
-  {id:'seed_c115',cama:'C115',dni:'93283272',nombre:'Casas Angela',edad:'92'},
-  {id:'seed_c116',cama:'C116',dni:'4168449',nombre:'Ivaldi Horacio',edad:'90'},
-  {id:'seed_c117',cama:'C117',dni:'92912877',nombre:'Duda Mieczyslaw',edad:'86'},
-  {id:'seed_c118',cama:'C118',dni:'93385970',nombre:'Barral Manuel',edad:'91'},
-  {id:'seed_c119',cama:'C119',dni:'94027445',nombre:'Cafaro Jose',edad:'78'},
-  {id:'seed_c120',cama:'C120',dni:'3537387',nombre:'Souto Geronima',edad:'87'},
-  {id:'seed_c121',cama:'C121',dni:'4253321',nombre:'Comans, Julia Josefa',edad:'86'},
-  {id:'seed_c122',cama:'C122',dni:'4571515',nombre:'Zarate Andrea',edad:'82'},
-  {id:'seed_c123',cama:'C123',dni:'96166476',nombre:'Hernandez Susana',edad:'94'},
-  {id:'seed_c124',cama:'C124',dni:'10965178',nombre:'Perez Maria Angelica',edad:'73'},
-  {id:'seed_c125',cama:'C125',dni:'5104461',nombre:'Sanchez Ana',edad:'81'},
-  {id:'seed_c126',cama:'C126',dni:'5306560',nombre:'Marcos, Maria del Carmen',edad:'80'},
-  {id:'seed_c127',cama:'C127',dni:'3674639',nombre:'Elias Lidia Angelica',edad:'88'},
-  {id:'seed_c129',cama:'C129',dni:'2957241',nombre:'Nelly Servida',edad:'93'},
-  {id:'seed_c130',cama:'C130',dni:'3770202',nombre:'Simon Alicia',edad:'87'},
-  {id:'seed_c132',cama:'C132',dni:'93709203',nombre:'Afonso Manuel',edad:'80'},
-  {id:'seed_c133',cama:'C133',dni:'20519147',nombre:'Paganelli, Alejandro',edad:'57'}
+  {id:"seed_c101",cama:"C101",dni:"4989656",nombre:"Nuñez Beatriz",edad:"82",mi:"infección de piel y partes blandas en MMII en tto con AMS TMS dia 4 (FI 12/9)"},
+  {id:"seed_c103",cama:"C103",dni:"95409850",nombre:"Garces Bertha",edad:"80",mi:"Caso social"},
+  {id:"seed_c104",cama:"C104",dni:"4579456",nombre:"Arreguez Martha Nora",edad:"83",mi:"NAC con AMS + Claritromicina dia 8 (FI 6/9) en contexto de fibrosis bilateral ya finalizó atb"},
+  {id:"seed_c105",cama:"C105",dni:"10488725",nombre:"Luis Luna",edad:"73",mi:"POP alejado Fx de cadera izq caso Social Caso social (Sit calle) TEC sin pérdida de conciencia + Trauma facial con fractura de maxilar inferior con profilaxis antibiótica con AMS D7 (FI 13/4)"},
+  {id:"seed_c107",cama:"C107",dni:"4395327",nombre:"Longinotti Antonio",edad:"84",mi:"NIH en tto PTZ 5 (FI 12/9) Sepsis a foco respiratorio en tto con PTZ dia 5 (FI 11/9) Social: Tercer nivel TEC S/ pérdida SCA secundario a ITU en tto PTZ día 7"},
+  {id:"seed_c109",cama:"C109",dni:"10424858",nombre:"Gallo Jorge",edad:"74",mi:"Social - Tercer nivel ITU en tto con Cefalexina dia 5 (FI 11/9) TEC sin pérdida de conciencia secundario a caída de propia altura"},
+  {id:"seed_c111",cama:"C111",dni:"38028096",nombre:"Seco Ezequiel",edad:"32",mi:"ITU complicada en tto con Ciprofloxacina dia 2 (FI 14/9) (Día 8 de tratamiento ATB total ) tto con Colistin dia 7 (FI 7/9)"},
+  {id:"seed_c112",cama:"C112",dni:"4448459",nombre:"Gonzalez Alicia",edad:"84",mi:"POP alejado de cadera complicado+ nmn broncosspirativa en tto con colistin y meropenem dia 7 (FI 7/9)"},
+  {id:"seed_c114",cama:"C114",dni:"10930311",nombre:"Pabla Duarte",edad:"73",mi:"SCA secundario a sepsis a foco urinario score SOFA 3 PUNTOS en tto con ceftriaxona dia 5 (FI 10/9)"},
+  {id:"seed_c115",cama:"C115",dni:"93283272",nombre:"Casas Angela",edad:"92",mi:"SCA secundario a NIH en tto con Meropenem dia 8 (FI 7/9) SCA secundario a ITU en tto con PTZ dia 6 (FI 29/8)"},
+  {id:"seed_c116",cama:"C116",dni:"4168449",nombre:"Ivaldi Horacio",edad:"90",mi:"Caso social: Tercer nivel Sme febril con foco probable respiratorio en tto con PTZ dia 5 (fi 9/8) Sme confusional por impactación fecal"},
+  {id:"seed_c117",cama:"C117",dni:"92912877",nombre:"Duda Mieczyslaw",edad:"86",mi:"NIH + ITU complicada en tto con Meropenem dia 5 (FI 11/9) Tercer nivel Tvp en miembro inferior izq con tto anticoagulante (enoxa) Sme febril a foco respi en tto PTZ día 6 (FI 12/8) Sme confusional hiperactivo agudo secundario a bacteremia a foco urinario en tto con imipenem dia 10 (fi: 24/7)"},
+  {id:"seed_c118",cama:"C118",dni:"93385970",nombre:"Barral Manuel",edad:"91",mi:"Sepsis por probable foco hematoma de psoas en tto con Meropenem dia 5 (FI 11/9) sepsis a NACS + impactación fecal en tto con AMS + Claritromicina dia 7 (FI 3/9)"},
+  {id:"seed_c119",cama:"C119",dni:"94027445",nombre:"Cafaro Jose",edad:"78",mi:"Social - tercer nivel SCA secundario a NAC en tto con Levofloxacina y claritromicina dia 7 SCA secundario a Insuficiencia respiratoria tipo I por NAC en tto con Levofloxacina y Claritromicina Dia 6 (2/09) ACV isquemico evolucionado"},
+  {id:"seed_c120",cama:"C120",dni:"3537387",nombre:"Souto Geronima",edad:"87",mi:"Caso social"},
+  {id:"seed_c121",cama:"C121",dni:"4253321",nombre:"Comans, Julia Josefa",edad:"86",mi:"social: a definir tercer nivel Sindrome confusional agudo secundario a NIH en tto con PTZ dia 8 (FI 7/9) Ceftriaxona DIA 9 (fi: 26/08)"},
+  {id:"seed_c122",cama:"C122",dni:"4571515",nombre:"Zarate Andrea",edad:"82",mi:"caso social TEC por caida de altura sec de etio multifactorial( deshidratación + hipoNa mod) fx codo izquierdo con cabestrillo Sospecha de IPYB en tto con TMS finalizado TEC en contexto síndrome confusional por ITU en tto con AMS (FI 21/5) + Hiponatremia y ortostatismo en contexto de hidroclorotiazida"},
+  {id:"seed_c123",cama:"C123",dni:"96166476",nombre:"Hernandez Susana",edad:"94",mi:"SCA secundario a ITU + NAC. En tto con Ceftriaxona (FI: 6/9. D: 9)"},
+  {id:"seed_c124",cama:"C124",dni:"14181501",nombre:"Sanchez Maria Elena",edad:"66",mi:"SCA secundario a ITU + NACS en tto PTZ dia 5 (FI 10/9) TVP derecha anticoagulada con enoxaparina. Score ACV isquemico evolucionado probable origen cardioembolico"},
+  {id:"seed_c126",cama:"C126",dni:"5306560",nombre:"Marcos, Maria del Carmen",edad:"80",mi:"Internación domiciliaria SCA secundario a NAC en tto con AMS + claritromicina dia 8 (FI 7/9)"},
+  {id:"seed_c127",cama:"C127",dni:"3674639",nombre:"Elias Lidia Angelica",edad:"88",mi:"Social: tercer nivel Itu intrahospitalaria en tto con PTZ dia 2 (FI: 14/9) SCA secundario NAC en tto con Amoxicilina/clavulánico + claritromicina dia 6 (FI 21/8) SCA secundario a sme diarreico por clostridium en tto con vancomicina dia 10 (FI 14/8) Foco respi en tto con AMS día 3 (FI 18/8) sepsis a foco abdominal por diarrea por clostridium en tto vancomicina día 4 (FI 14/8)"},
+  {id:"seed_c134",cama:"C134",dni:"7837819",nombre:"Garritani Juan",edad:"77",mi:""},
+  {id:"seed_c135",cama:"C135",dni:"93709203",nombre:"Afonso Manuel",edad:"80",mi:"Caso social Sme confusional en contexto de progresión de demencia Sme febril a posible foco urinario en tto con PTZ D7 (FI 31/7)- ultimo dia"},
+  {id:"seed_c136",cama:"C136",dni:"20519147",nombre:"Paganelli, Alejandro",edad:"57",mi:"Encefalopatia hepatica en contexto de SA (GASA>1.1) secundario a hipertensión portal por cirrosis ALD NIH en tto PTZ dia 6 (FI 10/9) Falla renal por oliguria (Ritmo diurético 0,27)"}
 ];
 let rosterLoaded = false;
 let rosterMigrated = false;
 let rosterSavePending = false;
 let rosterSaveTimer = null;
 
+/* "Mis pacientes": camas a las que se les da prioridad de orden (van
+   siempre primero, en orden creciente). Se guarda junto con el listado en
+   el mismo doc de Firestore (campo "priorityBeds", array de strings solo
+   con el número de cama, sin la "C"), así que es editable y persiste. La
+   semilla de acá abajo solo se usa una vez, si el doc todavía no existe. */
+let priorityBeds = ['101','109','111','120','123','126','127','129'];
+
+/* Motivos de internación (MI) leídos del último "Listado de pacientes
+   internados" (12hs) subido, restringido a las camas C101–C140 como pidió
+   el usuario. Se usan solo para el botón "Importar MI": buscan por DNI
+   (no por número de cama, porque el número de cama de un paciente puede
+   cambiar entre un listado y otro) y completan el campo MI de los
+   pacientes del listado que todavía no lo tengan cargado. No pisan un MI
+   ya escrito a mano. Actualizar este objeto a mano cada vez que se quiera
+   reimportar desde un listado más nuevo. */
+const MI_IMPORT_BY_DNI = {
+  "4989656": "DIABETES MELLITUS TIPO 2",
+  "46342309": "RETRASO MADURATIVO CON BR",
+  "95409850": "DETERIORO COGNITIVO",
+  "4579456": "NAC",
+  "10488725": "TRAUMATISMO FACIAL",
+  "34956317": "HDA",
+  "4395327": "TEC SIN PERDIDA",
+  "92186251": "EPOC + HIV",
+  "10424858": "DHA",
+  "22574575": "HEMORRAGIA DIGESTIVA ALTA",
+  "38028096": "INFECCION DEL TRACTO URIN",
+  "4448459": "INFECCION DEL SITO QUIRUR",
+  "10692608": "ACV",
+  "10930311": "INFECCION URINARIA",
+  "93283272": "FIEBREZOL",
+  "4168449": "SINDROME CONFUSIONAL",
+  "92912877": "UROSEPSIS",
+  "93385970": "BRONCOASPIRACION",
+  "94027445": "SME CONFUSIONAL - ACV EVO",
+  "3537387": "ANCIANA FRAGIL + TEC",
+  "4253321": "SME CONFUSIONAL",
+  "4571515": "TEC CON PERDIDA DE CONCIE",
+  "96166476": "INFECCION EN EL TRACTO UR",
+  "14181501": "INFECCION URINARIA BAJA",
+  "2957241": "PARESIA FACIAL",
+  "5306560": "DISNEA",
+  "3674639": "BRONCONEUMONIA BILATERAL",
+  "18393032": "EPOC",
+  "18323560": "ANEMIA CRONICA",
+  "14009171": "ULCERA DE MIEMBRO INFERIO",
+  "7837819": "HEMATURIA",
+  "93709203": "SINDROME CONFUSIONAL",
+  "20519147": "ALCOHOLISMO"
+};
+
 function rosterGenId(){ return 'row_' + Date.now() + '_' + Math.random().toString(36).slice(2,8); }
 
 function setRosterSaveStatus(text){
   const el = fld('patListSaveStatus');
   if(el) el.textContent = text;
+}
+
+/* Extrae el número de cama de un string tipo "C120" o "120" para poder
+   ordenar y comparar contra priorityBeds. Devuelve NaN si no hay número. */
+function bedNumberOf(cama){
+  const m = String(cama||'').match(/\d+/);
+  return m ? parseInt(m[0], 10) : NaN;
+}
+
+function isPriorityBed(cama){
+  const n = bedNumberOf(cama);
+  return !isNaN(n) && priorityBeds.includes(String(n));
 }
 
 function scheduleRosterSave(){
@@ -2213,7 +2359,7 @@ function scheduleRosterSave(){
   rosterSaveTimer = setTimeout(()=>{
     const fs = fsApi();
     if(!fs){ rosterSavePending = false; return; }
-    fs.setDoc(fs.rosterDocRef, {items: patientRoster}).then(()=>{
+    fs.setDoc(fs.rosterDocRef, {items: patientRoster, priorityBeds: priorityBeds, rosterSyncVersion: ROSTER_SEED_VERSION}).then(()=>{
       rosterSavePending = false;
       setRosterSaveStatus('Guardado ✓');
     }).catch(()=>{
@@ -2221,6 +2367,58 @@ function scheduleRosterSave(){
       setRosterSaveStatus('No se pudo guardar');
     });
   }, 600);
+}
+
+function renderPriorityBar(){
+  const chipsWrap = fld('patPriorityChips');
+  if(!chipsWrap) return;
+  const sorted = priorityBeds.slice().sort((a,b)=>parseInt(a,10)-parseInt(b,10));
+  chipsWrap.innerHTML = sorted.length
+    ? sorted.map(b=>`<span class="pat-priority-chip">C${escapeHtml(b)}<button type="button" data-bed="${escapeHtml(b)}" title="Quitar prioridad">×</button></span>`).join('')
+    : `<span class="pat-priority-empty">Ninguna cama marcada todavía.</span>`;
+  chipsWrap.querySelectorAll('button[data-bed]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      priorityBeds = priorityBeds.filter(b=>b!==btn.dataset.bed);
+      scheduleRosterSave();
+      renderPriorityBar();
+      renderPatientRosterTable(fld('patListSearch') ? fld('patListSearch').value : '');
+    });
+  });
+}
+
+function addPriorityBedFromInput(){
+  const input = fld('patPriorityInput');
+  if(!input) return;
+  const n = bedNumberOf(input.value);
+  if(isNaN(n)){ input.focus(); return; }
+  const bedStr = String(n);
+  if(!priorityBeds.includes(bedStr)) priorityBeds.push(bedStr);
+  input.value = '';
+  scheduleRosterSave();
+  renderPriorityBar();
+  renderPatientRosterTable(fld('patListSearch') ? fld('patListSearch').value : '');
+}
+
+/* Botón "Importar MI (101-140)": recorre el listado y, para cada paciente
+   cuyo DNI aparece en MI_IMPORT_BY_DNI, completa el campo MI si todavía
+   está vacío (nunca pisa uno ya cargado a mano). Busca por DNI y no por
+   cama, porque el número de cama de un paciente puede haber cambiado
+   entre un listado impreso y el siguiente. */
+function importMotivosInternacion(){
+  let updated = 0;
+  patientRoster.forEach(p=>{
+    const dni = String(p.dni||'').replace(/\D/g,'').replace(/^0+/, '');
+    if(!dni || (p.mi||'').trim()) return;
+    const mi = MI_IMPORT_BY_DNI[dni];
+    if(mi){ p.mi = mi; updated++; }
+  });
+  if(updated){
+    scheduleRosterSave();
+    renderPatientRosterTable(fld('patListSearch') ? fld('patListSearch').value : '');
+  }
+  alert(updated
+    ? `Se completó el motivo de internación de ${updated} paciente(s) según el último listado cargado (camas 101-140).`
+    : 'No se encontró ningún paciente sin MI cuyo DNI coincida con el listado cargado (camas 101-140). Si ya tenían MI cargado, no se pisa.');
 }
 
 function renderPatientRosterTable(filterText){
@@ -2232,6 +2430,19 @@ function renderPatientRosterTable(filterText){
     if(!q) return true;
     return (p.cama||'').toLowerCase().includes(q) || (p.dni||'').includes(q) || (p.nombre||'').toLowerCase().includes(q);
   });
+  /* Orden: primero "mis pacientes" (priorityBeds) de menor a mayor número
+     de cama, después el resto también de menor a mayor. Las camas sin
+     número reconocible quedan al final de su grupo. */
+  rows.sort((a,b)=>{
+    const pa = isPriorityBed(a.cama) ? 0 : 1;
+    const pb = isPriorityBed(b.cama) ? 0 : 1;
+    if(pa !== pb) return pa - pb;
+    const na = bedNumberOf(a.cama), nb = bedNumberOf(b.cama);
+    const va = isNaN(na) ? Infinity : na;
+    const vb = isNaN(nb) ? Infinity : nb;
+    if(va !== vb) return va - vb;
+    return (a.cama||'').localeCompare(b.cama||'');
+  });
   if(note){
     note.innerHTML = `<span>${rows.length} de ${patientRoster.length} pacientes — editable, se guarda solo y se sincroniza entre dispositivos.</span><span class="pat-list-savestatus" id="patListSaveStatus"></span>`;
   }
@@ -2240,19 +2451,28 @@ function renderPatientRosterTable(filterText){
     return;
   }
   wrap.innerHTML = `<table class="pat-list-table">
-    <thead><tr><th>Cama</th><th>DNI</th><th>Nombre</th><th>Edad</th><th></th></tr></thead>
+    <colgroup>
+      <col class="col-cama"><col class="col-dni"><col class="col-nombre"><col class="col-edad"><col class="col-mi"><col class="col-del">
+    </colgroup>
+    <thead><tr><th>Cama</th><th>DNI</th><th>Nombre</th><th>Edad</th><th>MI</th><th></th></tr></thead>
     <tbody>${rows.map(p=>`
-      <tr data-id="${escapeHtml(p.id)}">
-        <td class="cama-cell"><input class="pat-row-input cama-input" data-field="cama" value="${escapeHtml(p.cama||'')}" placeholder="C101"></td>
-        <td class="dni-cell"><input class="pat-row-input" data-field="dni" value="${escapeHtml(p.dni||'')}" placeholder="DNI"></td>
-        <td><input class="pat-row-input" data-field="nombre" value="${escapeHtml(p.nombre||'')}" placeholder="Nombre y apellido"></td>
-        <td><input class="pat-row-input" data-field="edad" value="${escapeHtml(p.edad||'')}" placeholder="Edad" style="max-width:60px;"></td>
-        <td class="del-cell"><button type="button" class="pat-row-del-btn" title="Eliminar paciente">×</button></td>
+      <tr data-id="${escapeHtml(p.id)}" class="${isPriorityBed(p.cama) ? 'priority-row' : ''}">
+        <td class="cama-cell" data-label="Cama"><input class="pat-row-input cama-input" data-field="cama" value="${escapeHtml(p.cama||'')}" placeholder="C101"></td>
+        <td class="dni-cell" data-label="DNI"><input class="pat-row-input" data-field="dni" value="${escapeHtml(p.dni||'')}" placeholder="DNI"></td>
+        <td data-label="Nombre"><input class="pat-row-input" data-field="nombre" value="${escapeHtml(p.nombre||'')}" placeholder="Nombre y apellido"></td>
+        <td data-label="Edad"><input class="pat-row-input" data-field="edad" value="${escapeHtml(p.edad||'')}" placeholder="Edad" style="max-width:60px;"></td>
+        <td data-label="MI"><textarea class="pat-row-input mi-input" data-field="mi" rows="1" placeholder="Motivo de internación">${escapeHtml(p.mi||'')}</textarea></td>
+        <td class="del-cell" data-label=""><button type="button" class="pat-row-del-btn" title="Eliminar paciente">×</button></td>
       </tr>`).join('')}
     </tbody>
   </table>`;
 
-  wrap.querySelectorAll('tr[data-id] input[data-field]').forEach(inp=>{
+  /* Los <textarea> de MI se autoajustan a su contenido (una o más líneas)
+     en vez de scrollear, tanto al renderizar como mientras se escribe. */
+  function autoGrow(ta){ ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight) + 'px'; }
+  wrap.querySelectorAll('textarea.mi-input').forEach(autoGrow);
+
+  wrap.querySelectorAll('tr[data-id] [data-field]').forEach(inp=>{
     inp.addEventListener('input', ()=>{
       const tr = inp.closest('tr');
       const id = tr.dataset.id;
@@ -2261,6 +2481,12 @@ function renderPatientRosterTable(filterText){
       if(patient){
         patient[field] = inp.value;
         scheduleRosterSave();
+        if(field === 'mi') autoGrow(inp);
+        if(field === 'cama'){
+          tr.classList.toggle('priority-row', isPriorityBed(inp.value));
+          const camaCell = tr.querySelector('td.cama-cell');
+          if(camaCell) camaCell.setAttribute('data-label', isPriorityBed(inp.value) ? '★ Cama' : 'Cama');
+        }
       }
     });
   });
@@ -2278,7 +2504,7 @@ function renderPatientRosterTable(filterText){
 }
 
 function addRosterPatient(){
-  patientRoster.push({id:rosterGenId(), cama:'', dni:'', nombre:'', edad:''});
+  patientRoster.push({id:rosterGenId(), cama:'', dni:'', nombre:'', edad:'', mi:''});
   scheduleRosterSave();
   const searchInput = fld('patListSearch');
   if(searchInput) searchInput.value = '';
@@ -2296,7 +2522,11 @@ function addRosterPatient(){
   const closeBtn = document.getElementById('listadoPacientesCloseBtn');
   const searchInput = document.getElementById('patListSearch');
   const addBtn = document.getElementById('patListAddBtn');
+  const importMiBtn = document.getElementById('patListImportMiBtn');
+  const priorityAddBtn = document.getElementById('patPriorityAddBtn');
+  const priorityInput = document.getElementById('patPriorityInput');
   function openListadoPacientes(){
+    renderPriorityBar();
     renderPatientRosterTable(searchInput ? searchInput.value : '');
     overlay.classList.add('open');
     if(searchInput) searchInput.focus();
@@ -2317,6 +2547,17 @@ function addRosterPatient(){
   }
   if(addBtn){
     addBtn.addEventListener('click', addRosterPatient);
+  }
+  if(importMiBtn){
+    importMiBtn.addEventListener('click', importMotivosInternacion);
+  }
+  if(priorityAddBtn){
+    priorityAddBtn.addEventListener('click', addPriorityBedFromInput);
+  }
+  if(priorityInput){
+    priorityInput.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter'){ e.preventDefault(); addPriorityBedFromInput(); }
+    });
   }
 })();
 </script>
