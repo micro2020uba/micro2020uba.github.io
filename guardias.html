@@ -75,10 +75,12 @@
   }
   thead th:last-child{border-right:none;}
   col.col-cama{width:64px;}
-  col.col-pac{width:15%;}
-  col.col-mi{width:14%;}
-  col.col-manejo{width:23%;}
-  col.col-datos{width:34%;}
+  col.col-pac{width:14%;}
+  col.col-dni{width:9%;}
+  col.col-edad{width:6%;}
+  col.col-mi{width:12%;}
+  col.col-manejo{width:21%;}
+  col.col-datos{width:30%;}
 
   tbody td{border-bottom:1px solid var(--line-soft);border-right:1px solid var(--line-soft);padding:8px 9px;vertical-align:top;font-size:12.5px;}
   tbody td:last-child{border-right:none;}
@@ -215,11 +217,11 @@
   <div class="table-wrap">
     <table>
       <colgroup>
-        <col class="col-cama"><col class="col-pac"><col class="col-mi"><col class="col-manejo"><col class="col-datos">
+        <col class="col-cama"><col class="col-pac"><col class="col-dni"><col class="col-edad"><col class="col-mi"><col class="col-manejo"><col class="col-datos">
       </colgroup>
       <thead>
         <tr>
-          <th>Cama</th><th>Paciente</th><th>MI</th><th>Manejo</th><th>Datos</th>
+          <th>Cama</th><th>Paciente</th><th>DNI</th><th>Edad</th><th>MI</th><th>Manejo</th><th>Datos</th>
         </tr>
       </thead>
       <tbody id="tbody"></tbody>
@@ -288,6 +290,40 @@ try{
   const BED_NUMBERS = [];
   for(let n=101;n<=140;n++) BED_NUMBERS.push(String(n));
 
+  // Foto autoritativa del pase de sala de Clínica Médica del 16/09/2026:
+  // las camas que figuraban ese día con cama/DNI/nombre/edad/MI tal como
+  // están en ese documento. Se usa para una sincronización forzada, única,
+  // de esos 5 campos en las camas de esta lista (ver PASE_SALA_SYNC_VERSION
+  // más abajo); las camas 101-140 que no aparecen en este objeto no se
+  // tocan. Para traer un pase más nuevo en el futuro: reemplazar este
+  // objeto y subir PASE_SALA_SYNC_VERSION a una fecha distinta.
+  const PASE_SALA_SYNC_VERSION = '2026-09-16-pase-sala';
+  const PASE_SALA_HOY = {
+    "101":{nombre:"Nuñez Beatriz",dni:"4989656",edad:"82",mi:"infección de piel y partes blandas en MMII en tto con AMS TMS dia 4 (FI 12/9)"},
+    "103":{nombre:"Garces Bertha",dni:"95409850",edad:"80",mi:"Caso social"},
+    "104":{nombre:"Arreguez Martha Nora",dni:"4579456",edad:"83",mi:"NAC con AMS + Claritromicina dia 8 (FI 6/9) en contexto de fibrosis bilateral ya finalizó atb"},
+    "105":{nombre:"Luis Luna",dni:"10488725",edad:"73",mi:"POP alejado Fx de cadera izq caso Social Caso social (Sit calle) TEC sin pérdida de conciencia + Trauma facial con fractura de maxilar inferior con profilaxis antibiótica con AMS D7 (FI 13/4)"},
+    "107":{nombre:"Longinotti Antonio",dni:"4395327",edad:"84",mi:"NIH en tto PTZ 5 (FI 12/9) Sepsis a foco respiratorio en tto con PTZ dia 5 (FI 11/9) Social: Tercer nivel TEC S/ pérdida SCA secundario a ITU en tto PTZ día 7"},
+    "109":{nombre:"Gallo Jorge",dni:"10424858",edad:"74",mi:"Social - Tercer nivel ITU en tto con Cefalexina dia 5 (FI 11/9) TEC sin pérdida de conciencia secundario a caída de propia altura"},
+    "111":{nombre:"Seco Ezequiel",dni:"38028096",edad:"32",mi:"ITU complicada en tto con Ciprofloxacina dia 2 (FI 14/9) (Día 8 de tratamiento ATB total ) tto con Colistin dia 7 (FI 7/9)"},
+    "112":{nombre:"Gonzalez Alicia",dni:"4448459",edad:"84",mi:"POP alejado de cadera complicado+ nmn broncosspirativa en tto con colistin y meropenem dia 7 (FI 7/9)"},
+    "114":{nombre:"Pabla Duarte",dni:"10930311",edad:"73",mi:"SCA secundario a sepsis a foco urinario score SOFA 3 PUNTOS en tto con ceftriaxona dia 5 (FI 10/9)"},
+    "115":{nombre:"Casas Angela",dni:"93283272",edad:"92",mi:"SCA secundario a NIH en tto con Meropenem dia 8 (FI 7/9) SCA secundario a ITU en tto con PTZ dia 6 (FI 29/8)"},
+    "116":{nombre:"Ivaldi Horacio",dni:"4168449",edad:"90",mi:"Caso social: Tercer nivel Sme febril con foco probable respiratorio en tto con PTZ dia 5 (fi 9/8) Sme confusional por impactación fecal"},
+    "117":{nombre:"Duda Mieczyslaw",dni:"92912877",edad:"86",mi:"NIH + ITU complicada en tto con Meropenem dia 5 (FI 11/9) Tercer nivel Tvp en miembro inferior izq con tto anticoagulante (enoxa) Sme febril a foco respi en tto PTZ día 6 (FI 12/8) Sme confusional hiperactivo agudo secundario a bacteremia a foco urinario en tto con imipenem dia 10 (fi: 24/7)"},
+    "118":{nombre:"Barral Manuel",dni:"93385970",edad:"91",mi:"Sepsis por probable foco hematoma de psoas en tto con Meropenem dia 5 (FI 11/9) sepsis a NACS + impactación fecal en tto con AMS + Claritromicina dia 7 (FI 3/9)"},
+    "119":{nombre:"Cafaro Jose",dni:"94027445",edad:"78",mi:"Social - tercer nivel SCA secundario a NAC en tto con Levofloxacina y claritromicina dia 7 SCA secundario a Insuficiencia respiratoria tipo I por NAC en tto con Levofloxacina y Claritromicina Dia 6 (2/09) ACV isquemico evolucionado"},
+    "120":{nombre:"Souto Geronima",dni:"3537387",edad:"87",mi:"Caso social"},
+    "121":{nombre:"Comans, Julia Josefa",dni:"4253321",edad:"86",mi:"social: a definir tercer nivel Sindrome confusional agudo secundario a NIH en tto con PTZ dia 8 (FI 7/9) Ceftriaxona DIA 9 (fi: 26/08)"},
+    "122":{nombre:"Zarate Andrea",dni:"4571515",edad:"82",mi:"caso social TEC por caida de altura sec de etio multifactorial( deshidratación + hipoNa mod) fx codo izquierdo con cabestrillo Sospecha de IPYB en tto con TMS finalizado TEC en contexto síndrome confusional por ITU en tto con AMS (FI 21/5) + Hiponatremia y ortostatismo en contexto de hidroclorotiazida"},
+    "123":{nombre:"Hernandez Susana",dni:"96166476",edad:"94",mi:"SCA secundario a ITU + NAC. En tto con Ceftriaxona (FI: 6/9. D: 9)"},
+    "124":{nombre:"Sanchez Maria Elena",dni:"14181501",edad:"66",mi:"SCA secundario a ITU + NACS en tto PTZ dia 5 (FI 10/9) TVP derecha anticoagulada con enoxaparina. Score ACV isquemico evolucionado probable origen cardioembolico"},
+    "126":{nombre:"Marcos, Maria del Carmen",dni:"5306560",edad:"80",mi:"Internación domiciliaria SCA secundario a NAC en tto con AMS + claritromicina dia 8 (FI 7/9)"},
+    "127":{nombre:"Elias Lidia Angelica",dni:"3674639",edad:"88",mi:"Social: tercer nivel Itu intrahospitalaria en tto con PTZ dia 2 (FI: 14/9) SCA secundario NAC en tto con Amoxicilina/clavulánico + claritromicina dia 6 (FI 21/8) SCA secundario a sme diarreico por clostridium en tto con vancomicina dia 10 (FI 14/8) Foco respi en tto con AMS día 3 (FI 18/8) sepsis a foco abdominal por diarrea por clostridium en tto vancomicina día 4 (FI 14/8)"},
+    "134":{nombre:"Garritani Juan",dni:"7837819",edad:"77",mi:""},
+    "135":{nombre:"Afonso Manuel",dni:"93709203",edad:"80",mi:"Caso social Sme confusional en contexto de progresión de demencia Sme febril a posible foco urinario en tto con PTZ D7 (FI 31/7)- ultimo dia"},
+    "136":{nombre:"Paganelli, Alejandro",dni:"20519147",edad:"57",mi:"Encefalopatia hepatica en contexto de SA (GASA>1.1) secundario a hipertensión portal por cirrosis ALD NIH en tto PTZ dia 6 (FI 10/9) Falla renal por oliguria (Ritmo diurético 0,27)"}
+  };
   const FIXED_ITEMS = ["HGT","BH (+)","BH(-)","BH-N(+)","BH-N(-)","Curva T°","RAO","CC","LABO","TAC","Informe TAC"];
 
   // HGT tiene 4 momentos fijos, cada uno con glucemia + corrección de insulina,
@@ -365,7 +401,8 @@ try{
 
   function masterItems(){ return FIXED_ITEMS.concat(state.customItems); }
 
-  function blankCama(){ return {paciente:'', mi:'', manejo:[], datos:{}, hechos:{}}; }
+  function blankCama(){ return {paciente:'', dni:'', edad:'', mi:'', manejo:[], datos:{}, hechos:{}}; }
+  let pendingPaseSalaOverride = {}; // camas que se acaban de forzar con PASE_SALA_HOY en esta carga, a la espera de empujarse a la nube
 
   function loadLocal(){
     try{
@@ -381,12 +418,33 @@ try{
     BED_NUMBERS.forEach(b=>{
       if(!state.camas[b]){
         const seed = SEED[b] || {paciente:'',mi:''};
-        state.camas[b] = { paciente: seed.paciente||'', mi: seed.mi||'', manejo: [], datos: {}, hechos: {} };
+        state.camas[b] = { paciente: seed.paciente||'', dni:'', edad:'', mi: seed.mi||'', manejo: [], datos: {}, hechos: {} };
       }
       if(!Array.isArray(state.camas[b].manejo)) state.camas[b].manejo = [];
       if(!state.camas[b].datos || typeof state.camas[b].datos !== 'object') state.camas[b].datos = {};
       if(!state.camas[b].hechos || typeof state.camas[b].hechos !== 'object') state.camas[b].hechos = {};
+      if(typeof state.camas[b].dni !== 'string') state.camas[b].dni = '';
+      if(typeof state.camas[b].edad !== 'string') state.camas[b].edad = '';
     });
+
+    // Sincronización forzada, una sola vez, con el pase de sala de hoy
+    // (16/09/2026): pisa paciente/DNI/edad/MI de las camas que figuran en
+    // PASE_SALA_HOY con esos datos (son los correctos y actualizados de
+    // hoy), y las marca para empujarse a la nube en cuanto se pueda. No
+    // toca "manejo"/"datos"/"hechos" ni las camas que no están en la lista.
+    if(state.paseSalaSyncVersion !== PASE_SALA_SYNC_VERSION){
+      Object.keys(PASE_SALA_HOY).forEach(b=>{
+        if(!BED_NUMBERS.includes(b)) return;
+        const ref = PASE_SALA_HOY[b];
+        state.camas[b].paciente = ref.nombre;
+        state.camas[b].dni = ref.dni;
+        state.camas[b].edad = ref.edad;
+        state.camas[b].mi = ref.mi;
+        lastLocalEdit[b] = Date.now();
+        pendingPaseSalaOverride[b] = true;
+      });
+      state.paseSalaSyncVersion = PASE_SALA_SYNC_VERSION;
+    }
   }
 
   function saveLocal(){
@@ -410,7 +468,7 @@ try{
       const fs = window.__guardiaFs;
       const c = state.camas[bed];
       fs.setDoc(fs.doc(fs.camasCol, bed), {
-        paciente: c.paciente, mi: c.mi, manejo: c.manejo, datos: c.datos, hechos: c.hechos,
+        paciente: c.paciente, dni: c.dni, edad: c.edad, mi: c.mi, manejo: c.manejo, datos: c.datos, hechos: c.hechos,
         updatedAt: Date.now()
       }).catch(err=>{
         console.warn('No se pudo sincronizar la cama '+bed+' con la nube.', err);
@@ -443,6 +501,15 @@ try{
       snap.forEach(docSnap=>{
         const bed = docSnap.id;
         if(!BED_NUMBERS.includes(bed)) return;
+        if(pendingPaseSalaOverride[bed]){
+          // No dejar que la nube (todavía con datos de antes del pase de
+          // hoy) pise la sincronización forzada recién aplicada; en cambio,
+          // empujamos nuestra versión (ya está en state.camas[bed]).
+          delete pendingPaseSalaOverride[bed];
+          scheduleFsSaveCama(bed);
+          changed = true;
+          return;
+        }
         const remote = docSnap.data();
         const lastEdit = lastLocalEdit[bed] || 0;
         // Si edité esta cama hace menos de 3s, no dejo que la nube la pise
@@ -454,6 +521,8 @@ try{
         if(isFocusedHere) return;
         state.camas[bed] = {
           paciente: remote.paciente ?? state.camas[bed].paciente,
+          dni: remote.dni ?? state.camas[bed].dni,
+          edad: remote.edad ?? state.camas[bed].edad,
           mi: remote.mi ?? state.camas[bed].mi,
           manejo: Array.isArray(remote.manejo) ? remote.manejo : state.camas[bed].manejo,
           datos: (remote.datos && typeof remote.datos==='object') ? remote.datos : state.camas[bed].datos,
@@ -576,6 +645,8 @@ try{
     return '<tr data-bed="'+bed+'"'+trCls+'>'+
       '<td data-label="Cama"><div class="cama-num">'+bed+'</div></td>'+
       '<td data-label="Paciente"><div contenteditable="true" data-field="paciente" data-placeholder="sin nombre">'+esc(c.paciente)+'</div></td>'+
+      '<td data-label="DNI"><div contenteditable="true" data-field="dni" data-placeholder="DNI">'+esc(c.dni||'')+'</div></td>'+
+      '<td data-label="Edad"><div contenteditable="true" data-field="edad" data-placeholder="edad">'+esc(c.edad||'')+'</div></td>'+
       '<td data-label="MI"><div contenteditable="true" data-field="mi" data-placeholder="motivo de internación">'+esc(c.mi)+'</div></td>'+
       '<td data-label="Manejo"><div class="manejo-cell">'+
         '<div class="chip-row">'+chips+'</div>'+
@@ -832,7 +903,7 @@ try{
 
   /* ============================= Limpiar para próxima guardia ============================= */
   document.getElementById('limpiarBtn').addEventListener('click', function(){
-    const ok = confirm('Esto borra MANEJO y DATOS de todas las camas (se mantienen cama, paciente y MI). ¿Confirmás?');
+    const ok = confirm('Esto borra MANEJO y DATOS de todas las camas (se mantienen cama, paciente, DNI, edad y MI). ¿Confirmás?');
     if(!ok) return;
     BED_NUMBERS.forEach(b=>{
       state.camas[b].manejo = [];
