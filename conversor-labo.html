@@ -1,7 +1,4 @@
 <!DOCTYPE html>
-<!--
- Versión: 12 (15/09/2026)
--->
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -35,7 +32,6 @@
   .btn-primary:hover{opacity:.85;}
   .btn-secondary{background:transparent;border:1px solid var(--ink) !important;color:var(--ink);}
   .btn-secondary:hover{background:var(--ink);color:var(--paper);}
-  .btn-secondary.active{background:var(--accent-dark) !important;border-color:var(--accent-dark) !important;color:var(--paper);}
   .btn-tiny{font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:10.5px;padding:4px 9px;border-radius:2px;cursor:pointer;border:1px solid var(--line-soft);background:#fff;color:var(--muted);}
   .btn-tiny:hover{border-color:var(--accent-dark);color:var(--accent-dark);}
   .pipe{display:flex;align-items:center;justify-content:center;}
@@ -75,6 +71,14 @@
   .gascalc-result:empty{display:none;}
   .gascalc-result b{color:var(--accent-dark);}
 
+  .refrange-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;}
+  .refgroup{border:1px solid var(--line-soft);border-radius:3px;padding:8px 10px;background:var(--field-bg);}
+  .refgroup h4{margin:0 0 6px;font-size:10.5px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.03em;}
+  .reftable{width:100%;border-collapse:collapse;font-size:11px;}
+  .reftable td{padding:2px 4px;border-bottom:1px solid var(--line-soft);vertical-align:top;}
+  .reftable td:first-child{font-weight:700;white-space:nowrap;padding-right:8px;}
+  .reftable td:last-child{color:var(--muted);text-align:right;}
+
   html.labo-copying, html.labo-copying body, html.labo-copying *{
     background:transparent !important; background-color:transparent !important; background-image:none !important;
   }
@@ -96,7 +100,6 @@
           <label for="laboFecha">Fecha:</label>
           <input type="date" id="laboFecha">
           <button type="button" class="btn-secondary" id="laboLimpiarBtn">Limpiar</button>
-          <button type="button" class="btn-secondary" id="laboLabCompletoBtn" title="Muestra también los valores normales del uroanálisis/urocultivo (aparte de los alterados). No tiene relación con el encabezado &quot;LABORATORIO COMPLETO&quot; del renglón numérico, que ya se genera solo.">Detalle uroanálisis</button>
         </div>
         <div class="gasa-wrap" id="laboGasaWrap">
           <div class="gasa-label">Se detectó una punción de líquido ascítico con Albúmina. Para calcular el GASA, pegá acá el laboratorio de sangre (plasmático) que incluya Albúmina:</div>
@@ -122,6 +125,7 @@
           <button type="button" class="btn-secondary" id="laboCopiarBtn">Copiar con formato</button>
           <span id="laboStatus"></span>
         </div>
+        <p class="note">El texto se convierte solo, apenas pegás o editás algo (no hace falta ningún botón). Tanto "Copiar con formato" como una selección manual (Ctrl+C) copian en negro puro y rojo puro, sin ningún fondo de color, para pegar directo en Google Docs sin manchas amarillentas. El texto de arriba también es editable antes de copiarlo. Arriba va el renglón completo (todos los parámetros habilitados); abajo, separado por una línea en blanco, va el renglón resumen (listado core + hallazgos alterados fuera de lista).</p>
       </div>
     </div>
 
@@ -151,6 +155,12 @@
       </div>
       <div class="checklist-grid" id="laboChecklistGrid"></div>
     </details>
+
+    <details class="checklist-wrap">
+      <summary>5. Valores normales de laboratorio</summary>
+      <p class="note">Rangos orientativos para adultos, tomados de bibliografía general. Cada laboratorio valida su propio rango según el método y el equipo que usa: el que manda siempre es el que figura en el informe (por eso el programa calcula "alterado/normal" con el rango que trae cada laboratorio, no con esta tabla).</p>
+      <div class="refrange-grid" id="laboRefRangeGrid"></div>
+    </details>
   </div>
 </div>
 
@@ -165,10 +175,8 @@ function fld(id){ return document.getElementById(id); }
   const $checklistGrid = fld('laboChecklistGrid');
   const $gasaWrap = fld('laboGasaWrap');
   const $gasaInput = fld('laboGasaInput');
-  const $labCompletoBtn = fld('laboLabCompletoBtn');
   const $gasCalcDetails = fld('laboGasCalcDetails');
   const $gcResultado = fld('gcResultado');
-  let laboFullMode = false;
 
   function laboToday(){
     const t = new Date();
@@ -220,6 +228,13 @@ function fld(id){ return document.getElementById(id); }
   }
   function laboParseRangeSimple(line){
     const s = line.trim().toLowerCase().replace(/,/g,'.');
+    const qm = s.match(/(ideal|deseable|[oó]ptimo)\s*:?\s*(?:es\s*)?(menor\s*(?:o\s*igual\s*)?(?:a|que)?|mayor\s*(?:o\s*igual\s*)?(?:a|que)?|<=?|>=?)\s*(-?\d+(?:\.\d+)?)/);
+    if(qm){
+      const dirWord = qm[2];
+      const num = parseFloat(qm[3]);
+      if(/menor|^</.test(dirWord)) return {low:-Infinity, high:num};
+      if(/mayor|^>/.test(dirWord)) return {low:num, high:Infinity};
+    }
     const candidates = [];
     let m;
     m = s.match(/(-?\d+(?:\.\d+)?)\s*-\s*(-?\d+(?:\.\d+)?)/);
@@ -318,11 +333,19 @@ function fld(id){ return document.getElementById(id); }
     {code:'Prot T', cat:'hepatico', kind:'std', l1:false, l2:true, aliases:[/\bproteinas totales\b/i]},
     {code:'ALB', cat:'hepatico', kind:'std', l1:true, l2:true, aliases:[/\balbumina\b/i]},
 
+    {code:'Alpha 1 Glob', cat:'proteinograma', kind:'std', l1:false, l2:true, aliases:[/\balpha\s*1\s*globulinas?\b/i]},
+    {code:'Alpha 2 Glob', cat:'proteinograma', kind:'std', l1:false, l2:true, aliases:[/\balpha\s*2\s*globulinas?\b/i]},
+    {code:'Beta 1 Glob',  cat:'proteinograma', kind:'std', l1:false, l2:true, aliases:[/\bbeta\s*1\s*globulinas?\b/i]},
+    {code:'Beta 2 Glob',  cat:'proteinograma', kind:'std', l1:false, l2:true, aliases:[/\bbeta\s*2\s*globulinas?\b/i]},
+    {code:'Gamma Glob',   cat:'proteinograma', kind:'std', l1:false, l2:true, aliases:[/\bgamma\s*globulinas?\b/i]},
+    {code:'Rel A/G',      cat:'proteinograma', kind:'raw', l1:false, l2:true, aliases:[/\brelaci[oó]n\s+alb[uú]mina\s*\/?\s*globulina\b/i]},
+
     {code:'colesterol T', cat:'lipidico', kind:'std', l1:false, l2:true, aliases:[/\bcolesterol total\b/i]},
     {code:'HDL',          cat:'lipidico', kind:'std', l1:false, l2:true, aliases:[/\bhdl colesterol\b/i]},
-    {code:'No HDL',       cat:'lipidico', kind:'std', l1:false, l2:true, aliases:[/\bcolesterol no hdl\b/i]},
+    {code:'No HDL',       cat:'lipidico', kind:'std', l1:false, l2:true, rangeWindow:140, aliases:[/\bcolesterol no hdl\b/i]},
     {code:'LDL',          cat:'lipidico', kind:'std', l1:false, l2:true, aliases:[/\bldl colesterol\b/i]},
     {code:'Tg',           cat:'lipidico', kind:'std', l1:false, l2:true, aliases:[/\btrigliceridos\b/i]},
+    {code:'IR',           cat:'lipidico', kind:'std', l1:false, l2:true, aliases:[/\bindice de riesgo\b/i]},
 
     {code:'Fe',            cat:'ferrico', kind:'std',    l1:false, l2:true, aliases:[/(?<!de )\bhierro\b/i]},
     {code:'transferrina',  cat:'ferrico', kind:'std',    l1:false, l2:true, aliases:[/\btransferrina\b/i]},
@@ -337,6 +360,11 @@ function fld(id){ return document.getElementById(id); }
     {code:'PSA',       cat:'oncologicos', kind:'std', l1:false, l2:true, aliases:[/\bpsa\b/i]},
     {code:'PSA libre', cat:'oncologicos', kind:'raw', l1:false, l2:true, aliases:[/\bpsa libre\b/i]},
     {code:'PSA L/T',   cat:'oncologicos', kind:'raw', l1:false, l2:true, aliases:[/\brelaci[oó]n psa libre\b/i]},
+    {code:'AFP',       cat:'oncologicos', kind:'std', l1:false, l2:true, aliases:[/\balfa\s*fetoprote[ií]na\b/i, /\bafp\b/i]},
+
+    {code:'TSH', cat:'tiroideo', kind:'std', l1:true,  l2:true, aliases:[/\btsh\s+basal\b/i, /\btsh\b/i]},
+    {code:'T3',  cat:'tiroideo', kind:'std', l1:false, l2:true, aliases:[/\bt3\s*\(?\s*triiodotironina\s*\)?/i, /\btriiodotironina\b/i]},
+    {code:'T4L', cat:'tiroideo', kind:'std', l1:false, l2:true, aliases:[/\bt4\s*-?\s*libre\b/i]},
 
     {code:'IgA', cat:'inmunologia', kind:'std', l1:false, l2:true, aliases:[/\binmunoglobulina a\b/i]},
 
@@ -370,16 +398,161 @@ function fld(id){ return document.getElementById(id); }
     {id:'cardiaco',     label:'Marcadores cardíacos (CPK / Troponina)'},
     {id:'ionograma',    label:'Ionograma (Na/K/Cl + Ca/P/Mg)'},
     {id:'hepatico',     label:'Perfil hepático'},
+    {id:'proteinograma',label:'Proteinograma electroforético'},
     {id:'lipidico',     label:'Perfil lipídico'},
     {id:'ferrico',      label:'Perfil férrico'},
     {id:'vitaminas',    label:'Vitaminas'},
     {id:'oncologicos',  label:'Marcadores oncológicos'},
+    {id:'tiroideo',     label:'Función tiroidea (TSH/T3/T4)'},
     {id:'inmunologia',  label:'Autoinmunidad / Inmunoglobulinas'},
     {id:'serologia',    label:'Serología (solo se listan si dan reactivo)'},
     {id:'acidobase',    label:'Estado ácido-base'},
     {id:'liquidos_puncion', label:'Líquidos de punción'},
     {id:'uroanalisis', label:'Uroanálisis / Urocultivo'},
   ];
+
+  const LABO_REF_RANGES = {
+    hemograma: [
+      ['GB','4,0 - 11,0 10³/mm³'],
+      ['N','40 - 70 %'],
+      ['L','20 - 45 %'],
+      ['M','2 - 10 %'],
+      ['E','1 - 6 %'],
+      ['B','0 - 2 %'],
+      ['GR','Hombre 4,5-5,9 / Mujer 4,0-5,2 10⁶/mm³'],
+      ['HB','Hombre 13,5-17,5 / Mujer 12,0-15,5 g/dL'],
+      ['HTO','Hombre 41-53 / Mujer 36-46 %'],
+      ['PLAQ','150 - 400 10³/mm³'],
+      ['Reticulocitos','0,5 - 2,5 %'],
+      ['ERS','Hombre <15 / Mujer <20 mm/h'],
+    ],
+    indices: [
+      ['VCM','80 - 100 fL'],
+      ['HCM','27 - 33 pg'],
+      ['CHCM','32 - 36 g/dL'],
+      ['RDW','11 - 15 %'],
+      ['VPM','7,5 - 11,5 fL'],
+    ],
+    coagulograma: [
+      ['TP%','70 - 120 %'],
+      ['RIN','0,8 - 1,2 (sin anticoagulación)'],
+      ['KPTT','25 - 40 seg (según lab)'],
+    ],
+    quimica: [
+      ['PCR','< 0,5 - 1,0 mg/dL (método dependiente)'],
+      ['GLUC','70 - 100 mg/dL (ayuno)'],
+      ['HbA1c','< 5,7 % (5,7-6,4 % prediabetes; ≥6,5 % diabetes)'],
+      ['UREA','15 - 45 mg/dL'],
+      ['CR','Hombre 0,7-1,3 / Mujer 0,6-1,1 mg/dL'],
+      ['FG','> 90 mL/min/1,73m²'],
+      ['LDH','140 - 280 U/L'],
+      ['Amilasemia','28 - 100 U/L'],
+    ],
+    cardiaco: [
+      ['CPK','Hombre 30-200 / Mujer 30-135 U/L'],
+      ['Troponina','Depende del método (ultrasensible); usar el de cada lab'],
+    ],
+    ionograma: [
+      ['Na','136 - 145 mEq/L'],
+      ['K','3,5 - 5,1 mEq/L'],
+      ['CL','98 - 107 mEq/L'],
+      ['Ca','8,5 - 10,5 mg/dL'],
+      ['P','2,5 - 4,5 mg/dL'],
+      ['Mg','1,7 - 2,2 mg/dL'],
+    ],
+    hepatico: [
+      ['GPT','Hasta 35-45 U/L'],
+      ['GOT','Hasta 35-40 U/L'],
+      ['FAL','30 - 120 U/L'],
+      ['BT','0,3 - 1,2 mg/dL'],
+      ['BD','Hasta 0,3 mg/dL'],
+      ['GGT','Hombre 10-71 / Mujer 6-42 U/L'],
+      ['Prot T','6,0 - 8,3 g/dL'],
+      ['ALB','3,5 - 5,0 g/dL'],
+    ],
+    proteinograma: [
+      ['Alpha 1 Glob','0,12 - 0,30 g/dL'],
+      ['Alpha 2 Glob','0,57 - 1,05 g/dL'],
+      ['Beta 1 Glob','0,36 - 0,78 g/dL'],
+      ['Beta 2 Glob','0,20 - 0,50 g/dL'],
+      ['Gamma Glob','0,66 - 1,68 g/dL'],
+      ['Rel A/G','1,0 - 2,0'],
+    ],
+    lipidico: [
+      ['colesterol T','Deseable < 200 mg/dL'],
+      ['HDL','Deseable ≥40 (hombre) / ≥50 (mujer) mg/dL'],
+      ['No HDL','Ideal < 130 mg/dL'],
+      ['LDL','Óptimo < 100 mg/dL'],
+      ['Tg','< 150 mg/dL'],
+      ['IR','< 4,5'],
+    ],
+    ferrico: [
+      ['Fe','Hombre 65-175 / Mujer 50-170 µg/dL'],
+      ['transferrina','200 - 360 mg/dL'],
+      ['Sat Transf','20 - 50 %'],
+      ['TIBC','250 - 450 µg/dL'],
+      ['UIBC','150 - 375 µg/dL'],
+      ['ferritina','Hombre 30-400 / Mujer 15-150 ng/mL'],
+    ],
+    vitaminas: [
+      ['Ac Fólico','3 - 17 ng/mL'],
+      ['vitamina B12','200 - 900 pg/mL'],
+    ],
+    oncologicos: [
+      ['PSA','< 4 ng/mL (aumenta con la edad)'],
+      ['PSA libre / PSA L/T','Relación >25 % orienta a benignidad'],
+      ['AFP','< 8,0 - 10 ng/mL (varía con edad/embarazo)'],
+    ],
+    inmunologia: [
+      ['IgA','70 - 400 mg/dL'],
+    ],
+    tiroideo: [
+      ['TSH','0,35 - 4,5 µUI/mL'],
+      ['T3','80 - 200 ng/dL'],
+      ['T4L','0,7 - 1,8 ng/dL'],
+    ],
+    serologia: [
+      ['VDRL / HBc / HBsAc / HBsAg / HCV / HIV / Chagas','No reactivo / Negativo'],
+    ],
+    acidobase: [
+      ['pH','7,35 - 7,45'],
+      ['pCO2','35 - 45 mmHg'],
+      ['pO2','80 - 200 mmHg (o ajustado por edad)'],
+      ['HCO3','22 - 26 mEq/L'],
+      ['base buffer / EB','-2 a +2'],
+      ['SO2','95 - 100 %'],
+      ['Anión GAP','8 - 16'],
+      ['Ac Lac','0,5 - 2,2 mmol/L'],
+    ],
+  };
+  function laboBuildRefRangeTable(){
+    const grid = fld('laboRefRangeGrid');
+    if(!grid) return;
+    grid.innerHTML = '';
+    LABO_CATS.forEach(cat=>{
+      const rows = LABO_REF_RANGES[cat.id];
+      if(!rows || !rows.length) return;
+      const group = document.createElement('div');
+      group.className = 'refgroup';
+      const h4 = document.createElement('h4');
+      h4.textContent = cat.label;
+      group.appendChild(h4);
+      const table = document.createElement('table');
+      table.className = 'reftable';
+      rows.forEach(([code, range])=>{
+        const tr = document.createElement('tr');
+        const tdCode = document.createElement('td');
+        tdCode.textContent = code;
+        const tdRange = document.createElement('td');
+        tdRange.textContent = range;
+        tr.appendChild(tdCode);
+        tr.appendChild(tdRange);
+        table.appendChild(tr);
+      });
+      group.appendChild(table);
+      grid.appendChild(group);
+    });
+  }
 
   const LABO_LIQUIDOS_STUDIES = [
     {
@@ -554,7 +727,7 @@ function fld(id){ return document.getElementById(id); }
       while((m = re.exec(flat)) !== null){
         const numRes = laboFindNumberAfter(flat, m.index+m[0].length, 40);
         if(numRes && numRes.value!=null){
-          const range = laboFindRangeAfter(flat, numRes.endPos, 90, sex);
+          const range = laboFindRangeAfter(flat, numRes.endPos, param.rangeWindow || 90, sex);
           return {value:numRes.value, range, pos:m.index};
         }
         if(re.lastIndex === m.index) re.lastIndex++;
@@ -580,9 +753,15 @@ function fld(id){ return document.getElementById(id); }
       let m;
       while((m = re.exec(flat)) !== null){
         const win = flat.slice(m.index+m[0].length, m.index+m[0].length+60).toLowerCase();
-        if(/\bno\s+reactivo/.test(win)) return null;
-        if(/\breactivo\b/.test(win) || /\bpositivo\b/.test(win)){
-          return {pos:m.index, value:'Reactivo'};
+        if(/no\s+se\s+realiza|realizado\s+el|pendiente/.test(win)){
+          if(re.lastIndex === m.index) re.lastIndex++;
+          continue;
+        }
+        if(/\bno\s+reactivo\b|\bnegativo\b/.test(win)){
+          return {pos:m.index, value:'No reactivo', reactive:false};
+        }
+        if(/\breactivo\b|\bpositivo\b/.test(win)){
+          return {pos:m.index, value:'Reactivo', reactive:true};
         }
         if(re.lastIndex === m.index) re.lastIndex++;
       }
@@ -692,6 +871,140 @@ function fld(id){ return document.getElementById(id); }
       if(itemsHtml.length>0) blocks.push(`${study.label}: ${itemsHtml.join(', ')}`);
     });
     return blocks;
+  }
+
+  const LABO_ORINA24_EXPLAIN = {
+    'CaU':  {bajo:'hipocalciuria', alto:'hipercalciuria; considerar litiasis renal, hiperparatiroidismo o exceso de ingesta de calcio/vitamina D'},
+    'Prot': {alto:'proteinuria significativa en orina de 24 h; considerar patología renal glomerular, valorar relación proteinuria/creatininuria y función renal'},
+    'P':    {bajo:'hipofosfaturia', alto:'hiperfosfaturia'},
+    'Mg':   {bajo:'hipomagnesuria', alto:'hipermagnesuria'},
+    'Na':   {bajo:'natriuria baja; considerar depleción de volumen o baja ingesta de sodio', alto:'natriuria elevada'},
+    'K':    {bajo:'kaliuria baja', alto:'kaliuria elevada; considerar pérdidas renales de potasio'},
+    'CL':   {bajo:'cloruria baja; considerar depleción de volumen', alto:'cloruria elevada'},
+    'GLUC': {alto:'glucosuria; evaluar control glucémico'},
+    'UREA': {bajo:'urea urinaria baja; puede reflejar bajo aporte proteico o compromiso de la función renal', alto:'urea urinaria elevada'},
+    'CR':   {bajo:'creatininuria baja; valorar si la recolección de orina de 24 h fue completa/adecuada', alto:'creatininuria elevada'},
+    'Hb':   {alto:'hematuria; correlacionar con sedimento urinario y descartar litiasis, infección urinaria o causa nefrológica/urológica'},
+  };
+
+  function laboBuildOrina24Block(flat){
+    const hm = /\bqu[ií]mica\s+urinaria\b/i.exec(flat);
+    if(!hm) return null;
+    if(!/\bpropiedades\s+orina\s*24\s*h/i.test(flat.slice(hm.index, hm.index+200))) return null;
+
+    let cursor = hm.index;
+    const items = [];
+
+    function advance(labelRe, maxWin){
+      const re = new RegExp(labelRe.source, labelRe.flags.replace('g','')+'g');
+      re.lastIndex = cursor;
+      const m = re.exec(flat);
+      if(!m || m.index-cursor>maxWin) return null;
+      cursor = m.index + m[0].length;
+      return m.index;
+    }
+    function grabNumber(maxWin, rangeWin){
+      const numRes = laboFindNumberAfter(flat, cursor, maxWin);
+      if(!numRes || numRes.value==null) return null;
+      const range = rangeWin ? laboFindRangeAfter(flat, numRes.endPos, rangeWin) : null;
+      cursor = numRes.endPos;
+      return {value:numRes.value, range};
+    }
+    function grabResultado(maxWin, rangeWin){
+      const win = flat.slice(cursor, cursor+maxWin);
+      const rm = win.match(/resultado\s*(-?\d+(?:[.,]\d+)?)/i);
+      if(!rm) return null;
+      const value = laboToNumber(rm[1]);
+      const afterPos = cursor + rm.index + rm[0].length;
+      const range = laboFindRangeAfter(flat, afterPos, rangeWin);
+      cursor = afterPos;
+      return {value, range};
+    }
+    function grabText(nextLabelRe, maxWin){
+      const win = flat.slice(cursor, cursor+maxWin);
+      let cut = win.length;
+      if(nextLabelRe){
+        const re = new RegExp(nextLabelRe.source, nextLabelRe.flags.replace('g','')+'g');
+        const m = re.exec(win);
+        if(m) cut = m.index;
+      }
+      const text = win.slice(0, cut).trim();
+      if(!text) return null;
+      cursor += cut;
+      return text;
+    }
+    function analyteResultado(code, labelRe, unit, maxLabelWin, maxResWin, rangeWin){
+      const pos = advance(labelRe, maxLabelWin);
+      if(pos==null) return;
+      const r = grabResultado(maxResWin, rangeWin);
+      if(!r) return;
+      const abnormal = r.range ? laboIsAbnormal(r.value, r.range) : false;
+      const dir = r.range ? laboDir(r.value, r.range) : null;
+      items.push({code, text:`${laboFmtNumber(r.value)}${unit}`, abnormal, dir, core:false});
+    }
+    function analyteStd(code, labelRe, unit, maxLabelWin, maxNumWin, rangeWin){
+      const pos = advance(labelRe, maxLabelWin);
+      if(pos==null) return;
+      const r = grabNumber(maxNumWin, rangeWin);
+      if(!r) return;
+      const abnormal = r.range ? laboIsAbnormal(r.value, r.range) : false;
+      const dir = r.range ? laboDir(r.value, r.range) : null;
+      items.push({code, text:`${laboFmtNumber(r.value)}${unit}`, abnormal, dir, core:false});
+    }
+
+    if(advance(/\bcolor\b/i, 40)!=null){
+      const colorTxt = grabText(/\bph\b/i, 40);
+      if(colorTxt) items.push({code:'Color', text:laboSentenceCase(colorTxt), abnormal:false, core:true});
+    }
+    if(advance(/\bph\b/i, 60)!=null){
+      const r = grabNumber(30, 60);
+      if(r) items.push({code:'pH', text:laboFmtNumber(r.value), abnormal:r.range?laboIsAbnormal(r.value,r.range):false, dir:r.range?laboDir(r.value,r.range):null, core:true});
+    }
+    if(advance(/\bdensidad\b/i, 60)!=null){
+      const r = grabNumber(30, 60);
+      if(r) items.push({code:'δ', text:laboFmtNumber(r.value), abnormal:false, core:true});
+    }
+    if(advance(/\bhemoglobina\b/i, 60)!=null){
+      const w = laboFindWordAfter(flat, cursor, 30);
+      if(w){
+        const plusM = flat.slice(w.endPos, w.endPos+5).match(/^\s*(\++)/);
+        let hbVal = w.value;
+        if(plusM){ hbVal += ' ' + plusM[1]; cursor = w.endPos + plusM[0].length; }
+        else cursor = w.endPos;
+        const normal = /^(negativo|no\s+contiene)/i.test(w.value);
+        items.push({code:'Hb', text:laboSentenceCase(hbVal), abnormal:!normal, dir:!normal?'alto':null, core:false});
+      }
+    }
+    if(advance(/\bvolumen\s*24\s*hs\b/i, 80)!=null){
+      const r = grabNumber(30, 0);
+      if(r) items.push({code:'Vol 24hs', text:`${laboFmtNumber(r.value)} mL`, abnormal:false, core:true});
+    }
+
+    analyteResultado('CaU',  /\bcalcio\s+en\s+orina\b/i,      ' mg/24hs', 200, 150, 60);
+    analyteResultado('Prot', /\bprote[ií]nas\s+en\s+orina\b/i,' g/24hs',  200, 150, 60);
+    analyteResultado('P',    /\bf[oó]sforo\s+en\s+orina\b/i,  ' mg/24hs', 200, 150, 60);
+    analyteResultado('Mg',   /\bmagnesio\s+en\s+orina\b/i,    ' mg/24hs', 200, 150, 60);
+    analyteStd('Na', /\bsodio\s+en\s+orina\s+de\s*24\s*hs\.?/i,   ' mEq/24hs', 200, 40, 90);
+    analyteStd('K',  /\bpotasio\s+en\s+orina\s+de\s*24\s*hs\.?/i, ' mEq/24hs', 200, 40, 90);
+    analyteStd('CL', /\bcloro\s+en\s+orina\s+de\s*24\s*hs\.?/i,   ' mEq/24hs', 200, 40, 90);
+    analyteResultado('GLUC', /\bglucosa\s+en\s+orina\b/i,     ' mg/24hs', 200, 150, 60);
+    analyteResultado('UREA', /\burea\s+en\s+orina\b/i,        ' g/24hs',  200, 150, 60);
+    analyteResultado('CR',   /\bcreatinina\s+en\s+orina\b/i,  ' g/24hs',  200, 150, 60);
+
+    if(items.length===0) return null;
+    return {items, maskStart:hm.index, maskEnd:flat.length};
+  }
+
+  function laboBuildOrina24Explicaciones(items){
+    const out = [];
+    items.forEach(it=>{
+      if(!it.abnormal || !it.dir) return;
+      const dict = LABO_ORINA24_EXPLAIN[it.code];
+      if(!dict) return;
+      const txt = dict[it.dir];
+      if(txt) out.push(`${it.code} ${it.text}: ${txt}.`);
+    });
+    return out;
   }
 
   function laboFindAscLiqAlbumina(flat){
@@ -921,62 +1234,85 @@ function fld(id){ return document.getElementById(id); }
   }
   function laboTextEnabledKey(study, chunk, field){ return 'uroanalisis|' + study.id + '|' + chunk.id + '|' + field.key; }
 
-  function laboBuildTextStudyBlocks(flat, fullMode){
+  function laboBuildTextStudyChunkText(study, chunk, entries, fullMode){
+    if(!entries || entries.length===0) return null;
+    const coreParts = [];
+    const condParts = [];
+    let hasCoreField = false;
+    let anyCondFound = false;
+    entries.forEach(e=>{
+      const k = laboTextEnabledKey(study, chunk, e.field);
+      if(!(laboEnabled[k] ?? true)) return;
+      const cls = laboClassifyTextField(e.field, e.value, fullMode);
+      if(!cls) return;
+      const txt = e.field.out ? (e.field.noColon ? `${e.field.out} ${cls.text}` : `${e.field.out}: ${cls.text}`) : cls.text;
+      const html = cls.abnormal ? `<span style="color:#FF0000;font-weight:700;">${txt}</span>` : txt;
+      if(cls.core){
+        hasCoreField = true;
+        coreParts.push(html);
+      } else {
+        anyCondFound = true;
+        if(cls.show) condParts.push(html);
+      }
+    });
+    if(hasCoreField){
+      const parts = coreParts.concat(condParts);
+      return parts.length>0 ? `<b>${chunk.boldLabel}</b>: ${parts.join(', ')}.` : null;
+    }
+    if(anyCondFound){
+      return condParts.length>0
+        ? `<b>${chunk.boldLabel}</b>: ${condParts.join(', ')}.`
+        : `<b>${chunk.boldLabel}</b>: sin alteraciones.`;
+    }
+    return null;
+  }
+  const LABO_TEXT_STUDY_TITLES = {uroanalisis:'UROANÁLISIS', urocultivo:'UROCULTIVO'};
+  function laboBuildTextStudyBlocks(flat){
     const blocks = [];
     const ranges = [];
     LABO_TEXT_STUDIES.forEach(study=>{
       const scan = laboScanTextStudy(flat, study, LABO_TEXT_GLOBAL_STOPS);
       if(!scan) return;
       ranges.push({start:scan.maskStart, end:scan.maskEnd});
-      const chunkTexts = [];
+
+      const fullTexts = [];
+      const partialTexts = [];
       study.chunks.forEach((chunk, ci)=>{
         const entries = scan.byChunk[ci];
-        if(!entries || entries.length===0) return;
-        const coreParts = [];
-        const condParts = [];
-        let hasCoreField = false;
-        let anyCondFound = false;
-        entries.forEach(e=>{
-          const k = laboTextEnabledKey(study, chunk, e.field);
-          if(!(laboEnabled[k] ?? true)) return;
-          const cls = laboClassifyTextField(e.field, e.value, fullMode);
-          if(!cls) return;
-          const txt = e.field.out ? (e.field.noColon ? `${e.field.out} ${cls.text}` : `${e.field.out}: ${cls.text}`) : cls.text;
-          const html = cls.abnormal ? `<span style="color:#FF0000;font-weight:700;">${txt}</span>` : txt;
-          if(cls.core){
-            hasCoreField = true;
-            coreParts.push(html);
-          } else {
-            anyCondFound = true;
-            if(cls.show) condParts.push(html);
-          }
-        });
-        let chunkText = null;
-        if(hasCoreField){
-          const parts = coreParts.concat(condParts);
-          if(parts.length>0) chunkText = `<b>${chunk.boldLabel}</b>: ${parts.join(', ')}.`;
-        } else if(anyCondFound){
-          chunkText = condParts.length>0
-            ? `<b>${chunk.boldLabel}</b>: ${condParts.join(', ')}.`
-            : `<b>${chunk.boldLabel}</b>: sin alteraciones.`;
-        }
-        if(chunkText) chunkTexts.push(chunkText);
+        const full = laboBuildTextStudyChunkText(study, chunk, entries, true);
+        if(full) fullTexts.push(full);
+        const partial = laboBuildTextStudyChunkText(study, chunk, entries, false);
+        if(partial) partialTexts.push(partial);
       });
+      if(fullTexts.length===0 && partialTexts.length===0) return;
 
-      if(chunkTexts.length>0){
-        const flatEntries = {};
-        scan.byChunk.forEach(arr=>arr.forEach(e=>{ flatEntries[e.field.key] = e.value; }));
-        if(study.id === 'uroanalisis'){
-          const interp = laboBuildUroInterpretacion(flatEntries);
-          if(interp.length) chunkTexts.push(`<b>Interpretación</b>: ${interp.join(' ')}`);
-        } else if(study.id === 'urocultivo'){
-          const resultado = flatEntries['resultado'];
-          if(resultado && !/sin\s+desarrollo|negativo|no\s+se\s+aisl/i.test(resultado)){
-            chunkTexts.push(`<b>Interpretación</b>: ${laboRed('urocultivo positivo')} (${laboSentenceCase(resultado)}); ajustar antibioticoterapia según antibiograma y sensibilidad.`);
-          }
+      const flatEntries = {};
+      scan.byChunk.forEach(arr=>arr.forEach(e=>{ flatEntries[e.field.key] = e.value; }));
+      const interpParts = [];
+      if(study.id === 'uroanalisis'){
+        const interp = laboBuildUroInterpretacion(flatEntries);
+        if(interp.length) interpParts.push(`<b>Interpretación</b>: ${interp.join(' ')}`);
+      } else if(study.id === 'urocultivo'){
+        const resultado = flatEntries['resultado'];
+        if(resultado && !/sin\s+desarrollo|negativo|no\s+se\s+aisl/i.test(resultado)){
+          interpParts.push(`<b>Interpretación</b>: ${laboRed('urocultivo positivo')} (${laboSentenceCase(resultado)}); ajustar antibioticoterapia según antibiograma y sensibilidad.`);
         }
-        blocks.push(chunkTexts.join('<br>'));
       }
+
+      const title = LABO_TEXT_STUDY_TITLES[study.id] || study.id.toUpperCase();
+      let block = '';
+      if(fullTexts.length){
+        block += `<b>${title} COMPLETO</b><br>${fullTexts.join('<br>')}`;
+      }
+      if(partialTexts.length){
+        if(block) block += '<br><br>';
+        block += `<b>${title} - LO DESTACADO</b><br>${partialTexts.join('<br>')}`;
+      }
+      if(interpParts.length){
+        if(block) block += '<br><br>';
+        block += interpParts.join('<br>');
+      }
+      blocks.push(block);
     });
     return {blocks, ranges};
   }
@@ -1108,6 +1444,11 @@ function fld(id){ return document.getElementById(id); }
     'BD':   {alto:'bilirrubina directa elevada; sugiere componente colestásico'},
     'ALB':  {bajo:'hipoalbuminemia; valorar estado nutricional y pérdidas'},
     'Prot T': {bajo:'hipoproteinemia total; valorar estado nutricional, pérdidas renales (proteinuria) o hepáticas', alto:'hiperproteinemia; considerar deshidratación o gammapatía, correlacionar con proteinograma'},
+    'Alpha 1 Glob': {alto:'alfa-1 globulina elevada; reactante de fase aguda', bajo:'alfa-1 globulina baja; considerar déficit de alfa-1-antitripsina'},
+    'Alpha 2 Glob': {alto:'alfa-2 globulina elevada; reactante de fase aguda, valorar proceso inflamatorio', bajo:'alfa-2 globulina baja'},
+    'Beta 1 Glob':  {alto:'beta-1 globulina elevada', bajo:'beta-1 globulina baja'},
+    'Beta 2 Glob':  {alto:'beta-2 globulina elevada', bajo:'beta-2 globulina baja'},
+    'Gamma Glob':   {alto:'hipergammaglobulinemia; considerar proceso inflamatorio crónico, infeccioso o gammapatía monoclonal (valorar inmunofijación/proteinograma si el pico es angosto)', bajo:'hipogammaglobulinemia; considerar inmunodeficiencia humoral'},
     'No HDL': {alto:'colesterol no-HDL elevado; asociado a mayor riesgo cardiovascular, valorar perfil lipídico completo y riesgo cardiovascular global', bajo:'colesterol no-HDL muy bajo (hipocolesterolemia); en el contexto de un paciente internado suele ser marcador de desnutrición, inflamación o síndrome de respuesta inflamatoria/hepatopatía más que un hallazgo lipídico aislado; correlacionar con albúmina y proteínas totales'},
     'CPK':  {alto:'CPK elevada; considerar daño muscular (rabdomiólisis) o isquemia miocárdica'},
     'Troponina': {alto:'troponina elevada; correlacionar con clínica y ECG para descartar síndrome coronario agudo'},
@@ -1127,7 +1468,23 @@ function fld(id){ return document.getElementById(id); }
     'Tg':   {alto:'hipertrigliceridemia; si es severa (>500-1000 mg/dl) considerar riesgo de pancreatitis'},
     'vitamina B12': {bajo:'déficit de vitamina B12; considerar como causa de anemia macrocítica y valorar suplementación'},
     'Ac Fólico': {bajo:'déficit de ácido fólico; considerar como causa de anemia macrocítica y valorar suplementación'},
+    'IR':   {alto:'índice aterogénico (colesterol total/HDL) elevado; refleja mayor riesgo cardiovascular global, correlacionar con LDL/HDL/Tg'},
+    'AFP':  {alto:'alfa-fetoproteína elevada; considerar hepatocarcinoma, tumor de células germinales u otras neoplasias según contexto clínico; correlacionar con ecografía/imágenes hepáticas'},
+    'TSH':  {alto:'TSH elevada; sugiere hipotiroidismo (primario si T4 libre baja); correlacionar con T4 libre y clínica', bajo:'TSH baja; sugiere hipertiroidismo o supresión hipofisaria; correlacionar con T4/T3 libres'},
+    'T3':   {bajo:'T3 baja; en contexto de enfermedad aguda considerar síndrome del eutiroideo enfermo, correlacionar con TSH y T4 libre', alto:'T3 alta; considerar hipertiroidismo'},
+    'T4L':  {bajo:'T4 libre baja; junto con TSH alta orienta a hipotiroidismo primario', alto:'T4 libre alta; orienta a hipertiroidismo'},
   };
+  const LABO_ABBR_TITLES = {
+    'AFP':'α-fetoproteína',
+    'TIBC':'Capacidad total de unión al hierro',
+    'UIBC':'Capacidad libre de transporte de hierro',
+    'ALB':'Albúmina',
+    'GGT':'Gamma-Glutamil Transpeptidasa',
+  };
+  function laboCodeLabel(code){
+    const title = LABO_ABBR_TITLES[code];
+    return title ? `<abbr title="${title}" style="text-decoration:underline dotted;cursor:help;">${code}</abbr>` : code;
+  }
   function laboRed(txt){
     return `<span style="color:#FF0000;font-weight:700;">${txt}</span>`;
   }
@@ -1339,6 +1696,24 @@ function fld(id){ return document.getElementById(id); }
       $status.textContent = 'Pegá primero el texto del laboratorio.';
       return;
     }
+
+    function laboStripNumericDump(text){
+      const lines = text.split(/\r?\n/);
+      const isPureNum = l => /^-?[\d.,]+\s*$/.test(l.trim()) && l.trim()!=='';
+      const isIdxValPair = l => /^\d+\t-?[\d.,]+\s*$/.test(l);
+      const out = [];
+      let i = 0;
+      while(i < lines.length){
+        let j = i;
+        while(j < lines.length && (isPureNum(lines[j]) || isIdxValPair(lines[j]))) j++;
+        if(j - i >= 15){ i = j; continue; }
+        out.push(lines[i]);
+        i++;
+      }
+      return out.join('\n');
+    }
+    raw = laboStripNumericDump(raw);
+
     let pendingList = '';
     const pendMatch = raw.match(/an[aá]lisis\s+pendientes\s*:\s*([^\n]+)/i);
     if(pendMatch) pendingList = pendMatch[1].trim().replace(/\s*\|\s*/g, ', ');
@@ -1366,7 +1741,10 @@ function fld(id){ return document.getElementById(id); }
     const textStudyScan = LABO_TEXT_STUDIES.map(study=>laboScanTextStudy(flat, study, LABO_TEXT_GLOBAL_STOPS)).filter(Boolean);
     const textStudyRanges = textStudyScan.map(s=>({start:s.maskStart, end:s.maskEnd}));
 
-    const flatMasked = laboMaskRanges(flat, liquidosRanges.concat(textStudyRanges));
+    const orina24Result = laboBuildOrina24Block(flat);
+    const orina24Ranges = orina24Result ? [{start:orina24Result.maskStart, end:orina24Result.maskEnd}] : [];
+
+    const flatMasked = laboMaskRanges(flat, liquidosRanges.concat(textStudyRanges).concat(orina24Ranges));
     const sex = laboDetectSex(flat);
     const age = laboDetectAge(flat);
     const fio2Match = flat.match(/\bfio2\s*:?\s*(\d+(?:[.,]\d+)?)\s*%?/i);
@@ -1400,7 +1778,7 @@ function fld(id){ return document.getElementById(id); }
         }
       } else if(param.kind==='qual'){
         const r = laboExtractQual(flatMasked, param);
-        if(r){ text = r.value; abnormal = true; ok = true; pos = r.pos; }
+        if(r){ text = r.value; abnormal = r.reactive; ok = true; pos = r.pos; }
       } else if(param.kind==='raw'){
         const r = laboExtractStd(flatMasked, param, sex);
         if(r){ text = laboFmtNumber(r.value); abnormal = false; dir = null; ok = true; pos = r.pos; }
@@ -1456,7 +1834,7 @@ function fld(id){ return document.getElementById(id); }
     const line1Items = found.filter(f=>f.l1 || f.abnormal).concat(extras).sort(byPos);
 
     const liquidosBlocks = laboBuildLiquidosBlocks(flat);
-    const textStudyResult = laboBuildTextStudyBlocks(flat, laboFullMode);
+    const textStudyResult = laboBuildTextStudyBlocks(flat);
     const textStudyBlocks = textStudyResult.blocks;
 
     const ascAlb = laboFindAscLiqAlbumina(flat);
@@ -1473,7 +1851,7 @@ function fld(id){ return document.getElementById(id); }
       $gasaWrap.classList.remove('show');
     }
 
-    if(line2Items.length===0 && line1Items.length===0 && liquidosBlocks.length===0 && textStudyBlocks.length===0){
+    if(line2Items.length===0 && line1Items.length===0 && liquidosBlocks.length===0 && textStudyBlocks.length===0 && !orina24Result){
       $output.innerHTML = '';
       $status.textContent = 'No se pudo reconocer ningún dato conocido en el texto pegado. Revisá el formato.';
       return;
@@ -1486,7 +1864,7 @@ function fld(id){ return document.getElementById(id); }
     function buildLine(items){
       if(items.length===0) return '';
       const parts = items.map(r=>{
-        const txt = `${r.code}: ${r.text}`;
+        const txt = `${laboCodeLabel(r.code)}: ${r.text}`;
         return r.abnormal
           ? `<span style="color:#FF0000;font-weight:700;">${txt}</span>`
           : txt;
@@ -1494,8 +1872,24 @@ function fld(id){ return document.getElementById(id); }
       return prefix + parts.join(', ') + '.';
     }
 
+    const SEROLOGY_GROUPS = [
+      {label:'HIV', codes:['HIV Ag','HIV Ac']},
+      {label:'VDRL', codes:['VDRL']},
+      {label:'HCV', codes:['HCV']},
+      {label:'HBV', codes:['HBc Total','HBc IgM','HBsAc','HBsAg']},
+      {label:'Chagas', codes:['Chagas ELISA','Chagas HAI']},
+    ];
+    const serologyNegGroups = SEROLOGY_GROUPS.filter(g=>{
+      const tested = found.filter(f=>g.codes.includes(f.code));
+      return tested.length>0 && tested.every(f=>!f.abnormal);
+    }).map(g=>g.label);
+
     const line2Html = buildLine(line2Items);
-    const line1Html = buildLine(line1Items.filter(x=>x.l1 || x.abnormal));
+    let line1Html = buildLine(line1Items.filter(x=>x.l1 || x.abnormal));
+    if(serologyNegGroups.length){
+      const sero = `Serología: no reactivo para ${serologyNegGroups.join(', ')}.`;
+      line1Html = line1Html ? `${line1Html}<br>${sero}` : `${prefix}${sero}`;
+    }
 
     let out = '';
     if(line2Html) out += `<span style="${LABO_FONT}"><b>LABORATORIO COMPLETO:</b><br>${line2Html}</span>`;
@@ -1509,6 +1903,27 @@ function fld(id){ return document.getElementById(id); }
       if(out) out += '<br><br>';
       out += `<span style="${LABO_FONT}">${prefix}${b}</span>`;
     });
+    if(orina24Result){
+      function buildOrina24Line(items, onlyCoreOrAbnormal){
+        const list = onlyCoreOrAbnormal ? items.filter(it=>it.core || it.abnormal) : items;
+        if(list.length===0) return '';
+        const parts = list.map(it=>{
+          const txt = `${it.code}: ${it.text}`;
+          return it.abnormal ? laboRed(txt) : txt;
+        });
+        return parts.join(', ') + '.';
+      }
+      const orina24Completo = buildOrina24Line(orina24Result.items, false);
+      const orina24Parcial = buildOrina24Line(orina24Result.items, true);
+      if(out) out += '<br><br>';
+      out += `<span style="${LABO_FONT}"><b>ANÁLISIS DE ORINA DE 24 HORAS</b><br>`;
+      if(orina24Completo) out += `<b>LABORATORIO COMPLETO:</b><br>${prefix}${orina24Completo}`;
+      if(orina24Completo && orina24Parcial) out += '<br><br>';
+      if(orina24Parcial) out += `<b>LABORATORIO PARCIAL:</b><br>${prefix}${orina24Parcial}`;
+      const orina24Explic = laboBuildOrina24Explicaciones(orina24Result.items);
+      if(orina24Explic.length) out += `<br><br><b>Explicación de alteraciones</b>: ${orina24Explic.join(' ')}`;
+      out += '</span>';
+    }
     if(gasaBlock){
       if(out) out += '<br><br>';
       out += `<span style="${LABO_FONT}">${prefix}${gasaBlock}</span>`;
@@ -1567,17 +1982,10 @@ function fld(id){ return document.getElementById(id); }
     'paciente','fecha','medico','servicio','sala','sexo','edad'
   ];
 
-  $labCompletoBtn.addEventListener('click', ()=>{
-    laboFullMode = true;
-    $labCompletoBtn.classList.add('active');
-    laboProcesar();
-  });
   fld('laboLimpiarBtn').addEventListener('click', ()=>{
     $input.value = '';
     $gasaInput.value = '';
     $gasaWrap.classList.remove('show');
-    laboFullMode = false;
-    $labCompletoBtn.classList.remove('active');
     $output.innerHTML = '';
     $status.textContent = '';
     $input.focus();
@@ -1589,6 +1997,9 @@ function fld(id){ return document.getElementById(id); }
     if(!$output.contains(range.commonAncestorContainer)) return;
     const container = document.createElement('div');
     container.appendChild(range.cloneContents());
+    container.querySelectorAll('abbr').forEach(el=>{
+      el.replaceWith(document.createTextNode(el.textContent));
+    });
     container.querySelectorAll('*').forEach(el=>{
       el.style.background = 'transparent';
       el.style.backgroundColor = 'transparent';
@@ -1651,11 +2062,7 @@ function fld(id){ return document.getElementById(id); }
   let laboAutoTimer = null;
   function laboAutoProcesar(){
     if(laboAutoTimer) clearTimeout(laboAutoTimer);
-    laboAutoTimer = setTimeout(()=>{
-      laboFullMode = false;
-      $labCompletoBtn.classList.remove('active');
-      laboProcesar();
-    }, 150);
+    laboAutoTimer = setTimeout(laboProcesar, 150);
   }
   function laboAutoProcesarGasa(){
     if(laboAutoTimer) clearTimeout(laboAutoTimer);
@@ -1709,6 +2116,7 @@ function fld(id){ return document.getElementById(id); }
   laboToday();
   laboLoadEnabled();
   laboBuildChecklist();
+  laboBuildRefRangeTable();
   window.laboProcesar = laboProcesar;
 })();
 </script>
