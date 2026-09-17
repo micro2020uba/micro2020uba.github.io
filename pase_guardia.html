@@ -294,7 +294,8 @@
     table.pat-list-table td{border-bottom:none;padding:5px 0;}
     table.pat-list-table td::before{content:attr(data-label);display:block;font-size:10px;
       text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;margin-bottom:2px;}
-    table.pat-list-table tr.priority-row td.cama-cell::before{content:'★ CAMA';}
+    table.pat-list-table tr.priority-row td.cama-cell::before{content:'★ CAMA';position:static;left:auto;top:auto;font-size:10px;}
+    table.pat-list-table tr.priority-row td.cama-cell{position:static;}
     table.pat-list-table td.cama-cell .pat-row-input{padding-left:6px;}
     table.pat-list-table td.del-cell{position:absolute;top:6px;right:4px;width:auto;padding:0;}
     table.pat-list-table td.del-cell::before{content:none;}
