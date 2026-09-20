@@ -58,6 +58,31 @@
   .btn:hover{background:var(--ink);color:var(--paper);}
   .btn.danger{border-color:var(--danger);color:var(--danger);}
   .btn.danger:hover{background:var(--danger);color:#fff;}
+
+  /* ===== Login (Firebase Auth) ===== */
+  body:not(.auth-in) header, body:not(.auth-in) main, body:not(.auth-in) footer{ display:none !important; }
+  .login-overlay{ position:fixed;inset:0;background:var(--paper);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px; }
+  body.auth-in .login-overlay{display:none;}
+  .login-card{ background:var(--panel);border:2px solid var(--ink);border-radius:4px;padding:30px 28px;max-width:360px;width:100%;box-shadow:0 14px 46px rgba(0,0,0,.22); }
+  .login-card .mark{ font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:11px;letter-spacing:.14em;background:var(--ink);color:var(--paper);padding:4px 8px;display:inline-block;margin-bottom:10px; }
+  .login-card h1{font-size:16.5px;margin:0 0 4px;}
+  .login-card .sub{font-size:11.5px;color:var(--muted);margin-bottom:20px;line-height:1.4;}
+  .login-loading{display:none;text-align:center;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:12px;padding:20px 0;}
+  body.auth-checking .login-loading{display:block;}
+  body.auth-checking .login-form{display:none;}
+  .login-form{display:none;}
+  body.auth-out .login-form{display:block;}
+  .login-form .field{margin-bottom:12px;}
+  .login-form label{font-size:10.5px;color:var(--muted);font-weight:600;display:block;margin-bottom:4px;}
+  .login-form input{width:100%;font-family:inherit;font-size:13px;padding:8px 9px;border:1px solid var(--line-soft);border-radius:2px;background:var(--field-bg);color:var(--ink);}
+  #loginBtn{ width:100%;margin-top:6px;background:var(--accent-dark);color:#fff;border:none;padding:10px;font-weight:600;font-size:12.5px;cursor:pointer;border-radius:2px; }
+  #loginBtn:hover{opacity:.85;}
+  #loginBtn:disabled{opacity:.6;cursor:default;}
+  #loginError{font-size:11px;color:var(--danger);margin-top:10px;min-height:14px;line-height:1.4;}
+  #loginNote{font-size:10.5px;color:var(--accent-dark);margin-top:8px;min-height:14px;line-height:1.4;}
+  .logout-btn{ font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:11px;background:transparent;color:var(--ink);border:1px solid var(--ink);padding:7px 11px;border-radius:2px;cursor:pointer;white-space:nowrap; }
+  .logout-btn:hover{background:var(--ink);color:var(--paper);}
+  #loginUserTag{font-size:10.5px;color:var(--muted);font-family:'IBM Plex Mono',monospace;}
   .btn.accent{border-color:var(--accent-dark);background:var(--accent-dark);color:#fff;}
   .btn.accent:hover{opacity:.88;}
   .btn.small{padding:4px 8px;font-size:11px;}
@@ -97,7 +122,8 @@
   [contenteditable="true"]:focus{border-color:var(--accent);background:#fff;box-shadow:0 0 0 1px var(--accent);}
   [contenteditable="true"]:empty:before{content:attr(data-placeholder);color:#b7b3a6;}
 
-  .divider-row td{background:#efece2;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;text-align:center;padding:6px;border-right:none;}
+  .divider-row td{background:var(--accent-dark);color:var(--paper);font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;text-align:center;padding:9px 6px;border-right:none;}
+  tr.divider-row{border-top:4px solid var(--ink);border-bottom:4px solid var(--ink);}
 
   /* ===== MANEJO: chips + selector desplegable ===== */
   .manejo-cell{position:relative;}
@@ -151,6 +177,12 @@
   .hgt-sub .hgt-sub-lbl{color:var(--muted);font-size:10px;flex-shrink:0;min-width:118px;}
   .dato-line.hgt-datos.done .hgt-sub-lbl{text-decoration:line-through;}
   .hgt-sub [contenteditable]{flex:1;min-height:16px;font-size:12px;padding:1px 4px;border-bottom:1px dotted var(--line-soft);}
+  .hgt-toggle-row{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;}
+  .hgt-toggle{display:inline-flex;align-items:center;gap:4px;font-size:10px;border:1px solid var(--line-soft);
+    border-radius:10px;padding:2px 8px 2px 6px;cursor:pointer;color:var(--accent-dark);background:var(--field-bg);user-select:none;}
+  .hgt-toggle input{margin:0;}
+  .hgt-toggle.off{opacity:.5;text-decoration:line-through;color:var(--muted);}
+  .hgt-none{font-size:11px;color:var(--muted);font-style:italic;}
   .hgt-legacy{margin-bottom:5px;}
 
   /* ===== Resumen ===== */
@@ -162,6 +194,9 @@
   .summary-item .beds b{font-weight:700;}
   .summary-empty{color:var(--muted);font-size:12px;font-style:italic;}
   .summary-legend{margin-top:10px;font-size:10.5px;color:var(--muted);}
+  .summary-bybed-item{font-size:12.5px;margin-bottom:4px;line-height:1.4;}
+  .summary-bybed-item b{font-family:'IBM Plex Mono',monospace;}
+  .summary-empty{font-size:12px;color:var(--muted);font-style:italic;}
 
   footer{padding:18px clamp(14px,3vw,32px) 26px;font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;text-align:center;}
 
@@ -170,10 +205,18 @@
     table,thead,tbody,tr,td,th{display:block;}
     thead{display:none;}
     tbody tr{border-bottom:6px solid var(--paper);padding:8px 0;}
-    tbody td{border:none;padding:6px 12px;display:flex;gap:8px;align-items:flex-start;}
-    tbody td::before{content:attr(data-label);font-family:'IBM Plex Mono',monospace;font-size:9.5px;text-transform:uppercase;color:var(--muted);width:64px;flex-shrink:0;padding-top:3px;}
+    tbody td{border:none;padding:6px 12px;}
+    tbody td::before{content:attr(data-label);display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;text-transform:uppercase;color:var(--muted);margin-bottom:3px;}
     tbody td[data-label="Cama"]{background:#efece2;}
     .divider-row td::before{display:none;}
+  }
+  @media (max-width:480px){
+    /* Xiaomi/Android chicos: la fila "label + valor" de HGT (glucemia /
+       corrección) no entra en una sola línea sin achicar el campo a casi
+       nada — se apila cada sub-campo en su propia línea. */
+    .hgt-sub{flex-wrap:wrap;}
+    .hgt-sub .hgt-sub-lbl{min-width:0;width:100%;margin-bottom:2px;}
+    .hgt-sub [contenteditable]{width:100%;min-height:26px;padding:5px 6px;border:1px solid var(--line-soft);border-radius:3px;background:var(--field-bg);}
   }
 
   @media print{
@@ -188,7 +231,30 @@
   }
 </style>
 </head>
-<body>
+<body class="auth-checking">
+
+<div class="login-overlay">
+  <div class="login-card">
+    <span class="mark">PASE</span>
+    <h1>Guardias — pendientes por cama</h1>
+    <div class="sub">Acceso restringido: contiene datos de pacientes. Ingresá con el correo y contraseña habilitados.</div>
+    <div class="sub" style="margin-top:-14px;margin-bottom:18px;">La sesión se cierra sola a los 5 min sin uso, o al cerrar esta ventana (salvo cuentas de uso diario habilitadas para sesión larga).</div>
+    <div class="login-loading">Verificando sesión…</div>
+    <div class="login-form">
+      <div class="field">
+        <label for="loginEmail">Correo electrónico</label>
+        <input type="text" id="loginEmail" autocomplete="username" placeholder="nombre@ejemplo.com">
+      </div>
+      <div class="field">
+        <label for="loginPassword">Contraseña</label>
+        <input type="password" id="loginPassword" autocomplete="current-password">
+      </div>
+      <button type="button" id="loginBtn">Ingresar</button>
+      <div id="loginError"></div>
+      <div id="loginNote"></div>
+    </div>
+  </div>
+</div>
 
 <header>
   <div class="brand">
@@ -203,11 +269,21 @@
     <button class="btn small" id="descargarWordBtn" type="button" title="Descarga un archivo .doc (compatible con Word) con la tabla completa y el resumen">⬇ Word</button>
     <button class="btn small" id="descargarPdfBtn" type="button" title="Genera un PDF con checkboxes y campos de texto editables (para completar en Adobe Acrobat Reader)">⬇ PDF</button>
     <button class="btn danger" id="limpiarBtn" type="button">Limpiar para próxima guardia</button>
+    <span id="loginUserTag"></span>
+    <button type="button" class="logout-btn" id="logoutBtn">Cerrar sesión</button>
     <a class="back" href="index.html">← Panel principal</a>
   </div>
 </header>
 
 <main>
+  <div class="summary-box" id="summaryBox">
+    <h2>Resumen de pendientes</h2>
+    <div id="summaryList" class="summary-list"></div>
+    <div class="summary-legend">Los números de cama en color corresponden a camas con más de un pendiente (cada cama repetida mantiene el mismo color en todo el resumen). Tildar el check de un ítem lo marca como resuelto (se tacha) sin borrarlo.</div>
+    <h2 style="margin-top:16px;">Pendientes por cama <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);">— para dar el pase</span></h2>
+    <div id="summaryByBed" class="summary-bybed"></div>
+  </div>
+
   <div class="toolbar">
     <div class="info">
       Cargá en <b>MANEJO</b> lo que falta hacer con cada paciente; en <b>DATOS</b> vas anotando lo que recolectás para cada cosa marcada. Las camas sin pendientes bajan automáticamente al final de la lista.
@@ -227,12 +303,6 @@
       <tbody id="tbody"></tbody>
     </table>
   </div>
-
-  <div class="summary-box">
-    <h2>Resumen de pendientes</h2>
-    <div id="summaryList" class="summary-list"></div>
-    <div class="summary-legend">Los números de cama en color corresponden a camas con más de un pendiente (cada cama repetida mantiene el mismo color en todo el resumen). Tildar el check de un ítem lo marca como resuelto (se tacha) sin borrarlo.</div>
-  </div>
 </main>
 
 <!-- Popover único de MANEJO: se reutiliza para todas las camas, insertado fuera
@@ -249,11 +319,20 @@
 
 <script type="module">
 /* ================= Firestore: puente hacia el script clásico =================
-   Colecciones propias de esta herramienta (no interfieren con pase_guardia.html):
-   - guardia_camas/{numeroDeCama}  -> {paciente, mi, manejo:[...], datos:{...}, updatedAt}
-   - config/guardiaItems           -> {items:[...], updatedAt}
-   No requiere login: si las reglas de Firestore no permiten escritura anónima,
-   las llamadas van a fallar solas y quedamos trabajando con localStorage. */
+   Usa las mismas colecciones que pase_guardia.html para poder compartir las
+   reglas de seguridad del proyecto "pases-c121c" (ambas exigen login):
+   - pacientes/C{numeroDeCama} -> documento ÚNICO por cama, compartido con
+     pase_guardia.html: {cama, nombre, dni, edad, mi:[...], ant, mc, asoc,
+     cult, fi, evol..., manejo:[...], datos:{...}, hechos:{...}, updatedAt}.
+     Esta pantalla escribe solo nombre/dni/edad/mi/manejo/datos/hechos (con
+     merge), así que no pisa lo que carga el archivero.
+     (Antes había un documento aparte por cama con id numérico; pase_guardia.html
+     los funde una sola vez en los C### y los borra. Nota histórica: IDs
+     autogenerados tipo hash; acá los documentos usan el número de cama como
+     ID ("101".."140"), así que no hay colisión posible entre las dos apps.)
+   - config/guardiaItems       -> {items:[...], updatedAt}
+   Ahora requiere login (antes era de acceso libre); ver el módulo de
+   autenticación más abajo. */
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
   getFirestore, collection, doc, setDoc, onSnapshot
@@ -273,13 +352,189 @@ try{
   const db = getFirestore(app);
   window.__guardiaFs = {
     db, doc, setDoc, onSnapshot,
-    camasCol: collection(db, 'guardia_camas'),
+    camasCol: collection(db, 'pacientes'),
     itemsDocRef: doc(db, 'config', 'guardiaItems')
   };
   window.dispatchEvent(new Event('guardiaFsReady'));
 }catch(err){
   console.warn('No se pudo inicializar Firebase, se sigue solo con localStorage.', err);
 }
+</script>
+
+<script type="module">
+/* ================= Login con Firebase Authentication =================
+   Mismo proyecto y misma lógica de sesión que pase_guardia.html (ver ese
+   archivo para más comentarios): sesión de pestaña + 5 min de inactividad
+   para la mayoría de las cuentas; sesión local de hasta 24 hs para las dos
+   cuentas de uso diario (LONG_SESSION_EMAILS). El correo precargado se
+   comparte entre esta página y pase_guardia.html vía localStorage (mismo
+   origen). */
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import {
+  getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut,
+  setPersistence, browserSessionPersistence, browserLocalPersistence
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDrBZV9QSlG27Sl0rXbwP7HGWBHQTYe56I",
+  authDomain: "pases-c121c.firebaseapp.com",
+  projectId: "pases-c121c",
+  storageBucket: "pases-c121c.firebasestorage.app",
+  messagingSenderId: "261660416072",
+  appId: "1:261660416072:web:e500450ad82c33de1be07d"
+};
+
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+const LONG_SESSION_EMAILS = ['soloquimicayaruqui@gmail.com', 'pases@gmail.com'];
+const LONG_SESSION_MS = 24 * 60 * 60 * 1000;
+const LS_SESSION_EXPIRES = 'authSessionExpiresAt';
+const LS_PREFILL_EMAIL = 'authPrefillEmail';
+function esCuentaLarga(email){ return LONG_SESSION_EMAILS.includes(String(email||'').trim().toLowerCase()); }
+
+setPersistence(auth, browserSessionPersistence).catch(()=>{});
+
+const $body = document.body;
+const $email = document.getElementById('loginEmail');
+const $password = document.getElementById('loginPassword');
+const $loginBtn = document.getElementById('loginBtn');
+const $loginError = document.getElementById('loginError');
+const $loginNote = document.getElementById('loginNote');
+const $userTag = document.getElementById('loginUserTag');
+const $logoutBtn = document.getElementById('logoutBtn');
+
+function traducirErrorAuth(code){
+  switch(code){
+    case 'auth/invalid-email': return 'El correo no tiene un formato válido.';
+    case 'auth/user-disabled': return 'Este usuario está deshabilitado.';
+    case 'auth/user-not-found':
+    case 'auth/wrong-password':
+    case 'auth/invalid-credential': return 'Correo o contraseña incorrectos.';
+    case 'auth/too-many-requests': return 'Demasiados intentos. Probá de nuevo en unos minutos.';
+    case 'auth/network-request-failed': return 'Sin conexión a internet.';
+    default: return 'No se pudo iniciar sesión (' + code + ').';
+  }
+}
+
+async function intentarLogin(){
+  const email = $email.value.trim();
+  const pass = $password.value;
+  if(!email || !pass){
+    $loginError.textContent = 'Completá el correo y la contraseña.';
+    return;
+  }
+  $loginBtn.disabled = true;
+  $loginBtn.textContent = 'Ingresando…';
+  $loginError.textContent = '';
+  try{
+    await setPersistence(auth, esCuentaLarga(email) ? browserLocalPersistence : browserSessionPersistence);
+    await signInWithEmailAndPassword(auth, email, pass);
+    $password.value = '';
+    if(esCuentaLarga(email)){
+      localStorage.setItem(LS_SESSION_EXPIRES, String(Date.now() + LONG_SESSION_MS));
+      try{ localStorage.setItem(LS_PREFILL_EMAIL, email); }catch(e){}
+    } else {
+      localStorage.removeItem(LS_SESSION_EXPIRES);
+    }
+  }catch(err){
+    $loginError.textContent = traducirErrorAuth(err.code || '');
+  }finally{
+    $loginBtn.disabled = false;
+    $loginBtn.textContent = 'Ingresar';
+  }
+}
+
+try{
+  const prefill = localStorage.getItem(LS_PREFILL_EMAIL);
+  if(prefill && !$email.value) $email.value = prefill;
+}catch(e){}
+
+$loginBtn.addEventListener('click', intentarLogin);
+$password.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); intentarLogin(); } });
+$email.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); intentarLogin(); } });
+
+$logoutBtn.addEventListener('click', ()=>{
+  if(!confirm('¿Cerrar sesión en este equipo?')) return;
+  cierreManual = true;
+  localStorage.removeItem(LS_SESSION_EXPIRES);
+  signOut(auth);
+});
+
+const INACTIVITY_LIMIT_MS = 5 * 60 * 1000;
+let inactivityTimer = null;
+let cierreManual = false;
+let cierrePorInactividad = false;
+let cierrePorVencimiento = false;
+let sesionLargaActiva = false;
+let checkSesionLargaTimer = null;
+
+function pausarTimerInactividad(){
+  if(inactivityTimer){ clearTimeout(inactivityTimer); inactivityTimer = null; }
+}
+function reiniciarTimerInactividad(){
+  if(!$body.classList.contains('auth-in') || sesionLargaActiva) return;
+  pausarTimerInactividad();
+  inactivityTimer = setTimeout(()=>{
+    cierrePorInactividad = true;
+    signOut(auth);
+  }, INACTIVITY_LIMIT_MS);
+}
+['mousemove','mousedown','keydown','scroll','touchstart','wheel','click'].forEach(evt=>{
+  window.addEventListener(evt, reiniciarTimerInactividad, {passive:true});
+});
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'visible') reiniciarTimerInactividad();
+});
+
+function chequearVencimientoSesionLarga(){
+  const exp = parseInt(localStorage.getItem(LS_SESSION_EXPIRES) || '0', 10);
+  if(!exp){
+    localStorage.setItem(LS_SESSION_EXPIRES, String(Date.now() + LONG_SESSION_MS));
+    return;
+  }
+  if(Date.now() > exp){
+    cierrePorVencimiento = true;
+    if(checkSesionLargaTimer){ clearInterval(checkSesionLargaTimer); checkSesionLargaTimer = null; }
+    signOut(auth);
+  }
+}
+
+onAuthStateChanged(auth, (user)=>{
+  if(user){
+    $userTag.textContent = user.email || '';
+    $body.className = 'auth-in';
+    sesionLargaActiva = esCuentaLarga(user.email);
+    if(sesionLargaActiva){
+      pausarTimerInactividad();
+      chequearVencimientoSesionLarga();
+      if(checkSesionLargaTimer) clearInterval(checkSesionLargaTimer);
+      checkSesionLargaTimer = setInterval(chequearVencimientoSesionLarga, 5 * 60 * 1000);
+    } else {
+      if(checkSesionLargaTimer){ clearInterval(checkSesionLargaTimer); checkSesionLargaTimer = null; }
+      reiniciarTimerInactividad();
+    }
+    if(window.iniciarGuardiasApp) window.iniciarGuardiasApp();
+  } else {
+    $userTag.textContent = '';
+    $body.className = 'auth-out';
+    pausarTimerInactividad();
+    if(checkSesionLargaTimer){ clearInterval(checkSesionLargaTimer); checkSesionLargaTimer = null; }
+    sesionLargaActiva = false;
+    $loginNote.textContent = cierrePorInactividad
+      ? 'Se cerró la sesión automáticamente por 5 minutos de inactividad.'
+      : cierrePorVencimiento
+        ? 'Se cerró la sesión automáticamente: pasaron 24 horas desde el último inicio de sesión.'
+        : '';
+    cierrePorInactividad = false;
+    cierrePorVencimiento = false;
+    cierreManual = false;
+    try{
+      const prefill = localStorage.getItem(LS_PREFILL_EMAIL);
+      if(prefill) $email.value = prefill;
+    }catch(e){}
+  }
+});
 </script>
 
 <script>
@@ -290,40 +545,11 @@ try{
   const BED_NUMBERS = [];
   for(let n=101;n<=140;n++) BED_NUMBERS.push(String(n));
 
-  // Foto autoritativa del pase de sala de Clínica Médica del 16/09/2026:
-  // las camas que figuraban ese día con cama/DNI/nombre/edad/MI tal como
-  // están en ese documento. Se usa para una sincronización forzada, única,
-  // de esos 5 campos en las camas de esta lista (ver PASE_SALA_SYNC_VERSION
-  // más abajo); las camas 101-140 que no aparecen en este objeto no se
-  // tocan. Para traer un pase más nuevo en el futuro: reemplazar este
-  // objeto y subir PASE_SALA_SYNC_VERSION a una fecha distinta.
-  const PASE_SALA_SYNC_VERSION = '2026-09-16-pase-sala';
-  const PASE_SALA_HOY = {
-    "101":{nombre:"Nuñez Beatriz",dni:"4989656",edad:"82",mi:"infección de piel y partes blandas en MMII en tto con AMS TMS dia 4 (FI 12/9)"},
-    "103":{nombre:"Garces Bertha",dni:"95409850",edad:"80",mi:"Caso social"},
-    "104":{nombre:"Arreguez Martha Nora",dni:"4579456",edad:"83",mi:"NAC con AMS + Claritromicina dia 8 (FI 6/9) en contexto de fibrosis bilateral ya finalizó atb"},
-    "105":{nombre:"Luis Luna",dni:"10488725",edad:"73",mi:"POP alejado Fx de cadera izq caso Social Caso social (Sit calle) TEC sin pérdida de conciencia + Trauma facial con fractura de maxilar inferior con profilaxis antibiótica con AMS D7 (FI 13/4)"},
-    "107":{nombre:"Longinotti Antonio",dni:"4395327",edad:"84",mi:"NIH en tto PTZ 5 (FI 12/9) Sepsis a foco respiratorio en tto con PTZ dia 5 (FI 11/9) Social: Tercer nivel TEC S/ pérdida SCA secundario a ITU en tto PTZ día 7"},
-    "109":{nombre:"Gallo Jorge",dni:"10424858",edad:"74",mi:"Social - Tercer nivel ITU en tto con Cefalexina dia 5 (FI 11/9) TEC sin pérdida de conciencia secundario a caída de propia altura"},
-    "111":{nombre:"Seco Ezequiel",dni:"38028096",edad:"32",mi:"ITU complicada en tto con Ciprofloxacina dia 2 (FI 14/9) (Día 8 de tratamiento ATB total ) tto con Colistin dia 7 (FI 7/9)"},
-    "112":{nombre:"Gonzalez Alicia",dni:"4448459",edad:"84",mi:"POP alejado de cadera complicado+ nmn broncosspirativa en tto con colistin y meropenem dia 7 (FI 7/9)"},
-    "114":{nombre:"Pabla Duarte",dni:"10930311",edad:"73",mi:"SCA secundario a sepsis a foco urinario score SOFA 3 PUNTOS en tto con ceftriaxona dia 5 (FI 10/9)"},
-    "115":{nombre:"Casas Angela",dni:"93283272",edad:"92",mi:"SCA secundario a NIH en tto con Meropenem dia 8 (FI 7/9) SCA secundario a ITU en tto con PTZ dia 6 (FI 29/8)"},
-    "116":{nombre:"Ivaldi Horacio",dni:"4168449",edad:"90",mi:"Caso social: Tercer nivel Sme febril con foco probable respiratorio en tto con PTZ dia 5 (fi 9/8) Sme confusional por impactación fecal"},
-    "117":{nombre:"Duda Mieczyslaw",dni:"92912877",edad:"86",mi:"NIH + ITU complicada en tto con Meropenem dia 5 (FI 11/9) Tercer nivel Tvp en miembro inferior izq con tto anticoagulante (enoxa) Sme febril a foco respi en tto PTZ día 6 (FI 12/8) Sme confusional hiperactivo agudo secundario a bacteremia a foco urinario en tto con imipenem dia 10 (fi: 24/7)"},
-    "118":{nombre:"Barral Manuel",dni:"93385970",edad:"91",mi:"Sepsis por probable foco hematoma de psoas en tto con Meropenem dia 5 (FI 11/9) sepsis a NACS + impactación fecal en tto con AMS + Claritromicina dia 7 (FI 3/9)"},
-    "119":{nombre:"Cafaro Jose",dni:"94027445",edad:"78",mi:"Social - tercer nivel SCA secundario a NAC en tto con Levofloxacina y claritromicina dia 7 SCA secundario a Insuficiencia respiratoria tipo I por NAC en tto con Levofloxacina y Claritromicina Dia 6 (2/09) ACV isquemico evolucionado"},
-    "120":{nombre:"Souto Geronima",dni:"3537387",edad:"87",mi:"Caso social"},
-    "121":{nombre:"Comans, Julia Josefa",dni:"4253321",edad:"86",mi:"social: a definir tercer nivel Sindrome confusional agudo secundario a NIH en tto con PTZ dia 8 (FI 7/9) Ceftriaxona DIA 9 (fi: 26/08)"},
-    "122":{nombre:"Zarate Andrea",dni:"4571515",edad:"82",mi:"caso social TEC por caida de altura sec de etio multifactorial( deshidratación + hipoNa mod) fx codo izquierdo con cabestrillo Sospecha de IPYB en tto con TMS finalizado TEC en contexto síndrome confusional por ITU en tto con AMS (FI 21/5) + Hiponatremia y ortostatismo en contexto de hidroclorotiazida"},
-    "123":{nombre:"Hernandez Susana",dni:"96166476",edad:"94",mi:"SCA secundario a ITU + NAC. En tto con Ceftriaxona (FI: 6/9. D: 9)"},
-    "124":{nombre:"Sanchez Maria Elena",dni:"14181501",edad:"66",mi:"SCA secundario a ITU + NACS en tto PTZ dia 5 (FI 10/9) TVP derecha anticoagulada con enoxaparina. Score ACV isquemico evolucionado probable origen cardioembolico"},
-    "126":{nombre:"Marcos, Maria del Carmen",dni:"5306560",edad:"80",mi:"Internación domiciliaria SCA secundario a NAC en tto con AMS + claritromicina dia 8 (FI 7/9)"},
-    "127":{nombre:"Elias Lidia Angelica",dni:"3674639",edad:"88",mi:"Social: tercer nivel Itu intrahospitalaria en tto con PTZ dia 2 (FI: 14/9) SCA secundario NAC en tto con Amoxicilina/clavulánico + claritromicina dia 6 (FI 21/8) SCA secundario a sme diarreico por clostridium en tto con vancomicina dia 10 (FI 14/8) Foco respi en tto con AMS día 3 (FI 18/8) sepsis a foco abdominal por diarrea por clostridium en tto vancomicina día 4 (FI 14/8)"},
-    "134":{nombre:"Garritani Juan",dni:"7837819",edad:"77",mi:""},
-    "135":{nombre:"Afonso Manuel",dni:"93709203",edad:"80",mi:"Caso social Sme confusional en contexto de progresión de demencia Sme febril a posible foco urinario en tto con PTZ D7 (FI 31/7)- ultimo dia"},
-    "136":{nombre:"Paganelli, Alejandro",dni:"20519147",edad:"57",mi:"Encefalopatia hepatica en contexto de SA (GASA>1.1) secundario a hipertensión portal por cirrosis ALD NIH en tto PTZ dia 6 (FI 10/9) Falla renal por oliguria (Ritmo diurético 0,27)"}
-  };
+  /* Los datos del paciente (nombre, DNI, edad, MI) ya no se copian a mano
+     acá: salen del documento único por cama que escribe el importador del
+     pase de sala en pase_guardia.html. Esta pantalla los muestra y los
+     deja editar, pero la fuente es la misma para las tres pantallas. */
+
   const FIXED_ITEMS = ["HGT","BH (+)","BH(-)","BH-N(+)","BH-N(-)","Curva T°","RAO","CC","LABO","TAC","Informe TAC"];
 
   // HGT tiene 4 momentos fijos, cada uno con glucemia + corrección de insulina,
@@ -335,14 +561,17 @@ try{
     {key:'precena', label:'Precena'}
   ];
 
-  // Asegura que c.datos.HGT tenga la forma {predesayuno:{glu,corr}, ...}.
-  // Si había texto libre cargado de antes (versión vieja), se conserva en
-  // "_legacy" para no perder nada, aunque ya no se siga cargando ahí.
+  // Asegura que c.datos.HGT tenga la forma {predesayuno:{glu,corr}, ...,
+  // _hiddenMoments:[...]}. Si había texto libre cargado de antes (versión
+  // vieja), se conserva en "_legacy" para no perder nada, aunque ya no se
+  // siga cargando ahí. _hiddenMoments guarda qué momentos el usuario decidió
+  // ocultar para esta cama (no todos los pacientes tienen control de HGT en
+  // los 4 momentos); por defecto (array vacío) se muestran los 4.
   function ensureHgtDatos(c){
     const cur = c.datos['HGT'];
     if(!cur || typeof cur !== 'object' || Array.isArray(cur)){
       const legacyText = (typeof cur === 'string' && cur.trim()) ? cur : '';
-      const fresh = {};
+      const fresh = {_hiddenMoments: []};
       HGT_MOMENTS.forEach(m => fresh[m.key] = {glu:'', corr:''});
       if(legacyText) fresh._legacy = legacyText;
       c.datos['HGT'] = fresh;
@@ -354,43 +583,39 @@ try{
           if(typeof cur[m.key].corr !== 'string') cur[m.key].corr = '';
         }
       });
+      if(!Array.isArray(cur._hiddenMoments)) cur._hiddenMoments = [];
     }
     return c.datos['HGT'];
   }
 
-  // Texto de HGT en formato lista, usado por las exportaciones (Word / PDF)
+  // Texto de HGT en formato lista, usado por las exportaciones (Word / PDF).
+  // Solo incluye los momentos que el usuario no ocultó para esta cama.
   function hgtDatosLines(c){
     const hgt = ensureHgtDatos(c);
-    return HGT_MOMENTS.map(m =>
+    return HGT_MOMENTS.filter(m => !hgt._hiddenMoments.includes(m.key)).map(m =>
       m.label+': '+(hgt[m.key].glu || '—')+' mg% de glucemia — Corrección: '+(hgt[m.key].corr || '—')+' UI'
     );
   }
 
-  // Datos iniciales tomados de "Machete Guardia.md" — solo se usan la primera
-  // vez que se abre la herramienta (si ya hay algo guardado, no se pisa nada).
-  const SEED = {
-    "101":{paciente:"Nuñez",mi:"SCA"}, "102":{paciente:"Caballero",mi:"SM"},
-    "103":{paciente:"Garces",mi:"SM"}, "104":{paciente:"Arreguez",mi:"NAC"},
-    "105":{paciente:"Luis Luna",mi:"Social"}, "106":{paciente:"Leguizamon",mi:"Paliativo - sae"},
-    "107":{paciente:"Longinotti",mi:"SCA"}, "108":{paciente:"Vivas",mi:"Epoc. Neumo"},
-    "109":{paciente:"Gallo",mi:"Social"}, "110":{paciente:"",mi:""},
-    "111":{paciente:"Seco",mi:"ITU"}, "112":{paciente:"Gonzalez",mi:"TX POP infect"},
-    "113":{paciente:"Mancini",mi:"Neuro"}, "114":{paciente:"Duarte",mi:"ITU"},
-    "115":{paciente:"Casas",mi:"SCA itu"}, "116":{paciente:"Ivaldi",mi:"Social"},
-    "117":{paciente:"Duda",mi:"SCA itu"}, "118":{paciente:"Barral",mi:"SCA"},
-    "119":{paciente:"Cafaro",mi:"Social"}, "120":{paciente:"Souto",mi:"Social"},
-    "121":{paciente:"Comans Julia",mi:"SCA respi"}, "122":{paciente:"Zarate Andrea",mi:"Social"},
-    "123":{paciente:"Hernandez",mi:"SCA ITU"}, "124":{paciente:"Perez",mi:"Cx"},
-    "125":{paciente:"",mi:""}, "126":{paciente:"Marcos",mi:"NAC"},
-    "127":{paciente:"Elias",mi:"Social"}, "128":{paciente:"",mi:""},
-    "129":{paciente:"Servida",mi:"ACV Neuro"}, "130":{paciente:"",mi:""},
-    "131":{paciente:"Garritani",mi:"Uro"}, "132":{paciente:"Afonso",mi:"SCA demencia"},
-    "133":{paciente:"Paganelli",mi:"SAE"}, "134":{paciente:"",mi:""},
-    "135":{paciente:"",mi:""}, "136":{paciente:"",mi:""}, "137":{paciente:"",mi:""},
-    "138":{paciente:"",mi:""}, "139":{paciente:"",mi:""}, "140":{paciente:"",mi:""}
-  };
+  /* Id del documento de esta cama en Firestore: el mismo que usa el
+     archivero (pacientes/C101). */
+  function camaDocId(bed){ return 'C' + String(bed).replace(/\D/g,''); }
+  /* El MI se guarda como lista de ítems ({text, resuelto}) porque así lo
+     maneja el archivero; acá se muestra como una línea de texto. */
+  function miToText(mi){
+    if(Array.isArray(mi)) return mi.filter(i=>i && !i.resuelto).map(i=>i.text).join(' ');
+    return String(mi==null?'':mi);
+  }
+  function miFromText(txt, prev){
+    const resueltos = Array.isArray(prev) ? prev.filter(i=>i && i.resuelto) : [];
+    const t = String(txt==null?'':txt).trim();
+    return (t ? [{text:t, resuelto:false}] : []).concat(resueltos);
+  }
 
-  const STORAGE_KEY = 'guardia_data_v1';
+  /* v2: al pasar al documento único por cama, se arranca con la caché
+     local limpia para no arrastrar nombres viejos de la versión anterior
+     (los datos reales llegan de la nube apenas se conecta). */
+  const STORAGE_KEY = 'guardia_data_v2';
   const MULTI_COLORS = ['#8a3324','#2f5d5a','#c08a2e','#5b6fd6','#a9469e','#3f7d20','#1f6f8b','#b2515b','#6a4fb3','#a06a2e'];
 
   /* ============================= Estado ============================= */
@@ -401,8 +626,7 @@ try{
 
   function masterItems(){ return FIXED_ITEMS.concat(state.customItems); }
 
-  function blankCama(){ return {paciente:'', dni:'', edad:'', mi:'', manejo:[], datos:{}, hechos:{}}; }
-  let pendingPaseSalaOverride = {}; // camas que se acaban de forzar con PASE_SALA_HOY en esta carga, a la espera de empujarse a la nube
+  function blankCama(){ return {paciente:'', dni:'', edad:'', mi:'', _miArr:null, manejo:[], datos:{}, hechos:{}}; }
 
   function loadLocal(){
     try{
@@ -414,37 +638,16 @@ try{
       }
     }catch(err){ console.warn('No se pudo leer localStorage', err); }
 
-    // Completar camas faltantes con semilla (primera vez) o en blanco.
+    // Completar camas faltantes en blanco. Los datos del paciente llegan
+    // desde la nube (documento único por cama); acá no se inventa nada.
     BED_NUMBERS.forEach(b=>{
-      if(!state.camas[b]){
-        const seed = SEED[b] || {paciente:'',mi:''};
-        state.camas[b] = { paciente: seed.paciente||'', dni:'', edad:'', mi: seed.mi||'', manejo: [], datos: {}, hechos: {} };
-      }
+      if(!state.camas[b]) state.camas[b] = blankCama();
       if(!Array.isArray(state.camas[b].manejo)) state.camas[b].manejo = [];
       if(!state.camas[b].datos || typeof state.camas[b].datos !== 'object') state.camas[b].datos = {};
       if(!state.camas[b].hechos || typeof state.camas[b].hechos !== 'object') state.camas[b].hechos = {};
       if(typeof state.camas[b].dni !== 'string') state.camas[b].dni = '';
       if(typeof state.camas[b].edad !== 'string') state.camas[b].edad = '';
     });
-
-    // Sincronización forzada, una sola vez, con el pase de sala de hoy
-    // (16/09/2026): pisa paciente/DNI/edad/MI de las camas que figuran en
-    // PASE_SALA_HOY con esos datos (son los correctos y actualizados de
-    // hoy), y las marca para empujarse a la nube en cuanto se pueda. No
-    // toca "manejo"/"datos"/"hechos" ni las camas que no están en la lista.
-    if(state.paseSalaSyncVersion !== PASE_SALA_SYNC_VERSION){
-      Object.keys(PASE_SALA_HOY).forEach(b=>{
-        if(!BED_NUMBERS.includes(b)) return;
-        const ref = PASE_SALA_HOY[b];
-        state.camas[b].paciente = ref.nombre;
-        state.camas[b].dni = ref.dni;
-        state.camas[b].edad = ref.edad;
-        state.camas[b].mi = ref.mi;
-        lastLocalEdit[b] = Date.now();
-        pendingPaseSalaOverride[b] = true;
-      });
-      state.paseSalaSyncVersion = PASE_SALA_SYNC_VERSION;
-    }
   }
 
   function saveLocal(){
@@ -467,10 +670,16 @@ try{
     saveDebouncers[bed] = setTimeout(()=>{
       const fs = window.__guardiaFs;
       const c = state.camas[bed];
-      fs.setDoc(fs.doc(fs.camasCol, bed), {
-        paciente: c.paciente, dni: c.dni, edad: c.edad, mi: c.mi, manejo: c.manejo, datos: c.datos, hechos: c.hechos,
+      /* merge:true es clave: en ese mismo documento viven ANT, MC, ASOC,
+         cultivos y la evolución que carga el archivero. Si escribiéramos
+         el documento entero, los borraríamos. */
+      fs.setDoc(fs.doc(fs.camasCol, camaDocId(bed)), {
+        cama: camaDocId(bed),
+        nombre: c.paciente, dni: c.dni, edad: c.edad,
+        mi: miFromText(c.mi, c._miArr),
+        manejo: c.manejo, datos: c.datos, hechos: c.hechos,
         updatedAt: Date.now()
-      }).catch(err=>{
+      }, {merge:true}).catch(err=>{
         console.warn('No se pudo sincronizar la cama '+bed+' con la nube.', err);
         setSyncTag('off','sin conexión a la nube (solo local)');
       });
@@ -490,7 +699,14 @@ try{
     }, 600);
   }
 
-  window.addEventListener('guardiaFsReady', ()=>{
+  window.addEventListener('guardiaFsReady', ()=>{ fsBridgeReady = true; tryConnectGuardiaFs(); });
+
+  let fsBridgeReady = false;
+  let authReadyForFs = false;
+  let guardiaFsConnected = false;
+  function tryConnectGuardiaFs(){
+    if(guardiaFsConnected || !fsBridgeReady || !authReadyForFs) return;
+    guardiaFsConnected = true;
     const fs = window.__guardiaFs;
     let sawFirstCamaSnapshot = false;
 
@@ -499,17 +715,11 @@ try{
       setSyncTag('on','sincronizado con la nube');
       let changed = false;
       snap.forEach(docSnap=>{
-        const bed = docSnap.id;
+        // Solo los documentos por cama del formato nuevo (C101). Los de id
+        // numérico son de la versión anterior y los funde/borra pase_guardia.
+        if(!/^C\d+$/i.test(docSnap.id)) return;
+        const bed = docSnap.id.replace(/\D/g,'');
         if(!BED_NUMBERS.includes(bed)) return;
-        if(pendingPaseSalaOverride[bed]){
-          // No dejar que la nube (todavía con datos de antes del pase de
-          // hoy) pise la sincronización forzada recién aplicada; en cambio,
-          // empujamos nuestra versión (ya está en state.camas[bed]).
-          delete pendingPaseSalaOverride[bed];
-          scheduleFsSaveCama(bed);
-          changed = true;
-          return;
-        }
         const remote = docSnap.data();
         const lastEdit = lastLocalEdit[bed] || 0;
         // Si edité esta cama hace menos de 3s, no dejo que la nube la pise
@@ -520,13 +730,14 @@ try{
         const isFocusedHere = row && row.contains(document.activeElement) && document.activeElement.isContentEditable;
         if(isFocusedHere) return;
         state.camas[bed] = {
-          paciente: remote.paciente ?? state.camas[bed].paciente,
+          paciente: remote.nombre ?? remote.paciente ?? state.camas[bed].paciente,
           dni: remote.dni ?? state.camas[bed].dni,
           edad: remote.edad ?? state.camas[bed].edad,
-          mi: remote.mi ?? state.camas[bed].mi,
-          manejo: Array.isArray(remote.manejo) ? remote.manejo : state.camas[bed].manejo,
-          datos: (remote.datos && typeof remote.datos==='object') ? remote.datos : state.camas[bed].datos,
-          hechos: (remote.hechos && typeof remote.hechos==='object') ? remote.hechos : state.camas[bed].hechos
+          mi: (remote.mi !== undefined) ? miToText(remote.mi) : state.camas[bed].mi,
+          _miArr: Array.isArray(remote.mi) ? remote.mi : null,
+          manejo: Array.isArray(remote.manejo) ? remote.manejo : [],
+          datos: (remote.datos && typeof remote.datos==='object') ? remote.datos : {},
+          hechos: (remote.hechos && typeof remote.hechos==='object') ? remote.hechos : {}
         };
         changed = true;
       });
@@ -548,7 +759,7 @@ try{
         render();
       }
     }, err=>{ console.warn('No se pudo escuchar opciones personalizadas en la nube.', err); });
-  });
+  }
 
   // Si a los 4s no hubo ninguna señal de Firebase, asumimos que solo hay local.
   setTimeout(()=>{ if(!fsReady) setSyncTag('off','trabajando solo en este dispositivo'); }, 4000);
@@ -571,6 +782,7 @@ try{
   function render(){
     renderTable();
     renderSummary();
+    renderSummaryByBed();
   }
 
   function renderTable(){
@@ -585,7 +797,7 @@ try{
     let html = '';
     pending.forEach(b => html += rowHtml(b, items));
     if(pending.length && notPending.length){
-      html += '<tr class="divider-row"><td colspan="5">Camas sin pendientes</td></tr>';
+      html += '<tr class="divider-row"><td colspan="7">▾ Camas sin pendientes ▾</td></tr>';
     }
     notPending.forEach(b => html += rowHtml(b, items, true));
 
@@ -607,7 +819,13 @@ try{
       legacyHtml = '<div class="hgt-legacy"><span class="lbl">Nota anterior:</span> '+
         '<div contenteditable="true" data-hgt-legacy="1" data-placeholder="...">'+esc(hgt._legacy)+'</div></div>';
     }
-    const blocks = HGT_MOMENTS.map(m=>{
+    const toggleRow = '<div class="hgt-toggle-row">'+HGT_MOMENTS.map(m=>{
+      const hidden = hgt._hiddenMoments.includes(m.key);
+      return '<label class="hgt-toggle'+(hidden?' off':'')+'">'+
+        '<input type="checkbox" data-hgt-toggle="'+m.key+'" data-bed="'+bed+'" '+(hidden?'':'checked')+'>'+
+        m.label+'</label>';
+    }).join('')+'</div>';
+    const blocks = HGT_MOMENTS.filter(m => !hgt._hiddenMoments.includes(m.key)).map(m=>{
       const v = hgt[m.key];
       return '<div class="hgt-block">'+
         '<div class="hgt-block-title">'+m.label+'</div>'+
@@ -617,7 +835,8 @@ try{
           '<div contenteditable="true" data-hgt="'+m.key+'.corr" data-bed="'+bed+'" data-placeholder="UI">'+esc(v.corr)+'</div></div>'+
       '</div>';
     }).join('');
-    return '<div class="dato-line hgt-datos'+(done?' done':'')+'"><span class="lbl">HGT:</span>'+legacyHtml+blocks+'</div>';
+    const blocksOrEmpty = blocks || '<div class="hgt-none">Ningún momento seleccionado arriba.</div>';
+    return '<div class="dato-line hgt-datos'+(done?' done':'')+'"><span class="lbl">HGT:</span>'+toggleRow+legacyHtml+blocksOrEmpty+'</div>';
   }
 
   function rowHtml(bed, items, noPend){
@@ -705,6 +924,25 @@ try{
         saveLocal();
         scheduleFsSaveCama(bed);
       }, 250));
+    });
+
+    // Elegir qué momentos de HGT se controlan para esta cama (no todos los
+    // pacientes tienen los 4). Cambia la vista al toque, así que se
+    // re-renderiza toda la tabla (poco frecuente, no hace falta optimizar).
+    tbody.querySelectorAll('[data-hgt-toggle]').forEach(el=>{
+      el.addEventListener('change', function(){
+        const bed = this.dataset.bed;
+        const moment = this.dataset.hgtToggle;
+        const c = state.camas[bed];
+        const hgt = ensureHgtDatos(c);
+        const idx = hgt._hiddenMoments.indexOf(moment);
+        if(this.checked){ if(idx !== -1) hgt._hiddenMoments.splice(idx,1); }
+        else { if(idx === -1) hgt._hiddenMoments.push(moment); }
+        lastLocalEdit[bed] = Date.now();
+        saveLocal();
+        scheduleFsSaveCama(bed);
+        render();
+      });
     });
 
     // Quitar un ítem de manejo (chip con x)
@@ -908,6 +1146,30 @@ try{
     });
 
     box.innerHTML = anyPending ? html : '<div class="summary-empty">No hay pendientes cargados todavía.</div>';
+  }
+
+  // Segunda lista del resumen: agrupada por cama (orden creciente), pensada
+  // para dar el pase post-guardia — "101: HGT, Control dolor, Curva T°."
+  function renderSummaryByBed(){
+    const box = document.getElementById('summaryByBed');
+    if(!box) return;
+    const colorMap = computeMultiColorMap();
+    const beds = BED_NUMBERS.filter(b => state.camas[b].manejo.length > 0)
+                             .sort((a,b)=> Number(a)-Number(b));
+    if(!beds.length){
+      box.innerHTML = '<div class="summary-empty">No hay pendientes cargados todavía.</div>';
+      return;
+    }
+    const html = beds.map(b=>{
+      const color = colorMap[b];
+      const bedLabel = color ? '<b style="color:'+color+';">'+b+'</b>' : '<b>'+b+'</b>';
+      const itemsHtml = state.camas[b].manejo.map(name=>{
+        const done = !!state.camas[b].hechos[name];
+        return done ? '<span style="text-decoration:line-through;opacity:.55;">'+esc(name)+'</span>' : esc(name);
+      }).join(', ');
+      return '<div class="summary-bybed-item">'+bedLabel+': '+itemsHtml+'.</div>';
+    }).join('');
+    box.innerHTML = html;
   }
 
   /* ============================= Limpiar para próxima guardia ============================= */
@@ -1134,7 +1396,7 @@ try{
         y += 12;
       }else{
         c.manejo.forEach(name=>{
-          ensureSpace(name === 'HGT' ? 14 + 4*11 : 14 + 12);
+          ensureSpace(name === 'HGT' ? 14 + HGT_MOMENTS.filter(m=>!ensureHgtDatos(c)._hiddenMoments.includes(m.key)).length*11 : 14 + 12);
 
           const cbSize = 9;
           const cbX = marginL + 10, cbY = y - cbSize + 1;
@@ -1156,7 +1418,7 @@ try{
 
           if(name === 'HGT'){
             const hgt = ensureHgtDatos(c);
-            HGT_MOMENTS.forEach(m=>{
+            HGT_MOMENTS.filter(m => !hgt._hiddenMoments.includes(m.key)).forEach(m=>{
               const labelX = marginL + 26;
               doc.setFontSize(8);
               doc.setTextColor(100,100,100);
@@ -1266,8 +1528,15 @@ try{
   });
 
   /* ============================= Arranque ============================= */
-  loadLocal();
-  render();
+  window.iniciarGuardiasApp = function(){
+    if(!window.__guardiasAppStarted){
+      window.__guardiasAppStarted = true;
+      loadLocal();
+      render();
+    }
+    authReadyForFs = true;
+    tryConnectGuardiaFs();
+  };
 
 })();
 </script>
