@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-   Versión: 17 (20/09/2026)
+   Versión: 18 (20/09/2026)
 -->
 <html lang="es-AR">
 <head>
@@ -46,6 +46,7 @@
   .cv-add input{width:52px;font-family:'IBM Plex Mono',monospace;font-size:11px;padding:3px 5px;border:1px solid var(--line-soft);border-radius:2px;background:var(--field-bg);color:var(--ink);}
   .cv-add button{font-size:11px;font-weight:700;border:1px solid var(--ink);background:var(--panel);color:var(--ink);border-radius:2px;padding:3px 7px;cursor:pointer;}
   .cv-add button:hover{background:var(--ink);color:var(--paper);}
+  .cv-add select{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;padding:3px 6px;border:1px solid var(--ink);border-radius:2px;background:var(--panel);color:var(--ink);cursor:pointer;}
   .cv-note{font-size:10px;color:var(--muted);line-height:1.35;margin-bottom:8px;}
   .pase-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
   .pase-actions button{flex:1;min-width:110px;}
@@ -508,6 +509,7 @@
     </div>
     <div class="imp-footer">
       <span class="imp-foot-note" id="impFootNote">Nada se guarda hasta que aprietes “Aplicar cambios”.</span>
+      <button type="button" class="secondary small danger" id="impUndoBtn" style="display:none;" title="Vuelve a dejar los campos como estaban antes de la última vez que se aplicaron cambios de un .md">↩ Deshacer última importación</button>
       <button type="button" class="secondary small" id="impCancelBtn">Cancelar</button>
       <button type="button" id="impApplyBtn" disabled>Aplicar cambios</button>
     </div>
@@ -577,18 +579,13 @@
       <span class="cv-label">Camas mostradas:</span>
       <div id="camasVisiblesChips" style="display:contents;"></div>
       <div class="cv-add">
-        <input type="text" id="camaVisibleInput" placeholder="cama" inputmode="numeric">
-        <button type="button" id="camaVisibleAddBtn">+</button>
+        <select id="camaVisibleSelect" title="Agregar cama a la vista"></select>
       </div>
     </div>
     <div class="cv-note">El resto de los pacientes de la sala sigue guardado y actualizándose en la nube — solo no se muestra acá para no saturar la vista.</div>
     <input type="text" id="patientSearch" placeholder="Buscar por cama o nombre (en toda la base)...">
     <div class="folder-list" id="patientList"></div>
     <button id="addPatientBtn">+ Nueva carpeta (paciente)</button>
-    <div class="pase-actions">
-      <button class="secondary small" id="copyBtn">Copiar pase (camas mostradas)</button>
-      <button class="secondary small" id="printBtn">Imprimir</button>
-    </div>
     <div class="status" id="status"></div>
   </div>
 
@@ -599,11 +596,7 @@
 <footer>
   generador local — los datos no se envían a ningún servidor, se procesan y guardan en este navegador (y se sincronizan con la base compartida si hay sesión iniciada).
   <div class="persist-box">
-    <button id="saveAllBtn">Exportar copia (.json)</button>
-    <button id="loadAllBtn">Importar copia (.json)</button>
-    <input type="file" id="loadFileInput" accept="application/json" style="display:none">
     <button id="clearAllBtn" class="danger">Borrar toda la base</button>
-    <div class="persist-note">Exportá una copia de vez en cuando por las dudas — si algún día hay que restaurar la base, se importa desde acá.</div>
   </div>
 </footer>
 <div id="printSingleTarget"></div>
@@ -860,7 +853,7 @@ function renderGlosario(){
    todavía, se usan estas 3 por defecto. El orden importa: de mejor a peor — de ahí se
    deriva el "rango" para saber si el paciente mejoró o empeoró de un día a otro. */
 const ESTADO_OPTIONS_DEFAULT = [
-  {value:'estables condiciones generales', label:'Estables condiciones generales', closing:'Paciente hemodinámicamente estable. Continúa control evolutivo.'},
+  {value:'buen estado general', label:'Buen estado general', corto:'buen estado general', closing:'Paciente hemodinámicamente estable. Continúa control evolutivo.'},
   {value:'regulares condiciones generales', label:'Regulares condiciones generales', closing:'Paciente en regular estado general. Continúa control evolutivo.'},
   {value:'mal estado general', label:'Mal estado general', closing:'Paciente en mal estado general.'}
 ];
@@ -883,7 +876,7 @@ function estadoTrendPhrase(prevEstado, estado){
 
 /* ================= Plantillas por motivo de internación ================= */
 const PLANTILLAS = {
-  sano: { label:'Paciente estable / en observación', estado:'estables condiciones generales',
+  sano: { label:'Paciente estable / en observación', estado:'buen estado general',
     set:{
       neuro:{normal:{vigil:true,orientado3:true,reactivo:true,colaborador:true,obedeceordenes:true,sinfoco:true}, alt:{}},
       cv:{normal:{ritmoregular:true,r1r2:true,silencios:true,sinfallo:true,decubito:true,pulsos:true}, alt:{}},
@@ -1020,6 +1013,37 @@ function miFromText(txt, prev){
   const resueltos = Array.isArray(prev) ? prev.filter(i=>i && i.resuelto) : [];
   const t = String(txt==null?'':txt).trim();
   return (t ? [{text:t, resuelto:false}] : []).concat(resueltos);
+}
+
+/* ================= Día de tratamiento automático (a partir de "(FI: D/M)") =================
+   Si un ítem de MI/ASOC trae una fecha de inicio de tratamiento entre paréntesis
+   (ej: "...claritromicina, día 8 de tto (FI: 7/9)"), el número de día se recalcula
+   solo cada vez que se muestra el ítem, tomando el día de la FI como día 0. El
+   resto del texto del ítem (lo que el usuario haya escrito a mano) no se toca. */
+const DIA_TTO_RE = /(d[ií]a)\s*\d+(\s*de\s*tto\b)?(\s*)\(\s*fi\s*:?\s*(\d{1,2})\s*[\/\-.]\s*(\d{1,2})\s*\)/i;
+function diaTtoActual(dd, mm){
+  dd = parseInt(dd,10); mm = parseInt(mm,10);
+  if(!dd || !mm || mm<1 || mm>12 || dd<1 || dd>31) return null;
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  let fi = new Date(hoy.getFullYear(), mm-1, dd);
+  if(fi.getTime() - hoy.getTime() > 2*864e5) fi = new Date(hoy.getFullYear()-1, mm-1, dd);
+  const dias = Math.round((hoy.getTime()-fi.getTime())/864e5);
+  return dias>=0 ? dias : null;
+}
+function actualizarDiasTtoEnItems(items){
+  if(!Array.isArray(items) || !items.length) return false;
+  let cambiado = false;
+  items.forEach(item=>{
+    if(!item || !item.text) return;
+    const m = item.text.match(DIA_TTO_RE);
+    if(!m) return;
+    const dias = diaTtoActual(m[4], m[5]);
+    if(dias==null) return;
+    const nuevo = item.text.replace(DIA_TTO_RE, (full, diaWord, deTto)=>
+      `${diaWord} ${dias}${deTto||''} (FI: ${m[4]}/${m[5]})`);
+    if(nuevo !== item.text){ item.text = nuevo; cambiado = true; }
+  });
+  return cambiado;
 }
 function newPatient(cama){
   const code = camaCode(cama);
@@ -1165,7 +1189,7 @@ function estadoClass(p){
     if(idx===opts.length-1) return 'tab-malo';
     return 'tab-regular';
   }
-  if(p.lastEstado.indexOf('estables')===0) return 'tab-estable';
+  if(p.lastEstado.indexOf('estables')===0 || p.lastEstado.indexOf('buen')===0) return 'tab-estable';
   if(p.lastEstado.indexOf('regulares')===0) return 'tab-regular';
   if(p.lastEstado.indexOf('mal')===0) return 'tab-malo';
   return '';
@@ -1208,18 +1232,31 @@ function renderCamasVisiblesBar(){
       renderSidebar();
     });
   });
+  renderCamaVisibleSelect();
 }
-function addCamaVisibleFromInput(){
-  const input = fld('camaVisibleInput');
-  if(!input) return;
-  const m = input.value.match(/\d+/);
-  if(!m){ input.focus(); return; }
-  const cama = m[0];
+/* Rango de camas de la sala (C101–C140, el mismo que usa el resto del
+   programa — ver "Importar MI (101-140)"). El desplegable "▼" lista las
+   que todavía no están entre las camas mostradas, para agregarlas: se
+   puede elegir buscando (tipeando el número salta a la opción) o con el
+   mouse. Al elegir una, se agrega a la vista y se crea su carpeta. */
+const CAMA_RANGO_MIN = 101, CAMA_RANGO_MAX = 140;
+function renderCamaVisibleSelect(){
+  const sel = fld('camaVisibleSelect');
+  if(!sel) return;
+  const visibles = getCamasVisibles();
+  let opts = '<option value="">▼</option>';
+  for(let n=CAMA_RANGO_MIN; n<=CAMA_RANGO_MAX; n++){
+    const c = String(n);
+    if(visibles.includes(c)) continue;
+    opts += `<option value="${c}">C${c}</option>`;
+  }
+  sel.innerHTML = opts;
+}
+function addCamaVisible(cama){
   const list = getCamasVisibles();
   if(!list.includes(cama)) list.push(cama);
   checklistConfig.camasVisibles = list;
   saveCustomLocal();
-  input.value = '';
   /* Si esa cama todavía no tiene carpeta, se crea vacía en el acto: antes
      el número aparecía en la barra pero la ficha no existía. */
   ensureFichaForCama(cama);
@@ -1251,6 +1288,9 @@ function renderSidebar(){
 
 /* ================= Listas MI / ASOC (editables, activo-resuelto) ================= */
 function renderItemList(containerId, patient, field){
+  if((field==='mi' || field==='asoc') && actualizarDiasTtoEnItems(patient[field])){
+    savePatientNow(patient);
+  }
   const box = fld(containerId);
   box.innerHTML='';
   patient[field].forEach(item=>{
@@ -1295,8 +1335,6 @@ function renderForm(){
 
   col.innerHTML = `
     <div class="patient-actions">
-      <button type="button" class="secondary small" id="copyPatientBtn">Copiar esta ficha</button>
-      <button type="button" class="secondary small" id="printPatientBtn">Imprimir esta ficha</button>
       <button type="button" class="secondary small danger" id="vaciarPatientBtn">Vaciar carpeta (alta)</button>
     </div>
     <fieldset>
@@ -1408,13 +1446,6 @@ function renderForm(){
   renderEvolBuilder(p);
   fld('addEntryBtn').addEventListener('click', ()=>addEvolEntry(p));
 
-  fld('copyPatientBtn').addEventListener('click', ()=>{
-    navigator.clipboard.writeText(buildPlainText([p])).then(()=>{
-      fld('status').textContent = 'Ficha copiada al portapapeles.';
-      setTimeout(()=>fld('status').textContent='',2500);
-    }).catch(()=>{ fld('status').textContent = 'No se pudo copiar automáticamente.'; });
-  });
-  fld('printPatientBtn').addEventListener('click', ()=> printSinglePatient(p));
   fld('vaciarPatientBtn').addEventListener('click', ()=> vaciarCarpeta(p));
 }
 
@@ -1488,7 +1519,7 @@ function lastDetail(p, key, kind, id){
 
 function renderEvolBuilder(p){
   const box = fld('evolBuilder');
-  const lastEstado = (p && p.lastChecklist && p.lastChecklist.estado) || 'estables condiciones generales';
+  const lastEstado = (p && p.lastChecklist && p.lastChecklist.estado) || 'buen estado general';
   const customPlantillas = checklistConfig.customPlantillas || {};
   let html = `
     <div class="field" style="margin-bottom:4px;">
@@ -1825,11 +1856,11 @@ function buildCatarsisDiuresisClause(patient){
 function buildCsvLine(){
   const ta = val('evolTA'), fc = val('evolFC'), sat = val('evolSat'), t = val('evolT');
   const fio2 = val('evolFio2') || '21';
-  return `CSV: TA:${ta}, FC:${fc}, SatO2:${sat}% (${fio2}%), T°:${t}°C.`;
+  return `CSV: TA: ${ta}, FC: ${fc}, SatO2: ${sat}% (${fio2}%), T°: ${t}°C.`;
 }
 function activeMiSummary(p){
   if(!p || !p.mi || !p.mi.length) return '';
-  return p.mi.filter(i=>!i.resuelto).map(i=>i.text).join('; ');
+  return p.mi.filter(i=>!i.resuelto).map(i=>i.text).join(' + ');
 }
 function closingEstadoSentence(estado){
   const found = getEstadoOptions().find(o=>o.value===estado);
@@ -2022,7 +2053,7 @@ function buildExamBody(p){
   const estudioInforme = fld('evolEstudioInforme') ? fld('evolEstudioInforme').value.trim() : '';
 
   let out = buildCsvLine() + ' ';
-  if(cv) out += `A nivel cardiovascular, ${cv}${trendPhraseFor('cv',p)}. `;
+  if(cv) out += `${capitalize(cv)}${trendPhraseFor('cv',p)}. `;
   if(estudioTipo && estudioInforme) out += `Se recibe informe de ${estudioTipo}: ${estudioInforme}. `;
   if(resp) out += `A nivel pulmonar, ${resp}${trendPhraseFor('resp',p)}. `;
 
@@ -2048,7 +2079,7 @@ function buildHistoriaClinicaText(p){
   const estado = fld('evolEstado').value;
   const sexoTxt = p.sexo === 'M' ? 'masculino' : (p.sexo === 'F' ? 'femenina' : '');
   const miResumen = activeMiSummary(p);
-  const dx = `Paciente${sexoTxt?' '+sexoTxt:''}${p.edad?' de '+p.edad:''}${miResumen?', cursando internación por '+miResumen:''}.`;
+  const dx = `Paciente${sexoTxt?' '+sexoTxt:''}${p.edad?' de '+p.edad:''}${miResumen?', cursando internación '+miResumen:''}.`;
   return `${fecha}: ${dx} ${buildOpeningExamSentence(p, estado)} ${buildExamBody(p)}`.trim();
 }
 
@@ -2127,7 +2158,6 @@ function buildEvolTextShort(p){
   } else {
     out += 'BMV, BEAB. R1 y R2 en 4 focos, sin falla aguda de bomba. Abdomen S/P. Resto del examen físico sin cambios. Diuresis y catarsis conservadas. ';
   }
-  out += 'Paciente hemodinámicamente estable. ';
   out += closingEstadoSentence(estado);
   return out.trim();
 }
@@ -2361,67 +2391,8 @@ function buildPlainText(list){
 
 function renderAll(){ renderSidebar(); renderForm(); renderPreview(); }
 
-/* ================= Exportar / importar copia ================= */
-function saveAll(){
-  const data = JSON.stringify({patients, savedAt:new Date().toISOString()}, null, 2);
-  const blob = new Blob([data], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `fichas_pase_sala_${new Date().toISOString().slice(0,10)}.json`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-function loadAllFromFile(file){
-  const reader = new FileReader();
-  reader.onload = (e)=>{
-    try{
-      const data = JSON.parse(e.target.result);
-      if(data.patients && Array.isArray(data.patients)){
-        const fs = fsApi();
-        const imported = data.patients.map(raw=>{
-          const id = raw.id || (fs ? fs.doc(fs.pacientesCol).id : ('local'+Date.now()+Math.random()));
-          return { ...raw, id };
-        });
-        imported.forEach(p=>{
-          const idx = patients.findIndex(x=>x.id===p.id);
-          if(idx===-1) patients.push(p); else patients[idx]=p;
-        });
-        selectedId = imported.length ? imported[0].id : selectedId;
-        renderAll();
-        if(fs){
-          fld('status').textContent = `Subiendo ${imported.length} pacientes a la base compartida...`;
-          Promise.all(imported.map(p=>fs.setDoc(fs.doc(fs.db,'pacientes',p.id), patientDataForSave(p))))
-            .then(()=>{
-              fld('status').textContent = `${imported.length} pacientes importados y sincronizados en todos los dispositivos.`;
-              setTimeout(()=>fld('status').textContent='',3500);
-            })
-            .catch(()=>{
-              fld('status').textContent = 'Se importó localmente, pero hubo un error subiendo algún paciente a la nube.';
-            });
-        } else {
-          fld('status').textContent = 'Copia importada (sin conexión a la base compartida).';
-          setTimeout(()=>fld('status').textContent='',2500);
-        }
-      } else {
-        fld('status').textContent = 'El archivo no tiene el formato esperado.';
-      }
-    }catch(err){
-      fld('status').textContent = 'No se pudo leer el archivo.';
-    }
-  };
-  reader.readAsText(file);
-}
-
+/* ================= Borrar toda la base ================= */
 fld('addPatientBtn').addEventListener('click', addPatient);
-fld('saveAllBtn').addEventListener('click', saveAll);
-fld('loadAllBtn').addEventListener('click', ()=>fld('loadFileInput').click());
-fld('loadFileInput').addEventListener('change', (e)=>{
-  if(e.target.files[0]) loadAllFromFile(e.target.files[0]);
-  e.target.value='';
-});
 fld('clearAllBtn').addEventListener('click', ()=>{
   if(!confirm('¿Borrar TODA la base de pacientes compartida (para todos los dispositivos)? Esta acción no se puede deshacer.')) return;
   const toDelete = patients.map(p=>p.id);
@@ -2431,20 +2402,11 @@ fld('clearAllBtn').addEventListener('click', ()=>{
   addPatient();
 });
 fld('patientSearch').addEventListener('input', (e)=>{ sidebarFilter = e.target.value; renderSidebar(); });
-fld('camaVisibleAddBtn').addEventListener('click', addCamaVisibleFromInput);
-fld('camaVisibleInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); addCamaVisibleFromInput(); } });
-
-fld('copyBtn').addEventListener('click', ()=>{
-  navigator.clipboard.writeText(buildPlainText()).then(()=>{
-    fld('status').textContent = 'Pase de las camas mostradas copiado al portapapeles.';
-    setTimeout(()=>fld('status').textContent='',2500);
-  }).catch(()=>{ fld('status').textContent = 'No se pudo copiar automáticamente.'; });
-});
-fld('printBtn').addEventListener('click', ()=>{
-  const visibles = sortedPatients().filter(patientVisible);
-  fld('printSingleTarget').innerHTML = visibles.map(patientTableHtml).join('');
-  document.body.classList.add('print-single-mode');
-  window.print();
+fld('camaVisibleSelect').addEventListener('change', (e)=>{
+  const cama = e.target.value;
+  if(!cama) return;
+  addCamaVisible(cama);
+  e.target.value = '';
 });
 
 (function(){
@@ -3450,6 +3412,9 @@ function analizarImport(parsed){
       const changed = !mismoValor(f.key, prev, nuevo[f.key]);
       const vacioNuevo = !valorTexto(f.key, nuevo[f.key]).trim();
       const manual = !!(ref && valorTexto(f.key, prev) !== (ref[f.key]||''));
+      /* Un campo que en el .md viene vacío no pisa lo que ya había
+         cargado (el pase puede tener la fila incompleta ese día). */
+      const mostrar = changed && !(vacioNuevo && valorTexto(f.key, prev).trim());
       return {
         key: f.key, label: f.label, list: !!f.list,
         prevTxt: valorTexto(f.key, prev),
@@ -3458,13 +3423,16 @@ function analizarImport(parsed){
         changed: changed,
         vacioNuevo: vacioNuevo,
         manual: manual,
-        /* Un campo que en el .md viene vacío no pisa lo que ya había
-           cargado (el pase puede tener la fila incompleta ese día). */
-        aplicar: changed && !(vacioNuevo && valorTexto(f.key, prev).trim())
+        mostrar: mostrar,
+        /* Si el campo fue editado a mano en el programa desde la última
+           importación, ese cambio manual manda: se muestra el diferente
+           igual (para poder elegir), pero el checkbox arranca destildado
+           para no pisarlo sin querer. */
+        aplicar: mostrar && !manual
       };
     });
 
-    const cambios = campos.filter(c=>c.aplicar);
+    const cambios = campos.filter(c=>c.mostrar);
     let accion;
     if(reemplazo) accion = 'reemplazo';
     else if(!cur) accion = 'ficha-nueva';
@@ -3537,13 +3505,13 @@ function renderImportReport(plan){
           html += '<div class="imp-reset">Se reemplazan los datos de la cama (antes: '+impEsc(e.nombreViejo)+
                   (e.dniViejo ? ' · DNI '+impEsc(e.dniViejo) : '')+') y se reinician evolución, checklist y pendientes de guardia.</div>';
         }
-        const cambios = e.campos.filter(c=>c.aplicar);
+        const cambios = e.campos.filter(c=>c.mostrar);
         if(cambios.length){
           html += '<table class="imp-diff"><tbody>';
           cambios.forEach(c=>{
             html += '<tr'+(c.manual?' class="imp-manual"':'')+'>'+
-              '<td class="imp-chk"><input type="checkbox" data-cama="'+impEsc(e.code)+'" data-key="'+impEsc(c.key)+'" checked></td>'+
-              '<td class="imp-campo">'+impEsc(c.label)+(c.manual?'<span class="imp-manual-tag">editado a mano</span>':'')+'</td>'+
+              '<td class="imp-chk"><input type="checkbox" data-cama="'+impEsc(e.code)+'" data-key="'+impEsc(c.key)+'" '+(c.aplicar?'checked':'')+'></td>'+
+              '<td class="imp-campo">'+impEsc(c.label)+(c.manual?'<span class="imp-manual-tag" title="Editaste esto a mano después de la última importación: se conserva tu versión salvo que tildes la casilla para tomar la del .md">editado a mano — se conserva</span>':'')+'</td>'+
               '<td class="imp-prev">'+(c.prevTxt ? impEsc(c.prevTxt) : '<i>vacío</i>')+'</td>'+
               '<td class="imp-arrow">→</td>'+
               '<td class="imp-next">'+(c.nextTxt ? impEsc(c.nextTxt) : '<i>vacío</i>')+'</td></tr>';
@@ -3593,15 +3561,22 @@ function renderImportReport(plan){
     : 'No hay nada para aplicar: la base ya coincide con este pase.';
 }
 
+/* Última importación aplicada: se guarda una foto de cada ficha tocada
+   ANTES del cambio, por si hay que deshacerla (por ej. si se aceptó por
+   error un cambio que no era el que se quería). Un solo nivel de deshacer:
+   alcanza para el caso de "me equivoqué al aceptar los cambios recién". */
+let lastImportUndo = null;
 function aplicarImport(plan){
   let camas = 0, nuevos = 0;
   const avisos = [];
+  const undoEntries = [];
   plan.entradas.forEach(e=>{
     if(e.accion === 'sin-cambios') return;
     const aAplicar = e.campos.filter(c=>c.aplicar);
     if(!aAplicar.length && !e.reset) return;
 
     let p = patients.find(x=>x.id===e.code) || patients.find(x=>camaCode(x.cama)===e.code);
+    const esNueva = !p;
     if(!p){
       p = newPatient(e.code);
       patients.push(p);
@@ -3611,6 +3586,7 @@ function aplicarImport(plan){
       deletePatientRemote(viejo);
       if(selectedId === viejo) selectedId = e.code;
     }
+    undoEntries.push({ code: e.code, esNueva: esNueva, antes: JSON.parse(JSON.stringify(p)) });
     p.cama = e.code;
     aAplicar.forEach(c=>{ p[c.key] = c.next; });
     if(e.sexo && !p.sexo) p.sexo = e.sexo;
@@ -3628,8 +3604,30 @@ function aplicarImport(plan){
     camas++;
     if(e.aviso) avisos.push(e.aviso);
   });
+  if(undoEntries.length) lastImportUndo = { at: Date.now(), entries: undoEntries };
   renderAll();
   return { camas: camas, nuevos: nuevos, avisos: avisos };
+}
+
+/* Restaura cada ficha tocada por la última importación aplicada a como
+   estaba justo antes. Las fichas que se crearon recién (no existían antes
+   de esa importación) se vuelven a borrar. */
+function deshacerImport(){
+  if(!lastImportUndo || !lastImportUndo.entries.length) return false;
+  lastImportUndo.entries.forEach(u=>{
+    if(u.esNueva){
+      patients = patients.filter(x=>x.id!==u.code);
+      deletePatientRemote(u.code);
+      if(selectedId===u.code) selectedId = firstPatientId();
+    } else {
+      const idx = patients.findIndex(x=>x.id===u.code);
+      if(idx!==-1) patients[idx] = u.antes; else patients.push(u.antes);
+      savePatientNow(u.antes);
+    }
+  });
+  lastImportUndo = null;
+  renderAll();
+  return true;
 }
 
 (function(){
@@ -3639,7 +3637,12 @@ function aplicarImport(plan){
   const cancelBtn = document.getElementById('impCancelBtn');
   const fileInput = document.getElementById('impFile');
   const applyBtn = document.getElementById('impApplyBtn');
+  const undoBtn = document.getElementById('impUndoBtn');
   if(!overlay || !openBtn) return;
+
+  function refreshUndoBtn(){
+    if(undoBtn) undoBtn.style.display = lastImportUndo ? '' : 'none';
+  }
 
   function setImpStatus(t, err){
     const el = document.getElementById('impStatus');
@@ -3701,7 +3704,7 @@ function aplicarImport(plan){
     reader.readAsText(file);
   }
 
-  openBtn.addEventListener('click', ()=>{ resetModal(); openImport(); });
+  openBtn.addEventListener('click', ()=>{ resetModal(); openImport(); refreshUndoBtn(); });
   closeBtn.addEventListener('click', closeImport);
   cancelBtn.addEventListener('click', closeImport);
   overlay.addEventListener('click', (e)=>{ if(e.target === overlay) closeImport(); });
@@ -3733,6 +3736,18 @@ function aplicarImport(plan){
       '<div class="imp-done"><b>' + impEsc(msg) + '</b>' +
       (res.avisos.length ? '<ul>' + res.avisos.map(a=>'<li>'+impEsc(a)+'</li>').join('') + '</ul>' : '') +
       '<p>Estos avisos aparecen una sola vez, acá, en el informe de importación.</p></div>';
+    refreshUndoBtn();
+  });
+
+  undoBtn.addEventListener('click', ()=>{
+    if(!lastImportUndo) return;
+    if(!confirm('¿Deshacer la última importación aplicada? Los campos tocados por esa importación vuelven a como estaban antes.')) return;
+    const ok = deshacerImport();
+    refreshUndoBtn();
+    const msg = ok ? 'Se deshizo la última importación.' : 'No había ninguna importación reciente para deshacer.';
+    setImpStatus(msg);
+    fld('status').textContent = msg;
+    setTimeout(()=>{ fld('status').textContent = ''; }, 4000);
   });
 })();
 </script>
