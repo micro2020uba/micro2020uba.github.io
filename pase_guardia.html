@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-   Versión: 8 (11/09/2026)
+   Versión: 16 (20/09/2026)
 -->
 <html lang="es-AR">
 <head>
@@ -30,11 +30,25 @@
   header h1{font-size:17px;margin:0;font-weight:700;}
   header .sub{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);}
 
-  main{display:grid;grid-template-columns:240px minmax(380px,1fr) minmax(340px,1fr);gap:0;align-items:start;}
+  main{display:grid;grid-template-columns:280px minmax(380px,1fr);gap:0;align-items:start;}
   @media (max-width:1200px){ main{grid-template-columns:1fr;} }
 
   .sidebar{padding:16px 12px;border-right:1px solid var(--line-soft);position:sticky;top:0;background:#efece2;}
   @media (max-width:1200px){ .sidebar{position:static;border-right:none;border-bottom:1px solid var(--line-soft);} }
+  .camas-visibles-bar{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin:8px 0 4px;padding:7px 8px;
+    background:var(--panel);border:1px solid var(--line-soft);border-radius:3px;}
+  .cv-label{font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;margin-right:1px;white-space:nowrap;}
+  .cv-chip{display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;
+    color:var(--accent-dark);background:#eef4f2;border:1px solid var(--accent);border-radius:11px;padding:2px 5px 2px 8px;}
+  .cv-chip button{background:none;border:none;color:var(--accent-dark);font-size:12px;cursor:pointer;line-height:1;padding:0 1px;}
+  .cv-chip button:hover{color:var(--danger);}
+  .cv-add{display:flex;align-items:center;gap:3px;margin-left:auto;}
+  .cv-add input{width:52px;font-family:'IBM Plex Mono',monospace;font-size:11px;padding:3px 5px;border:1px solid var(--line-soft);border-radius:2px;background:var(--field-bg);color:var(--ink);}
+  .cv-add button{font-size:11px;font-weight:700;border:1px solid var(--ink);background:var(--panel);color:var(--ink);border-radius:2px;padding:3px 7px;cursor:pointer;}
+  .cv-add button:hover{background:var(--ink);color:var(--paper);}
+  .cv-note{font-size:10px;color:var(--muted);line-height:1.35;margin-bottom:8px;}
+  .pase-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+  .pase-actions button{flex:1;min-width:110px;}
   .sidebar h2{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-dark);margin:0 0 8px;}
   #patientSearch{width:100%;margin-bottom:10px;}
   .folder-list{margin-bottom:6px;}
@@ -69,8 +83,19 @@
   .inline-gear:hover{color:var(--accent-dark);}
   .estado-opt-row{display:flex;gap:5px;margin-bottom:4px;align-items:center;}
   .estado-opt-row input{font-size:11px;padding:4px 6px;}
-  .estado-opt-row .estadoLabelInput{flex:0 0 38%;}
+  .estado-opt-row .estadoLabelInput{flex:0 0 26%;}
+  .estado-opt-row .estadoCortoInput{flex:0 0 22%;}
   .estado-opt-row .estadoClosingInput{flex:1;}
+  .estado-opt-row .estadoMoveBtn{font-size:10px;padding:3px 5px;background:transparent;border:1px solid var(--line-soft);
+    color:var(--muted);cursor:pointer;border-radius:2px;line-height:1;}
+  .estado-opt-row .estadoMoveBtn:hover:not(:disabled){border-color:var(--accent-dark);color:var(--accent-dark);}
+  .estado-opt-row .estadoMoveBtn:disabled{opacity:.25;cursor:default;}
+  .estado-opt-head{display:flex;gap:5px;font-size:9.5px;text-transform:uppercase;letter-spacing:.03em;
+    color:var(--muted);margin-bottom:3px;}
+  .estado-opt-head .h-mov{flex:0 0 54px;}
+  .estado-opt-head .h-lab{flex:0 0 26%;}
+  .estado-opt-head .h-cor{flex:0 0 22%;}
+  .estado-opt-head .h-clo{flex:1;}
   .estado-opt-row .estadoDelBtn{font-size:10px;padding:3px 6px;background:transparent;border:1px solid var(--danger);color:var(--danger);cursor:pointer;border-radius:2px;}
   .estado-opt-row .estadoDelBtn:hover{background:var(--danger);color:#fff;}
   .estado-opt-row .estadoDelBtn:disabled{opacity:.3;cursor:default;}
@@ -79,10 +104,22 @@
   button.secondary.small.danger:hover{background:var(--danger);color:#fff;}
   #printSingleTarget{display:none;}
 
-  .form-col{padding:16px clamp(10px,2vw,20px);border-right:1px solid var(--line-soft);}
-  @media (max-width:1200px){ .form-col{border-right:none;border-bottom:1px solid var(--line-soft);} }
+  .form-col{padding:16px clamp(10px,2vw,20px);}
   fieldset{border:none;margin:0 0 16px;padding:0;}
   legend{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-dark);border-bottom:1px solid var(--ink);width:100%;padding-bottom:5px;margin-bottom:9px;}
+
+  /* Secciones plegables (ANT/MC/MI/ASOC/CULT): cerradas por defecto, mismo
+     look que un fieldset pero con el <summary> haciendo de legend clickeable. */
+  details.collapsible{margin:0 0 16px;}
+  details.collapsible > summary{
+    font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--accent-dark);border-bottom:1px solid var(--ink);width:100%;padding-bottom:5px;margin-bottom:0;
+    cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;user-select:none;
+  }
+  details.collapsible > summary::-webkit-details-marker{display:none;}
+  details.collapsible > summary::before{content:'▸';display:inline-block;transition:transform .12s;font-size:9px;}
+  details.collapsible[open] > summary::before{transform:rotate(90deg);}
+  details.collapsible .collapsible-body{padding-top:9px;}
   .field{display:flex;flex-direction:column;gap:4px;margin-bottom:8px;}
   .field label{font-size:10.5px;color:var(--muted);font-weight:600;}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px;}
@@ -108,7 +145,12 @@
   .add-item-row button{white-space:nowrap;padding:6px 10px;font-size:11.5px;font-weight:600;background:var(--accent-dark);color:#fff;border:none;cursor:pointer;border-radius:2px;}
 
   .sys-block{border:1px dashed var(--line-soft);border-left:4px solid var(--line-soft);padding:9px;margin-bottom:9px;background:#fdfcf9;}
-  .sys-title{font-weight:700;font-size:12px;margin-bottom:6px;color:var(--accent-dark);}
+  .sys-title{font-weight:700;font-size:12px;margin-bottom:0;color:var(--accent-dark);cursor:pointer;list-style:none;
+    display:flex;align-items:center;user-select:none;}
+  .sys-title::-webkit-details-marker{display:none;}
+  .sys-title::before{content:'▸';display:inline-block;margin-right:7px;font-size:10px;transition:transform .12s;}
+  details.sys-block[open] > .sys-title::before{transform:rotate(90deg);}
+  .sys-block-body{padding-top:9px;}
   .sys-title .sys-icon{font-size:16px;margin-right:7px;vertical-align:-2px;}
   .sys-title .opt-toggle{font-weight:400;font-size:10.5px;color:var(--muted);margin-left:8px;}
   .sys-block-neuro{border-left-color:#7c6fd6;}
@@ -167,12 +209,10 @@
   footer{padding:12px clamp(14px,3vw,32px) 22px;font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;}
 
   @media print{
-    header,.sidebar,.form-col,.actions,footer,.status{display:none !important;}
+    header,.sidebar,.form-col,footer,.status{display:none !important;}
     main{display:block;}
-    .out-col{padding:0;position:static;}
-    .preview-scroll{max-height:none;overflow:visible;border:none;padding:0;}
   }
-  body.print-single-mode .preview-scroll{display:none !important;}
+  body:not(.print-single-mode) #printSingleTarget{display:none;}
   @media print{
     body.print-single-mode #printSingleTarget{display:block !important;}
   }
@@ -279,6 +319,53 @@
   .pat-list-import-btn{font-size:11px;font-weight:600;border:1px solid var(--accent-dark);background:var(--panel);
     color:var(--accent-dark);border-radius:2px;padding:6px 10px;cursor:pointer;white-space:nowrap;}
   .pat-list-import-btn:hover{background:var(--accent-dark);color:#fff;}
+
+  /* ===== Modal "Importar pase (.md)" ===== */
+  .imp-drop{display:block;border:2px dashed var(--line-soft);border-radius:4px;padding:16px;text-align:center;
+    cursor:pointer;background:var(--panel);}
+  .imp-drop:hover{border-color:var(--accent-dark);}
+  .imp-drop input{display:none;}
+  .imp-drop b{display:block;font-size:13px;margin-bottom:4px;}
+  .imp-fname{font-size:11.5px;color:var(--muted);font-family:'IBM Plex Mono',monospace;}
+  .imp-opts{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin:10px 0 4px;font-size:12px;}
+  .imp-opts input[type=date]{font-family:'IBM Plex Mono',monospace;font-size:12px;padding:4px 6px;
+    border:1px solid var(--line-soft);border-radius:2px;background:var(--field-bg);color:var(--ink);}
+  .imp-status{font-size:12px;color:var(--muted);margin:8px 0 0;min-height:16px;}
+  .imp-status.err{color:var(--danger);}
+  .imp-resumen{font-size:12.5px;margin:14px 0 10px;padding:8px 10px;background:var(--panel);
+    border:1px solid var(--line-soft);border-radius:3px;}
+  .imp-group{margin-bottom:18px;}
+  .imp-group h3{font-size:12px;text-transform:uppercase;letter-spacing:.03em;margin:0 0 8px;
+    padding-bottom:4px;border-bottom:2px solid var(--ink);}
+  .imp-g-nuevo h3{color:var(--danger);border-bottom-color:var(--danger);}
+  .imp-g-upd h3{color:var(--accent-dark);}
+  .imp-g-none h3,.imp-g-out h3{color:var(--muted);border-bottom-color:var(--line-soft);}
+  .imp-cama{border:1px solid var(--line-soft);border-radius:3px;padding:8px 10px;margin-bottom:8px;background:var(--panel);}
+  .imp-cama-head{display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:13px;}
+  .imp-tag{font-size:10px;text-transform:uppercase;letter-spacing:.04em;padding:2px 6px;border-radius:10px;
+    font-family:'IBM Plex Sans',sans-serif;font-weight:700;}
+  .imp-tag-nuevo{background:#fbe9e7;color:var(--danger);border:1px solid var(--danger);}
+  .imp-aviso{font-size:12.5px;margin:6px 0;padding:6px 8px;background:#fbe9e7;border-left:3px solid var(--danger);}
+  .imp-reset{font-size:11.5px;color:var(--muted);margin-bottom:6px;}
+  .imp-sin{font-size:11.5px;color:var(--muted);}
+  .imp-warn{font-size:11px;color:var(--muted);margin-top:6px;}
+  table.imp-diff{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:4px;table-layout:fixed;}
+  table.imp-diff td{padding:4px 6px;border-top:1px solid var(--line-soft);vertical-align:top;word-break:break-word;}
+  table.imp-diff td.imp-chk{width:26px;}
+  table.imp-diff td.imp-campo{width:110px;font-weight:700;}
+  table.imp-diff td.imp-arrow{width:18px;text-align:center;color:var(--muted);}
+  table.imp-diff td.imp-prev{color:var(--muted);text-decoration:line-through;}
+  table.imp-diff tr.imp-manual td{background:#fdf6e3;}
+  .imp-manual-tag{display:block;font-weight:400;font-size:10px;color:#a07a12;}
+  .imp-none-list{display:flex;flex-wrap:wrap;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--muted);}
+  .imp-out-note{font-size:11.5px;color:var(--muted);margin-bottom:6px;}
+  .imp-out-row{font-size:12px;padding:3px 0;border-bottom:1px solid var(--line-soft);}
+  .imp-done{font-size:12.5px;padding:10px;border:1px solid var(--accent);background:#eef4f2;border-radius:3px;}
+  .imp-done ul{margin:8px 0 0;padding-left:18px;}
+  .imp-done li{margin-bottom:4px;}
+  .imp-footer{display:flex;align-items:center;gap:10px;padding:10px 16px;border-top:2px solid var(--ink);
+    background:var(--panel);flex-shrink:0;flex-wrap:wrap;}
+  .imp-foot-note{font-size:11px;color:var(--muted);flex:1;min-width:160px;}
 
   /* --- Debajo de ~680px: cada fila pasa a verse como una tarjeta apilada
      (cama/DNI/nombre no cabían enteros en una tabla de 5-6 columnas en un
@@ -400,6 +487,33 @@
   </div>
 </div>
 
+<div class="labo-standalone-overlay" id="importPaseOverlay">
+  <div class="labo-standalone-modal">
+    <div class="labo-standalone-header">
+      <span>📄 Importar pase de sala (.md)</span>
+      <button type="button" class="labo-standalone-close" id="importPaseCloseBtn" title="Cerrar">×</button>
+    </div>
+    <div class="pat-list-content" id="importPaseContent">
+      <label class="imp-drop" id="impDrop">
+        <input type="file" id="impFile" accept=".md,.markdown,.txt,text/markdown,text/plain">
+        <b>Elegí el .md del pase de sala</b>
+        <span class="imp-fname" id="impName">ningún archivo elegido</span>
+      </label>
+      <div class="imp-opts">
+        <label>Fecha del pase <input type="date" id="impFecha"></label>
+        <label><input type="checkbox" id="impSplit" checked> Separar MI y ASOC en ítems</label>
+      </div>
+      <p class="imp-status" id="impStatus"></p>
+      <div id="impReport"></div>
+    </div>
+    <div class="imp-footer">
+      <span class="imp-foot-note" id="impFootNote">Nada se guarda hasta que aprietes “Aplicar cambios”.</span>
+      <button type="button" class="secondary small" id="impCancelBtn">Cancelar</button>
+      <button type="button" id="impApplyBtn" disabled>Aplicar cambios</button>
+    </div>
+  </div>
+</div>
+
 <div class="login-overlay">
   <div class="login-card">
     <span class="mark"></span>
@@ -446,6 +560,9 @@
     <button type="button" class="header-labo-btn" id="openListadoPacientesBtn">
       🛏️ <span class="labo-btn-label">Listado de pacientes</span>
     </button>
+    <button type="button" class="header-labo-btn" id="openImportPaseBtn">
+      📄 <span class="labo-btn-label">Importar pase (.md)</span>
+    </button>
     <span id="loginUserTag"></span>
     <button type="button" class="logout-btn" id="logoutBtn">Cerrar sesión</button>
     <div class="sub" id="clock"></div>
@@ -456,32 +573,39 @@
 
   <div class="sidebar">
     <h2>Archivero de pacientes</h2>
-    <input type="text" id="patientSearch" placeholder="Buscar por cama o nombre...">
+    <div class="camas-visibles-bar" id="camasVisiblesBar">
+      <span class="cv-label">Camas mostradas:</span>
+      <div id="camasVisiblesChips" style="display:contents;"></div>
+      <div class="cv-add">
+        <input type="text" id="camaVisibleInput" placeholder="cama" inputmode="numeric">
+        <button type="button" id="camaVisibleAddBtn">+</button>
+      </div>
+    </div>
+    <div class="cv-note">El resto de los pacientes de la sala sigue guardado y actualizándose en la nube — solo no se muestra acá para no saturar la vista.</div>
+    <input type="text" id="patientSearch" placeholder="Buscar por cama o nombre (en toda la base)...">
     <div class="folder-list" id="patientList"></div>
     <button id="addPatientBtn">+ Nueva carpeta (paciente)</button>
-    <div class="persist-box">
-      <button id="saveAllBtn">Exportar copia (.json)</button>
-      <button id="loadAllBtn">Importar copia (.json)</button>
-      <input type="file" id="loadFileInput" accept="application/json" style="display:none">
-      <button id="clearAllBtn" class="danger">Borrar toda la base</button>
-      <div class="persist-note">Los datos quedan guardados automáticamente en este navegador y esta computadora. Exportá una copia de vez en cuando por las dudas — si abrís el archivo en otra PC o navegador, no vas a ver lo cargado acá salvo que importes esa copia.</div>
+    <div class="pase-actions">
+      <button class="secondary small" id="copyBtn">Copiar pase (camas mostradas)</button>
+      <button class="secondary small" id="printBtn">Imprimir</button>
     </div>
+    <div class="status" id="status"></div>
   </div>
 
   <div class="form-col" id="formCol"></div>
 
-  <div class="out-col">
-    <div class="actions">
-      <button class="secondary" id="copyBtn">Copiar pase completo</button>
-      <button class="secondary" id="printBtn">Imprimir</button>
-    </div>
-    <div class="status" id="status"></div>
-    <div class="preview-scroll" id="preview"></div>
-  </div>
-
 </main>
 
-<footer>generador local — los datos no se envían a ningún servidor, se procesan y guardan en este navegador.</footer>
+<footer>
+  generador local — los datos no se envían a ningún servidor, se procesan y guardan en este navegador (y se sincronizan con la base compartida si hay sesión iniciada).
+  <div class="persist-box">
+    <button id="saveAllBtn">Exportar copia (.json)</button>
+    <button id="loadAllBtn">Importar copia (.json)</button>
+    <input type="file" id="loadFileInput" accept="application/json" style="display:none">
+    <button id="clearAllBtn" class="danger">Borrar toda la base</button>
+    <div class="persist-note">Exportá una copia de vez en cuando por las dudas — si algún día hay que restaurar la base, se importa desde acá.</div>
+  </div>
+</footer>
 <div id="printSingleTarget"></div>
 
 <script>
@@ -868,7 +992,7 @@ function captureCurrentAsPlantillaSet(){
   return set;
 }
 let patients = [];
-let checklistConfig = { custom:{}, edits:{}, hidden:{}, order:{}, customPlantillas:{}, defaults:{}, estadoOptions:null };
+let checklistConfig = { custom:{}, edits:{}, hidden:{}, order:{}, customPlantillas:{}, defaults:{}, estadoOptions:null, camasVisibles:null };
 let selectedId = null;
 let sidebarFilter = '';
 let fechaAutoSync = true;
@@ -879,10 +1003,59 @@ function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'
 function fmtFechaDMY(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; }
 function fsApi(){ return window.__fsBridge; }
 
-function newPatient(){
+/* Identidad de la ficha = número de cama. Cada cama tiene un único
+   documento en Firestore con id fijo ("C101"), que es el que leen y
+   escriben también el listado de pacientes y guardias.html. */
+function camaCode(v){
+  const m = String(v==null?'':v).match(/\d+/);
+  return m ? 'C'+m[0] : '';
+}
+/* MI se guarda como lista de ítems ({text, resuelto}); el listado y la
+   planilla de guardias lo muestran como una línea de texto. */
+function miToText(mi){
+  if(Array.isArray(mi)) return mi.filter(i=>i && !i.resuelto).map(i=>i.text).join(' ');
+  return String(mi==null?'':mi);
+}
+function miFromText(txt, prev){
+  const resueltos = Array.isArray(prev) ? prev.filter(i=>i && i.resuelto) : [];
+  const t = String(txt==null?'':txt).trim();
+  return (t ? [{text:t, resuelto:false}] : []).concat(resueltos);
+}
+function newPatient(cama){
+  const code = camaCode(cama);
   const fs = fsApi();
-  const id = fs ? fs.doc(fs.pacientesCol).id : ('local'+Date.now());
-  return { id, cama:'', nombre:'', sexo:'', edad:'', ant:'', mi:[], asoc:[], cult:'', evol:'', evolCount:0, lastEstado:'', labo:'', img:'', pend:'', plan:'' };
+  const id = code || (fs ? fs.doc(fs.pacientesCol).id : ('local'+Date.now()));
+  return { id, cama:code, nombre:'', sexo:'', edad:'', dni:'', fi:'', mc:'', ant:'', mi:[], asoc:[], cult:'', evol:'', evolCount:0, lastEstado:'', lastChecklist:null, manejo:[], datos:{}, hechos:{} };
+}
+/* Si cambia el número de cama de una ficha, el documento tiene que
+   mudarse al id nuevo (y borrarse el viejo) para no dejar duplicados. */
+function relocatePatientToCama(p){
+  if(!p) return;
+  const code = camaCode(p.cama);
+  if(!code || code === p.id) { if(code) p.cama = code; return; }
+  if(patients.some(x=>x!==p && x.id===code)){
+    alert('Ya existe una carpeta para la cama '+code+'. Usá esa carpeta o cambiá el número.');
+    return;
+  }
+  const viejo = p.id;
+  p.cama = code;
+  p.id = code;
+  if(selectedId === viejo) selectedId = code;
+  savePatientNow(p);
+  deletePatientRemote(viejo);
+  renderAll();
+}
+/* Crea la carpeta de una cama si todavía no existe (la usa el buscador de
+   "Camas mostradas" y el importador del .md). */
+function ensureFichaForCama(cama){
+  const code = camaCode(cama);
+  if(!code) return null;
+  let p = patients.find(x=>x.id===code) || patients.find(x=>camaCode(x.cama)===code);
+  if(p) return p;
+  p = newPatient(code);
+  patients.push(p);
+  savePatientNow(p);
+  return p;
 }
 
 /* ================= Persistencia en Firestore (compartida entre dispositivos) =================
@@ -892,6 +1065,7 @@ function newPatient(){
    (data-f) se guardan con un pequeño debounce para no escribir en cada tecla; las acciones
    estructurales (alta, baja, vaciar carpeta, nueva evolución) se guardan al toque. */
 function patientDataForSave(p){
+  p.updatedAt = Date.now();
   const { id, ...rest } = p;
   return rest;
 }
@@ -933,21 +1107,39 @@ function addPatient(){
   renderAll();
 }
 function removePatient(id){
-  if(!confirm('¿Eliminar esta carpeta de paciente? Esta acción no se puede deshacer.')) return;
+  if(!confirm('¿Eliminar esta carpeta de paciente? Se borra de la base compartida (archivero, listado y guardias). Esta acción no se puede deshacer.')) return;
   patients = patients.filter(p=>p.id!==id);
-  if(selectedId===id) selectedId = patients.length ? patients[0].id : null;
+  if(selectedId===id) selectedId = firstPatientId();
   deletePatientRemote(id);
   renderAll();
 }
 function getSelected(){ return patients.find(p=>p.id===selectedId); }
 
+/* Al abrir una carpeta, la pantalla tiene que quedar al principio de la
+   ficha ("Identificación"). Sin esto se conservaba el scroll anterior y
+   se caía en la mitad del checklist (Neurológico). */
+function scrollFormToTop(){
+  const col = fld('formCol');
+  if(!col) return;
+  requestAnimationFrame(()=>{
+    const y = col.getBoundingClientRect().top + window.pageYOffset - 12;
+    window.scrollTo({ top: y < 0 ? 0 : y, behavior:'smooth' });
+  });
+}
+/* Carpeta por defecto: la de menor número de cama. */
+function firstPatientId(){
+  const ordenados = sortedPatients();
+  return ordenados.length ? ordenados[0].id : null;
+}
+
 function vaciarCarpeta(p){
   const camaTxt = p.cama ? `de la cama ${p.cama}` : '';
   if(!confirm(`¿Vaciar la carpeta ${camaTxt}? Se van a borrar todos los datos del paciente actual (nombre, EVOL, MI, ASOC, etc.). La carpeta queda con el mismo número de cama, lista para el próximo paciente.`)) return;
   const cama = p.cama;
-  p.nombre=''; p.sexo=''; p.edad=''; p.ant=''; p.mi=[]; p.asoc=[]; p.cult='';
+  p.nombre=''; p.sexo=''; p.edad=''; p.dni=''; p.fi=''; p.mc=''; p.ant=''; p.mi=[]; p.asoc=[]; p.cult='';
   p.evol=''; p.evolCount=0; p.lastEstado=''; p.lastChecklist=null;
-  p.labo=''; p.img=''; p.pend=''; p.plan='';
+  p.manejo=[]; p.datos={}; p.hechos={};
+  p.lastImport = null;
   p.cama = cama;
   savePatientNow(p);
   renderAll();
@@ -964,10 +1156,75 @@ function sortedPatients(){
 
 function estadoClass(p){
   if(!p.lastEstado) return '';
+  /* El color sale de la posición en la lista de estados (que va de mejor a
+     peor), así las opciones que agregues a mano también se pintan. */
+  const opts = getEstadoOptions();
+  const idx = opts.findIndex(o=>o.value===p.lastEstado);
+  if(idx!==-1){
+    if(idx===0) return 'tab-estable';
+    if(idx===opts.length-1) return 'tab-malo';
+    return 'tab-regular';
+  }
   if(p.lastEstado.indexOf('estables')===0) return 'tab-estable';
   if(p.lastEstado.indexOf('regulares')===0) return 'tab-regular';
   if(p.lastEstado.indexOf('mal')===0) return 'tab-malo';
   return '';
+}
+
+/* ================= Camas mostradas (archivero) =================
+   Por defecto el archivero solo muestra un subconjunto de camas (arranca
+   en 101/109/120/127) para no saturar la vista durante la guardia; el
+   resto de los pacientes de la sala sigue existiendo y actualizándose en
+   Firestore igual, solo no aparece en la lista de carpetas. Se guarda
+   junto con el resto de la configuración compartida (checklistConfig). */
+function bedNumberOfPatient(p){
+  const m = String((p&&p.cama)||'').match(/\d+/);
+  return m ? parseInt(m[0],10) : NaN;
+}
+function getCamasVisibles(){
+  return (checklistConfig.camasVisibles && checklistConfig.camasVisibles.length)
+    ? checklistConfig.camasVisibles.map(String)
+    : ['101','109','120','127'];
+}
+function patientVisible(p){
+  if(!p.cama || !p.cama.trim()) return true; // carpetas nuevas sin cama asignada: siempre visibles
+  if(p.id === selectedId) return true; // la que se está editando, aunque no esté en la lista
+  const n = bedNumberOfPatient(p);
+  return isNaN(n) ? true : getCamasVisibles().includes(String(n));
+}
+function renderCamasVisiblesBar(){
+  const chipsWrap = fld('camasVisiblesChips');
+  if(!chipsWrap) return;
+  const camas = getCamasVisibles().slice().sort((a,b)=>parseInt(a,10)-parseInt(b,10));
+  chipsWrap.innerHTML = camas.map(c=>
+    `<span class="cv-chip">C${escapeHtml(c)}<button type="button" data-cama="${escapeHtml(c)}" title="Dejar de mostrar">×</button></span>`
+  ).join('') || '<span class="cv-note" style="margin:0;">Ninguna — usá el buscador para encontrar pacientes.</span>';
+  chipsWrap.querySelectorAll('button[data-cama]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const list = getCamasVisibles().filter(c=>c!==btn.dataset.cama);
+      checklistConfig.camasVisibles = list;
+      saveCustomLocal();
+      renderCamasVisiblesBar();
+      renderSidebar();
+    });
+  });
+}
+function addCamaVisibleFromInput(){
+  const input = fld('camaVisibleInput');
+  if(!input) return;
+  const m = input.value.match(/\d+/);
+  if(!m){ input.focus(); return; }
+  const cama = m[0];
+  const list = getCamasVisibles();
+  if(!list.includes(cama)) list.push(cama);
+  checklistConfig.camasVisibles = list;
+  saveCustomLocal();
+  input.value = '';
+  /* Si esa cama todavía no tiene carpeta, se crea vacía en el acto: antes
+     el número aparecía en la barra pero la ficha no existía. */
+  ensureFichaForCama(cama);
+  renderCamasVisiblesBar();
+  renderSidebar();
 }
 
 /* ================= Sidebar ================= */
@@ -975,17 +1232,21 @@ function renderSidebar(){
   const list = fld('patientList');
   list.innerHTML='';
   const f = sidebarFilter.trim().toLowerCase();
-  sortedPatients().forEach(p=>{
+  // Con texto en el buscador: se busca en TODA la base (para poder encontrar
+  // y agregar a la vista un paciente que hoy no está entre las camas
+  // mostradas). Sin texto: solo se listan las camas mostradas.
+  const base = sortedPatients().filter(p => f ? true : patientVisible(p));
+  base.forEach(p=>{
     const label = (p.cama?p.cama+' — ':'')+(p.nombre||'Sin nombre');
     if(f && label.toLowerCase().indexOf(f)===-1) return;
     const chip = document.createElement('div');
     chip.className = 'patient-chip'+(p.id===selectedId?' active':'')+' '+estadoClass(p);
-    const dot = (p.pend && p.pend.trim()) ? '<span class="pend-dot" title="Tiene pendientes"></span>' : '';
-    chip.innerHTML = `<span class="name">${escapeHtml(label)}</span>${dot}<button class="del" title="Eliminar">×</button>`;
-    chip.querySelector('.name').addEventListener('click',()=>{selectedId=p.id;renderAll();});
+    chip.innerHTML = `<span class="name">${escapeHtml(label)}</span><button class="del" title="Eliminar">×</button>`;
+    chip.querySelector('.name').addEventListener('click',()=>{selectedId=p.id;renderAll();scrollFormToTop();});
     chip.querySelector('.del').addEventListener('click',(e)=>{e.stopPropagation();removePatient(p.id);});
     list.appendChild(chip);
   });
+  renderCamasVisiblesBar();
 }
 
 /* ================= Listas MI / ASOC (editables, activo-resuelto) ================= */
@@ -1054,60 +1315,59 @@ function renderForm(){
           </select>
         </div>
       </div>
-    </fieldset>
-
-    <fieldset>
-      <legend>ANT — Antecedentes personales</legend>
-      <div class="field"><textarea data-f="ant"></textarea></div>
-    </fieldset>
-
-    <fieldset>
-      <legend>MI — Motivo de internación (ítems, editables)</legend>
-      <div class="item-list" id="miList"></div>
-      <div class="add-item-row">
-        <input type="text" id="miNuevo" placeholder="Nuevo ítem de MI">
-        <button id="miAddBtn">Agregar</button>
+      <div class="grid2">
+        <div class="field"><label>DNI</label><input type="text" data-f="dni" placeholder="Ej: 30123456"></div>
+        <div class="field"><label>FI (Fecha de internación)</label><input type="text" data-f="fi" placeholder="Ej: 12/09/2026"></div>
       </div>
     </fieldset>
 
-    <fieldset>
-      <legend>ASOC — Diagnósticos asociados (ítems, editables)</legend>
-      <div class="item-list" id="asocList"></div>
-      <div class="add-item-row">
-        <input type="text" id="asocNuevo" placeholder="Nuevo diagnóstico asociado">
-        <button id="asocAddBtn">Agregar</button>
+    <details class="collapsible">
+      <summary>ANT — Antecedentes personales</summary>
+      <div class="collapsible-body">
+        <div class="field"><textarea data-f="ant"></textarea></div>
       </div>
-    </fieldset>
+    </details>
 
-    <fieldset>
-      <legend>CULT — Cultivos</legend>
-      <div class="field"><textarea data-f="cult"></textarea></div>
-    </fieldset>
+    <details class="collapsible">
+      <summary>MC (Motivo de Consulta)</summary>
+      <div class="collapsible-body">
+        <div class="field"><textarea data-f="mc"></textarea></div>
+      </div>
+    </details>
+
+    <details class="collapsible">
+      <summary>MI — Motivo de internación (ítems, editables)</summary>
+      <div class="collapsible-body">
+        <div class="item-list" id="miList"></div>
+        <div class="add-item-row">
+          <input type="text" id="miNuevo" placeholder="Nuevo ítem de MI">
+          <button id="miAddBtn">Agregar</button>
+        </div>
+      </div>
+    </details>
+
+    <details class="collapsible">
+      <summary>ASOC — Diagnósticos asociados (ítems, editables)</summary>
+      <div class="collapsible-body">
+        <div class="item-list" id="asocList"></div>
+        <div class="add-item-row">
+          <input type="text" id="asocNuevo" placeholder="Nuevo diagnóstico asociado">
+          <button id="asocAddBtn">Agregar</button>
+        </div>
+      </div>
+    </details>
+
+    <details class="collapsible">
+      <summary>CULT — Cultivos</summary>
+      <div class="collapsible-body">
+        <div class="field"><textarea data-f="cult"></textarea></div>
+      </div>
+    </details>
 
     <fieldset>
       <legend>EVOL — Evolución</legend>
       <div id="evolBuilder"></div>
       <div class="field"><label>Texto acumulado de EVOL (editable — lo nuevo se agrega arriba)</label><textarea class="tall" data-f="evol"></textarea></div>
-    </fieldset>
-
-    <fieldset>
-      <legend>LABO — Laboratorio</legend>
-      <div class="field"><textarea class="tall" data-f="labo" placeholder="26/8 H 6/11/34/287 Q 94/70/1.01 Iono 139/4.4/101"></textarea></div>
-    </fieldset>
-
-    <fieldset>
-      <legend>IMG — Imágenes</legend>
-      <div class="field"><textarea class="tall" data-f="img"></textarea></div>
-    </fieldset>
-
-    <fieldset>
-      <legend>PEND — Pendientes</legend>
-      <div class="field"><textarea data-f="pend"></textarea></div>
-    </fieldset>
-
-    <fieldset>
-      <legend>PLAN</legend>
-      <div class="field"><textarea data-f="plan"></textarea></div>
     </fieldset>
   `;
 
@@ -1115,6 +1375,9 @@ function renderForm(){
   col.querySelectorAll('[data-f]').forEach(el=>{
     el.addEventListener('input',()=>{ p[el.dataset.f]=el.value; renderSidebar(); renderPreview(); updateDraftPreview(p); });
     el.addEventListener('change',()=>{ p[el.dataset.f]=el.value; renderSidebar(); renderPreview(); updateDraftPreview(p); });
+    if(el.dataset.f === 'cama'){
+      el.addEventListener('blur',()=>{ relocatePatientToCama(p); });
+    }
   });
 
   renderItemList('miList', p, 'mi');
@@ -1253,19 +1516,28 @@ function renderEvolBuilder(p){
       </div>
     </div>
     <div class="field" id="estadoConfigPanel" style="display:none;">
-      <label>Opciones de "Estado general" (de mejor a peor — el orden define qué cuenta como mejoría o deterioro)</label>
+      <label>Opciones de "Estado general" (de mejor a peor — el orden define qué cuenta como mejoría o deterioro, el color de la pestaña y el texto corto sugerido). Editá cualquier campo y movelas con ▲▼.</label>
       <div id="estadoConfigList"></div>
       <button type="button" id="estadoAddOptBtn" class="secondary small">+ Agregar opción de estado</button>
+    </div>
+    <div class="vitals-grid" style="margin-bottom:12px;">
+      <div class="field"><label>TA</label><input type="text" id="evolTA" placeholder="120/80"></div>
+      <div class="field"><label>FC</label><input type="text" id="evolFC"></div>
+      <div class="field"><label>SatO2 %</label><input type="text" id="evolSat"></div>
+      <div class="field"><label>FiO2 % (21 = aire ambiente)</label><input type="text" id="evolFio2" placeholder="21"></div>
+      <div class="field"><label>T°</label><input type="text" id="evolT"></div>
     </div>
   `;
 
   SYS_ORDER.forEach(key=>{
     const sys = getMergedItems(key);
     const applyChecked = p && p.lastChecklist && p.lastChecklist.systems && p.lastChecklist.systems[key] && p.lastChecklist.systems[key].apply;
-    html += `<div class="sys-block sys-block-${key}" data-block="${key}">
-      <div class="sys-title"><span class="sys-icon">${SYS_ICONS[key]||''}</span>${sys.label}
-        ${sys.opcional ? `<label class="opt-toggle"><input type="checkbox" id="apply_${key}" ${applyChecked?'checked':''}> incluir en esta evolución</label>` : ''}
-      </div>
+    const abierto = key === 'neuro'; // Neurológico abierto por defecto; el resto arranca plegado
+    html += `<details class="sys-block sys-block-${key}" data-block="${key}"${abierto?' open':''}>
+      <summary class="sys-title"><span class="sys-icon">${SYS_ICONS[key]||''}</span>${sys.label}
+        ${sys.opcional ? `<label class="opt-toggle" onclick="event.stopPropagation()"><input type="checkbox" id="apply_${key}" ${applyChecked?'checked':''}> incluir en esta evolución</label>` : ''}
+      </summary>
+      <div class="sys-block-body">
       <div class="chk-subtitle">Normal</div>
       <div class="chk-group">`;
     sys.normal.forEach((item, idx)=>{
@@ -1326,28 +1598,46 @@ function renderEvolBuilder(p){
         <textarea id="evolEstudioInforme" placeholder="Informe del estudio complementario"></textarea>
       </div>`;
     }
-    html += `</div>`;
+    html += `</div></details>`;
   });
 
   html += `
-    <div class="vitals-grid" style="margin-bottom:8px;">
-      <div class="field"><label>TA</label><input type="text" id="evolTA" placeholder="120/80"></div>
-      <div class="field"><label>FC</label><input type="text" id="evolFC"></div>
-      <div class="field"><label>SatO2 %</label><input type="text" id="evolSat"></div>
-      <div class="field"><label>FiO2 % (21 = aire ambiente)</label><input type="text" id="evolFio2" placeholder="21"></div>
-      <div class="field"><label>T°</label><input type="text" id="evolT"></div>
+    <div class="field"><label>HISTORIA CLÍNICA (se arma sola con el checklist)</label>
+      <textarea id="evolDraftHistoria" class="autogrow-draft" rows="6" readonly></textarea>
     </div>
-    <div class="field"><label>Conducta / otros hallazgos</label><textarea id="evolExtra" placeholder="Se realiza IC con... Se decide iniciar..."></textarea></div>
-    <div class="field"><label>Vista previa — versión corta (se arma sola con el checklist)</label>
+    <div class="field"><label>PASE— versión corta (se sigue armando con los checklist)</label>
       <textarea id="evolDraftShort" class="autogrow-draft" rows="3" readonly></textarea>
     </div>
-    <div class="field"><label>Vista previa — versión completa (se arma sola con el checklist)</label>
+    <div class="field"><label>PASE — versión completa</label>
       <textarea id="evolDraft" class="autogrow-draft" rows="8" readonly></textarea>
     </div>
     <button id="addEntryBtn">+ Agregar entrada de hoy a EVOL</button>
   `;
 
   box.innerHTML = html;
+
+  // Acordeón: al abrir un sistema, se pliegan los demás (uno a la vez). Los
+  // signos vitales no son parte de este acordeón (quedan siempre visibles,
+  // arriba de todo — se insertaron antes del loop de sistemas). Cerrar un
+  // sistema NO borra lo tildado: los checkboxes siguen en el DOM (solo se
+  // ocultan visualmente vía <details>), así que sigue aportando a la
+  // redacción de HISTORIA CLÍNICA / PASE mientras esté cargado.
+  box.querySelectorAll('details.sys-block').forEach(det=>{
+    det.addEventListener('toggle', ()=>{
+      if(!det.open) return;
+      box.querySelectorAll('details.sys-block').forEach(other=>{
+        if(other !== det) other.open = false;
+      });
+      /* Al plegarse el sistema de arriba, el contenido sube y la pantalla
+         queda parada en la mitad del sistema recién abierto. Después de
+         plegar los demás, llevamos la vista al título del que se abrió. */
+      requestAnimationFrame(()=>{
+        const cab = det.querySelector('summary') || det;
+        const y = cab.getBoundingClientRect().top + window.pageYOffset - 12;
+        window.scrollTo({ top: y < 0 ? 0 : y, behavior:'smooth' });
+      });
+    });
+  });
   fld('evolEstado').value = lastEstado;
 
   renderEstadoConfigList();
@@ -1355,17 +1645,7 @@ function renderEvolBuilder(p){
     const panel = fld('estadoConfigPanel');
     panel.style.display = panel.style.display==='none' ? '' : 'none';
   });
-  fld('estadoAddOptBtn').addEventListener('click', ()=>{
-    const label = (prompt('Nombre de la nueva opción de estado (ej: "Crítico"):') || '').trim();
-    if(!label) return;
-    const closing = (prompt('Frase de cierre para esta opción (ej: "Paciente en estado crítico. Requiere monitoreo estrecho."):') || '').trim();
-    const opts = getEstadoOptions().slice();
-    const value = label.toLowerCase();
-    opts.push({ value, label, closing: closing || 'Continúa control evolutivo.' });
-    checklistConfig.estadoOptions = opts;
-    saveCustomLocal();
-    renderEvolBuilder(p);
-  });
+  fld('estadoAddOptBtn').addEventListener('click', agregarEstadoOption);
 
   fechaAutoSync = true;
   fld('evolFecha').value = new Date().toISOString().slice(0,10);
@@ -1552,50 +1832,103 @@ function closingEstadoSentence(estado){
   return found ? found.closing : 'Continúa control evolutivo.';
 }
 
+function guardarEstadoOptions(opts){
+  checklistConfig.estadoOptions = opts;
+  saveCustomLocal();
+}
 function renderEstadoConfigList(){
   const box = fld('estadoConfigList');
   if(!box) return;
   const opts = getEstadoOptions();
-  box.innerHTML = opts.map((o,idx)=>`
+  box.innerHTML = `
+    <div class="estado-opt-head"><span class="h-mov"></span><span class="h-lab">Nombre</span>
+      <span class="h-cor">Texto corto</span><span class="h-clo">Frase de cierre</span><span style="width:24px;"></span></div>` +
+    opts.map((o,idx)=>`
     <div class="estado-opt-row" data-idx="${idx}">
+      <button type="button" class="estadoMoveBtn" data-dir="-1" title="Subir (mejor estado)" ${idx===0?'disabled':''}>▲</button>
+      <button type="button" class="estadoMoveBtn" data-dir="1" title="Bajar (peor estado)" ${idx===opts.length-1?'disabled':''}>▼</button>
       <input type="text" class="estadoLabelInput" value="${escapeHtml(o.label)}" placeholder="Nombre de la opción">
+      <input type="text" class="estadoCortoInput" value="${escapeHtml(o.corto||'')}" placeholder="${escapeHtml(estadoCortoPorPosicion(idx, opts.length))}" title="Va dentro de «Paciente en ___». Si lo dejás vacío se usa el texto sugerido según la posición.">
       <input type="text" class="estadoClosingInput" value="${escapeHtml(o.closing)}" placeholder="Frase de cierre">
       <button type="button" class="estadoDelBtn" title="Eliminar esta opción" ${opts.length<=1?'disabled':''}>✕</button>
     </div>`).join('');
+
   box.querySelectorAll('.estado-opt-row').forEach(row=>{
     const idx = parseInt(row.dataset.idx, 10);
     const labelInput = row.querySelector('.estadoLabelInput');
+    const cortoInput = row.querySelector('.estadoCortoInput');
     const closingInput = row.querySelector('.estadoClosingInput');
-    const delBtn = row.querySelector('.estadoDelBtn');
+
     function persist(){
-      const opts = getEstadoOptions().slice();
-      const prevValue = opts[idx].value;
-      const newLabel = labelInput.value.trim() || opts[idx].label;
-      opts[idx] = { value: opts[idx].value, label: newLabel, closing: closingInput.value.trim() || 'Continúa control evolutivo.' };
-      checklistConfig.estadoOptions = opts;
-      saveCustomLocal();
-      // Si el valor seleccionado actualmente sigue existiendo, no hace falta tocar el <select>.
-      const sel = fld('evolEstado');
-      if(sel && sel.value === prevValue) { /* el value interno no cambia, solo la etiqueta */ }
+      const lista = getEstadoOptions().slice();
+      const actual = lista[idx];
+      lista[idx] = {
+        value: actual.value,
+        label: labelInput.value.trim() || actual.label,
+        corto: cortoInput.value.trim(),
+        closing: closingInput.value.trim() || 'Continúa control evolutivo.'
+      };
+      guardarEstadoOptions(lista);
+      // El value interno no cambia: solo se actualiza la etiqueta del <select>.
       const selEl = fld('evolEstado');
       if(selEl){
-        const optEl = Array.from(selEl.options).find(o=>o.value===prevValue);
-        if(optEl) optEl.textContent = newLabel;
+        const optEl = Array.from(selEl.options).find(o=>o.value===actual.value);
+        if(optEl) optEl.textContent = lista[idx].label;
       }
       updateDraftPreview(getSelected());
     }
-    labelInput.addEventListener('blur', persist);
-    closingInput.addEventListener('blur', persist);
-    delBtn.addEventListener('click', ()=>{
-      const opts = getEstadoOptions().slice();
-      if(opts.length<=1) return;
-      if(!confirm(`¿Eliminar la opción "${opts[idx].label}"?`)) return;
-      opts.splice(idx,1);
-      checklistConfig.estadoOptions = opts;
-      saveCustomLocal();
+    [labelInput, cortoInput, closingInput].forEach(inp=>{
+      inp.addEventListener('blur', persist);
+      inp.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); inp.blur(); } });
+    });
+
+    row.querySelectorAll('.estadoMoveBtn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const dir = parseInt(btn.dataset.dir, 10);
+        const lista = getEstadoOptions().slice();
+        const destino = idx + dir;
+        if(destino < 0 || destino >= lista.length) return;
+        const tmp = lista[idx]; lista[idx] = lista[destino]; lista[destino] = tmp;
+        guardarEstadoOptions(lista);
+        renderEvolBuilder(getSelected());
+        const panel = fld('estadoConfigPanel');
+        if(panel) panel.style.display = '';
+      });
+    });
+
+    row.querySelector('.estadoDelBtn').addEventListener('click', ()=>{
+      const lista = getEstadoOptions().slice();
+      if(lista.length<=1) return;
+      if(!confirm(`¿Eliminar la opción "${lista[idx].label}"?`)) return;
+      lista.splice(idx,1);
+      guardarEstadoOptions(lista);
       renderEvolBuilder(getSelected());
+      const panel = fld('estadoConfigPanel');
+      if(panel) panel.style.display = '';
     });
   });
+}
+
+/* Agrega una opción nueva al final (el final es el peor estado) y deja el
+   cursor en su nombre para escribirlo ahí mismo. Después se acomoda con
+   las flechas ▲▼ según qué tan grave sea. */
+function agregarEstadoOption(){
+  const lista = getEstadoOptions().slice();
+  lista.push({
+    value: 'estado_' + Date.now().toString(36),
+    label: 'Nueva opción',
+    corto: '',
+    closing: 'Continúa control evolutivo.'
+  });
+  guardarEstadoOptions(lista);
+  renderEvolBuilder(getSelected());
+  const panel = fld('estadoConfigPanel');
+  if(panel) panel.style.display = '';
+  const box = fld('estadoConfigList');
+  if(box){
+    const ultimo = box.querySelector('.estado-opt-row:last-child .estadoLabelInput');
+    if(ultimo){ ultimo.focus(); ultimo.select(); }
+  }
 }
 
 /* Variedad para los días "sin nada nuevo que contar": si no hubo ningún cambio de
@@ -1645,31 +1978,46 @@ function captureChecklistState(estado){
   return state;
 }
 
-/* ================= Composición del texto de la evolución (pura — sin efectos secundarios) ================= */
-function buildEvolText(p){
-  const fecha = fmtFechaDMY(fld('evolFecha').value) || '(fecha)';
-  const estado = fld('evolEstado').value;
+/* ================= Composición del texto de la evolución (pura — sin efectos secundarios) =================
+   Estructura compartida por HISTORIA CLÍNICA, PASE — versión corta y PASE —
+   versión completa: todas arrancan con la misma frase fija de neurológico
+   (según el estado general elegido, más cualquier alteración neuro tildada),
+   y de ahí en más cada una arma su propio cuerpo. */
+function baseNeuroAdjetivos(estado){
+  const opts = getEstadoOptions();
+  const idx = opts.findIndex(o=>o.value===estado);
+  if(idx<=0) return { consciencia:'vigil', reactividad:'reactiv' };
+  return { consciencia:'somnoliento', reactividad:'poco reactiv' };
+}
+function buildOpeningExamSentence(p, estado){
+  const genero = p.sexo === 'F' ? 'a' : 'o';
+  const base = baseNeuroAdjetivos(estado);
+  const otrasAlt = ['desorientado','excitacion','noobedece','confuso']
+    .filter(id=>isChecked('neuro','alt',id))
+    .map(id=>itemPhrase('neuro','alt',id,p));
+  const focoAlt = isChecked('neuro','alt','focomotor') ? itemPhrase('neuro','alt','focomotor',p) : 'sin signo de foco motor agudo';
+  let s = `Paciente en ${estadoCortoTexto(estado)}, ${base.consciencia}, ${base.reactividad}${genero}`;
+  if(otrasAlt.length) s += ', ' + otrasAlt.join(', ');
+  s += `, ${focoAlt}${trendPhraseFor('neuro',p)}.`;
+  return s;
+}
 
-  const neuro = collectSystemPhrase('neuro', p);
+/* Cuerpo del examen (CSV + cardio/resp/abdomen-renal/miembros/infecto +
+   cierre por estado general), compartido entre HISTORIA CLÍNICA y PASE —
+   versión completa — ambas cuentan lo sano y lo patológico de forma
+   completa; solo cambia la frase de apertura de cada una. */
+function buildExamBody(p){
+  const estado = fld('evolEstado').value;
   const cv = collectSystemPhrase('cv', p);
   const resp = collectSystemPhrase('resp', p);
   const dig = collectSystemPhrase('dig', p);
   const miembrosClause = buildMiembrosClause(p);
   const infectoAplica = fld('apply_infecto') && fld('apply_infecto').checked;
   const infecto = infectoAplica ? collectSystemPhrase('infecto', p) : '';
-
   const estudioTipo = fld('evolEstudioTipo') ? fld('evolEstudioTipo').value : '';
   const estudioInforme = fld('evolEstudioInforme') ? fld('evolEstudioInforme').value.trim() : '';
-  const extra = fld('evolExtra') ? fld('evolExtra').value.trim() : '';
 
-  const sexoTxt = p.sexo === 'M' ? 'masculino' : (p.sexo === 'F' ? 'femenina' : '');
-  const miResumen = activeMiSummary(p);
-
-  let intro = `${fecha}: Paciente${sexoTxt?' '+sexoTxt:''}${p.edad?' de '+p.edad:''}${miResumen?', '+miResumen:''}.`;
-
-  let out = intro + ' ';
-  if(neuro) out += `${capitalize(neuro)}${trendPhraseFor('neuro',p)}. `;
-  out += buildCsvLine() + ' ';
+  let out = buildCsvLine() + ' ';
   if(cv) out += `A nivel cardiovascular, ${cv}${trendPhraseFor('cv',p)}. `;
   if(estudioTipo && estudioInforme) out += `Se recibe informe de ${estudioTipo}: ${estudioInforme}. `;
   if(resp) out += `A nivel pulmonar, ${resp}${trendPhraseFor('resp',p)}. `;
@@ -1685,9 +2033,28 @@ function buildEvolText(p){
   out += closingEstadoSentence(estado);
   out += noChangeClause(p, estado);
   out += estadoTrendPhrase(p.lastEstado, estado);
-  if(extra) out += ' ' + extra;
-
   return out.trim();
+}
+
+/* HISTORIA CLÍNICA: arranca situando el diagnóstico (MI) y el tratamiento —
+   el propio texto de MI ya suele traer "en tto con X (día Y de tto)" si
+   viene actualizado desde el .md del pase de sala. */
+function buildHistoriaClinicaText(p){
+  const fecha = fmtFechaDMY(fld('evolFecha').value) || '(fecha)';
+  const estado = fld('evolEstado').value;
+  const sexoTxt = p.sexo === 'M' ? 'masculino' : (p.sexo === 'F' ? 'femenina' : '');
+  const miResumen = activeMiSummary(p);
+  const dx = `Paciente${sexoTxt?' '+sexoTxt:''}${p.edad?' de '+p.edad:''}${miResumen?', cursando internación por '+miResumen:''}.`;
+  return `${fecha}: ${dx} ${buildOpeningExamSentence(p, estado)} ${buildExamBody(p)}`.trim();
+}
+
+/* PASE — versión completa: mismo cuerpo que HISTORIA CLÍNICA (cuenta lo sano
+   y lo patológico de forma completa), pero sin la frase de diagnóstico —
+   va directo al examen del día. */
+function buildPaseCompletoText(p){
+  const fecha = fmtFechaDMY(fld('evolFecha').value) || '(fecha)';
+  const estado = fld('evolEstado').value;
+  return `${fecha}: ${buildOpeningExamSentence(p, estado)} ${buildExamBody(p)}`.trim();
 }
 
 function altOnlyForSystem(key, patient){
@@ -1714,29 +2081,34 @@ function catarsisDiuresisAltOnly(patient){
   else if(isChecked('renal','alt','diuresisneg')) parts.push(itemPhrase('renal','alt','diuresisneg',patient));
   return parts;
 }
+/* Texto que va dentro de la frase de apertura ("Paciente en ___"). Si la
+   opción tiene un texto corto propio se usa ese; si no, se deduce de la
+   posición en la lista (primera = mejor, última = peor). */
+function estadoCortoPorPosicion(idx, total){
+  if(idx<=0) return 'buen estado general';
+  if(idx===total-1) return 'mal estado general';
+  return 'regular estado general';
+}
 function estadoCortoTexto(estado){
   const opts = getEstadoOptions();
   const idx = opts.findIndex(o=>o.value===estado);
   if(idx===-1) return estado;
-  if(idx===0) return 'buen estado general';
-  if(idx===opts.length-1) return 'mal estado general';
-  return 'regular estado general';
+  const propio = (opts[idx].corto||'').trim();
+  return propio || estadoCortoPorPosicion(idx, opts.length);
 }
 
-/* Versión corta: solo el esqueleto normal fijo (vigil, reactivo, sin foco motor) + CSV,
-   y de ahí en más SOLO lo que esté alterado, en el mismo orden de sistemas que la
-   versión completa. Si no hay ningún hallazgo patológico, se indica "CSV S/P". */
+/* PASE — versión corta: frase de apertura fija + CSV, y de ahí en más SOLO
+   lo alterado (mismo orden de sistemas que la versión completa). Si no hay
+   ningún hallazgo patológico, en vez de "CSV S/P." se detalla un resumen
+   breve de lo normal (a pedido: que no quede tan escueta). */
 function buildEvolTextShort(p){
   const fecha = fmtFechaDMY(fld('evolFecha').value) || '(fecha)';
   const estado = fld('evolEstado').value;
-  const sexoTxt = p.sexo === 'M' ? 'masculino' : (p.sexo === 'F' ? 'femenina' : '');
 
-  let out = `${fecha}: Paciente${sexoTxt?' '+sexoTxt:''}${p.edad?' de '+p.edad:''}, en ${estadoCortoTexto(estado)}. `;
-  out += 'Vigil, reactivo, sin signo de foco motor agudo. ';
+  let out = `${fecha}: ${buildOpeningExamSentence(p, estado)} `;
   out += buildCsvLine() + ' ';
 
   const hallazgos = [].concat(
-    altOnlyForSystem('neuro', p),
     altOnlyForSystem('cv', p),
     altOnlyForSystem('resp', p),
     altOnlyForSystem('dig', p),
@@ -1746,7 +2118,12 @@ function buildEvolTextShort(p){
     (fld('apply_infecto') && fld('apply_infecto').checked) ? altOnlyForSystem('infecto', p) : []
   );
 
-  out += hallazgos.length ? (hallazgos.map(capitalize).join('. ') + '. ') : 'CSV S/P. ';
+  if(hallazgos.length){
+    out += hallazgos.map(capitalize).join('. ') + '. ';
+  } else {
+    out += 'BMV, BEAB. R1 y R2 en 4 focos, sin falla aguda de bomba. Abdomen S/P. Resto del examen físico sin cambios. Diuresis y catarsis conservadas. ';
+  }
+  out += 'Paciente hemodinámicamente estable. ';
   out += closingEstadoSentence(estado);
   return out.trim();
 }
@@ -1754,11 +2131,14 @@ function buildEvolTextShort(p){
 function updateDraftPreview(p){
   const draft = fld('evolDraft');
   const draftShort = fld('evolDraftShort');
+  const draftHistoria = fld('evolDraftHistoria');
   if(!draft || !p) return;
-  draft.value = buildEvolText(p);
+  draft.value = buildPaseCompletoText(p);
   if(draftShort) draftShort.value = buildEvolTextShort(p);
+  if(draftHistoria) draftHistoria.value = buildHistoriaClinicaText(p);
   autoGrowTextarea(draft);
   autoGrowTextarea(draftShort);
+  autoGrowTextarea(draftHistoria);
 }
 function autoGrowTextarea(el){
   if(!el) return;
@@ -1768,12 +2148,14 @@ function autoGrowTextarea(el){
 window.addEventListener('resize', ()=>{
   autoGrowTextarea(fld('evolDraft'));
   autoGrowTextarea(fld('evolDraftShort'));
+  autoGrowTextarea(fld('evolDraftHistoria'));
 });
 
 function addEvolEntry(p){
-  const full = buildEvolText(p);
-  const short = buildEvolTextShort(p);
-  const out = `RESUMEN: ${short}\n---\n${full}`;
+  const historia = buildHistoriaClinicaText(p);
+  const corta = buildEvolTextShort(p);
+  const completa = buildPaseCompletoText(p);
+  const out = `HISTORIA CLÍNICA: ${historia}\n---\nPASE (corta): ${corta}\n---\nPASE (completa): ${completa}`;
   const estado = fld('evolEstado').value;
 
   p.evol = p.evol ? (out + '\n\n' + p.evol) : out;
@@ -1919,15 +2301,14 @@ function itemListHtml(items){
 
 function rowsFor(p){
   return [
+    ['DNI', escapeHtml(p.dni)],
+    ['FI', escapeHtml(p.fi)],
     ['ANT', escapeHtml(p.ant)],
+    ['MC', escapeHtml(p.mc)],
     ['MI', itemListHtml(p.mi)],
-    ['CULT', escapeHtml(p.cult)],
     ['ASOC', itemListHtml(p.asoc)],
-    ['EVOL', escapeHtml(p.evol)],
-    ['LABO', escapeHtml(p.labo)],
-    ['IMG', escapeHtml(p.img)],
-    ['PEND', escapeHtml(p.pend)],
-    ['PLAN', escapeHtml(p.plan)]
+    ['CULT', escapeHtml(p.cult)],
+    ['EVOL', escapeHtml(p.evol)]
   ];
 }
 
@@ -1936,21 +2317,19 @@ function patientTableHtml(p){
   let html = `<table class="pase">
     <tr class="head"><td class="cama">${escapeHtml(p.cama||'—')}</td><td>${escapeHtml(headInfo)}</td></tr>`;
   rowsFor(p).forEach(([label, val])=>{
-    html += `<tr><td class="label">${label}</td><td class="content">${val||''}</td></tr>`;
+    if(!val) return;
+    html += `<tr><td class="label">${label}</td><td class="content">${val}</td></tr>`;
   });
   html += `</table>`;
   return html;
 }
 
+// Ya no arma una vista de tabla en pantalla (se eliminó ese panel): ahora
+// solo se ocupa de programar el guardado del paciente seleccionado. El
+// nombre se mantiene porque se llama desde muchísimos puntos de edición.
 function renderPreview(){
-  const out = fld('preview');
   const sel = getSelected();
   if(sel) schedulePatientSave(sel);
-  if(patients.length===0){
-    out.innerHTML = '<p class="empty-note">Sin pacientes cargados todavía.</p>';
-    return;
-  }
-  out.innerHTML = sortedPatients().map(patientTableHtml).join('');
 }
 
 function printSinglePatient(p){
@@ -1961,19 +2340,17 @@ function printSinglePatient(p){
 window.addEventListener('afterprint', ()=>{ document.body.classList.remove('print-single-mode'); });
 
 function buildPlainText(list){
-  list = list || sortedPatients();
+  list = list || sortedPatients().filter(patientVisible);
   let text='';
   list.forEach(p=>{
-    text += `${p.cama||'—'} | ${p.nombre||'Sin nombre'}${p.edad? ' — '+p.edad:''}\n`;
-    text += `ANT: ${p.ant||''}\n`;
+    text += `${p.cama||'—'} | ${p.nombre||'Sin nombre'}${p.edad? ' — '+p.edad:''}${p.dni?' — DNI '+p.dni:''}\n`;
+    if(p.fi) text += `FI: ${p.fi}\n`;
+    if(p.ant) text += `ANT: ${p.ant}\n`;
+    if(p.mc) text += `MC: ${p.mc}\n`;
     text += `MI: ${p.mi.map(i=>(i.resuelto?'[RESUELTO] ':'')+i.text).join(' / ')}\n`;
-    text += `CULT: ${p.cult||''}\n`;
     text += `ASOC: ${p.asoc.map(i=>(i.resuelto?'[RESUELTO] ':'')+i.text).join(' / ')}\n`;
-    text += `EVOL: ${p.evol||''}\n`;
-    text += `LABO: ${p.labo||''}\n`;
-    text += `IMG: ${p.img||''}\n`;
-    text += `PEND: ${p.pend||''}\n`;
-    text += `PLAN: ${p.plan||''}\n\n`;
+    if(p.cult) text += `CULT: ${p.cult}\n`;
+    text += `EVOL:\n${p.evol||''}\n\n`;
   });
   return text.trim();
 }
@@ -2050,14 +2427,21 @@ fld('clearAllBtn').addEventListener('click', ()=>{
   addPatient();
 });
 fld('patientSearch').addEventListener('input', (e)=>{ sidebarFilter = e.target.value; renderSidebar(); });
+fld('camaVisibleAddBtn').addEventListener('click', addCamaVisibleFromInput);
+fld('camaVisibleInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); addCamaVisibleFromInput(); } });
 
 fld('copyBtn').addEventListener('click', ()=>{
   navigator.clipboard.writeText(buildPlainText()).then(()=>{
-    fld('status').textContent = 'Pase completo copiado al portapapeles.';
+    fld('status').textContent = 'Pase de las camas mostradas copiado al portapapeles.';
     setTimeout(()=>fld('status').textContent='',2500);
   }).catch(()=>{ fld('status').textContent = 'No se pudo copiar automáticamente.'; });
 });
-fld('printBtn').addEventListener('click', ()=>window.print());
+fld('printBtn').addEventListener('click', ()=>{
+  const visibles = sortedPatients().filter(patientVisible);
+  fld('printSingleTarget').innerHTML = visibles.map(patientTableHtml).join('');
+  document.body.classList.add('print-single-mode');
+  window.print();
+});
 
 (function(){
   const today = new Date();
@@ -2070,7 +2454,16 @@ fld('printBtn').addEventListener('click', ()=>window.print());
    se evita pisar esa ficha con datos que lleguen de otro dispositivo justo en ese
    instante (se van a acomodar solos apenas saques el foco de ahí). */
 let firstSnapshotHandled = false;
-function applyRemoteSnapshot(remoteList){
+function applyRemoteSnapshot(remoteListRaw){
+  /* Los documentos con id puramente numérico (pacientes/101) son los que
+     escribía la versión vieja de guardias.html. No se muestran como
+     carpetas: la unificación los funde en pacientes/C101 y los borra. */
+  const remoteList = [];
+  legacyNumericDocs = [];
+  remoteListRaw.forEach(r=>{
+    if(/^\d+$/.test(r.id)) legacyNumericDocs.push(r);
+    else remoteList.push(r);
+  });
   const activeInsideForm = document.activeElement && fld('formCol') && fld('formCol').contains(document.activeElement);
   const currentlyEditingId = activeInsideForm ? selectedId : null;
 
@@ -2096,13 +2489,25 @@ function applyRemoteSnapshot(remoteList){
   });
 
   if(!selectedId || !patients.find(p=>p.id===selectedId)){
-    selectedId = patients.length ? patients[0].id : null;
+    selectedId = firstPatientId();
     selectedPatientDataChanged = true;
   }
 
   renderSidebar();
   renderPreview();
   if(!activeInsideForm && selectedPatientDataChanged) renderForm();
+
+  /* El listado de pacientes es una vista de estos mismos datos: si está
+     abierto y no se está tipeando adentro, se repinta. */
+  const listOverlay = document.getElementById('listadoPacientesOverlay');
+  if(listOverlay && listOverlay.classList.contains('open')){
+    const tecleando = document.activeElement && document.activeElement.closest &&
+                      document.activeElement.closest('#patListTableWrap');
+    if(!tecleando){
+      const si = document.getElementById('patListSearch');
+      renderPatientRosterTable(si ? si.value : '');
+    }
+  }
 }
 
 function iniciarAppPrincipal(){
@@ -2118,8 +2523,8 @@ function iniciarAppPrincipal(){
     applyRemoteSnapshot(remoteList);
     if(!firstSnapshotHandled){
       firstSnapshotHandled = true;
-      if(patients.length===0) addPatient();
     }
+    intentarUnificacion();
   }, ()=>{
     fld('status').textContent = 'Error de conexión con la base de datos compartida.';
   });
@@ -2127,41 +2532,30 @@ function iniciarAppPrincipal(){
     if(snap.exists && snap.exists()){
       const data = snap.data();
       checklistConfig = (data && typeof data === 'object')
-        ? { custom: data.custom||{}, edits: data.edits||{}, hidden: data.hidden||{}, order: data.order||{}, customPlantillas: data.customPlantillas||{}, defaults: data.defaults||{}, estadoOptions: data.estadoOptions||null }
-        : { custom:{}, edits:{}, hidden:{}, order:{}, customPlantillas:{}, defaults:{}, estadoOptions:null };
+        ? { custom: data.custom||{}, edits: data.edits||{}, hidden: data.hidden||{}, order: data.order||{}, customPlantillas: data.customPlantillas||{}, defaults: data.defaults||{}, estadoOptions: data.estadoOptions||null, camasVisibles: Array.isArray(data.camasVisibles) ? data.camasVisibles.map(String) : null }
+        : { custom:{}, edits:{}, hidden:{}, order:{}, customPlantillas:{}, defaults:{}, estadoOptions:null, camasVisibles:null };
     } else {
-      checklistConfig = { custom:{}, edits:{}, hidden:{}, order:{}, customPlantillas:{}, defaults:{}, estadoOptions:null };
+      checklistConfig = { custom:{}, edits:{}, hidden:{}, order:{}, customPlantillas:{}, defaults:{}, estadoOptions:null, camasVisibles:null };
     }
     const activeInsideForm = document.activeElement && fld('formCol') && fld('formCol').contains(document.activeElement);
     if(getSelected() && !activeInsideForm) renderForm();
+    renderSidebar();
   }, ()=>{});
+  /* En config/patientRoster ya no vive el listado de pacientes (eso ahora
+     sale de los mismos documentos por cama): solo quedan las camas
+     marcadas como "mis pacientes" y la marca de unificación. */
   fs.onSnapshot(fs.rosterDocRef, (snap)=>{
-    if(rosterSavePending) return; // no pisar lo que el usuario está escribiendo ahora mismo
+    if(rosterSavePending) return; // no pisar lo que el usuario está tocando ahora mismo
     if(snap.exists && snap.exists()){
-      const data = snap.data();
-      const remoteVersion = data && data.rosterSyncVersion;
-      if(remoteVersion === ROSTER_SEED_VERSION){
-        // Ya está sincronizado con la foto de pase de sala más nueva: usar
-        // lo que hay guardado (incluye toda edición manual posterior).
-        patientRoster = Array.isArray(data && data.items) ? data.items : [];
-        if(Array.isArray(data && data.priorityBeds)) priorityBeds = data.priorityBeds.map(String);
-      } else if(!rosterMigrated){
-        // El doc existe pero es de un pase de sala más viejo (o nunca tuvo
-        // versión): se actualiza una sola vez con la semilla nueva
-        // (patientRoster ya trae la foto del 16/09/2026 cargada arriba).
-        // priorityBeds del usuario se conserva si ya las había configurado.
-        if(Array.isArray(data && data.priorityBeds) && data.priorityBeds.length) priorityBeds = data.priorityBeds.map(String);
-        rosterMigrated = true;
-        scheduleRosterSave();
-      }
-    } else if(!rosterMigrated){
-      // Primera vez que corre esto: el doc todavía no existe en Firestore, así que
-      // subimos la semilla inicial (patientRoster y priorityBeds ya traen sus
-      // valores por defecto) para que desde acá en más quede persistida y
-      // editable para todos.
-      rosterMigrated = true;
-      scheduleRosterSave();
+      const data = snap.data() || {};
+      if(Array.isArray(data.priorityBeds)) priorityBeds = data.priorityBeds.map(String);
+      rosterItemsLegacy = Array.isArray(data.items) ? data.items : [];
+      rosterFlagV2 = !!data.unificacionV2;
+    } else {
+      rosterItemsLegacy = [];
+      rosterFlagV2 = false;
     }
+    intentarUnificacion();
     rosterLoaded = true;
     const overlay = document.getElementById('listadoPacientesOverlay');
     const searchInput = document.getElementById('patListSearch');
@@ -2239,45 +2633,25 @@ window.iniciarAppPrincipal = iniciarAppPrincipal;
 })();
 
 /* ================= Listado de pacientes (cama / DNI / nombre / edad / MI) =================
-   Editable desde la app y compartido entre dispositivos vía Firestore
-   (doc config/patientRoster, campos "items", "priorityBeds" y
-   "rosterSyncVersion"). La semilla de acá abajo es la foto del pase de sala
-   de Clínica Médica del 16/09/2026 (las 24 camas 101-140 que figuraban ese
-   día, con DNI, nombre y motivo de internación tal como están en ese
-   documento). Si el doc de Firestore todavía no existe, esta semilla se
-   sube tal cual la primera vez. Si ya existía de antes (con datos de un
-   pase más viejo), ROSTER_SEED_VERSION fuerza una actualización única con
-   esta foto más nueva la primera vez que corre este archivo — después de
-   eso ya queda editable y sincronizado a mano para todos, sin volver a
-   pisarse solo. Para traer un pase más nuevo en el futuro: reemplazar este
-   array y subir ROSTER_SEED_VERSION a una fecha distinta. */
-const ROSTER_SEED_VERSION = '2026-09-16-pase-sala';
-let patientRoster = [
-  {id:"seed_c101",cama:"C101",dni:"4989656",nombre:"Nuñez Beatriz",edad:"82",mi:"infección de piel y partes blandas en MMII en tto con AMS TMS dia 4 (FI 12/9)"},
-  {id:"seed_c103",cama:"C103",dni:"95409850",nombre:"Garces Bertha",edad:"80",mi:"Caso social"},
-  {id:"seed_c104",cama:"C104",dni:"4579456",nombre:"Arreguez Martha Nora",edad:"83",mi:"NAC con AMS + Claritromicina dia 8 (FI 6/9) en contexto de fibrosis bilateral ya finalizó atb"},
-  {id:"seed_c105",cama:"C105",dni:"10488725",nombre:"Luis Luna",edad:"73",mi:"POP alejado Fx de cadera izq caso Social Caso social (Sit calle) TEC sin pérdida de conciencia + Trauma facial con fractura de maxilar inferior con profilaxis antibiótica con AMS D7 (FI 13/4)"},
-  {id:"seed_c107",cama:"C107",dni:"4395327",nombre:"Longinotti Antonio",edad:"84",mi:"NIH en tto PTZ 5 (FI 12/9) Sepsis a foco respiratorio en tto con PTZ dia 5 (FI 11/9) Social: Tercer nivel TEC S/ pérdida SCA secundario a ITU en tto PTZ día 7"},
-  {id:"seed_c109",cama:"C109",dni:"10424858",nombre:"Gallo Jorge",edad:"74",mi:"Social - Tercer nivel ITU en tto con Cefalexina dia 5 (FI 11/9) TEC sin pérdida de conciencia secundario a caída de propia altura"},
-  {id:"seed_c111",cama:"C111",dni:"38028096",nombre:"Seco Ezequiel",edad:"32",mi:"ITU complicada en tto con Ciprofloxacina dia 2 (FI 14/9) (Día 8 de tratamiento ATB total ) tto con Colistin dia 7 (FI 7/9)"},
-  {id:"seed_c112",cama:"C112",dni:"4448459",nombre:"Gonzalez Alicia",edad:"84",mi:"POP alejado de cadera complicado+ nmn broncosspirativa en tto con colistin y meropenem dia 7 (FI 7/9)"},
-  {id:"seed_c114",cama:"C114",dni:"10930311",nombre:"Pabla Duarte",edad:"73",mi:"SCA secundario a sepsis a foco urinario score SOFA 3 PUNTOS en tto con ceftriaxona dia 5 (FI 10/9)"},
-  {id:"seed_c115",cama:"C115",dni:"93283272",nombre:"Casas Angela",edad:"92",mi:"SCA secundario a NIH en tto con Meropenem dia 8 (FI 7/9) SCA secundario a ITU en tto con PTZ dia 6 (FI 29/8)"},
-  {id:"seed_c116",cama:"C116",dni:"4168449",nombre:"Ivaldi Horacio",edad:"90",mi:"Caso social: Tercer nivel Sme febril con foco probable respiratorio en tto con PTZ dia 5 (fi 9/8) Sme confusional por impactación fecal"},
-  {id:"seed_c117",cama:"C117",dni:"92912877",nombre:"Duda Mieczyslaw",edad:"86",mi:"NIH + ITU complicada en tto con Meropenem dia 5 (FI 11/9) Tercer nivel Tvp en miembro inferior izq con tto anticoagulante (enoxa) Sme febril a foco respi en tto PTZ día 6 (FI 12/8) Sme confusional hiperactivo agudo secundario a bacteremia a foco urinario en tto con imipenem dia 10 (fi: 24/7)"},
-  {id:"seed_c118",cama:"C118",dni:"93385970",nombre:"Barral Manuel",edad:"91",mi:"Sepsis por probable foco hematoma de psoas en tto con Meropenem dia 5 (FI 11/9) sepsis a NACS + impactación fecal en tto con AMS + Claritromicina dia 7 (FI 3/9)"},
-  {id:"seed_c119",cama:"C119",dni:"94027445",nombre:"Cafaro Jose",edad:"78",mi:"Social - tercer nivel SCA secundario a NAC en tto con Levofloxacina y claritromicina dia 7 SCA secundario a Insuficiencia respiratoria tipo I por NAC en tto con Levofloxacina y Claritromicina Dia 6 (2/09) ACV isquemico evolucionado"},
-  {id:"seed_c120",cama:"C120",dni:"3537387",nombre:"Souto Geronima",edad:"87",mi:"Caso social"},
-  {id:"seed_c121",cama:"C121",dni:"4253321",nombre:"Comans, Julia Josefa",edad:"86",mi:"social: a definir tercer nivel Sindrome confusional agudo secundario a NIH en tto con PTZ dia 8 (FI 7/9) Ceftriaxona DIA 9 (fi: 26/08)"},
-  {id:"seed_c122",cama:"C122",dni:"4571515",nombre:"Zarate Andrea",edad:"82",mi:"caso social TEC por caida de altura sec de etio multifactorial( deshidratación + hipoNa mod) fx codo izquierdo con cabestrillo Sospecha de IPYB en tto con TMS finalizado TEC en contexto síndrome confusional por ITU en tto con AMS (FI 21/5) + Hiponatremia y ortostatismo en contexto de hidroclorotiazida"},
-  {id:"seed_c123",cama:"C123",dni:"96166476",nombre:"Hernandez Susana",edad:"94",mi:"SCA secundario a ITU + NAC. En tto con Ceftriaxona (FI: 6/9. D: 9)"},
-  {id:"seed_c124",cama:"C124",dni:"14181501",nombre:"Sanchez Maria Elena",edad:"66",mi:"SCA secundario a ITU + NACS en tto PTZ dia 5 (FI 10/9) TVP derecha anticoagulada con enoxaparina. Score ACV isquemico evolucionado probable origen cardioembolico"},
-  {id:"seed_c126",cama:"C126",dni:"5306560",nombre:"Marcos, Maria del Carmen",edad:"80",mi:"Internación domiciliaria SCA secundario a NAC en tto con AMS + claritromicina dia 8 (FI 7/9)"},
-  {id:"seed_c127",cama:"C127",dni:"3674639",nombre:"Elias Lidia Angelica",edad:"88",mi:"Social: tercer nivel Itu intrahospitalaria en tto con PTZ dia 2 (FI: 14/9) SCA secundario NAC en tto con Amoxicilina/clavulánico + claritromicina dia 6 (FI 21/8) SCA secundario a sme diarreico por clostridium en tto con vancomicina dia 10 (FI 14/8) Foco respi en tto con AMS día 3 (FI 18/8) sepsis a foco abdominal por diarrea por clostridium en tto vancomicina día 4 (FI 14/8)"},
-  {id:"seed_c134",cama:"C134",dni:"7837819",nombre:"Garritani Juan",edad:"77",mi:""},
-  {id:"seed_c135",cama:"C135",dni:"93709203",nombre:"Afonso Manuel",edad:"80",mi:"Caso social Sme confusional en contexto de progresión de demencia Sme febril a posible foco urinario en tto con PTZ D7 (FI 31/7)- ultimo dia"},
-  {id:"seed_c136",cama:"C136",dni:"20519147",nombre:"Paganelli, Alejandro",edad:"57",mi:"Encefalopatia hepatica en contexto de SA (GASA>1.1) secundario a hipertensión portal por cirrosis ALD NIH en tto PTZ dia 6 (FI 10/9) Falla renal por oliguria (Ritmo diurético 0,27)"}
-];
+   Es una vista de la MISMA base que el archivero: un documento por cama
+   en Firestore (pacientes/C101, pacientes/C103, ...). No tiene datos ni
+   semilla propios. En config/patientRoster ya solo quedan las camas
+   marcadas como "mis pacientes" (priorityBeds). */
+/* El listado ya no tiene datos propios ni semilla: es una vista de los
+   mismos documentos por cama (pacientes/C101...) que usa el archivero.
+   Editar una fila edita la ficha del paciente, y el cambio se ve en el
+   archivero y en guardias.html. */
+let patientRoster = [];
+function rebuildRoster(){
+  patientRoster = sortedPatients().map(p=>({
+    id: p.id,
+    cama: p.cama || '',
+    dni: p.dni || '',
+    nombre: p.nombre || '',
+    edad: p.edad || '',
+    mi: miToText(p.mi)
+  }));
+}
 let rosterLoaded = false;
 let rosterMigrated = false;
 let rosterSavePending = false;
@@ -2360,7 +2734,7 @@ function scheduleRosterSave(){
   rosterSaveTimer = setTimeout(()=>{
     const fs = fsApi();
     if(!fs){ rosterSavePending = false; return; }
-    fs.setDoc(fs.rosterDocRef, {items: patientRoster, priorityBeds: priorityBeds, rosterSyncVersion: ROSTER_SEED_VERSION}).then(()=>{
+    fs.setDoc(fs.rosterDocRef, {priorityBeds: priorityBeds, unificacionV2: true}).then(()=>{
       rosterSavePending = false;
       setRosterSaveStatus('Guardado ✓');
     }).catch(()=>{
@@ -2407,14 +2781,14 @@ function addPriorityBedFromInput(){
    entre un listado impreso y el siguiente. */
 function importMotivosInternacion(){
   let updated = 0;
-  patientRoster.forEach(p=>{
+  patients.forEach(p=>{
     const dni = String(p.dni||'').replace(/\D/g,'').replace(/^0+/, '');
-    if(!dni || (p.mi||'').trim()) return;
+    if(!dni || miToText(p.mi).trim()) return;
     const mi = MI_IMPORT_BY_DNI[dni];
-    if(mi){ p.mi = mi; updated++; }
+    if(mi){ p.mi = miFromText(mi, p.mi); savePatientNow(p); updated++; }
   });
   if(updated){
-    scheduleRosterSave();
+    renderAll();
     renderPatientRosterTable(fld('patListSearch') ? fld('patListSearch').value : '');
   }
   alert(updated
@@ -2426,6 +2800,7 @@ function renderPatientRosterTable(filterText){
   const wrap = fld('patListTableWrap');
   const note = fld('patListNote');
   if(!wrap) return;
+  rebuildRoster();
   const q = (filterText||'').trim().toLowerCase();
   const rows = patientRoster.filter(p=>{
     if(!q) return true;
@@ -2445,10 +2820,10 @@ function renderPatientRosterTable(filterText){
     return (a.cama||'').localeCompare(b.cama||'');
   });
   if(note){
-    note.innerHTML = `<span>${rows.length} de ${patientRoster.length} pacientes — editable, se guarda solo y se sincroniza entre dispositivos.</span><span class="pat-list-savestatus" id="patListSaveStatus"></span>`;
+    note.innerHTML = `<span>${rows.length} de ${patientRoster.length} camas — es la misma ficha del archivero: lo que edites acá se ve también en el archivero y en la planilla de guardias.</span><span class="pat-list-savestatus" id="patListSaveStatus"></span>`;
   }
   if(!rows.length){
-    wrap.innerHTML = `<div class="pat-list-empty">${patientRoster.length ? 'No se encontraron pacientes con ese criterio.' : 'Todavía no hay pacientes cargados. Usá "+ Agregar paciente".'}</div>`;
+    wrap.innerHTML = `<div class="pat-list-empty">${patientRoster.length ? 'No se encontraron pacientes con ese criterio.' : 'Todavía no hay pacientes cargados. Importá el pase (.md) o usá "+ Agregar paciente".'}</div>`;
     return;
   }
   wrap.innerHTML = `<table class="pat-list-table">
@@ -2478,11 +2853,21 @@ function renderPatientRosterTable(filterText){
       const tr = inp.closest('tr');
       const id = tr.dataset.id;
       const field = inp.dataset.field;
-      const patient = patientRoster.find(p=>p.id===id);
+      const patient = patients.find(p=>p.id===id);
       if(patient){
-        patient[field] = inp.value;
-        scheduleRosterSave();
-        if(field === 'mi') autoGrow(inp);
+        if(field === 'mi'){
+          /* En el listado el MI es una línea sola: se reemplaza el texto
+             activo y se conservan los ítems ya tachados (resueltos). */
+          patient.mi = miFromText(inp.value, patient.mi);
+          autoGrow(inp);
+        } else {
+          patient[field] = inp.value;
+        }
+        setRosterSaveStatus('Guardando…');
+        schedulePatientSave(patient);
+        setTimeout(()=>setRosterSaveStatus('Guardado ✓'), 900);
+        renderSidebar();
+        renderPreview();
         if(field === 'cama'){
           tr.classList.toggle('priority-row', isPriorityBed(inp.value));
           const camaCell = tr.querySelector('td.cama-cell');
@@ -2490,23 +2875,34 @@ function renderPatientRosterTable(filterText){
         }
       }
     });
+    if(inp.dataset.field === 'cama'){
+      inp.addEventListener('blur', ()=>{
+        const patient = patients.find(p=>p.id===inp.closest('tr').dataset.id);
+        if(patient){
+          relocatePatientToCama(patient);
+          renderPatientRosterTable(fld('patListSearch') ? fld('patListSearch').value : '');
+        }
+      });
+    }
   });
   wrap.querySelectorAll('tr[data-id] .pat-row-del-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       const tr = btn.closest('tr');
       const id = tr.dataset.id;
-      const patient = patientRoster.find(p=>p.id===id);
-      if(patient && !confirm(`¿Eliminar a ${patient.nombre || 'este paciente'} (${patient.cama || 'sin cama'}) del listado?`)) return;
-      patientRoster = patientRoster.filter(p=>p.id!==id);
-      scheduleRosterSave();
+      const patient = patients.find(p=>p.id===id);
+      if(!patient) return;
+      if(!confirm(`¿Eliminar la carpeta de ${patient.nombre || 'este paciente'} (${patient.cama || 'sin cama'})? Se borra también del archivero y de la planilla de guardias.`)) return;
+      patients = patients.filter(p=>p.id!==id);
+      if(selectedId===id) selectedId = firstPatientId();
+      deletePatientRemote(id);
+      renderAll();
       renderPatientRosterTable(fld('patListSearch') ? fld('patListSearch').value : '');
     });
   });
 }
 
 function addRosterPatient(){
-  patientRoster.push({id:rosterGenId(), cama:'', dni:'', nombre:'', edad:'', mi:''});
-  scheduleRosterSave();
+  addPatient();
   const searchInput = fld('patListSearch');
   if(searchInput) searchInput.value = '';
   renderPatientRosterTable('');
@@ -2563,6 +2959,780 @@ function addRosterPatient(){
 })();
 </script>
 
+<script>
+/* ================= Parser del pase de sala (.md) =================
+   Copiado tal cual del extractor (extractor_pase.html) y encerrado en
+   su propio ámbito para que no choque con el resto de la app. Lee las
+   tablas del documento de Google Docs exportado a Markdown y devuelve
+   una lista de pacientes por cama. No toca el DOM. */
+const PaseParser = (function(){
+
+/* Palabras que, al empezar o terminar un fragmento, indican que el corte por
+   doble espacio fue un error de tipeo y hay que pegarlo con el vecino. */
+var CONNECT = new Set(['con','de','del','en','por','y','e','o','u','a','al','sin','para','x','hasta','desde','la','el','los','las','se']);
+var PARTICLES = new Set(['de','del','la','las','los','y','da','di','van','von']);
+
+function pad2(n){ return (n<10?'0':'')+n; }
+
+function decodeEntities(s){
+  return String(s==null?'':s)
+    .replace(/&nbsp;/gi,' ').replace(/&amp;/gi,'&').replace(/&lt;/gi,'<').replace(/&gt;/gi,'>')
+    .replace(/\u00a0/g,' ');
+}
+
+/* Limpieza en línea: entidades, saltos suaves de Word (\u000b), negritas,
+   cursivas y escapes de markdown. NO toca el tachado (~~) ni los espacios. */
+function cleanInline(s){
+  var t = decodeEntities(s).replace(/<br\s*\/?>/gi,'\n').replace(/\u000b/g,'\n').replace(/\*\*/g,'');
+  t = t.replace(/(^|[\s(])\*([^*\n]+?)\*(?=[\s).,;:!?]|$)/g,'$1$2');
+  return t.replace(/\\([\\`*_{}\[\]()#+\-.!>~|<&])/g,'$1');
+}
+
+/* Antes de sacar las negritas: las evoluciones fechadas van en negrita
+   (**17/09/26:**). Se corta la línea ahí para que el texto sea legible. */
+function breakBeforeDates(s){
+  return s.replace(/([^\s])[ \t\u000b]*\*\*(\d{1,2})\/(\d{1,2})(?=[\/\s:.*\d])/g, function(m,pre,d,mo){
+    return (+d>=1 && +d<=31 && +mo>=1 && +mo<=12) ? pre+'\n**'+d+'/'+mo : m;
+  });
+}
+
+/* Texto de un campo: sin marcas, sin tachado, espacios colapsados por línea. */
+function cleanBlock(raw, dated){
+  var s = String(raw==null?'':raw);
+  if(dated) s = breakBeforeDates(s);
+  s = cleanInline(s.replace(/~~/g,''));
+  return s.split('\n').map(function(l){ return l.replace(/[ \t]{2,}/g,' ').trim(); }).join('\n').replace(/\n{3,}/g,'\n\n').trim();
+}
+
+/* Separa lo activo de lo tachado (segmentos entre ~~ ~~). */
+function splitStrike(raw){
+  var parts = String(raw==null?'':raw).replace(/\*\*/g,'').split('~~');
+  var act=[], res=[];
+  parts.forEach(function(seg,i){
+    var t = cleanBlock(seg,false);
+    if(t) (i%2===1 ? res : act).push(t);
+  });
+  return { active: act.join(' '), struck: res.join(' ') };
+}
+
+function fragmentize(txt){
+  var out = [];
+  txt.split(/\n+/).forEach(function(line){
+    line.split(/\s{2,}/).map(function(x){ return x.trim(); }).filter(Boolean).forEach(function(f){
+      var prev = out.length ? out[out.length-1] : '';
+      var first = f.split(/\s+/)[0];
+      var last = prev ? prev.split(/\s+/).pop().toLowerCase() : '';
+      var startsConnector = CONNECT.has(first) && first === first.toLowerCase();
+      if(prev && (startsConnector || CONNECT.has(last))) out[out.length-1] = prev+' '+f;
+      else out.push(f);
+    });
+  });
+  return out.map(function(x){ return x.replace(/\s+/g,' ').trim(); });
+}
+
+/* Celda MI / ASOC -> [{text, resuelto}]. Tachado = resuelto. */
+function splitItems(raw, split){
+  var parts = String(raw==null?'':raw).replace(/\*\*/g,'').split('~~');
+  var items = [];
+  parts.forEach(function(seg,i){
+    var struck = (i%2===1);
+    var txt = cleanInline(seg);
+    var frags = split ? fragmentize(txt) : [txt.replace(/\s+/g,' ').trim()];
+    frags.filter(Boolean).forEach(function(f){ items.push({ text:f, resuelto:struck }); });
+  });
+  return items;
+}
+
+function titleCase(s){
+  return String(s).toLowerCase().split(/(\s+)/).map(function(w,i){
+    if(/^\s*$/.test(w)) return w;
+    if(i>0 && PARTICLES.has(w)) return w;
+    return w.replace(/(^|[-'\u2019])(\p{L})/gu, function(m,a,b){ return a+b.toUpperCase(); });
+  }).join('');
+}
+
+function normCama(cell){
+  var m = decodeEntities(cell).match(/^\s*[cC]?\s*(\d{1,4})\b/);
+  return m ? { cama:'C'+m[1], num:parseInt(m[1],10) } : null;
+}
+
+/* Fecha dd/mm[/aa|aaaa] -> {text:'dd/mm/aaaa', date, guessed}. Sin año: el de la fecha del pase
+   (o el anterior si eso cae en el futuro). Año de 2 dígitos: 20aa. */
+function parseFecha(str, ref){
+  var m = String(str==null?'':str).match(/(\d{1,2})\s*[\/\-.]\s*(\d{1,2})(?:\s*[\/\-.]\s*(\d{2,4}))?/);
+  if(!m) return null;
+  var d=+m[1], mo=+m[2], y = m[3] ? +m[3] : null, guessed=false;
+  if(mo<1||mo>12||d<1||d>31) return null;
+  if(y===null){ y = ref.getFullYear(); guessed = true; }
+  else if(y<100){ y = 2000+y; }
+  var dt = new Date(y,mo-1,d);
+  if(dt.getMonth()!==mo-1) return null;
+  if(guessed && dt.getTime()-ref.getTime() > 2*864e5){ y -= 1; dt = new Date(y,mo-1,d); }
+  return { text: pad2(d)+'/'+pad2(mo)+'/'+y, date: dt, guessed: guessed };
+}
+
+function birthYear(fnRaw, ref){
+  var m = String(fnRaw||'').replace(/[.\s]+$/,'').match(/(\d{4}|\d{2})$/);
+  if(!m) return null;
+  var y = +m[1];
+  if(m[1].length===2){ var cur = ref.getFullYear()%100; y = (y>cur ? 1900 : 2000) + y; }
+  return y;
+}
+
+function parseHeader(info, ref){
+  var s = cleanInline(info).replace(/\s+/g,' ').trim();
+  var out = { nombre:'', dni:'', edad:'', fn:'', fiRaw:'', ic:'' };
+  var dni = s.match(/\bdni\b\s*[:.]?\s*([\d.]{5,12})/i);
+  if(dni) out.dni = dni[1].replace(/\./g,'');
+  var ed = s.match(/\b(\d{1,3})\s*a[ñn]os\b/i) || s.match(/\bedad\b\s*[:.]?\s*(\d{1,3})\b/i);
+  if(ed) out.edad = ed[1];
+  var fn = s.match(/\bfn\b\s*[:.]?\s*(.+?)(?=\s+(?:fi|dni|ic|edad)\b|\s+\d{1,3}\s*a[ñn]os|$)/i);
+  if(fn) out.fn = fn[1].replace(/[.\s]+$/,'');
+  var fi = s.match(/\bfi\b\s*[:.]?\s*(\d{1,2}\s*[\/\-.]\s*\d{1,2}(?:\s*[\/\-.]\s*\d{2,4})?)/i);
+  if(fi) out.fiRaw = fi[1].replace(/\s+/g,'');
+  var ic = s.match(/\bic\b\s*[:.]?\s*([A-Za-zÁÉÍÓÚáéíóú]+)/);
+  if(ic) out.ic = ic[1];
+  var cut = s.search(/\b(?:dni|fn|fi|ic|edad)\b|\d/i);
+  var nom = (cut>=0 ? s.slice(0,cut) : s).replace(/[,;:\-\s]+$/,'').trim();
+  out.nombre = titleCase(nom);
+  return out;
+}
+
+/* "| CLAVE | valor |" -> [clave, valor]. El valor puede tener pipes propios
+   (p. ej. listas de análisis pendientes): se toma todo hasta el pipe final. */
+function splitRow(line){
+  var m = line.match(/^\|\s*([^|]*?)\s*\|\s?(.*?)\s*\|?\s*$/);
+  return m ? [m[1], m[2]] : ['', ''];
+}
+
+var KEY_ALIAS = { ant:'ant', mc:'mc', mi:'mi', cult:'cult', asoc:'asoc', evol:'evol', labo:'labo', img:'img',
+                  pend:'pend', plan:'plan', pcfi:'labo', imag:'img' };
+
+function readTables(md){
+  var lines = String(md).replace(/\r\n?/g,'\n').split('\n');
+  var tables = [], cur = null;
+  for(var i=0;i<lines.length;i++){
+    var l = lines[i];
+    if(/^\|\s*:?-{3,}:?\s*\|\s*:?-{3,}:?\s*\|?\s*$/.test(l) && i>0 && lines[i-1].charAt(0)==='|'){
+      var h = splitRow(lines[i-1]);
+      cur = { header:h, rows:[], line:i };
+      tables.push(cur);
+    } else if(cur && l.charAt(0)==='|'){
+      cur.rows.push(splitRow(l));
+    } else {
+      cur = null;
+    }
+  }
+  return tables;
+}
+
+function parsePase(md, opts){
+  opts = opts || {};
+  var ref = opts.ref || new Date();
+  var split = opts.split !== false;
+  var pacientes = [], avisos = [], omitidas = [];
+
+  readTables(md).forEach(function(t){
+    var cm = normCama(t.header[0]);
+    if(!cm){
+      omitidas.push('Tabla omitida (el encabezado no tiene número de cama): «'+cleanInline(t.header[1]).slice(0,50).trim()+'»');
+      return;
+    }
+    var h = parseHeader(t.header[1], ref);
+    var raw = {};
+    var pw = [];
+    t.rows.forEach(function(r){
+      var k = decodeEntities(r[0]).trim().toLowerCase();
+      if(!k) return;
+      var key = KEY_ALIAS[k];
+      if(!key){ pw.push('fila desconocida «'+decodeEntities(r[0]).trim()+'» (ignorada)'); return; }
+      if(k==='pcfi' || k==='imag') pw.push('la fila «'+decodeEntities(r[0]).trim()+'» se leyó como '+key.toUpperCase());
+      raw[key] = (raw[key] ? raw[key]+'\n' : '') + r[1];
+    });
+
+    var pend = splitStrike(raw.pend);
+    var p = {
+      cama: cm.cama, camaNum: cm.num, nombre: h.nombre, dni: h.dni, edad: h.edad, fn: h.fn, ic: h.ic,
+      fi: '', fiAdivinada: false, sexo: '',
+      ant: cleanBlock(raw.ant,false), mc: cleanBlock(raw.mc,false),
+      mi: splitItems(raw.mi, split), asoc: splitItems(raw.asoc, split),
+      cult: cleanBlock(raw.cult,false), evol: cleanBlock(raw.evol,true),
+      labo: cleanBlock(raw.labo,true), img: cleanBlock(raw.img,true),
+      pend: pend.active, pendResuelto: pend.struck, plan: cleanBlock(raw.plan,false),
+      warnings: pw
+    };
+
+    // FI
+    if(h.fiRaw){
+      var f = parseFecha(h.fiRaw, ref);
+      if(f){
+        p.fi = f.text; p.fiAdivinada = f.guessed;
+        var dias = (ref.getTime()-f.date.getTime())/864e5;
+        if(f.guessed) p.warnings.push('la FI venía sin año; se asumió '+f.date.getFullYear());
+        else if(dias < -2) p.warnings.push('la FI ('+f.text+') es posterior a la fecha del pase');
+        if(dias > 365) p.warnings.push('la FI ('+f.text+') tiene más de un año; ¿error de tipeo en el año?');
+      } else p.warnings.push('no se pudo interpretar la FI «'+h.fiRaw+'»');
+    } else p.warnings.push('sin FI en el encabezado');
+
+    // Datos faltantes o incoherentes
+    if(!p.nombre) p.warnings.push('sin nombre');
+    if(!p.dni) p.warnings.push('sin DNI');
+    if(!p.edad) p.warnings.push('sin edad');
+    if(h.fn && p.edad){
+      var by = birthYear(h.fn, ref);
+      if(by && Math.abs((ref.getFullYear()-by)-(+p.edad)) > 1) p.warnings.push('la FN («'+h.fn+'») no concuerda con la edad ('+p.edad+' años)');
+    }
+    if(!p.mi.length) p.warnings.push('MI vacío');
+    else if(p.mi.every(function(i){ return i.resuelto; })) p.warnings.push('todo el MI está tachado (resuelto)');
+
+    // Sexo: solo si el texto lo dice explícitamente ("paciente femenina/masculino")
+    var blob = [p.ant,p.mc,p.cult,p.evol,p.mi.map(function(i){return i.text;}).join(' ')].join(' ');
+    var sx = {}, mm, re = /\bpaciente\s+(femenina|masculino)\b/gi;
+    while((mm = re.exec(blob))) sx[mm[1].toLowerCase()==='femenina' ? 'F' : 'M'] = true;
+    if(Object.keys(sx).length===1) p.sexo = Object.keys(sx)[0];
+
+    pacientes.push(p);
+  });
+
+  // Duplicados
+  var porCama = {}, porDni = {};
+  pacientes.forEach(function(p){
+    porCama[p.cama] = (porCama[p.cama]||0)+1;
+    if(p.dni) porDni[p.dni] = (porDni[p.dni]||0)+1;
+  });
+  pacientes.forEach(function(p){
+    if(porCama[p.cama]>1) p.warnings.push('la cama '+p.cama+' aparece más de una vez');
+    if(p.dni && porDni[p.dni]>1) p.warnings.push('el DNI '+p.dni+' aparece más de una vez');
+  });
+
+  pacientes.forEach(function(p){ p.warnings.forEach(function(w){ avisos.push({ cama:p.cama, msg:w }); }); });
+  omitidas.forEach(function(m){ avisos.push({ cama:'—', msg:m, info:true }); });
+  return { pacientes: pacientes, avisos: avisos };
+}
+
+  return { parsePase: parsePase, normCama: normCama };
+})();
+
+/* ================= Unificación: un documento por cama =================
+   Hasta ahora la misma información vivía en tres lugares distintos de
+   Firestore: pacientes/{autoId} (el archivero), config/patientRoster
+   (el listado) y pacientes/{numeroDeCama} (la planilla de guardias).
+   A partir de acá hay un solo documento por cama, con id fijo:
+
+       pacientes/C101, pacientes/C103, ...
+
+   Esta función corre una sola vez (queda marcada en config/patientRoster,
+   campo "unificacionV2"): junta los documentos viejos de cada cama en el
+   documento nuevo, completa los huecos con lo que hubiera en el listado
+   y recién entonces borra los documentos duplicados. Si un campo ya
+   tiene valor en el documento nuevo, no se pisa. */
+
+let legacyNumericDocs = [];   // pacientes/{101} que escribía guardias.html
+let rosterItemsLegacy = null; // items del viejo config/patientRoster
+let rosterFlagV2 = false;
+let unificacionHecha = false;
+
+function textoNoVacio(v){
+  if(Array.isArray(v)) return v.length > 0;
+  return !!String(v==null?'':v).trim();
+}
+
+function fusionarEnFicha(target, origen){
+  ['nombre','sexo','edad','dni','fi','mc','ant','cult','evol','lastEstado'].forEach(k=>{
+    if(!textoNoVacio(target[k]) && textoNoVacio(origen[k])) target[k] = origen[k];
+  });
+  // guardias.html llamaba "paciente" al nombre y guardaba MI como texto plano
+  if(!textoNoVacio(target.nombre) && textoNoVacio(origen.paciente)) target.nombre = origen.paciente;
+  ['mi','asoc'].forEach(k=>{
+    if(!textoNoVacio(target[k])){
+      if(Array.isArray(origen[k])) target[k] = origen[k];
+      else if(textoNoVacio(origen[k])) target[k] = miFromText(origen[k], null);
+    }
+  });
+  if(!target.evolCount && origen.evolCount) target.evolCount = origen.evolCount;
+  if(!target.lastChecklist && origen.lastChecklist) target.lastChecklist = origen.lastChecklist;
+  if((!Array.isArray(target.manejo) || !target.manejo.length) && Array.isArray(origen.manejo)) target.manejo = origen.manejo;
+  if(!target.datos || !Object.keys(target.datos).length){ if(origen.datos && typeof origen.datos==='object') target.datos = origen.datos; }
+  if(!target.hechos || !Object.keys(target.hechos).length){ if(origen.hechos && typeof origen.hechos==='object') target.hechos = origen.hechos; }
+  return target;
+}
+
+function intentarUnificacion(){
+  if(unificacionHecha) return;
+  if(!firstSnapshotHandled || rosterItemsLegacy === null) return; // esperamos las dos fuentes
+  unificacionHecha = true;
+  if(rosterFlagV2) return; // ya se hizo alguna vez
+
+  const fs = fsApi();
+  if(!fs) return;
+
+  const porCama = {};
+  patients.forEach(p=>{ if(/^C\d+$/.test(p.id)) porCama[p.id] = p; });
+
+  const borrarPorCama = {};
+  function objetivo(code){
+    let t = porCama[code];
+    if(!t){
+      t = newPatient(code);
+      patients.push(t);
+      porCama[code] = t;
+    }
+    if(!borrarPorCama[code]) borrarPorCama[code] = [];
+    return t;
+  }
+
+  // 1) Fichas del archivero con id viejo (autoId) que tienen cama asignada
+  patients.slice().forEach(p=>{
+    if(/^C\d+$/.test(p.id)) return;
+    const code = camaCode(p.cama);
+    if(!code) return; // carpeta nueva sin cama: se deja tal cual
+    const t = objetivo(code);
+    if(t === p) return;
+    fusionarEnFicha(t, p);
+    borrarPorCama[code].push(p.id);
+    patients = patients.filter(x=>x!==p);
+    if(selectedId === p.id) selectedId = t.id;
+  });
+
+  // 2) Documentos de guardias.html: pacientes/{numeroDeCama}
+  legacyNumericDocs.forEach(r=>{
+    const code = 'C' + r.id;
+    const t = objetivo(code);
+    fusionarEnFicha(t, r.data || {});
+    borrarPorCama[code].push(r.id);
+  });
+
+  // 3) Listado viejo (config/patientRoster): solo completa huecos
+  (rosterItemsLegacy || []).forEach(item=>{
+    const code = camaCode(item && item.cama);
+    if(!code) return;
+    const t = objetivo(code);
+    fusionarEnFicha(t, { nombre:item.nombre, dni:item.dni, edad:item.edad, mi:item.mi });
+  });
+
+  const codes = Object.keys(borrarPorCama);
+  if(!codes.length){
+    guardarFlagUnificacion();
+    return;
+  }
+
+  fld('status').textContent = 'Unificando la base en un documento por cama…';
+  Promise.all(codes.map(code=>{
+    const t = porCama[code];
+    return fs.setDoc(fs.doc(fs.db, 'pacientes', code), patientDataForSave(t))
+      .then(()=>Promise.all(borrarPorCama[code].map(id=>fs.deleteDoc(fs.doc(fs.db, 'pacientes', id)).catch(()=>{}))));
+  })).then(()=>{
+    guardarFlagUnificacion();
+    fld('status').textContent = 'Base unificada: ' + codes.length + ' camas en un solo documento por cama.';
+    setTimeout(()=>{ fld('status').textContent = ''; }, 6000);
+    renderAll();
+  }).catch(()=>{
+    fld('status').textContent = 'No se pudo completar la unificación de la base — se reintenta al volver a entrar.';
+    unificacionHecha = false;
+  });
+}
+
+function guardarFlagUnificacion(){
+  const fs = fsApi();
+  if(!fs) return;
+  rosterFlagV2 = true;
+  fs.setDoc(fs.rosterDocRef, { priorityBeds: priorityBeds, unificacionV2: true }).catch(()=>{});
+}
+
+/* ================= Importador del pase (.md) =================
+   Antes esto vivía en extractor_pase.html, como herramienta aparte que
+   generaba archivos para copiar y pegar a mano. Ahora el parser está
+   embebido acá arriba (PaseParser) y la importación escribe directo en
+   la única base de Firestore que comparten las tres pantallas:
+
+     pacientes/C101, pacientes/C103, ... (un documento por cama)
+
+   Del .md se traen SOLO los campos que maneja el archivero:
+   nombre, edad, DNI, FI, ANT, MC, MI, ASOC y cultivos. EVOL, LABO, IMG,
+   PEND y PLAN no se tocan: la evolución del día se arma acá con el
+   checklist de sistemas, no con la evolución vieja del documento.
+
+   Nunca se escribe nada sin aprobación: primero se muestra el informe
+   (qué cama cambia, qué campo, valor viejo → valor nuevo, y si lo viejo
+   había sido editado a mano dentro de la app) y recién con "Aplicar
+   cambios" se guarda. */
+
+const IMPORT_FIELDS = [
+  {key:'nombre', label:'Nombre'},
+  {key:'edad',   label:'Edad'},
+  {key:'dni',    label:'DNI'},
+  {key:'fi',     label:'FI'},
+  {key:'mc',     label:'MC'},
+  {key:'ant',    label:'ANT'},
+  {key:'mi',     label:'MI',   list:true},
+  {key:'asoc',   label:'ASOC', list:true},
+  {key:'cult',   label:'Cultivos'}
+];
+
+let importPlan = null;
+
+function impEsc(s){ return escapeHtml(String(s==null?'':s)); }
+function soloDigitos(s){ return String(s==null?'':s).replace(/\D/g,''); }
+function itemsToText(v){
+  if(Array.isArray(v)) return v.map(i=>(i&&i.resuelto?'~~'+i.text+'~~':(i&&i.text)||'')).join(' · ');
+  return String(v==null?'':v);
+}
+function valorTexto(key, v){
+  const f = IMPORT_FIELDS.find(x=>x.key===key);
+  return (f && f.list) ? itemsToText(v) : String(v==null?'':v);
+}
+function mismoValor(key, a, b){ return valorTexto(key,a) === valorTexto(key,b); }
+
+/* Foto de lo que quedó guardado en la última importación. Sirve para
+   distinguir "esto cambió en el pase" de "esto lo editaste a mano acá". */
+function snapshotImport(p){
+  const s = {};
+  IMPORT_FIELDS.forEach(f=>{ s[f.key] = valorTexto(f.key, p[f.key]); });
+  return s;
+}
+
+function datosDelMd(np){
+  return {
+    nombre: np.nombre || '',
+    edad:   np.edad ? np.edad + ' años' : '',
+    dni:    np.dni || '',
+    fi:     np.fi || '',
+    mc:     np.mc || '',
+    ant:    np.ant || '',
+    mi:     np.mi.map(i=>({text:i.text, resuelto:!!i.resuelto})),
+    asoc:   np.asoc.map(i=>({text:i.text, resuelto:!!i.resuelto})),
+    cult:   np.cult || ''
+  };
+}
+
+/* Resumen de una línea del paciente que acaba de entrar a una cama. */
+function avisoNuevoIngreso(code, nuevo, sexo){
+  const partes = [];
+  if(nuevo.nombre) partes.push(nuevo.nombre);
+  if(nuevo.edad) partes.push(nuevo.edad);
+  const mi = nuevo.mi.filter(i=>!i.resuelto).map(i=>i.text).join(' ').trim();
+  let txt = code + ': nuevo ingreso' + (partes.length ? ', ' + partes.join(', ') : '');
+  if(mi){
+    if(sexo === 'F') txt += ', internada por ' + mi;
+    else if(sexo === 'M') txt += ', internado por ' + mi;
+    else txt += '. Internación por: ' + mi;
+  }
+  return txt + '.';
+}
+
+function analizarImport(parsed){
+  const porCama = {};
+  patients.forEach(p=>{
+    const c = camaCode(p.cama);
+    if(c && !porCama[c]) porCama[c] = p;
+  });
+
+  const entradas = [];
+  const vistas = {};
+
+  parsed.pacientes.forEach(np=>{
+    const code = np.cama;
+    vistas[code] = true;
+    const cur = porCama[code] || null;
+    const nuevo = datosDelMd(np);
+    const teniaPaciente = !!(cur && (soloDigitos(cur.dni) || (cur.nombre||'').trim()));
+    const dniViejo = soloDigitos(cur && cur.dni);
+    const dniNuevo = soloDigitos(nuevo.dni);
+    const reemplazo = teniaPaciente && !!dniViejo && !!dniNuevo && dniViejo !== dniNuevo;
+
+    const ref = (cur && cur.lastImport) || null;
+    const campos = IMPORT_FIELDS.map(f=>{
+      const prev = cur ? cur[f.key] : (f.list ? [] : '');
+      const changed = !mismoValor(f.key, prev, nuevo[f.key]);
+      const vacioNuevo = !valorTexto(f.key, nuevo[f.key]).trim();
+      const manual = !!(ref && valorTexto(f.key, prev) !== (ref[f.key]||''));
+      return {
+        key: f.key, label: f.label, list: !!f.list,
+        prevTxt: valorTexto(f.key, prev),
+        nextTxt: valorTexto(f.key, nuevo[f.key]),
+        next: nuevo[f.key],
+        changed: changed,
+        vacioNuevo: vacioNuevo,
+        manual: manual,
+        /* Un campo que en el .md viene vacío no pisa lo que ya había
+           cargado (el pase puede tener la fila incompleta ese día). */
+        aplicar: changed && !(vacioNuevo && valorTexto(f.key, prev).trim())
+      };
+    });
+
+    const cambios = campos.filter(c=>c.aplicar);
+    let accion;
+    if(reemplazo) accion = 'reemplazo';
+    else if(!cur) accion = 'ficha-nueva';
+    else if(!teniaPaciente) accion = 'ingreso';
+    else if(cambios.length) accion = 'actualizacion';
+    else accion = 'sin-cambios';
+
+    entradas.push({
+      code: code,
+      accion: accion,
+      reset: reemplazo,
+      sexo: np.sexo || (cur && cur.sexo) || '',
+      campos: campos,
+      aviso: (accion==='reemplazo' || accion==='ingreso' || accion==='ficha-nueva')
+        ? avisoNuevoIngreso(code, nuevo, np.sexo || '')
+        : '',
+      dniViejo: dniViejo,
+      nombreViejo: (cur && cur.nombre) || '',
+      avisosParser: (np.warnings || []).slice()
+    });
+  });
+
+  /* Camas que están en la base pero no vinieron en este .md: no se tocan
+     ni se borran, solo se avisan (puede ser un alta, un óbito o que la
+     tabla de esa cama no haya entrado en el documento). */
+  const ausentes = patients
+    .filter(p=>{
+      const c = camaCode(p.cama);
+      return c && !vistas[c] && (soloDigitos(p.dni) || (p.nombre||'').trim());
+    })
+    .map(p=>({ code: camaCode(p.cama), nombre: p.nombre || 'sin nombre', dni: p.dni || '' }))
+    .sort((a,b)=>parseInt(a.code.slice(1),10) - parseInt(b.code.slice(1),10));
+
+  entradas.sort((a,b)=>parseInt(a.code.slice(1),10) - parseInt(b.code.slice(1),10));
+  return { entradas: entradas, ausentes: ausentes, avisos: parsed.avisos || [] };
+}
+
+function renderImportReport(plan){
+  const host = fld('impReport');
+  if(!host) return;
+  const grupos = [
+    {k:'reemplazo',     t:'Camas con paciente nuevo (mismo número de cama, DNI distinto)', cls:'imp-g-nuevo'},
+    {k:'ingreso',       t:'Camas que estaban vacías y ahora tienen paciente',              cls:'imp-g-nuevo'},
+    {k:'ficha-nueva',   t:'Camas que todavía no existían en la base',                      cls:'imp-g-nuevo'},
+    {k:'actualizacion', t:'Pacientes que ya estaban: datos que cambian',                   cls:'imp-g-upd'},
+    {k:'sin-cambios',   t:'Sin cambios',                                                   cls:'imp-g-none'}
+  ];
+
+  const totalCambios = plan.entradas.filter(e=>e.accion!=='sin-cambios').length;
+  let html = '<div class="imp-resumen"><b>' + plan.entradas.length + '</b> camas leídas del archivo · <b>' +
+             totalCambios + '</b> con cambios · <b>' + plan.ausentes.length +
+             '</b> camas de la base que no figuran en este pase.</div>';
+
+  grupos.forEach(g=>{
+    const lista = plan.entradas.filter(e=>e.accion===g.k);
+    if(!lista.length) return;
+    html += '<div class="imp-group '+g.cls+'"><h3>'+impEsc(g.t)+' ('+lista.length+')</h3>';
+    if(g.k === 'sin-cambios'){
+      html += '<div class="imp-none-list">' + lista.map(e=>'<span>'+impEsc(e.code)+'</span>').join('') + '</div>';
+    } else {
+      lista.forEach(e=>{
+        html += '<div class="imp-cama" data-cama="'+impEsc(e.code)+'">';
+        html += '<div class="imp-cama-head"><b>'+impEsc(e.code)+'</b>';
+        if(e.accion==='reemplazo'){
+          html += '<span class="imp-tag imp-tag-nuevo">paciente nuevo</span>';
+        }
+        html += '</div>';
+        if(e.aviso) html += '<div class="imp-aviso">'+impEsc(e.aviso)+'</div>';
+        if(e.accion==='reemplazo'){
+          html += '<div class="imp-reset">Se reemplazan los datos de la cama (antes: '+impEsc(e.nombreViejo)+
+                  (e.dniViejo ? ' · DNI '+impEsc(e.dniViejo) : '')+') y se reinician evolución, checklist y pendientes de guardia.</div>';
+        }
+        const cambios = e.campos.filter(c=>c.aplicar);
+        if(cambios.length){
+          html += '<table class="imp-diff"><tbody>';
+          cambios.forEach(c=>{
+            html += '<tr'+(c.manual?' class="imp-manual"':'')+'>'+
+              '<td class="imp-chk"><input type="checkbox" data-cama="'+impEsc(e.code)+'" data-key="'+impEsc(c.key)+'" checked></td>'+
+              '<td class="imp-campo">'+impEsc(c.label)+(c.manual?'<span class="imp-manual-tag">editado a mano</span>':'')+'</td>'+
+              '<td class="imp-prev">'+(c.prevTxt ? impEsc(c.prevTxt) : '<i>vacío</i>')+'</td>'+
+              '<td class="imp-arrow">→</td>'+
+              '<td class="imp-next">'+(c.nextTxt ? impEsc(c.nextTxt) : '<i>vacío</i>')+'</td></tr>';
+          });
+          html += '</tbody></table>';
+        } else {
+          html += '<div class="imp-sin">Sin cambios en los campos importables.</div>';
+        }
+        if(e.avisosParser.length){
+          html += '<div class="imp-warn">⚠ '+e.avisosParser.map(impEsc).join(' · ')+'</div>';
+        }
+        html += '</div>';
+      });
+    }
+    html += '</div>';
+  });
+
+  if(plan.ausentes.length){
+    html += '<div class="imp-group imp-g-out"><h3>En la base pero no en este pase ('+plan.ausentes.length+')</h3>'+
+            '<div class="imp-out-note">No se borran ni se modifican. Si son altas u óbitos, vaciá la carpeta desde el archivero.</div>'+
+            plan.ausentes.map(a=>'<div class="imp-out-row"><b>'+impEsc(a.code)+'</b> '+impEsc(a.nombre)+(a.dni?' · DNI '+impEsc(a.dni):'')+'</div>').join('')+
+            '</div>';
+  }
+
+  const generales = (plan.avisos||[]).filter(a=>a.info);
+  if(generales.length){
+    html += '<div class="imp-group imp-g-out"><h3>Avisos de lectura del archivo</h3>'+
+            generales.map(a=>'<div class="imp-out-row">'+impEsc(a.msg)+'</div>').join('')+'</div>';
+  }
+
+  host.innerHTML = html;
+
+  host.querySelectorAll('input[type="checkbox"][data-cama]').forEach(chk=>{
+    chk.addEventListener('change', ()=>{
+      const e = plan.entradas.find(x=>x.code===chk.dataset.cama);
+      if(!e) return;
+      const c = e.campos.find(x=>x.key===chk.dataset.key);
+      if(c) c.aplicar = chk.checked;
+    });
+  });
+
+  const applyBtn = fld('impApplyBtn');
+  if(applyBtn) applyBtn.disabled = (totalCambios === 0);
+  const note = fld('impFootNote');
+  if(note) note.textContent = totalCambios
+    ? 'Revisá el informe. Nada se guarda hasta que aprietes “Aplicar cambios”.'
+    : 'No hay nada para aplicar: la base ya coincide con este pase.';
+}
+
+function aplicarImport(plan){
+  let camas = 0, nuevos = 0;
+  const avisos = [];
+  plan.entradas.forEach(e=>{
+    if(e.accion === 'sin-cambios') return;
+    const aAplicar = e.campos.filter(c=>c.aplicar);
+    if(!aAplicar.length && !e.reset) return;
+
+    let p = patients.find(x=>x.id===e.code) || patients.find(x=>camaCode(x.cama)===e.code);
+    if(!p){
+      p = newPatient(e.code);
+      patients.push(p);
+    } else if(p.id !== e.code){
+      const viejo = p.id;
+      p.id = e.code;
+      deletePatientRemote(viejo);
+      if(selectedId === viejo) selectedId = e.code;
+    }
+    p.cama = e.code;
+    aAplicar.forEach(c=>{ p[c.key] = c.next; });
+    if(e.sexo && !p.sexo) p.sexo = e.sexo;
+    if(e.reset){
+      /* Paciente nuevo en la cama: lo de la persona anterior no sirve.
+         Es lo mismo que hace "Vaciar carpeta", más los pendientes de
+         guardia (manejo / datos / hechos) que usa guardias.html. */
+      p.evol = ''; p.evolCount = 0; p.lastEstado = ''; p.lastChecklist = null;
+      p.manejo = []; p.datos = {}; p.hechos = {};
+      nuevos++;
+    }
+    p.lastImport = snapshotImport(p);
+    p.lastImportAt = Date.now();
+    savePatientNow(p);
+    camas++;
+    if(e.aviso) avisos.push(e.aviso);
+  });
+  renderAll();
+  return { camas: camas, nuevos: nuevos, avisos: avisos };
+}
+
+(function(){
+  const overlay = document.getElementById('importPaseOverlay');
+  const openBtn = document.getElementById('openImportPaseBtn');
+  const closeBtn = document.getElementById('importPaseCloseBtn');
+  const cancelBtn = document.getElementById('impCancelBtn');
+  const fileInput = document.getElementById('impFile');
+  const applyBtn = document.getElementById('impApplyBtn');
+  if(!overlay || !openBtn) return;
+
+  function setImpStatus(t, err){
+    const el = document.getElementById('impStatus');
+    if(!el) return;
+    el.textContent = t || '';
+    el.className = 'imp-status' + (err ? ' err' : '');
+  }
+  function hoyISO(){
+    const d = new Date();
+    const p = n => (n<10?'0':'')+n;
+    return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
+  }
+  function refDate(){
+    const v = document.getElementById('impFecha').value;
+    if(!v) return new Date();
+    const parts = v.split('-').map(Number);
+    return new Date(parts[0], parts[1]-1, parts[2]);
+  }
+  function resetModal(){
+    importPlan = null;
+    document.getElementById('impReport').innerHTML = '';
+    document.getElementById('impName').textContent = 'ningún archivo elegido';
+    applyBtn.disabled = true;
+    setImpStatus('');
+    const note = document.getElementById('impFootNote');
+    if(note) note.textContent = 'Nada se guarda hasta que aprietes “Aplicar cambios”.';
+  }
+  function openImport(){
+    const f = document.getElementById('impFecha');
+    if(f && !f.value) f.value = hoyISO();
+    overlay.classList.add('open');
+  }
+  function closeImport(){ overlay.classList.remove('open'); }
+
+  function analizarArchivo(file){
+    if(!file) return;
+    document.getElementById('impName').textContent = file.name;
+    setImpStatus('Leyendo el archivo…');
+    const reader = new FileReader();
+    reader.onload = (ev)=>{
+      try{
+        const split = document.getElementById('impSplit').checked;
+        const parsed = PaseParser.parsePase(String(ev.target.result), { ref: refDate(), split: split });
+        if(!parsed.pacientes.length){
+          setImpStatus('No se encontró ninguna tabla de paciente en ese archivo.', true);
+          document.getElementById('impReport').innerHTML = '';
+          applyBtn.disabled = true;
+          return;
+        }
+        importPlan = analizarImport(parsed);
+        setImpStatus('Archivo leído: ' + parsed.pacientes.length + ' camas.');
+        renderImportReport(importPlan);
+      }catch(err){
+        console.error(err);
+        setImpStatus('No se pudo leer el archivo: ' + (err && err.message ? err.message : err), true);
+      }
+    };
+    reader.onerror = ()=>setImpStatus('No se pudo abrir el archivo.', true);
+    reader.readAsText(file);
+  }
+
+  openBtn.addEventListener('click', ()=>{ resetModal(); openImport(); });
+  closeBtn.addEventListener('click', closeImport);
+  cancelBtn.addEventListener('click', closeImport);
+  overlay.addEventListener('click', (e)=>{ if(e.target === overlay) closeImport(); });
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape' && overlay.classList.contains('open')) closeImport();
+  });
+  fileInput.addEventListener('change', (e)=>{
+    if(e.target.files && e.target.files[0]) analizarArchivo(e.target.files[0]);
+  });
+  document.getElementById('impSplit').addEventListener('change', ()=>{
+    if(fileInput.files && fileInput.files[0]) analizarArchivo(fileInput.files[0]);
+  });
+  document.getElementById('impFecha').addEventListener('change', ()=>{
+    if(fileInput.files && fileInput.files[0]) analizarArchivo(fileInput.files[0]);
+  });
+
+  applyBtn.addEventListener('click', ()=>{
+    if(!importPlan) return;
+    if(!confirm('¿Aplicar los cambios marcados a la base compartida? Esto actualiza el archivero, el listado de pacientes y la planilla de guardias.')) return;
+    applyBtn.disabled = true;
+    const res = aplicarImport(importPlan);
+    let msg = 'Listo: se actualizaron ' + res.camas + ' camas.';
+    if(res.nuevos) msg += ' ' + res.nuevos + ' cama(s) con paciente nuevo (se reiniciaron evolución y pendientes).';
+    setImpStatus(msg);
+    fld('status').textContent = msg;
+    setTimeout(()=>{ fld('status').textContent = ''; }, 6000);
+    importPlan = null;
+    document.getElementById('impReport').innerHTML =
+      '<div class="imp-done"><b>' + impEsc(msg) + '</b>' +
+      (res.avisos.length ? '<ul>' + res.avisos.map(a=>'<li>'+impEsc(a)+'</li>').join('') + '</ul>' : '') +
+      '<p>Estos avisos aparecen una sola vez, acá, en el informe de importación.</p></div>';
+  });
+})();
+</script>
+
 <script type="module">
 /* ================= Firestore: puente hacia el script clásico (no-module) =================
    Este bloque inicializa Firestore y expone lo necesario en window.__fsBridge para que
@@ -2599,7 +3769,7 @@ window.__fsBridge = {
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
   getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut,
-  setPersistence, browserSessionPersistence
+  setPersistence, browserSessionPersistence, browserLocalPersistence
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
 const firebaseConfig = {
@@ -2614,9 +3784,26 @@ const firebaseConfig = {
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
+/* ================= Sesiones largas para cuentas específicas =================
+   Para "soloquimicayaruqui@gmail.com" y "pases@gmail.com" (dispositivos fijos
+   de uso diario): la sesión se guarda con persistencia LOCAL (sobrevive a
+   cerrar la app/navegador) y se mantiene abierta hasta 24 horas desde el
+   login, sin cerrarse por 5 minutos de inactividad como el resto de las
+   cuentas. Pasadas las 24 horas (o si se cierra sesión a mano con el botón),
+   hay que loguearse de nuevo. El resto de las cuentas sigue exactamente
+   igual que antes (sesión de pestaña + 5 min de inactividad). */
+const LONG_SESSION_EMAILS = ['soloquimicayaruqui@gmail.com', 'pases@gmail.com'];
+const LONG_SESSION_MS = 24 * 60 * 60 * 1000;
+const LS_SESSION_EXPIRES = 'authSessionExpiresAt';
+const LS_PREFILL_EMAIL = 'authPrefillEmail'; // clave compartida con guardias.html (mismo origen)
+function esCuentaLarga(email){ return LONG_SESSION_EMAILS.includes(String(email||'').trim().toLowerCase()); }
+
 // Persistencia "de sesión": la sesión vive mientras la pestaña/ventana está
 // abierta. Al cerrar la ventana del navegador, Firebase la descarta sola y
 // la próxima vez pide login de nuevo. (Recargar la página SÍ mantiene la sesión.)
+// Para las cuentas de sesión larga se cambia a persistencia LOCAL más abajo,
+// justo antes de intentar el login (setPersistence solo afecta al próximo
+// signIn, no a la sesión ya iniciada).
 setPersistence(auth, browserSessionPersistence).catch(()=>{});
 
 const $body = document.body;
@@ -2652,8 +3839,17 @@ async function intentarLogin(){
   $loginBtn.textContent = 'Ingresando…';
   $loginError.textContent = '';
   try{
+    // setPersistence debe llamarse ANTES del signIn para que tome efecto en
+    // este login (no afecta a una sesión que ya está abierta).
+    await setPersistence(auth, esCuentaLarga(email) ? browserLocalPersistence : browserSessionPersistence);
     await signInWithEmailAndPassword(auth, email, pass);
     $password.value = '';
+    if(esCuentaLarga(email)){
+      localStorage.setItem(LS_SESSION_EXPIRES, String(Date.now() + LONG_SESSION_MS));
+      try{ localStorage.setItem(LS_PREFILL_EMAIL, email); }catch(e){}
+    } else {
+      localStorage.removeItem(LS_SESSION_EXPIRES);
+    }
   }catch(err){
     $loginError.textContent = traducirErrorAuth(err.code || '');
   }finally{
@@ -2662,6 +3858,13 @@ async function intentarLogin(){
   }
 }
 
+// Precarga el correo de la última cuenta de sesión larga que inició sesión
+// en cualquiera de las dos herramientas (misma clave de localStorage).
+try{
+  const prefill = localStorage.getItem(LS_PREFILL_EMAIL);
+  if(prefill && !$email.value) $email.value = prefill;
+}catch(e){}
+
 $loginBtn.addEventListener('click', intentarLogin);
 $password.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); intentarLogin(); } });
 $email.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); intentarLogin(); } });
@@ -2669,20 +3872,27 @@ $email.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(
 $logoutBtn.addEventListener('click', ()=>{
   if(!confirm('¿Cerrar sesión en este equipo?')) return;
   cierreManual = true;
+  localStorage.removeItem(LS_SESSION_EXPIRES);
   signOut(auth);
 });
 
-/* ================= Cierre automático por inactividad (5 min) ================= */
+/* ================= Cierre automático por inactividad (5 min) =================
+   No aplica a las cuentas de sesión larga (LONG_SESSION_EMAILS): para esas,
+   en cambio, se controla un vencimiento absoluto de 24 hs desde el login
+   (chequeoSesionLarga más abajo), sin importar la actividad. */
 const INACTIVITY_LIMIT_MS = 5 * 60 * 1000;
 let inactivityTimer = null;
 let cierreManual = false;
 let cierrePorInactividad = false;
+let cierrePorVencimiento = false;
+let sesionLargaActiva = false;
+let checkSesionLargaTimer = null;
 
 function pausarTimerInactividad(){
   if(inactivityTimer){ clearTimeout(inactivityTimer); inactivityTimer = null; }
 }
 function reiniciarTimerInactividad(){
-  if(!$body.classList.contains('auth-in')) return;
+  if(!$body.classList.contains('auth-in') || sesionLargaActiva) return;
   pausarTimerInactividad();
   inactivityTimer = setTimeout(()=>{
     cierrePorInactividad = true;
@@ -2696,21 +3906,55 @@ document.addEventListener('visibilitychange', ()=>{
   if(document.visibilityState === 'visible') reiniciarTimerInactividad();
 });
 
+function chequearVencimientoSesionLarga(){
+  const exp = parseInt(localStorage.getItem(LS_SESSION_EXPIRES) || '0', 10);
+  if(!exp){
+    // Sesión larga sin marca de vencimiento (por ej. quedó abierta de antes
+    // de este cambio): se le da un vencimiento nuevo de 24 hs desde ahora,
+    // en vez de cerrarla de golpe.
+    localStorage.setItem(LS_SESSION_EXPIRES, String(Date.now() + LONG_SESSION_MS));
+    return;
+  }
+  if(Date.now() > exp){
+    cierrePorVencimiento = true;
+    if(checkSesionLargaTimer){ clearInterval(checkSesionLargaTimer); checkSesionLargaTimer = null; }
+    signOut(auth);
+  }
+}
+
 onAuthStateChanged(auth, (user)=>{
   if(user){
     $userTag.textContent = user.email || '';
     $body.className = 'auth-in';
+    sesionLargaActiva = esCuentaLarga(user.email);
+    if(sesionLargaActiva){
+      pausarTimerInactividad();
+      chequearVencimientoSesionLarga();
+      if(checkSesionLargaTimer) clearInterval(checkSesionLargaTimer);
+      checkSesionLargaTimer = setInterval(chequearVencimientoSesionLarga, 5 * 60 * 1000);
+    } else {
+      if(checkSesionLargaTimer){ clearInterval(checkSesionLargaTimer); checkSesionLargaTimer = null; }
+      reiniciarTimerInactividad();
+    }
     if(window.iniciarAppPrincipal) window.iniciarAppPrincipal();
-    reiniciarTimerInactividad();
   } else {
     $userTag.textContent = '';
     $body.className = 'auth-out';
     pausarTimerInactividad();
+    if(checkSesionLargaTimer){ clearInterval(checkSesionLargaTimer); checkSesionLargaTimer = null; }
+    sesionLargaActiva = false;
     $loginNote.textContent = cierrePorInactividad
       ? 'Se cerró la sesión automáticamente por 5 minutos de inactividad.'
-      : '';
+      : cierrePorVencimiento
+        ? 'Se cerró la sesión automáticamente: pasaron 24 horas desde el último inicio de sesión.'
+        : '';
     cierrePorInactividad = false;
+    cierrePorVencimiento = false;
     cierreManual = false;
+    try{
+      const prefill = localStorage.getItem(LS_PREFILL_EMAIL);
+      if(prefill) $email.value = prefill;
+    }catch(e){}
   }
 });
 </script>
