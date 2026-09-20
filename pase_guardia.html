@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-   Versión: 16 (20/09/2026)
+   Versión: 17 (20/09/2026)
 -->
 <html lang="es-AR">
 <head>
@@ -1622,18 +1622,22 @@ function renderEvolBuilder(p){
   // sistema NO borra lo tildado: los checkboxes siguen en el DOM (solo se
   // ocultan visualmente vía <details>), así que sigue aportando a la
   // redacción de HISTORIA CLÍNICA / PASE mientras esté cargado.
-  box.querySelectorAll('details.sys-block').forEach(det=>{
-    det.addEventListener('toggle', ()=>{
-      if(!det.open) return;
-      box.querySelectorAll('details.sys-block').forEach(other=>{
-        if(other !== det) other.open = false;
-      });
-      /* Al plegarse el sistema de arriba, el contenido sube y la pantalla
-         queda parada en la mitad del sistema recién abierto. Después de
-         plegar los demás, llevamos la vista al título del que se abrió. */
+  /* Ojo: el evento nativo "toggle" de <details> se dispara también cuando
+     el acordeón se vuelve a dibujar ya abierto (por ejemplo Neurológico,
+     que arranca abierto) — no solo cuando el usuario hace clic. Si
+     escuchábamos ese evento, cada re-render (tildar un ítem, cambiar el
+     estado, etc.) volvía a plegar y a scrollear a Neurológico, generando
+     el bucle. Por eso acá escuchamos el CLIC en el título, que solo
+     ocurre cuando el usuario realmente lo toca. */
+  box.querySelectorAll('details.sys-block > summary.sys-title').forEach(summary=>{
+    summary.addEventListener('click', ()=>{
+      const det = summary.closest('details.sys-block');
       requestAnimationFrame(()=>{
-        const cab = det.querySelector('summary') || det;
-        const y = cab.getBoundingClientRect().top + window.pageYOffset - 12;
+        if(!det.open) return; // el clic lo cerró: no hay nada que reacomodar
+        box.querySelectorAll('details.sys-block').forEach(other=>{
+          if(other !== det) other.open = false;
+        });
+        const y = summary.getBoundingClientRect().top + window.pageYOffset - 12;
         window.scrollTo({ top: y < 0 ? 0 : y, behavior:'smooth' });
       });
     });
