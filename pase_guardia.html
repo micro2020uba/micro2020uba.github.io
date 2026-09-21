@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-   Versión: 22 (21/09/2026)
+   Versión: 24 (21/09/2026)
 -->
 <html lang="es-AR">
 <head>
@@ -189,6 +189,10 @@
   /* Panel "Qué aparece en cada texto" */
   .salidas-panel{border:1px dashed var(--line-soft);border-left:4px solid var(--accent-dark);padding:9px;margin:12px 0 10px;background:#fdfcf9;}
   .salidas-panel > summary{font-weight:700;font-size:12px;color:var(--accent-dark);cursor:pointer;}
+  .guardar-plantilla-box{border:1px solid var(--line-soft);border-left:4px solid var(--accent-dark);background:#fdfcf9;padding:8px 10px;margin:0 0 10px;}
+  .guardar-plantilla-box .pl-op{display:block;font-size:12px;margin:3px 0;cursor:pointer;}
+  .guardar-plantilla-box .pl-op input{margin-right:6px;}
+  .guardar-plantilla-box input[type=text]{margin:6px 0;}
   .so-note{font-size:11px;color:var(--muted);line-height:1.45;margin:7px 0;}
   .so-modo-propia{color:var(--ink);background:#eef4ef;border-left:3px solid var(--accent-dark);padding:5px 8px;}
   .so-actions{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 9px;}
@@ -974,6 +978,7 @@ function aplicarPlantillaObj(patient, tpl){
     fld('evolEstado').value = tpl.estado;
     syncEstadoPaciente(patient);
   }
+  guardarChecksPropios(patient);
   updateDraftPreview(patient);
 }
 function aplicarPlantilla(patient, key){
@@ -981,7 +986,17 @@ function aplicarPlantilla(patient, key){
 }
 function aplicarPlantillaCustom(patient, name){
   const tpl = checklistConfig.customPlantillas && checklistConfig.customPlantillas[name];
+  const conSalidas = !!(tpl && tpl.salidas && typeof tpl.salidas === 'object');
+  if(conSalidas){
+    // La plantilla trae también qué sale en cada texto: el paciente pasa a tener plantilla propia.
+    patient.salidasPropias = JSON.parse(JSON.stringify(tpl.salidas));
+    if(!tieneChecksPropios(patient)) patient.checksPropios = {};
+  }
   aplicarPlantillaObj(patient, tpl);
+  if(conSalidas){
+    savePatientNow(patient);
+    renderEvolBuilder(patient);
+  }
 }
 function captureCurrentAsPlantillaSet(){
   const set = {};
@@ -1203,6 +1218,7 @@ function vaciarCarpeta(p){
   p.manejo=[]; p.datos={}; p.hechos={};
   p.lastImport = null;
   delete p.salidasPropias;
+  delete p.checksPropios;
   p.cama = cama;
   savePatientNow(p);
   lastRenderedPatientId = null;
@@ -1567,6 +1583,10 @@ function actualizarDefaultDesdeCheck(key, kind, id, checked){
   return true;
 }
 function lastChecked(p, key, kind, id, fallback){
+  if(tieneChecksPropios(p)){
+    const m = p.checksPropios[key] && p.checksPropios[key][kind==='normal' ? 'normal' : 'alt'];
+    return !!(m && m[id]);
+  }
   const lc = USAR_EVALUACION_PREVIA ? (p && p.lastChecklist) : null;
   if(lc && lc.systems && lc.systems[key]){
     const map = kind==='normal' ? lc.systems[key].normal : lc.systems[key].alt;
@@ -1577,6 +1597,11 @@ function lastChecked(p, key, kind, id, fallback){
   return !!getDefaultChecked(key, kind, id);
 }
 function lastDetail(p, key, kind, id){
+  if(tieneChecksPropios(p)){
+    const m = p.checksPropios[key] && p.checksPropios[key][kind==='normal' ? 'normal' : 'alt'];
+    const v = m && m[id];
+    return typeof v === 'string' ? v : '';
+  }
   const lc = USAR_EVALUACION_PREVIA ? (p && p.lastChecklist) : null;
   const mapKey = kind==='normal' ? 'normal' : 'alt';
   if(lc && lc.systems && lc.systems[key] && lc.systems[key][mapKey]){
@@ -1610,6 +1635,11 @@ function captureEvolUiState(){
   if(ai) st.applyInfecto = ai.checked;
   const panel = fld('estadoConfigPanel');
   if(panel) st.estadoPanelAbierto = panel.style.display !== 'none';
+  const gb = fld('guardarPlantillaBox');
+  if(gb){
+    const r = gb.querySelector('input[name="plantillaAlcance"]:checked');
+    st.guardarBox = { abierto: gb.style.display !== 'none', alcance: r ? r.value : 'paciente', nombre: fld('plantillaNombre').value };
+  }
   return st;
 }
 function restoreEvolUiState(st){
@@ -1635,6 +1665,14 @@ function restoreEvolUiState(st){
   if(ai && typeof st.applyInfecto === 'boolean') ai.checked = st.applyInfecto;
   const panel = fld('estadoConfigPanel');
   if(panel && st.estadoPanelAbierto) panel.style.display = '';
+  const gb = fld('guardarPlantillaBox');
+  if(gb && st.guardarBox && st.guardarBox.abierto){
+    gb.style.display = '';
+    const r = gb.querySelector(`input[name="plantillaAlcance"][value="${st.guardarBox.alcance}"]`);
+    if(r) r.checked = true;
+    fld('plantillaNombre').value = st.guardarBox.nombre || '';
+    fld('plantillaNombre').style.display = st.guardarBox.alcance === 'todos' ? '' : 'none';
+  }
 }
 
 function renderEvolBuilder(p, stateOverride){
@@ -1659,8 +1697,18 @@ function renderEvolBuilder(p, stateOverride){
       </select>
     </div>
     <div class="plantilla-actions">
-      <button type="button" id="guardarPlantillaBtn" class="secondary small">💾 Guardar checklist actual como plantilla</button>
+      <button type="button" id="guardarPlantillaBtn" class="secondary small">💾 Guardar como plantilla…</button>
       <button type="button" id="borrarPlantillaBtn" class="secondary small danger" style="display:none;">✕ Eliminar esta plantilla</button>
+    </div>
+    <div id="guardarPlantillaBox" class="guardar-plantilla-box" style="display:none;">
+      <label class="pl-op"><input type="radio" name="plantillaAlcance" value="paciente" checked> Solo para este paciente</label>
+      <label class="pl-op"><input type="radio" name="plantillaAlcance" value="todos"> Para todos los pacientes (queda en «Mis plantillas»)</label>
+      <input type="text" id="plantillaNombre" placeholder="Nombre de la plantilla (ej: Neumonía de la comunidad)" style="display:none;">
+      <div class="plantilla-actions" style="margin:6px 0 0;">
+        <button type="button" id="confirmarPlantillaBtn" class="secondary small">Guardar</button>
+        <button type="button" id="cancelarPlantillaBtn" class="secondary small">Cancelar</button>
+      </div>
+      <p class="so-note">Guarda lo que tenés tildado ahora en el checklist y qué frases salen en cada texto (Historia clínica, Corta y Completa).</p>
     </div>
     <div class="grid2" style="margin-bottom:8px;">
       <div class="field"><label>Fecha de la entrada (se actualiza sola)</label><input type="date" id="evolFecha"></div>
@@ -1688,7 +1736,9 @@ function renderEvolBuilder(p, stateOverride){
 
   SYS_ORDER.forEach(key=>{
     const sys = getMergedItems(key);
-    const applyChecked = USAR_EVALUACION_PREVIA && p && p.lastChecklist && p.lastChecklist.systems && p.lastChecklist.systems[key] && p.lastChecklist.systems[key].apply;
+    const applyChecked = tieneChecksPropios(p)
+      ? !!(p.checksPropios[key] && p.checksPropios[key].apply)
+      : USAR_EVALUACION_PREVIA && p && p.lastChecklist && p.lastChecklist.systems && p.lastChecklist.systems[key] && p.lastChecklist.systems[key].apply;
     const abierto = key === evolOpenKey; // Neurológico abierto al abrir la ficha; después, el sistema que se esté tocando
     html += `<details class="sys-block sys-block-${key}" data-block="${key}"${abierto?' open':''}>
       <summary class="sys-title"><span class="sys-icon">${SYS_ICONS[key]||''}</span>${sys.label}
@@ -1829,24 +1879,26 @@ function renderEvolBuilder(p, stateOverride){
     if(tipo==='builtin') aplicarPlantilla(p, key);
     else if(tipo==='custom') aplicarPlantillaCustom(p, key);
     const status = fld('status');
-    status.textContent = 'Plantilla aplicada — revisá y ajustá los ítems antes de agregar la entrada.';
-    setTimeout(()=>status.textContent='',3500);
+    const tplAplicada = tipo==='custom' && checklistConfig.customPlantillas && checklistConfig.customPlantillas[key];
+    status.textContent = (tplAplicada && tplAplicada.salidas)
+      ? 'Plantilla aplicada — este paciente quedó con plantilla propia (checks + qué sale en cada texto).'
+      : 'Plantilla aplicada — revisá y ajustá los ítems.';
+    setTimeout(()=>status.textContent='',4000);
   });
 
+  // Un solo botón de guardado: elige el alcance (solo este paciente / todos) en un mini formulario.
+  const boxPl = fld('guardarPlantillaBox');
+  const alcancePl = ()=>{ const r = boxPl.querySelector('input[name="plantillaAlcance"]:checked'); return r ? r.value : 'paciente'; };
+  const mostrarNombrePl = ()=>{ fld('plantillaNombre').style.display = alcancePl()==='todos' ? '' : 'none'; };
+  boxPl.querySelectorAll('input[name="plantillaAlcance"]').forEach(r=>r.addEventListener('change', mostrarNombrePl));
   fld('guardarPlantillaBtn').addEventListener('click', ()=>{
-    const nombre = (prompt('Nombre para esta plantilla (ej: "Neumonía de la comunidad"):') || '').trim();
-    if(!nombre) return;
-    if(!checklistConfig.customPlantillas) checklistConfig.customPlantillas = {};
-    checklistConfig.customPlantillas[nombre] = {
-      label: nombre,
-      estado: fld('evolEstado').value,
-      set: captureCurrentAsPlantillaSet()
-    };
-    saveCustomLocal();
-    renderEvolBuilder(p);
-    const status = fld('status');
-    status.textContent = `Plantilla "${nombre}" guardada — ya aparece en el selector para todos los pacientes.`;
-    setTimeout(()=>status.textContent='',4000);
+    boxPl.style.display = boxPl.style.display==='none' ? '' : 'none';
+    mostrarNombrePl();
+  });
+  fld('cancelarPlantillaBtn').addEventListener('click', ()=>{ boxPl.style.display = 'none'; });
+  fld('confirmarPlantillaBtn').addEventListener('click', ()=>guardarPlantillaUnificada(p, alcancePl(), fld('plantillaNombre').value.trim()));
+  fld('plantillaNombre').addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){ e.preventDefault(); fld('confirmarPlantillaBtn').click(); }
   });
 
   fld('borrarPlantillaBtn').addEventListener('click', ()=>{
@@ -1883,11 +1935,11 @@ function salidasPanelHtml(){
   const propias = tieneSalidasPropias(getSelected());
   const titulo = propias ? '⚙ Qué aparece en cada texto — plantilla PROPIA de este paciente' : '⚙ Qué aparece en cada texto (plantilla general)';
   const modo = propias
-    ? `<p class="so-note so-modo so-modo-propia"><b>Plantilla propia de este paciente.</b> Lo que cambies acá vale solo para él/ella y se guarda en su ficha; la plantilla general no se toca.</p>`
-    : `<p class="so-note so-modo"><b>Plantilla general:</b> vale para todos los pacientes y dispositivos. Si este paciente necesita algo distinto, creá una plantilla propia: arranca como copia de la general y después se edita sin afectar a los demás.</p>`;
+    ? `<p class="so-note so-modo so-modo-propia"><b>Plantilla propia de este paciente.</b> Guarda en su ficha los checks que tildás en su checklist y qué frases salen en cada texto: al abrirlo desde cualquier dispositivo vuelve todo como lo dejaste. Lo que cambies acá vale solo para él/ella; la plantilla general y los predeterminados no se tocan.</p>`
+    : `<p class="so-note so-modo"><b>Plantilla general:</b> vale para todos los pacientes y dispositivos. Si este paciente necesita algo distinto, tildá su checklist como lo querés, ajustá esta tabla y usá <b>«💾 Guardar como plantilla…»</b> → «Solo para este paciente»: guarda esos checks más una copia de lo que sale en cada texto, y después se edita sin afectar a los demás.</p>`;
   const botonesModo = propias
     ? `<button type="button" class="secondary small" id="soVolverGeneral">Volver a la plantilla general</button>`
-    : `<button type="button" class="secondary small" id="soCrearPropia">Crear plantilla propia para este paciente</button>`;
+    : '';
   let h = `<details class="salidas-panel" data-so-panel="root"${salidasOpen.root?' open':''}>
     <summary>${titulo}</summary>
     ${modo}
@@ -1982,21 +2034,12 @@ document.body.addEventListener('click', (e)=>{
     updateDraftPreview(getSelected());
     return;
   }
-  if(t.closest('#soCrearPropia')){
-    const p = getSelected();
-    if(!p) return;
-    p.salidasPropias = JSON.parse(JSON.stringify(checklistConfig.salidas || {}));
-    salidasOpen.root = true;
-    savePatientNow(p);
-    renderEvolBuilder(p);
-    avisoSalidasGuardadas();
-    return;
-  }
   if(t.closest('#soVolverGeneral')){
     const p = getSelected();
     if(!p) return;
     if(!confirm('¿Borrar la plantilla propia de este paciente y volver a usar la plantilla general?')) return;
     delete p.salidasPropias;
+    delete p.checksPropios;
     savePatientNow(p);
     renderEvolBuilder(p);
     const st = fld('status');
@@ -2006,7 +2049,7 @@ document.body.addEventListener('click', (e)=>{
   if(t.closest('#soRestablecer')){
     const p = getSelected();
     if(tieneSalidasPropias(p)){
-      if(!confirm('¿Volver la plantilla de ESTE paciente a los valores de fábrica? No toca la plantilla general ni a otros pacientes.')) return;
+      if(!confirm('¿Volver a los valores de fábrica lo que sale en cada texto para ESTE paciente? No toca los checks tildados, la plantilla general ni a otros pacientes.')) return;
       p.salidasPropias = {};
       savePatientNow(p);
       renderEvolBuilder(p);
@@ -2020,6 +2063,40 @@ document.body.addEventListener('click', (e)=>{
     avisoSalidasGuardadas();
   }
 });
+
+/* Guarda una plantilla con TODO junto: lo tildado en el checklist + qué frases salen en cada texto.
+   - «Solo para este paciente»: queda en su ficha (plantilla propia).
+   - «Para todos»: queda en «Mis plantillas» (config compartida); al aplicarla a un paciente, ese paciente
+     pasa a tener plantilla propia con esos checks y esa configuración de textos. */
+function guardarPlantillaUnificada(p, alcance, nombre){
+  const status = fld('status');
+  const avisar = (m)=>{ status.textContent = m; setTimeout(()=>{ if(status.textContent === m) status.textContent = ''; }, 4500); };
+  if(!p) return;
+  const salidas = JSON.parse(JSON.stringify(salidasVigentes() || {}));
+  if(alcance === 'todos'){
+    if(!nombre){ avisar('Escribí un nombre para la plantilla.'); fld('plantillaNombre').focus(); return; }
+    if(!checklistConfig.customPlantillas) checklistConfig.customPlantillas = {};
+    if(checklistConfig.customPlantillas[nombre] && !confirm(`Ya existe la plantilla "${nombre}". ¿Reemplazarla?`)) return;
+    checklistConfig.customPlantillas[nombre] = {
+      label: nombre,
+      estado: fld('evolEstado').value,
+      set: captureCurrentAsPlantillaSet(),
+      salidas
+    };
+    saveCustomLocal();
+    fld('guardarPlantillaBox').style.display = 'none';
+    renderEvolBuilder(p);
+    avisar(`Plantilla "${nombre}" guardada — ya aparece en «Mis plantillas» para todos los pacientes.`);
+    return;
+  }
+  const yaTenia = tieneSalidasPropias(p) || tieneChecksPropios(p);
+  p.checksPropios = captureCurrentAsPlantillaSet();
+  p.salidasPropias = salidas;
+  savePatientNow(p);
+  fld('guardarPlantillaBox').style.display = 'none';
+  renderEvolBuilder(p);
+  avisar(yaTenia ? 'Plantilla de este paciente actualizada.' : 'Plantilla guardada para este paciente (checks + qué sale en cada texto).');
+}
 
 /* Guarda en la ficha el estado general elegido (lo usa el color de la pestaña del paciente). */
 function syncEstadoPaciente(p){
@@ -2115,6 +2192,18 @@ const NEURO_IDS_EN_TEXTO = ['desorientado','excitacion','noobedece','confuso','f
    cualquier dispositivo, y se borra al vaciar la carpeta. */
 function tieneSalidasPropias(p){
   return !!(p && p.salidasPropias && typeof p.salidasPropias === 'object');
+}
+/* Checks propios: además de qué frases salen en cada texto, la plantilla propia guarda QUÉ está tildado
+   en el checklist de ese paciente (con el mismo formato que las plantillas de checklist: solo lo tildado,
+   y el detalle si lo tiene). Mientras exista, es lo que se restaura al abrir la ficha y cada tilde se
+   guarda en la ficha; en esos pacientes los tildes NO cambian los predeterminados globales. */
+function tieneChecksPropios(p){
+  return !!(p && p.checksPropios && typeof p.checksPropios === 'object');
+}
+function guardarChecksPropios(p){
+  if(!tieneChecksPropios(p)) return;
+  p.checksPropios = captureCurrentAsPlantillaSet();
+  schedulePatientSave(p, 500);
 }
 function salidasVigentes(){
   const p = getSelected();
@@ -2646,6 +2735,14 @@ document.body.addEventListener('change', (e)=>{
    check tildado destilda a sus antagonistas, esos también quedan destildados por defecto. */
 document.body.addEventListener('change', (e)=>{
   const el = e.target;
+  // Paciente con plantilla propia: el tilde (o el "incluir en esta evolución") se guarda en SU ficha.
+  if(el && el.type === 'checkbox' && el.closest && el.closest('#evolBuilder') && el.dataset && !el.dataset.soOut){
+    const pp = getSelected();
+    if(tieneChecksPropios(pp) && (el.dataset.sys || (el.id||'').indexOf('apply_') === 0)){
+      guardarChecksPropios(pp);
+      return;
+    }
+  }
   if(!el || el.type !== 'checkbox' || !el.dataset || !el.dataset.sys || !el.dataset.kind || !el.dataset.id) return;
   if(!el.closest || !el.closest('#evolBuilder')) return;
   const key = el.dataset.sys, kind = el.dataset.kind, id = el.dataset.id;
@@ -2667,6 +2764,14 @@ document.body.addEventListener('change', (e)=>{
       setTimeout(()=>{ if(st.textContent === 'Predeterminado guardado para todos los pacientes.') st.textContent = ''; }, 2500);
     }
   }
+});
+
+/* Detalle tipeado (ej. cantidad, lado, grados) de un ítem, en un paciente con plantilla propia. */
+document.body.addEventListener('input', (e)=>{
+  const el = e.target;
+  if(!el || !el.classList || !el.classList.contains('detail-input')) return;
+  if(!el.closest || !el.closest('#evolBuilder')) return;
+  guardarChecksPropios(getSelected());
 });
 
 /* ================= Agregar opciones personalizadas por sistema ================= */
@@ -2722,6 +2827,7 @@ document.body.addEventListener('click', (e)=>{
       guardarDefaultGlobal(sysKey, kind, id, !actual);
     }
     if(chkEl) chkEl.checked = !actual; // el check refleja el nuevo predeterminado
+    guardarChecksPropios(getSelected());
     renderEvolBuilder(getSelected());
     return;
   }
