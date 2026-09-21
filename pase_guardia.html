@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-   Versión: 21 (20/09/2026)
+   Versión: 22 (21/09/2026)
 -->
 <html lang="es-AR">
 <head>
@@ -190,6 +190,7 @@
   .salidas-panel{border:1px dashed var(--line-soft);border-left:4px solid var(--accent-dark);padding:9px;margin:12px 0 10px;background:#fdfcf9;}
   .salidas-panel > summary{font-weight:700;font-size:12px;color:var(--accent-dark);cursor:pointer;}
   .so-note{font-size:11px;color:var(--muted);line-height:1.45;margin:7px 0;}
+  .so-modo-propia{color:var(--ink);background:#eef4ef;border-left:3px solid var(--accent-dark);padding:5px 8px;}
   .so-actions{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 9px;}
   .so-sys{border:1px solid var(--line-soft);background:#fff;margin-bottom:5px;}
   .so-sys > summary{font-weight:600;font-size:11.5px;padding:5px 8px;cursor:pointer;color:var(--accent-dark);}
@@ -1201,6 +1202,7 @@ function vaciarCarpeta(p){
   p.evol=''; p.evolCount=0; p.lastEstado=''; p.lastChecklist=null;
   p.manejo=[]; p.datos={}; p.hechos={};
   p.lastImport = null;
+  delete p.salidasPropias;
   p.cama = cama;
   savePatientNow(p);
   lastRenderedPatientId = null;
@@ -1878,11 +1880,21 @@ function soCheck(attrs, checked){
 }
 function salidasPanelHtml(){
   const cab = `<th class="so-first">&nbsp;</th>` + SALIDAS.map(s=>`<th>${s.corto}</th>`).join('');
+  const propias = tieneSalidasPropias(getSelected());
+  const titulo = propias ? '⚙ Qué aparece en cada texto — plantilla PROPIA de este paciente' : '⚙ Qué aparece en cada texto (plantilla general)';
+  const modo = propias
+    ? `<p class="so-note so-modo so-modo-propia"><b>Plantilla propia de este paciente.</b> Lo que cambies acá vale solo para él/ella y se guarda en su ficha; la plantilla general no se toca.</p>`
+    : `<p class="so-note so-modo"><b>Plantilla general:</b> vale para todos los pacientes y dispositivos. Si este paciente necesita algo distinto, creá una plantilla propia: arranca como copia de la general y después se edita sin afectar a los demás.</p>`;
+  const botonesModo = propias
+    ? `<button type="button" class="secondary small" id="soVolverGeneral">Volver a la plantilla general</button>`
+    : `<button type="button" class="secondary small" id="soCrearPropia">Crear plantilla propia para este paciente</button>`;
   let h = `<details class="salidas-panel" data-so-panel="root"${salidasOpen.root?' open':''}>
-    <summary>⚙ Qué aparece en cada texto (plantilla para todos los pacientes)</summary>
+    <summary>${titulo}</summary>
+    ${modo}
     <p class="so-note">Tildá en qué texto debe salir cada frase. Solo aparece si además está tildada en el checklist del paciente.
-      Los cambios se guardan para todos los pacientes y dispositivos. De fábrica: la historia clínica y el pase completo llevan todo lo tildado; el pase corto, solo las alteraciones.</p>
+      De fábrica: la historia clínica y el pase completo llevan todo lo tildado; el pase corto, solo las alteraciones.</p>
     <div class="so-actions">
+      ${botonesModo}
       <button type="button" class="secondary small" id="soCortaIgualCompleta">PASE corta = igual que la completa</button>
       <button type="button" class="secondary small danger" id="soRestablecer">Restablecer valores de fábrica</button>
     </div>
@@ -1970,8 +1982,38 @@ document.body.addEventListener('click', (e)=>{
     updateDraftPreview(getSelected());
     return;
   }
+  if(t.closest('#soCrearPropia')){
+    const p = getSelected();
+    if(!p) return;
+    p.salidasPropias = JSON.parse(JSON.stringify(checklistConfig.salidas || {}));
+    salidasOpen.root = true;
+    savePatientNow(p);
+    renderEvolBuilder(p);
+    avisoSalidasGuardadas();
+    return;
+  }
+  if(t.closest('#soVolverGeneral')){
+    const p = getSelected();
+    if(!p) return;
+    if(!confirm('¿Borrar la plantilla propia de este paciente y volver a usar la plantilla general?')) return;
+    delete p.salidasPropias;
+    savePatientNow(p);
+    renderEvolBuilder(p);
+    const st = fld('status');
+    if(st) st.textContent = 'Este paciente vuelve a usar la plantilla general.';
+    return;
+  }
   if(t.closest('#soRestablecer')){
-    if(!confirm('¿Volver la plantilla de textos a los valores de fábrica (para todos los pacientes y dispositivos)? Esto no toca el checklist ni los pacientes.')) return;
+    const p = getSelected();
+    if(tieneSalidasPropias(p)){
+      if(!confirm('¿Volver la plantilla de ESTE paciente a los valores de fábrica? No toca la plantilla general ni a otros pacientes.')) return;
+      p.salidasPropias = {};
+      savePatientNow(p);
+      renderEvolBuilder(p);
+      avisoSalidasGuardadas();
+      return;
+    }
+    if(!confirm('¿Volver la plantilla general de textos a los valores de fábrica (para todos los pacientes y dispositivos)? Esto no toca el checklist ni los pacientes.')) return;
     checklistConfig.salidas = {};
     saveCustomLocal();
     renderEvolBuilder(getSelected());
@@ -2068,14 +2110,24 @@ const BLOQUES_SALIDA = [
 /* De Neurológico solo se escriben estas alteraciones (el resto de la apertura es fija según el Estado general). */
 const NEURO_IDS_EN_TEXTO = ['desorientado','excitacion','noobedece','confuso','focomotor'];
 
+/* Plantilla propia de un paciente (p.salidasPropias): si existe, manda ella y se ignora la general
+   (es una copia hecha en el momento de crearla). Vive en la ficha, así que se ve igual desde
+   cualquier dispositivo, y se borra al vaciar la carpeta. */
+function tieneSalidasPropias(p){
+  return !!(p && p.salidasPropias && typeof p.salidasPropias === 'object');
+}
+function salidasVigentes(){
+  const p = getSelected();
+  return tieneSalidasPropias(p) ? p.salidasPropias : checklistConfig.salidas;
+}
 function itemIncluidoEn(salida, key, kind, id){
-  const s = checklistConfig.salidas;
+  const s = salidasVigentes();
   const m = s && s.items && s.items[key] && s.items[key][kind] && s.items[key][kind][id];
   if(m && typeof m[salida] === 'boolean') return m[salida];
   return salida === 'corta' ? kind === 'alt' : true;
 }
 function bloqueOn(salida, id){
-  const s = checklistConfig.salidas;
+  const s = salidasVigentes();
   const m = s && s.bloques && s.bloques[id];
   if(m && typeof m[salida] === 'boolean') return m[salida];
   const b = BLOQUES_SALIDA.find(x=>x.id===id);
@@ -2097,6 +2149,12 @@ function mergeProfundo(dst, src){
 /* Aplica un cambio parcial en local y lo escribe con merge (solo esas hojas), así dos dispositivos
    que tocan cosas distintas no se pisan. */
 function guardarSalidasPatch(patch){
+  const p = getSelected();
+  if(tieneSalidasPropias(p)){
+    mergeProfundo(p.salidasPropias, patch);
+    schedulePatientSave(p, 400);
+    return;
+  }
   if(!checklistConfig.salidas) checklistConfig.salidas = {};
   mergeProfundo(checklistConfig.salidas, patch);
   const fs = fsApi();
@@ -2109,7 +2167,9 @@ function guardarSalidasPatch(patch){
 function avisoSalidasGuardadas(){
   const st = fld('status');
   if(!st) return;
-  const msg = 'Plantilla de textos guardada para todos los pacientes.';
+  const msg = tieneSalidasPropias(getSelected())
+    ? 'Plantilla de este paciente guardada.'
+    : 'Plantilla de textos guardada para todos los pacientes.';
   st.textContent = msg;
   setTimeout(()=>{ if(st.textContent === msg) st.textContent = ''; }, 2500);
 }
