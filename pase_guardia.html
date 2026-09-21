@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-   Versión: 18 (20/09/2026)
+   Versión: 20 (20/09/2026)
 -->
 <html lang="es-AR">
 <head>
@@ -182,11 +182,13 @@
   .add-custom-row .suggestSelect{font-size:10.5px;padding:4px 6px;max-width:180px;border:1px solid var(--line-soft);color:var(--muted);background:#fff;}
   #evolDraft{background:#fbfaf6;font-size:12px;line-height:1.5;}
   .autogrow-draft{background:#fbfaf6;font-size:12px;line-height:1.5;overflow:hidden;resize:none;width:100%;}
+  /* Historia clínica: es un cuadro de solo lectura pero con formato (negrita en LAB/IMG),
+     por eso ya no es un <textarea>. Al copiarlo y pegarlo en un campo con formato, la negrita se conserva. */
+  .draft-rich{background:#fbfaf6;font-family:inherit;font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-word;
+    width:100%;min-height:40px;padding:6px 7px;border:1px solid var(--line-soft);border-radius:2px;color:var(--ink);user-select:text;}
   .vitals-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
   @media (max-width:640px){ .vitals-grid{grid-template-columns:1fr 1fr;} }
 
-  #addEntryBtn{background:var(--accent-dark);color:#fff;border:none;padding:9px 14px;font-weight:600;font-size:12.5px;cursor:pointer;border-radius:2px;margin-top:4px;width:100%;}
-  #addEntryBtn:hover{opacity:.85;}
 
   .out-col{padding:16px clamp(10px,2vw,20px);position:sticky;top:0;}
   @media (max-width:1200px){ .out-col{position:static;} }
@@ -544,10 +546,9 @@
 
 <header>
   <div class="brand">
-    <span class="mark">PASE·04</span>
+    <span class="mark">PASE</span>
     <div>
       <h1></h1>
-      <div class="sub">archivero por cama · antagonistas automáticos · EVOL por checklist</div>
     </div>
   </div>
   <div class="header-actions">
@@ -582,7 +583,7 @@
         <select id="camaVisibleSelect" title="Agregar cama a la vista"></select>
       </div>
     </div>
-    <div class="cv-note">El resto de los pacientes de la sala sigue guardado y actualizándose en la nube — solo no se muestra acá para no saturar la vista.</div>
+    <div class="cv-note"></div>
     <input type="text" id="patientSearch" placeholder="Buscar por cama o nombre (en toda la base)...">
     <div class="folder-list" id="patientList"></div>
     <button id="addPatientBtn">+ Nueva carpeta (paciente)</button>
@@ -594,7 +595,6 @@
 </main>
 
 <footer>
-  generador local — los datos no se envían a ningún servidor, se procesan y guardan en este navegador (y se sincronizan con la base compartida si hay sesión iniciada).
   <div class="persist-box">
     <button id="clearAllBtn" class="danger">Borrar toda la base</button>
   </div>
@@ -866,6 +866,7 @@ function getEstadoRank(value){
   return idx===-1 ? null : (opts.length - idx);
 }
 function estadoTrendPhrase(prevEstado, estado){
+  if(!USAR_EVALUACION_PREVIA) return '';
   if(!prevEstado || prevEstado===estado) return '';
   const prevR = getEstadoRank(prevEstado), nowR = getEstadoRank(estado);
   if(prevR==null || nowR==null) return '';
@@ -951,7 +952,10 @@ function aplicarPlantillaObj(patient, tpl){
       if(apply) apply.checked = !!(tpl.set.infecto && tpl.set.infecto.apply);
     }
   });
-  if(tpl.estado) fld('evolEstado').value = tpl.estado;
+  if(tpl.estado){
+    fld('evolEstado').value = tpl.estado;
+    syncEstadoPaciente(patient);
+  }
   updateDraftPreview(patient);
 }
 function aplicarPlantilla(patient, key){
@@ -987,6 +991,20 @@ function captureCurrentAsPlantillaSet(){
 let patients = [];
 let checklistConfig = { custom:{}, edits:{}, hidden:{}, order:{}, customPlantillas:{}, defaults:{}, estadoOptions:null, camasVisibles:null };
 let selectedId = null;
+
+/* Ya no existe el botón "Agregar entrada de hoy a EVOL", que era lo único que guardaba la
+   "evaluación previa" de cada paciente (checklist y estado del día anterior). Sin eso, comparar
+   "hoy vs. ayer" usaría datos viejos y armaría frases engañosas en la historia clínica, así que
+   queda apagado. Si se vuelve a poner un guardado de la evaluación, alcanza con pasarlo a true. */
+const USAR_EVALUACION_PREVIA = false;
+/* Sistema del checklist que está abierto (acordeón). Arranca en Neurológico al abrir una ficha
+   y después se queda en el que el usuario esté tocando, aunque se vuelva a dibujar el formulario. */
+let evolOpenKey = 'neuro';
+/* Id de la ficha que está dibujada ahora: sirve para saber si un redibujado es de la MISMA ficha
+   (se conservan checks, signos vitales y sistema abierto) o si se cambió de paciente (arranca limpio). */
+let lastRenderedPatientId = null;
+/* Frase fija que se agrega solo a la HISTORIA CLÍNICA (en negrita), antes de la frase de cierre. */
+const LAB_IMG_TXT = 'LAB: , IMG:';
 let sidebarFilter = '';
 let fechaAutoSync = true;
 const saveTimers = {}; // debounce de guardado en Firestore, por paciente
@@ -1166,6 +1184,7 @@ function vaciarCarpeta(p){
   p.lastImport = null;
   p.cama = cama;
   savePatientNow(p);
+  lastRenderedPatientId = null;
   renderAll();
 }
 
@@ -1244,7 +1263,7 @@ function renderCamaVisibleSelect(){
   const sel = fld('camaVisibleSelect');
   if(!sel) return;
   const visibles = getCamasVisibles();
-  let opts = '<option value="">▼</option>';
+  let opts = '<option value="" disabled selected hidden></option>';
   for(let n=CAMA_RANGO_MIN; n<=CAMA_RANGO_MAX; n++){
     const c = String(n);
     if(visibles.includes(c)) continue;
@@ -1279,7 +1298,7 @@ function renderSidebar(){
     const chip = document.createElement('div');
     chip.className = 'patient-chip'+(p.id===selectedId?' active':'')+' '+estadoClass(p);
     chip.innerHTML = `<span class="name">${escapeHtml(label)}</span><button class="del" title="Eliminar">×</button>`;
-    chip.querySelector('.name').addEventListener('click',()=>{selectedId=p.id;renderAll();scrollFormToTop();});
+    chip.querySelector('.name').addEventListener('click',()=>{selectedId=p.id;lastRenderedPatientId=null;renderAll();scrollFormToTop();});
     chip.querySelector('.del').addEventListener('click',(e)=>{e.stopPropagation();removePatient(p.id);});
     list.appendChild(chip);
   });
@@ -1330,8 +1349,15 @@ function renderForm(){
   const p = getSelected();
   if(!p){
     col.innerHTML = '<p class="empty-note">Agregá un paciente para empezar a cargar datos.</p>';
+    lastRenderedPatientId = null;
     return;
   }
+  // Si se está redibujando la MISMA ficha (por ejemplo porque llegó un cambio de configuración desde
+  // otro dispositivo), se conserva lo que el usuario tenía en pantalla. Si es otra ficha, arranca limpio.
+  const mismaFicha = (lastRenderedPatientId === p.id);
+  const uiState = mismaFicha ? captureEvolUiState() : null;
+  if(!mismaFicha) evolOpenKey = 'neuro';
+  lastRenderedPatientId = p.id;
 
   col.innerHTML = `
     <div class="patient-actions">
@@ -1405,7 +1431,6 @@ function renderForm(){
     <fieldset>
       <legend>EVOL — Evolución</legend>
       <div id="evolBuilder"></div>
-      <div class="field"><label>Texto acumulado de EVOL (editable — lo nuevo se agrega arriba)</label><textarea class="tall" data-f="evol"></textarea></div>
     </fieldset>
   `;
 
@@ -1443,8 +1468,7 @@ function renderForm(){
   });
   fld('asocNuevo').addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ e.preventDefault(); fld('asocAddBtn').click(); } });
 
-  renderEvolBuilder(p);
-  fld('addEntryBtn').addEventListener('click', ()=>addEvolEntry(p));
+  renderEvolBuilder(p, uiState);
 
   fld('vaciarPatientBtn').addEventListener('click', ()=> vaciarCarpeta(p));
 }
@@ -1493,8 +1517,36 @@ function setDefaultChecked(key, kind, id, value){
   const map = kind==='normal' ? checklistConfig.defaults[key].normal : checklistConfig.defaults[key].alt;
   map[id] = value;
 }
+/* Un check es "predeterminado global" (lo que se tilda/destilda vale para TODOS los pacientes y
+   dispositivos) si es de la columna Normal, o si es una alteración que se marcó con la estrella ★ /
+   ya tiene un valor guardado. Las demás alteraciones (los hallazgos de un paciente puntual) solo
+   valen para el paciente que se está cargando, para no contagiar a los demás. */
+function defaultEsGlobal(key, kind, id){
+  if(kind === 'normal') return true;
+  const cfg = checklistConfig.defaults && checklistConfig.defaults[key];
+  const map = cfg && cfg.alt;
+  return !!(map && Object.prototype.hasOwnProperty.call(map, id));
+}
+/* Guarda el predeterminado de UN solo check en la base compartida (config/customItems), escribiendo
+   solo esa hoja con merge: así, dos dispositivos que cambian checks distintos no se pisan entre sí. */
+function guardarDefaultGlobal(key, kind, id, value){
+  setDefaultChecked(key, kind, id, value);
+  const fs = fsApi();
+  if(!fs) return;
+  const k = kind === 'normal' ? 'normal' : 'alt';
+  fs.setDoc(fs.configDocRef, { defaults: { [key]: { [k]: { [id]: value } } } }, { merge:true }).catch(()=>{
+    const st = fld('status');
+    if(st) st.textContent = 'No se pudo guardar el cambio en la nube — revisá tu conexión.';
+  });
+}
+function actualizarDefaultDesdeCheck(key, kind, id, checked){
+  const prev = getDefaultChecked(key, kind, id);
+  if(!!prev === checked) return false;
+  guardarDefaultGlobal(key, kind, id, checked ? (typeof prev === 'string' ? prev : true) : false);
+  return true;
+}
 function lastChecked(p, key, kind, id, fallback){
-  const lc = p && p.lastChecklist;
+  const lc = USAR_EVALUACION_PREVIA ? (p && p.lastChecklist) : null;
   if(lc && lc.systems && lc.systems[key]){
     const map = kind==='normal' ? lc.systems[key].normal : lc.systems[key].alt;
     if(map && Object.prototype.hasOwnProperty.call(map, id)) return !!map[id];
@@ -1504,7 +1556,7 @@ function lastChecked(p, key, kind, id, fallback){
   return !!getDefaultChecked(key, kind, id);
 }
 function lastDetail(p, key, kind, id){
-  const lc = p && p.lastChecklist;
+  const lc = USAR_EVALUACION_PREVIA ? (p && p.lastChecklist) : null;
   const mapKey = kind==='normal' ? 'normal' : 'alt';
   if(lc && lc.systems && lc.systems[key] && lc.systems[key][mapKey]){
     const v = lc.systems[key][mapKey]['detail_'+id];
@@ -1517,13 +1569,66 @@ function lastDetail(p, key, kind, id){
   return '';
 }
 
-function renderEvolBuilder(p){
+/* Foto de lo que hay en pantalla en el constructor de EVOL (checks, detalles, signos vitales, fecha,
+   estado, estudio, panel de estados y posición del scroll), para poder volver a dibujarlo sin perder nada. */
+function captureEvolUiState(){
   const box = fld('evolBuilder');
-  const lastEstado = (p && p.lastChecklist && p.lastChecklist.estado) || 'buen estado general';
+  if(!box || !box.firstElementChild) return null;
+  const st = { checks:{}, details:{}, fields:{}, scrollY: window.pageYOffset, fechaAutoSync: fechaAutoSync };
+  box.querySelectorAll('input[type="checkbox"][data-sys]').forEach(c=>{
+    st.checks[c.dataset.sys+'|'+c.dataset.kind+'|'+c.dataset.id] = c.checked;
+  });
+  box.querySelectorAll('input.detail-input').forEach(i=>{
+    st.details[i.dataset.sys+'|'+i.dataset.kind+'|'+i.dataset.detailFor] = i.value;
+  });
+  ['evolTA','evolFC','evolSat','evolFio2','evolT','evolFecha','evolEstado','evolEstudioTipo','evolEstudioInforme'].forEach(id=>{
+    const el = fld(id);
+    if(el) st.fields[id] = el.value;
+  });
+  const ai = fld('apply_infecto');
+  if(ai) st.applyInfecto = ai.checked;
+  const panel = fld('estadoConfigPanel');
+  if(panel) st.estadoPanelAbierto = panel.style.display !== 'none';
+  return st;
+}
+function restoreEvolUiState(st){
+  if(!st) return;
+  const box = fld('evolBuilder');
+  if(!box) return;
+  box.querySelectorAll('input[type="checkbox"][data-sys]').forEach(c=>{
+    const k = c.dataset.sys+'|'+c.dataset.kind+'|'+c.dataset.id;
+    if(Object.prototype.hasOwnProperty.call(st.checks, k)) c.checked = st.checks[k];
+  });
+  box.querySelectorAll('input.detail-input').forEach(i=>{
+    const k = i.dataset.sys+'|'+i.dataset.kind+'|'+i.dataset.detailFor;
+    if(Object.prototype.hasOwnProperty.call(st.details, k)) i.value = st.details[k];
+  });
+  Object.keys(st.fields).forEach(id=>{
+    const el = fld(id);
+    if(!el) return;
+    if(id === 'evolEstado' && !Array.from(el.options).some(o=>o.value===st.fields[id])) return;
+    el.value = st.fields[id];
+  });
+  fechaAutoSync = st.fechaAutoSync;
+  const ai = fld('apply_infecto');
+  if(ai && typeof st.applyInfecto === 'boolean') ai.checked = st.applyInfecto;
+  const panel = fld('estadoConfigPanel');
+  if(panel && st.estadoPanelAbierto) panel.style.display = '';
+}
+
+function renderEvolBuilder(p, stateOverride){
+  const box = fld('evolBuilder');
+  // Sin argumento: es un redibujado dentro de la misma ficha (editar una frase, reordenar, agregar una
+  // opción, etc.) y se conserva lo que había en pantalla. Con argumento (renderForm) se usa el que pasó.
+  const uiState = (stateOverride !== undefined)
+    ? stateOverride
+    : ((p && p.id === lastRenderedPatientId) ? captureEvolUiState() : null);
+  const estadoOpts = getEstadoOptions();
+  const lastEstado = (p && p.lastEstado && estadoOpts.some(o=>o.value===p.lastEstado)) ? p.lastEstado : estadoOpts[0].value;
   const customPlantillas = checklistConfig.customPlantillas || {};
   let html = `
     <div class="field" style="margin-bottom:4px;">
-      <label>Plantilla según motivo de internación (opcional — precarga el checklist, después se puede ajustar)</label>
+      <label>Plantilla según motivo de internación</label>
       <select id="evolPlantilla">
         <option value="">— seleccionar y aplicar —</option>
         ${Object.keys(PLANTILLAS).map(k=>`<option value="builtin:${k}">${escapeHtml(PLANTILLAS[k].label)}</option>`).join('')}
@@ -1562,8 +1667,8 @@ function renderEvolBuilder(p){
 
   SYS_ORDER.forEach(key=>{
     const sys = getMergedItems(key);
-    const applyChecked = p && p.lastChecklist && p.lastChecklist.systems && p.lastChecklist.systems[key] && p.lastChecklist.systems[key].apply;
-    const abierto = key === 'neuro'; // Neurológico abierto por defecto; el resto arranca plegado
+    const applyChecked = USAR_EVALUACION_PREVIA && p && p.lastChecklist && p.lastChecklist.systems && p.lastChecklist.systems[key] && p.lastChecklist.systems[key].apply;
+    const abierto = key === evolOpenKey; // Neurológico abierto al abrir la ficha; después, el sistema que se esté tocando
     html += `<details class="sys-block sys-block-${key}" data-block="${key}"${abierto?' open':''}>
       <summary class="sys-title"><span class="sys-icon">${SYS_ICONS[key]||''}</span>${sys.label}
         ${sys.opcional ? `<label class="opt-toggle" onclick="event.stopPropagation()"><input type="checkbox" id="apply_${key}" ${applyChecked?'checked':''}> incluir en esta evolución</label>` : ''}
@@ -1634,7 +1739,7 @@ function renderEvolBuilder(p){
 
   html += `
     <div class="field"><label>HISTORIA CLÍNICA (se arma sola con el checklist)</label>
-      <textarea id="evolDraftHistoria" class="autogrow-draft" rows="6" readonly></textarea>
+      <div id="evolDraftHistoria" class="draft-rich"></div>
     </div>
     <div class="field"><label>PASE— versión corta (se sigue armando con los checklist)</label>
       <textarea id="evolDraftShort" class="autogrow-draft" rows="3" readonly></textarea>
@@ -1642,7 +1747,6 @@ function renderEvolBuilder(p){
     <div class="field"><label>PASE — versión completa</label>
       <textarea id="evolDraft" class="autogrow-draft" rows="8" readonly></textarea>
     </div>
-    <button id="addEntryBtn">+ Agregar entrada de hoy a EVOL</button>
   `;
 
   box.innerHTML = html;
@@ -1664,7 +1768,11 @@ function renderEvolBuilder(p){
     summary.addEventListener('click', ()=>{
       const det = summary.closest('details.sys-block');
       requestAnimationFrame(()=>{
-        if(!det.open) return; // el clic lo cerró: no hay nada que reacomodar
+        if(!det.open){ // el clic lo cerró: no hay nada que reacomodar, pero se recuerda que quedó todo plegado
+          if(evolOpenKey === det.dataset.block) evolOpenKey = '';
+          return;
+        }
+        evolOpenKey = det.dataset.block;
         box.querySelectorAll('details.sys-block').forEach(other=>{
           if(other !== det) other.open = false;
         });
@@ -1674,6 +1782,8 @@ function renderEvolBuilder(p){
     });
   });
   fld('evolEstado').value = lastEstado;
+  // El estado general elegido queda guardado en la ficha (define el color de su pestaña).
+  fld('evolEstado').addEventListener('change', ()=>syncEstadoPaciente(getSelected()));
 
   renderEstadoConfigList();
   fld('estadoConfigToggle').addEventListener('click', ()=>{
@@ -1730,18 +1840,37 @@ function renderEvolBuilder(p){
   box.addEventListener('input', ()=>updateDraftPreview(p));
   box.addEventListener('change', ()=>setTimeout(()=>updateDraftPreview(p),0));
   populateSuggestSelects();
+  restoreEvolUiState(uiState);
   updateDraftPreview(p);
+  if(uiState) window.scrollTo(0, uiState.scrollY);
 }
 
+/* Guarda en la ficha el estado general elegido (lo usa el color de la pestaña del paciente). */
+function syncEstadoPaciente(p){
+  const sel = fld('evolEstado');
+  if(!p || !sel) return;
+  p.lastEstado = sel.value;
+  renderSidebar();
+  renderPreview();
+}
+
+/* Las variantes de redacción rotaban con cada entrada agregada a EVOL. Sin ese botón, rotan según
+   el día (el mismo texto durante todo el día, distinto de un día al otro). */
+function variantSeed(patient){
+  const d = new Date();
+  const dia = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
+  return (patient && patient.evolCount || 0) + dia;
+}
 function pickVariant(item, patient){
   if(item.variants && item.variants.length>1){
-    return item.variants[(patient.evolCount||0) % item.variants.length];
+    return item.variants[variantSeed(patient) % item.variants.length];
   }
   return item.text;
 }
 
 /* ================= Tendencia hoy vs. ayer, por sistema ================= */
 function trendPhraseFor(key, patient){
+  if(!USAR_EVALUACION_PREVIA) return '';
   const prevSys = patient && patient.lastChecklist && patient.lastChecklist.systems && patient.lastChecklist.systems[key];
   if(!prevSys) return ''; // primera entrada de este paciente: no hay con qué comparar
   const merged = getMergedItems(key);
@@ -1978,6 +2107,7 @@ const SIN_CAMBIOS_VARIANTS = [
   'Sin modificaciones respecto de la evaluación previa.'
 ];
 function noChangeClause(p, estado){
+  if(!USAR_EVALUACION_PREVIA) return '';
   if(!p.lastChecklist) return '';
   if(p.lastEstado !== estado) return '';
   const anyTrend = SYS_ORDER.some(key => trendPhraseFor(key, p));
@@ -2041,7 +2171,8 @@ function buildOpeningExamSentence(p, estado){
    cierre por estado general), compartido entre HISTORIA CLÍNICA y PASE —
    versión completa — ambas cuentan lo sano y lo patológico de forma
    completa; solo cambia la frase de apertura de cada una. */
-function buildExamBody(p){
+function buildExamBody(p, opts){
+  opts = opts || {};
   const estado = fld('evolEstado').value;
   const cv = collectSystemPhrase('cv', p);
   const resp = collectSystemPhrase('resp', p);
@@ -2065,6 +2196,8 @@ function buildExamBody(p){
   if(miembrosClause) out += `${miembrosClause}${trendPhraseFor('miembros',p)}. `;
   if(infectoAplica && infecto) out += `Desde el punto de vista infectológico, ${infecto}${trendPhraseFor('infecto',p)}. `;
 
+  // Solo la historia clínica lleva LAB / IMG, después del último sistema y antes del cierre.
+  if(opts.labImg) out += LAB_IMG_TXT + ' ';
   out += closingEstadoSentence(estado);
   out += noChangeClause(p, estado);
   out += estadoTrendPhrase(p.lastEstado, estado);
@@ -2080,7 +2213,7 @@ function buildHistoriaClinicaText(p){
   const sexoTxt = p.sexo === 'M' ? 'masculino' : (p.sexo === 'F' ? 'femenina' : '');
   const miResumen = activeMiSummary(p);
   const dx = `Paciente${sexoTxt?' '+sexoTxt:''}${p.edad?' de '+p.edad:''}${miResumen?', cursando internación '+miResumen:''}.`;
-  return `${fecha}: ${dx} ${buildOpeningExamSentence(p, estado)} ${buildExamBody(p)}`.trim();
+  return `${fecha}: ${dx} ${buildOpeningExamSentence(p, estado)} ${buildExamBody(p, {labImg:true})}`.trim();
 }
 
 /* PASE — versión completa: mismo cuerpo que HISTORIA CLÍNICA (cuenta lo sano
@@ -2169,10 +2302,13 @@ function updateDraftPreview(p){
   if(!draft || !p) return;
   draft.value = buildPaseCompletoText(p);
   if(draftShort) draftShort.value = buildEvolTextShort(p);
-  if(draftHistoria) draftHistoria.value = buildHistoriaClinicaText(p);
+  if(draftHistoria) draftHistoria.innerHTML = historiaClinicaHtml(buildHistoriaClinicaText(p));
   autoGrowTextarea(draft);
   autoGrowTextarea(draftShort);
-  autoGrowTextarea(draftHistoria);
+}
+/* La historia clínica se muestra con formato: la frase LAB/IMG va en negrita. */
+function historiaClinicaHtml(texto){
+  return escapeHtml(texto).replace(escapeHtml(LAB_IMG_TXT), '<b>' + escapeHtml(LAB_IMG_TXT) + '</b>');
 }
 function autoGrowTextarea(el){
   if(!el) return;
@@ -2182,28 +2318,7 @@ function autoGrowTextarea(el){
 window.addEventListener('resize', ()=>{
   autoGrowTextarea(fld('evolDraft'));
   autoGrowTextarea(fld('evolDraftShort'));
-  autoGrowTextarea(fld('evolDraftHistoria'));
 });
-
-function addEvolEntry(p){
-  const historia = buildHistoriaClinicaText(p);
-  const corta = buildEvolTextShort(p);
-  const completa = buildPaseCompletoText(p);
-  const out = `HISTORIA CLÍNICA: ${historia}\n---\nPASE (corta): ${corta}\n---\nPASE (completa): ${completa}`;
-  const estado = fld('evolEstado').value;
-
-  p.evol = p.evol ? (out + '\n\n' + p.evol) : out;
-  p.evolCount = (p.evolCount||0) + 1;
-  p.lastEstado = estado;
-  p.lastChecklist = captureChecklistState(estado);
-
-  renderForm();
-  renderPreview();
-  savePatientNow(p);
-  const status = fld('status');
-  status.textContent = 'Entrada de EVOL agregada.';
-  setTimeout(()=>status.textContent='',2000);
-}
 
 /* ================= Antagonistas: desmarcado automático ================= */
 document.body.addEventListener('change', (e)=>{
@@ -2224,6 +2339,36 @@ document.body.addEventListener('change', (e)=>{
         if(det) det.value = '';
       }
     });
+  }
+});
+
+/* ================= Checks predeterminados: tildar/destildar = cambiar el predeterminado =================
+   Al tildar o destildar un check de los que aparecen por defecto, ese valor pasa a ser el de arranque
+   de TODOS los pacientes (y se guarda en la base compartida, así se ve igual desde cualquier
+   dispositivo) hasta que se lo vuelva a cambiar. Va después del bloque de antagonistas: cuando un
+   check tildado destilda a sus antagonistas, esos también quedan destildados por defecto. */
+document.body.addEventListener('change', (e)=>{
+  const el = e.target;
+  if(!el || el.type !== 'checkbox' || !el.dataset || !el.dataset.sys || !el.dataset.kind || !el.dataset.id) return;
+  if(!el.closest || !el.closest('#evolBuilder')) return;
+  const key = el.dataset.sys, kind = el.dataset.kind, id = el.dataset.id;
+  if(!defaultEsGlobal(key, kind, id)) return;
+  let cambio = actualizarDefaultDesdeCheck(key, kind, id, el.checked);
+  if(el.checked){
+    const def = getMergedItems(key).normal.concat(getMergedItems(key).alteraciones).find(i=>i.id===id);
+    ((def && def.antagonistas) || []).forEach(antId=>{
+      const antChk = document.querySelector(`[data-sys="${key}"][data-id="${antId}"]`);
+      if(antChk && !antChk.checked && defaultEsGlobal(key, antChk.dataset.kind, antId)){
+        if(actualizarDefaultDesdeCheck(key, antChk.dataset.kind, antId, false)) cambio = true;
+      }
+    });
+  }
+  if(cambio){
+    const st = fld('status');
+    if(st){
+      st.textContent = 'Predeterminado guardado para todos los pacientes.';
+      setTimeout(()=>{ if(st.textContent === 'Predeterminado guardado para todos los pacientes.') st.textContent = ''; }, 2500);
+    }
   }
 });
 
@@ -2269,9 +2414,17 @@ document.body.addEventListener('click', (e)=>{
   const orderKey = kind === 'normal' ? 'normal' : 'alteraciones';
 
   if(btn.classList.contains('chkDefaultBtn')){
-    const actual = getDefaultChecked(sysKey, kind, id);
-    setDefaultChecked(sysKey, kind, id, !actual);
-    saveCustomLocal();
+    const actual = !!getDefaultChecked(sysKey, kind, id);
+    const chkEl = document.querySelector(`[data-sys="${sysKey}"][data-kind="${kind}"][data-id="${id}"]`);
+    if(kind === 'alt' && actual){
+      // Una alteración a la que se le quita la estrella vuelve a ser un hallazgo solo del paciente actual.
+      const m = checklistConfig.defaults && checklistConfig.defaults[sysKey] && checklistConfig.defaults[sysKey].alt;
+      if(m) delete m[id];
+      saveCustomLocal();
+    } else {
+      guardarDefaultGlobal(sysKey, kind, id, !actual);
+    }
+    if(chkEl) chkEl.checked = !actual; // el check refleja el nuevo predeterminado
     renderEvolBuilder(getSelected());
     return;
   }
