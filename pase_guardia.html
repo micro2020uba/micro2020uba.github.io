@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-   Versión: 20 (20/09/2026)
+   Versión: 21 (20/09/2026)
 -->
 <html lang="es-AR">
 <head>
@@ -186,6 +186,23 @@
      por eso ya no es un <textarea>. Al copiarlo y pegarlo en un campo con formato, la negrita se conserva. */
   .draft-rich{background:#fbfaf6;font-family:inherit;font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-word;
     width:100%;min-height:40px;padding:6px 7px;border:1px solid var(--line-soft);border-radius:2px;color:var(--ink);user-select:text;}
+  /* Panel "Qué aparece en cada texto" */
+  .salidas-panel{border:1px dashed var(--line-soft);border-left:4px solid var(--accent-dark);padding:9px;margin:12px 0 10px;background:#fdfcf9;}
+  .salidas-panel > summary{font-weight:700;font-size:12px;color:var(--accent-dark);cursor:pointer;}
+  .so-note{font-size:11px;color:var(--muted);line-height:1.45;margin:7px 0;}
+  .so-actions{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 9px;}
+  .so-sys{border:1px solid var(--line-soft);background:#fff;margin-bottom:5px;}
+  .so-sys > summary{font-weight:600;font-size:11.5px;padding:5px 8px;cursor:pointer;color:var(--accent-dark);}
+  table.so-table{width:100%;border-collapse:collapse;font-size:11.5px;}
+  table.so-table th{font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);text-align:center;padding:3px 4px;border-bottom:1px solid var(--line-soft);}
+  table.so-table th.so-first{text-align:left;padding-left:8px;}
+  table.so-table td{padding:2px 4px;border-bottom:1px dotted var(--line-soft);vertical-align:middle;}
+  table.so-table td.so-txt{padding-left:8px;}
+  table.so-table td.so-c{width:66px;text-align:center;}
+  table.so-table tr.so-bulk td{background:#f5f4ef;font-size:10px;color:var(--muted);}
+  .so-tag{font-size:9px;color:var(--danger);text-transform:uppercase;letter-spacing:.04em;margin-left:4px;}
+  .so-bulk-btn{font-size:10px;line-height:1;padding:2px 6px;margin:0 1px;background:transparent;border:1px solid var(--line-soft);color:var(--muted);cursor:pointer;border-radius:2px;}
+  .so-bulk-btn:hover{background:var(--accent-dark);border-color:var(--accent-dark);color:#fff;}
   .vitals-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
   @media (max-width:640px){ .vitals-grid{grid-template-columns:1fr 1fr;} }
 
@@ -628,7 +645,7 @@ const SISTEMAS = {
       {id:'ritmoregular',text:'ritmo regular',antagonistas:['arritmia']},
       {id:'r1r2',text:'R1 y R2 en 4 focos, normofonéticos',variants:['R1 y R2 en 4 focos, normofonéticos','R1-R2 normofonéticos en 4 focos'],antagonistas:[]},
       {id:'silencios',text:'impresionan libres',variants:['impresionan libres','sin soplos evidentes'],antagonistas:['soplo']},
-      {id:'sinfallo',text:'sin signos de descompensación hemodinámica ni fallo agudo de bomba',variants:['sin signos de descompensación hemodinámica ni fallo agudo de bomba','sin signos de fallo de bomba'],antagonistas:['fallo']},
+      {id:'sinfallo',text:'sin signos de falla agudo de bomba',variants:['sin signos de falla agudo de bomba','sin signos de falla agudo de bomba'],antagonistas:['fallo']},
       {id:'decubito',text:'tolera decúbito dorsal',antagonistas:['nodecubito']},
       {id:'pulsos',text:'pulsos periféricos presentes, con buena perfusión distal',variants:['pulsos periféricos presentes, con buena perfusión distal','pulsos periféricos conservados'],antagonistas:['pulsosdism']},
       {id:'iy',text:'IY 2/3 con colapso inspiratorio',antagonistas:['fallo']},
@@ -989,7 +1006,7 @@ function captureCurrentAsPlantillaSet(){
   return set;
 }
 let patients = [];
-let checklistConfig = { custom:{}, edits:{}, hidden:{}, order:{}, customPlantillas:{}, defaults:{}, estadoOptions:null, camasVisibles:null };
+let checklistConfig = { custom:{}, edits:{}, hidden:{}, order:{}, customPlantillas:{}, defaults:{}, salidas:{}, estadoOptions:null, camasVisibles:null };
 let selectedId = null;
 
 /* Ya no existe el botón "Agregar entrada de hoy a EVOL", que era lo único que guardaba la
@@ -1003,6 +1020,8 @@ let evolOpenKey = 'neuro';
 /* Id de la ficha que está dibujada ahora: sirve para saber si un redibujado es de la MISMA ficha
    (se conservan checks, signos vitales y sistema abierto) o si se cambió de paciente (arranca limpio). */
 let lastRenderedPatientId = null;
+/* Paneles de "Qué aparece en cada texto" que están desplegados (para que no se cierren al redibujar). */
+const salidasOpen = { root:false, sys:{} };
 /* Frase fija que se agrega solo a la HISTORIA CLÍNICA (en negrita), antes de la frase de cierre. */
 const LAB_IMG_TXT = 'LAB: , IMG:';
 let sidebarFilter = '';
@@ -1737,6 +1756,8 @@ function renderEvolBuilder(p, stateOverride){
     html += `</div></details>`;
   });
 
+  html += salidasPanelHtml();
+
   html += `
     <div class="field"><label>HISTORIA CLÍNICA (se arma sola con el checklist)</label>
       <div id="evolDraftHistoria" class="draft-rich"></div>
@@ -1839,11 +1860,124 @@ function renderEvolBuilder(p, stateOverride){
   // Vista previa en vivo: se recalcula ante cualquier cambio dentro del constructor de EVOL.
   box.addEventListener('input', ()=>updateDraftPreview(p));
   box.addEventListener('change', ()=>setTimeout(()=>updateDraftPreview(p),0));
+  box.querySelectorAll('details[data-so-panel]').forEach(det=>{
+    det.addEventListener('toggle', ()=>{
+      if(det.dataset.soPanel === 'root') salidasOpen.root = det.open;
+      else salidasOpen.sys[det.dataset.soPanel] = det.open;
+    });
+  });
   populateSuggestSelects();
   restoreEvolUiState(uiState);
   updateDraftPreview(p);
   if(uiState) window.scrollTo(0, uiState.scrollY);
 }
+
+/* ================= Panel «Qué aparece en cada texto» ================= */
+function soCheck(attrs, checked){
+  return `<input type="checkbox" ${attrs}${checked?' checked':''}>`;
+}
+function salidasPanelHtml(){
+  const cab = `<th class="so-first">&nbsp;</th>` + SALIDAS.map(s=>`<th>${s.corto}</th>`).join('');
+  let h = `<details class="salidas-panel" data-so-panel="root"${salidasOpen.root?' open':''}>
+    <summary>⚙ Qué aparece en cada texto (plantilla para todos los pacientes)</summary>
+    <p class="so-note">Tildá en qué texto debe salir cada frase. Solo aparece si además está tildada en el checklist del paciente.
+      Los cambios se guardan para todos los pacientes y dispositivos. De fábrica: la historia clínica y el pase completo llevan todo lo tildado; el pase corto, solo las alteraciones.</p>
+    <div class="so-actions">
+      <button type="button" class="secondary small" id="soCortaIgualCompleta">PASE corta = igual que la completa</button>
+      <button type="button" class="secondary small danger" id="soRestablecer">Restablecer valores de fábrica</button>
+    </div>
+    <div class="so-sys"><table class="so-table"><tr>${cab}</tr>`;
+  BLOQUES_SALIDA.forEach(b=>{
+    h += `<tr><td class="so-txt">${escapeHtml(b.label)}</td>` + SALIDAS.map(s=>{
+      if(b.soloHC && s.id !== 'hc') return `<td class="so-c" style="color:var(--muted);">—</td>`;
+      return `<td class="so-c">${soCheck(`data-so-bloque="${b.id}" data-so-out="${s.id}"`, bloqueOn(s.id, b.id))}</td>`;
+    }).join('') + `</tr>`;
+  });
+  h += `</table></div>`;
+
+  SYS_ORDER.forEach(key=>{
+    const sys = getMergedItems(key);
+    let normales = sys.normal, alts = sys.alteraciones;
+    if(key === 'neuro'){
+      normales = [];
+      alts = alts.filter(i=>NEURO_IDS_EN_TEXTO.indexOf(i.id) !== -1);
+    }
+    if(!normales.length && !alts.length) return;
+    const nota = key === 'neuro' ? `<tr><td colspan="4" class="so-txt" style="color:var(--muted);font-size:10.5px;">La apertura neurológica es fija (según el Estado general); acá solo se controlan estas alteraciones.</td></tr>` : '';
+    const bulk = `<tr class="so-bulk"><td class="so-txt">Todos los ítems de este sistema</td>` + SALIDAS.map(s=>
+      `<td class="so-c"><button type="button" class="so-bulk-btn" data-so-bulk-sys="${key}" data-so-out="${s.id}" data-so-val="1" title="Incluir todo">✓</button><button type="button" class="so-bulk-btn" data-so-bulk-sys="${key}" data-so-out="${s.id}" data-so-val="0" title="Quitar todo">✗</button></td>`
+    ).join('') + `</tr>`;
+    const fila = (item, kind)=>`<tr><td class="so-txt">${escapeHtml(item.text)}${kind==='alt'?'<span class="so-tag">alteración</span>':''}</td>` +
+      SALIDAS.map(s=>`<td class="so-c">${soCheck(`data-so-sys="${key}" data-so-kind="${kind}" data-so-id="${item.id}" data-so-out="${s.id}"`, itemIncluidoEn(s.id, key, kind, item.id))}</td>`).join('') + `</tr>`;
+    h += `<details class="so-sys" data-so-panel="${key}"${salidasOpen.sys[key]?' open':''}>
+      <summary>${escapeHtml(sys.label)}</summary>
+      <table class="so-table">${nota}${bulk}${normales.map(i=>fila(i,'normal')).join('')}${alts.map(i=>fila(i,'alt')).join('')}</table>
+    </details>`;
+  });
+  h += `</div></details>`;
+  return h;
+}
+
+/* Un tilde de la plantilla: se guarda al toque y se recalculan los tres textos. */
+document.body.addEventListener('change', (e)=>{
+  const el = e.target;
+  if(!el || el.type !== 'checkbox' || !el.dataset || !el.dataset.soOut) return;
+  const out = el.dataset.soOut;
+  if(el.dataset.soBloque){
+    guardarSalidasPatch({ bloques: { [el.dataset.soBloque]: { [out]: el.checked } } });
+  } else if(el.dataset.soSys){
+    guardarSalidasPatch({ items: { [el.dataset.soSys]: { [el.dataset.soKind]: { [el.dataset.soId]: { [out]: el.checked } } } } });
+  } else return;
+  avisoSalidasGuardadas();
+  updateDraftPreview(getSelected());
+});
+document.body.addEventListener('click', (e)=>{
+  const t = e.target;
+  if(!t || !t.closest) return;
+  // ✓ / ✗ de un sistema entero, para una salida
+  const bulk = t.closest('.so-bulk-btn');
+  if(bulk){
+    const sys = bulk.dataset.soBulkSys, out = bulk.dataset.soOut, val = bulk.dataset.soVal === '1';
+    const patch = { items: { [sys]: {} } };
+    document.querySelectorAll(`input[data-so-sys="${sys}"][data-so-out="${out}"]`).forEach(inp=>{
+      inp.checked = val;
+      const kind = inp.dataset.soKind;
+      if(!patch.items[sys][kind]) patch.items[sys][kind] = {};
+      patch.items[sys][kind][inp.dataset.soId] = { [out]: val };
+    });
+    guardarSalidasPatch(patch);
+    avisoSalidasGuardadas();
+    updateDraftPreview(getSelected());
+    return;
+  }
+  if(t.closest('#soCortaIgualCompleta')){
+    const patch = { items:{}, bloques:{} };
+    document.querySelectorAll('input[data-so-sys][data-so-out="corta"]').forEach(inp=>{
+      const sys = inp.dataset.soSys, kind = inp.dataset.soKind, id = inp.dataset.soId;
+      const v = itemIncluidoEn('completa', sys, kind, id);
+      inp.checked = v;
+      if(!patch.items[sys]) patch.items[sys] = {};
+      if(!patch.items[sys][kind]) patch.items[sys][kind] = {};
+      patch.items[sys][kind][id] = { corta: v };
+    });
+    document.querySelectorAll('input[data-so-bloque][data-so-out="corta"]').forEach(inp=>{
+      const v = bloqueOn('completa', inp.dataset.soBloque);
+      inp.checked = v;
+      patch.bloques[inp.dataset.soBloque] = { corta: v };
+    });
+    guardarSalidasPatch(patch);
+    avisoSalidasGuardadas();
+    updateDraftPreview(getSelected());
+    return;
+  }
+  if(t.closest('#soRestablecer')){
+    if(!confirm('¿Volver la plantilla de textos a los valores de fábrica (para todos los pacientes y dispositivos)? Esto no toca el checklist ni los pacientes.')) return;
+    checklistConfig.salidas = {};
+    saveCustomLocal();
+    renderEvolBuilder(getSelected());
+    avisoSalidasGuardadas();
+  }
+});
 
 /* Guarda en la ficha el estado general elegido (lo usa el color de la pestaña del paciente). */
 function syncEstadoPaciente(p){
@@ -1913,14 +2047,81 @@ function itemPhrase(sys, kind, id, patient){
 function capitalize(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
 function val(id){ const el = fld(id); return el ? el.value.trim() : ''; }
 
-function collectSystemParts(key, patient){
+/* ================= Qué aparece en cada texto (plantilla por salida) =================
+   Cada texto (HISTORIA CLÍNICA, PASE corta, PASE completa) se arma con lo que está tildado en el
+   checklist Y ADEMÁS incluido en esa salida. Los valores de fábrica reproducen cómo funcionaba
+   antes: HC y completa llevan todo lo tildado; la corta solo las alteraciones. Lo que se cambia
+   acá vale para todos los pacientes y dispositivos (se guarda en config/customItems → salidas). */
+const SALIDAS = [
+  {id:'hc', label:'Historia clínica', corto:'HC'},
+  {id:'corta', label:'PASE — corta', corto:'Corta'},
+  {id:'completa', label:'PASE — completa', corto:'Completa'}
+];
+const BLOQUES_SALIDA = [
+  {id:'dx', label:'Datos y diagnóstico («Paciente masculino de … cursando internación …»)', def:{hc:true, corta:false, completa:false}},
+  {id:'apertura', label:'Apertura neurológica («Paciente en buen estado general, vigil, …»)', def:{hc:true, corta:true, completa:true}},
+  {id:'csv', label:'Signos vitales (CSV)', def:{hc:true, corta:true, completa:true}},
+  {id:'estudio', label:'Informe del estudio complementario (cardio)', def:{hc:true, corta:false, completa:true}},
+  {id:'labimg', label:'LAB: , IMG: (en negrita)', soloHC:true, def:{hc:true, corta:false, completa:false}},
+  {id:'cierre', label:'Frase de cierre según Estado general', def:{hc:true, corta:true, completa:true}}
+];
+/* De Neurológico solo se escriben estas alteraciones (el resto de la apertura es fija según el Estado general). */
+const NEURO_IDS_EN_TEXTO = ['desorientado','excitacion','noobedece','confuso','focomotor'];
+
+function itemIncluidoEn(salida, key, kind, id){
+  const s = checklistConfig.salidas;
+  const m = s && s.items && s.items[key] && s.items[key][kind] && s.items[key][kind][id];
+  if(m && typeof m[salida] === 'boolean') return m[salida];
+  return salida === 'corta' ? kind === 'alt' : true;
+}
+function bloqueOn(salida, id){
+  const s = checklistConfig.salidas;
+  const m = s && s.bloques && s.bloques[id];
+  if(m && typeof m[salida] === 'boolean') return m[salida];
+  const b = BLOQUES_SALIDA.find(x=>x.id===id);
+  return b ? !!b.def[salida] : true;
+}
+/* Tildado en el checklist y, si se indica salida, incluido en esa salida. */
+function isOn(salida, sys, kind, id){
+  if(!isChecked(sys, kind, id)) return false;
+  return salida ? itemIncluidoEn(salida, sys, kind, id) : true;
+}
+function mergeProfundo(dst, src){
+  Object.keys(src).forEach(k=>{
+    if(src[k] && typeof src[k] === 'object' && !Array.isArray(src[k])){
+      if(!dst[k] || typeof dst[k] !== 'object') dst[k] = {};
+      mergeProfundo(dst[k], src[k]);
+    } else dst[k] = src[k];
+  });
+}
+/* Aplica un cambio parcial en local y lo escribe con merge (solo esas hojas), así dos dispositivos
+   que tocan cosas distintas no se pisan. */
+function guardarSalidasPatch(patch){
+  if(!checklistConfig.salidas) checklistConfig.salidas = {};
+  mergeProfundo(checklistConfig.salidas, patch);
+  const fs = fsApi();
+  if(!fs) return;
+  fs.setDoc(fs.configDocRef, { salidas: patch }, { merge:true }).catch(()=>{
+    const st = fld('status');
+    if(st) st.textContent = 'No se pudo guardar el cambio en la nube — revisá tu conexión.';
+  });
+}
+function avisoSalidasGuardadas(){
+  const st = fld('status');
+  if(!st) return;
+  const msg = 'Plantilla de textos guardada para todos los pacientes.';
+  st.textContent = msg;
+  setTimeout(()=>{ if(st.textContent === msg) st.textContent = ''; }, 2500);
+}
+
+function collectSystemParts(key, patient, salida){
   const merged = getMergedItems(key);
   const exclude = EXCLUDE_FROM_JOIN[key] || [];
   const parts = [];
   merged.normal.forEach(item=>{
     if(exclude.indexOf(item.id)!==-1) return;
     const chk = document.querySelector(`[data-sys="${key}"][data-kind="normal"][data-id="${item.id}"]`);
-    if(chk && chk.checked){
+    if(chk && chk.checked && (!salida || itemIncluidoEn(salida, key, 'normal', item.id))){
       let t = pickVariant(item, patient);
       if(item.detail){
         const det = detailValFor(key,'normal',item.id);
@@ -1932,7 +2133,7 @@ function collectSystemParts(key, patient){
   merged.alteraciones.forEach(item=>{
     if(exclude.indexOf(item.id)!==-1) return;
     const chk = document.querySelector(`[data-sys="${key}"][data-kind="alt"][data-id="${item.id}"]`);
-    if(chk && chk.checked){
+    if(chk && chk.checked && (!salida || itemIncluidoEn(salida, key, 'alt', item.id))){
       let t = pickVariant(item, patient);
       if(item.detail){
         const det = detailValFor(key,'alt',item.id);
@@ -1943,43 +2144,43 @@ function collectSystemParts(key, patient){
   });
   return parts;
 }
-function collectSystemPhrase(key, patient){
-  return collectSystemParts(key, patient).join(', ');
+function collectSystemPhrase(key, patient, salida){
+  return collectSystemParts(key, patient, salida).join(', ');
 }
 
 /* ================= Combinaciones especiales de redacción ================= */
-function buildFlogosisFlebitisClause(patient){
-  const flogPos = isChecked('miembros','normal','sinflogosis');
-  const flebPos = isChecked('miembros','normal','sinflebitis');
+function buildFlogosisFlebitisClause(patient, salida){
+  const flogPos = isOn(salida,'miembros','normal','sinflogosis');
+  const flebPos = isOn(salida,'miembros','normal','sinflebitis');
   if(flogPos && flebPos) return 'sin flogosis ni flebitis';
   if(flogPos) return 'sin flogosis';
   if(flebPos) return 'sin signos de flebitis';
   const negParts = [];
-  if(isChecked('miembros','alt','flogosis')) negParts.push(itemPhrase('miembros','alt','flogosis',patient));
-  if(isChecked('miembros','alt','flebitis')) negParts.push(itemPhrase('miembros','alt','flebitis',patient));
+  if(isOn(salida,'miembros','alt','flogosis')) negParts.push(itemPhrase('miembros','alt','flogosis',patient));
+  if(isOn(salida,'miembros','alt','flebitis')) negParts.push(itemPhrase('miembros','alt','flebitis',patient));
   return negParts.join(' y ');
 }
-function buildMiembrosClause(patient){
-  const parts = collectSystemParts('miembros', patient);
-  const flogFleb = buildFlogosisFlebitisClause(patient);
+function buildMiembrosClause(patient, salida){
+  const parts = collectSystemParts('miembros', patient, salida);
+  const flogFleb = buildFlogosisFlebitisClause(patient, salida);
   const merged = flogFleb ? [parts[0], flogFleb].concat(parts.slice(1)).filter(Boolean) : parts;
   if(!merged.length) return '';
   return `Miembros ${merged.join(', ')}`;
 }
-function buildCatarsisDiuresisClause(patient){
-  const catPos = isChecked('dig','normal','catarsispos');
-  const diuPos = isChecked('renal','normal','diuresispos');
+function buildCatarsisDiuresisClause(patient, salida){
+  const catPos = isOn(salida,'dig','normal','catarsispos');
+  const diuPos = isOn(salida,'renal','normal','diuresispos');
   const ml = detailValFor('renal','normal','diuresispos');
   if(catPos && diuPos){
     return `catarsis y diuresis conservados${ml?` (diuresis ${ml} ml en bolsa colectora)`:''}`;
   }
   const parts = [];
   if(catPos) parts.push('catarsis conservada');
-  else if(isChecked('dig','alt','catarsisneg')) parts.push(itemPhrase('dig','alt','catarsisneg',patient));
+  else if(isOn(salida,'dig','alt','catarsisneg')) parts.push(itemPhrase('dig','alt','catarsisneg',patient));
   if(diuPos) parts.push(`diuresis conservada${ml?` (${ml} ml en bolsa colectora)`:''}`);
-  else if(isChecked('renal','alt','oliguria')) parts.push(itemPhrase('renal','alt','oliguria',patient));
-  else if(isChecked('renal','alt','anuria')) parts.push(itemPhrase('renal','alt','anuria',patient));
-  else if(isChecked('renal','alt','diuresisneg')) parts.push(itemPhrase('renal','alt','diuresisneg',patient));
+  else if(isOn(salida,'renal','alt','oliguria')) parts.push(itemPhrase('renal','alt','oliguria',patient));
+  else if(isOn(salida,'renal','alt','anuria')) parts.push(itemPhrase('renal','alt','anuria',patient));
+  else if(isOn(salida,'renal','alt','diuresisneg')) parts.push(itemPhrase('renal','alt','diuresisneg',patient));
   return parts.join(' y ');
 }
 function buildCsvLine(){
@@ -2154,13 +2355,13 @@ function baseNeuroAdjetivos(estado){
   if(idx<=0) return { consciencia:'vigil', reactividad:'reactiv' };
   return { consciencia:'somnoliento', reactividad:'poco reactiv' };
 }
-function buildOpeningExamSentence(p, estado){
+function buildOpeningExamSentence(p, estado, salida){
   const genero = p.sexo === 'F' ? 'a' : 'o';
   const base = baseNeuroAdjetivos(estado);
   const otrasAlt = ['desorientado','excitacion','noobedece','confuso']
-    .filter(id=>isChecked('neuro','alt',id))
+    .filter(id=>isOn(salida,'neuro','alt',id))
     .map(id=>itemPhrase('neuro','alt',id,p));
-  const focoAlt = isChecked('neuro','alt','focomotor') ? itemPhrase('neuro','alt','focomotor',p) : 'sin signo de foco motor agudo';
+  const focoAlt = isOn(salida,'neuro','alt','focomotor') ? itemPhrase('neuro','alt','focomotor',p) : 'sin signo de foco motor agudo';
   let s = `Paciente en ${estadoCortoTexto(estado)}, ${base.consciencia}, ${base.reactividad}${genero}`;
   if(otrasAlt.length) s += ', ' + otrasAlt.join(', ');
   s += `, ${focoAlt}${trendPhraseFor('neuro',p)}.`;
@@ -2170,85 +2371,151 @@ function buildOpeningExamSentence(p, estado){
 /* Cuerpo del examen (CSV + cardio/resp/abdomen-renal/miembros/infecto +
    cierre por estado general), compartido entre HISTORIA CLÍNICA y PASE —
    versión completa — ambas cuentan lo sano y lo patológico de forma
-   completa; solo cambia la frase de apertura de cada una. */
-function buildExamBody(p, opts){
-  opts = opts || {};
+   completa; lo que entra en cada una lo define la plantilla «Qué aparece
+   en cada texto» (por defecto, todo lo tildado). */
+function buildExamBody(p, salida){
+  salida = salida || 'completa';
   const estado = fld('evolEstado').value;
-  const cv = collectSystemPhrase('cv', p);
-  const resp = collectSystemPhrase('resp', p);
-  const dig = collectSystemPhrase('dig', p);
-  const miembrosClause = buildMiembrosClause(p);
+  const cv = collectSystemPhrase('cv', p, salida);
+  const resp = collectSystemPhrase('resp', p, salida);
+  const dig = collectSystemPhrase('dig', p, salida);
+  const miembrosClause = buildMiembrosClause(p, salida);
   const infectoAplica = fld('apply_infecto') && fld('apply_infecto').checked;
-  const infecto = infectoAplica ? collectSystemPhrase('infecto', p) : '';
+  const infecto = infectoAplica ? collectSystemPhrase('infecto', p, salida) : '';
   const estudioTipo = fld('evolEstudioTipo') ? fld('evolEstudioTipo').value : '';
   const estudioInforme = fld('evolEstudioInforme') ? fld('evolEstudioInforme').value.trim() : '';
 
-  let out = buildCsvLine() + ' ';
+  let out = bloqueOn(salida,'csv') ? buildCsvLine() + ' ' : '';
   if(cv) out += `${capitalize(cv)}${trendPhraseFor('cv',p)}. `;
-  if(estudioTipo && estudioInforme) out += `Se recibe informe de ${estudioTipo}: ${estudioInforme}. `;
+  if(bloqueOn(salida,'estudio') && estudioTipo && estudioInforme) out += `Se recibe informe de ${estudioTipo}: ${estudioInforme}. `;
   if(resp) out += `A nivel pulmonar, ${resp}${trendPhraseFor('resp',p)}. `;
 
   const digSentence = dig ? `Abdomen ${dig}${trendPhraseFor('dig',p)}.` : '';
-  const catDiu = buildCatarsisDiuresisClause(p);
+  const catDiu = buildCatarsisDiuresisClause(p, salida);
   const catDiuSentence = catDiu ? `${capitalize(catDiu)}${trendPhraseFor('renal',p)}.` : '';
   if(digSentence || catDiuSentence) out += `${digSentence}${digSentence&&catDiuSentence?' ':''}${catDiuSentence} `;
 
   if(miembrosClause) out += `${miembrosClause}${trendPhraseFor('miembros',p)}. `;
   if(infectoAplica && infecto) out += `Desde el punto de vista infectológico, ${infecto}${trendPhraseFor('infecto',p)}. `;
 
-  // Solo la historia clínica lleva LAB / IMG, después del último sistema y antes del cierre.
-  if(opts.labImg) out += LAB_IMG_TXT + ' ';
-  out += closingEstadoSentence(estado);
+  // LAB / IMG (en la historia clínica va en negrita): después del último sistema y antes del cierre.
+  if(bloqueOn(salida,'labimg')) out += LAB_IMG_TXT + ' ';
+  if(bloqueOn(salida,'cierre')) out += closingEstadoSentence(estado);
   out += noChangeClause(p, estado);
   out += estadoTrendPhrase(p.lastEstado, estado);
   return out.trim();
 }
 
-/* HISTORIA CLÍNICA: arranca situando el diagnóstico (MI) y el tratamiento —
-   el propio texto de MI ya suele traer "en tto con X (día Y de tto)" si
-   viene actualizado desde el .md del pase de sala. */
-function buildHistoriaClinicaText(p){
-  const fecha = fmtFechaDMY(fld('evolFecha').value) || '(fecha)';
-  const estado = fld('evolEstado').value;
+/* Frase de datos y diagnóstico: sexo, edad y MI activos (el propio texto de MI ya suele
+   traer "en tto con X (día Y de tto)" si viene actualizado desde el .md del pase de sala). */
+function dxSentence(p){
   const sexoTxt = p.sexo === 'M' ? 'masculino' : (p.sexo === 'F' ? 'femenina' : '');
   const miResumen = activeMiSummary(p);
-  const dx = `Paciente${sexoTxt?' '+sexoTxt:''}${p.edad?' de '+p.edad:''}${miResumen?', cursando internación '+miResumen:''}.`;
-  return `${fecha}: ${dx} ${buildOpeningExamSentence(p, estado)} ${buildExamBody(p, {labImg:true})}`.trim();
+  return `Paciente${sexoTxt?' '+sexoTxt:''}${p.edad?' de '+p.edad:''}${miResumen?', cursando internación '+miResumen:''}.`;
 }
 
-/* PASE — versión completa: mismo cuerpo que HISTORIA CLÍNICA (cuenta lo sano
-   y lo patológico de forma completa), pero sin la frase de diagnóstico —
-   va directo al examen del día. */
-function buildPaseCompletoText(p){
+/* Arma cualquiera de los tres textos: fecha, [diagnóstico], [apertura neurológica] y el cuerpo.
+   Por defecto: HC lleva diagnóstico; el PASE (corta y completa) va directo al examen del día. */
+function buildSalidaText(p, salida){
   const fecha = fmtFechaDMY(fld('evolFecha').value) || '(fecha)';
   const estado = fld('evolEstado').value;
-  return `${fecha}: ${buildOpeningExamSentence(p, estado)} ${buildExamBody(p)}`.trim();
+  const partes = [fecha + ':'];
+  if(bloqueOn(salida,'dx')) partes.push(dxSentence(p));
+  if(bloqueOn(salida,'apertura')) partes.push(buildOpeningExamSentence(p, estado, salida));
+  partes.push(salida === 'corta' ? buildCuerpoCorto(p) : buildExamBody(p, salida));
+  return partes.filter(Boolean).join(' ').trim();
 }
+function buildHistoriaClinicaText(p){ return buildSalidaText(p, 'hc'); }
+function buildPaseCompletoText(p){ return buildSalidaText(p, 'completa'); }
 
-function altOnlyForSystem(key, patient){
+/* ---- PASE corta ----
+   Por defecto: CSV + solo las alteraciones tildadas (y, si no hay ninguna, un resumen breve de lo
+   normal). Cualquier ítem normal que se incluya en la corta desde la plantilla entra agrupado por
+   sistema en una sola oración; cada alteración sigue siendo una oración propia. */
+function shortSystemSentences(key, p, prefijoNormal){
   const merged = getMergedItems(key);
   const exclude = EXCLUDE_FROM_JOIN[key] || [];
-  const parts = [];
+  const normales = [], alts = [];
+  merged.normal.forEach(item=>{
+    if(exclude.indexOf(item.id)!==-1) return;
+    if(isOn('corta', key, 'normal', item.id)) normales.push(itemPhrase(key,'normal',item.id,p));
+  });
   merged.alteraciones.forEach(item=>{
     if(exclude.indexOf(item.id)!==-1) return;
-    if(isChecked(key,'alt',item.id)) parts.push(itemPhrase(key,'alt',item.id,patient));
+    if(isOn('corta', key, 'alt', item.id)) alts.push(itemPhrase(key,'alt',item.id,p));
   });
-  return parts;
+  const out = [];
+  if(normales.length) out.push((prefijoNormal||'') + normales.join(', '));
+  return out.concat(alts);
 }
-function flogFlebAltOnly(patient){
-  const parts = [];
-  if(isChecked('miembros','alt','flogosis')) parts.push(itemPhrase('miembros','alt','flogosis',patient));
-  if(isChecked('miembros','alt','flebitis')) parts.push(itemPhrase('miembros','alt','flebitis',patient));
-  return parts;
+function shortCatDiuSentences(p){
+  const S = 'corta';
+  const catPos = isOn(S,'dig','normal','catarsispos');
+  const diuPos = isOn(S,'renal','normal','diuresispos');
+  const ml = detailValFor('renal','normal','diuresispos');
+  const out = [];
+  if(catPos && diuPos) out.push(`catarsis y diuresis conservados${ml?` (diuresis ${ml} ml en bolsa colectora)`:''}`);
+  else {
+    if(catPos) out.push('catarsis conservada');
+    if(diuPos) out.push(`diuresis conservada${ml?` (${ml} ml en bolsa colectora)`:''}`);
+  }
+  if(isOn(S,'dig','alt','catarsisneg')) out.push(itemPhrase('dig','alt','catarsisneg',p));
+  if(isOn(S,'renal','alt','oliguria')) out.push(itemPhrase('renal','alt','oliguria',p));
+  else if(isOn(S,'renal','alt','anuria')) out.push(itemPhrase('renal','alt','anuria',p));
+  else if(isOn(S,'renal','alt','diuresisneg')) out.push(itemPhrase('renal','alt','diuresisneg',p));
+  return out;
 }
-function catarsisDiuresisAltOnly(patient){
-  const parts = [];
-  if(isChecked('dig','alt','catarsisneg')) parts.push(itemPhrase('dig','alt','catarsisneg',patient));
-  if(isChecked('renal','alt','oliguria')) parts.push(itemPhrase('renal','alt','oliguria',patient));
-  else if(isChecked('renal','alt','anuria')) parts.push(itemPhrase('renal','alt','anuria',patient));
-  else if(isChecked('renal','alt','diuresisneg')) parts.push(itemPhrase('renal','alt','diuresisneg',patient));
-  return parts;
+function shortMiembrosSentences(p){
+  const S = 'corta';
+  const merged = getMergedItems('miembros');
+  const exclude = EXCLUDE_FROM_JOIN.miembros || [];
+  const normales = [], alts = [];
+  merged.normal.forEach(item=>{
+    if(exclude.indexOf(item.id)!==-1) return;
+    if(isOn(S,'miembros','normal',item.id)) normales.push(itemPhrase('miembros','normal',item.id,p));
+  });
+  const flogPos = isOn(S,'miembros','normal','sinflogosis');
+  const flebPos = isOn(S,'miembros','normal','sinflebitis');
+  const flogFleb = (flogPos && flebPos) ? 'sin flogosis ni flebitis' : (flogPos ? 'sin flogosis' : (flebPos ? 'sin signos de flebitis' : ''));
+  if(flogFleb) normales.splice(Math.min(1, normales.length), 0, flogFleb);
+  merged.alteraciones.forEach(item=>{
+    if(exclude.indexOf(item.id)!==-1) return;
+    if(isOn(S,'miembros','alt',item.id)) alts.push(itemPhrase('miembros','alt',item.id,p));
+  });
+  if(isOn(S,'miembros','alt','flogosis')) alts.push(itemPhrase('miembros','alt','flogosis',p));
+  if(isOn(S,'miembros','alt','flebitis')) alts.push(itemPhrase('miembros','alt','flebitis',p));
+  const out = [];
+  if(normales.length) out.push('Miembros ' + normales.join(', '));
+  return out.concat(alts);
 }
+function buildCuerpoCorto(p){
+  const S = 'corta';
+  const estado = fld('evolEstado').value;
+  const infectoAplica = fld('apply_infecto') && fld('apply_infecto').checked;
+  const estudioTipo = fld('evolEstudioTipo') ? fld('evolEstudioTipo').value : '';
+  const estudioInforme = fld('evolEstudioInforme') ? fld('evolEstudioInforme').value.trim() : '';
+
+  let out = bloqueOn(S,'csv') ? buildCsvLine() + ' ' : '';
+  const hallazgos = [].concat(
+    shortSystemSentences('cv', p, ''),
+    (bloqueOn(S,'estudio') && estudioTipo && estudioInforme) ? [`Se recibe informe de ${estudioTipo}: ${estudioInforme}`] : [],
+    shortSystemSentences('resp', p, 'A nivel pulmonar, '),
+    shortSystemSentences('dig', p, 'Abdomen '),
+    shortCatDiuSentences(p),
+    shortMiembrosSentences(p),
+    infectoAplica ? shortSystemSentences('infecto', p, 'Desde el punto de vista infectológico, ') : []
+  );
+  if(hallazgos.length){
+    out += hallazgos.map(capitalize).join('. ') + '. ';
+  } else {
+    out += 'BMV, BEAB. R1 y R2 en 4 focos, sin falla aguda de bomba. Abdomen S/P. Resto del examen físico sin cambios. Diuresis y catarsis conservadas. ';
+  }
+  if(bloqueOn(S,'labimg')) out += LAB_IMG_TXT + ' ';
+  if(bloqueOn(S,'cierre')) out += closingEstadoSentence(estado);
+  return out.trim();
+}
+function buildEvolTextShort(p){ return buildSalidaText(p, 'corta'); }
+
 /* Texto que va dentro de la frase de apertura ("Paciente en ___"). Si la
    opción tiene un texto corto propio se usa ese; si no, se deduce de la
    posición en la lista (primera = mejor, última = peor). */
@@ -2263,36 +2530,6 @@ function estadoCortoTexto(estado){
   if(idx===-1) return estado;
   const propio = (opts[idx].corto||'').trim();
   return propio || estadoCortoPorPosicion(idx, opts.length);
-}
-
-/* PASE — versión corta: frase de apertura fija + CSV, y de ahí en más SOLO
-   lo alterado (mismo orden de sistemas que la versión completa). Si no hay
-   ningún hallazgo patológico, en vez de "CSV S/P." se detalla un resumen
-   breve de lo normal (a pedido: que no quede tan escueta). */
-function buildEvolTextShort(p){
-  const fecha = fmtFechaDMY(fld('evolFecha').value) || '(fecha)';
-  const estado = fld('evolEstado').value;
-
-  let out = `${fecha}: ${buildOpeningExamSentence(p, estado)} `;
-  out += buildCsvLine() + ' ';
-
-  const hallazgos = [].concat(
-    altOnlyForSystem('cv', p),
-    altOnlyForSystem('resp', p),
-    altOnlyForSystem('dig', p),
-    catarsisDiuresisAltOnly(p),
-    altOnlyForSystem('miembros', p),
-    flogFlebAltOnly(p),
-    (fld('apply_infecto') && fld('apply_infecto').checked) ? altOnlyForSystem('infecto', p) : []
-  );
-
-  if(hallazgos.length){
-    out += hallazgos.map(capitalize).join('. ') + '. ';
-  } else {
-    out += 'BMV, BEAB. R1 y R2 en 4 focos, sin falla aguda de bomba. Abdomen S/P. Resto del examen físico sin cambios. Diuresis y catarsis conservadas. ';
-  }
-  out += closingEstadoSentence(estado);
-  return out.trim();
 }
 
 function updateDraftPreview(p){
@@ -2651,10 +2888,10 @@ function iniciarAppPrincipal(){
     if(snap.exists && snap.exists()){
       const data = snap.data();
       checklistConfig = (data && typeof data === 'object')
-        ? { custom: data.custom||{}, edits: data.edits||{}, hidden: data.hidden||{}, order: data.order||{}, customPlantillas: data.customPlantillas||{}, defaults: data.defaults||{}, estadoOptions: data.estadoOptions||null, camasVisibles: Array.isArray(data.camasVisibles) ? data.camasVisibles.map(String) : null }
-        : { custom:{}, edits:{}, hidden:{}, order:{}, customPlantillas:{}, defaults:{}, estadoOptions:null, camasVisibles:null };
+        ? { custom: data.custom||{}, edits: data.edits||{}, hidden: data.hidden||{}, order: data.order||{}, customPlantillas: data.customPlantillas||{}, defaults: data.defaults||{}, salidas: (data.salidas && typeof data.salidas === 'object') ? data.salidas : {}, estadoOptions: data.estadoOptions||null, camasVisibles: Array.isArray(data.camasVisibles) ? data.camasVisibles.map(String) : null }
+        : { custom:{}, edits:{}, hidden:{}, order:{}, customPlantillas:{}, defaults:{}, salidas:{}, estadoOptions:null, camasVisibles:null };
     } else {
-      checklistConfig = { custom:{}, edits:{}, hidden:{}, order:{}, customPlantillas:{}, defaults:{}, estadoOptions:null, camasVisibles:null };
+      checklistConfig = { custom:{}, edits:{}, hidden:{}, order:{}, customPlantillas:{}, defaults:{}, salidas:{}, estadoOptions:null, camasVisibles:null };
     }
     const activeInsideForm = document.activeElement && fld('formCol') && fld('formCol').contains(document.activeElement);
     if(getSelected() && !activeInsideForm) renderForm();
