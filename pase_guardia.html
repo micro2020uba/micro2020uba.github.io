@@ -55,7 +55,7 @@
   .cv-dropdown{
     position:absolute; top:calc(100% + 3px); right:0; z-index:40;
     background:var(--panel); border:1px solid var(--ink); border-radius:3px;
-    max-height:220px; overflow-y:auto; min-width:110px;
+    max-height:220px; overflow-y:auto; width:130px; box-sizing:border-box;
     box-shadow:2px 3px 6px rgba(0,0,0,.18);
   }
   .cv-dropdown .cv-opt{
@@ -64,11 +64,16 @@
   }
   .cv-dropdown .cv-opt:hover, .cv-dropdown .cv-opt.hi{background:var(--accent);color:#fff;}
   .cv-dropdown .cv-empty{padding:6px 10px;font-size:11px;color:var(--muted);}
-  /* Botón "＋" para agregar a la vista un paciente encontrado por el buscador. */
+  /* Botón para agregar a "Camas mostradas" un paciente encontrado por el
+     buscador. Antes era un simple "＋" chiquito y pasaba desapercibido;
+     ahora es una pastilla con texto, bien visible, a la izquierda del
+     resultado. */
   .patient-chip .addvis{
-    color:var(--accent-dark); font-weight:700; border:1px solid var(--accent-dark);
-    background:none; cursor:pointer; font-size:12px; line-height:1; padding:1px 5px;
-    border-radius:2px; margin-right:4px; flex-shrink:0;
+    display:inline-flex; align-items:center; gap:2px;
+    color:#fff; font-weight:700; font-size:10.5px; letter-spacing:.02em;
+    border:1px solid var(--accent-dark); background:var(--accent-dark);
+    cursor:pointer; line-height:1.5; padding:3px 7px; border-radius:3px;
+    flex-shrink:0; white-space:nowrap; margin-right:6px;
   }
   .patient-chip .addvis:hover{background:var(--accent-dark);color:#fff;}
   .cv-note{font-size:10px;color:var(--muted);line-height:1.35;margin-bottom:8px;}
@@ -1322,7 +1327,12 @@ function renderCamasVisiblesBar(){
       renderSidebar();
     });
   });
-  renderCamaVisibleSelect();
+  // Nota: el combobox para agregar cama (input#camaAddInput) ya no depende de
+  // este render — sus opciones se calculan solas recién cuando el usuario lo
+  // abre (foco/clic/tipeo), así que acá no hace falta (y no conviene) tocarlo:
+  // si lo tocábamos en cada redibujado de esta barra, el desplegable se volvía
+  // a abrir solo cada vez que se seleccionaba un paciente, se tildaba algo,
+  // etc. — eso era el bug de "se abre solo al pasar el mouse".
 }
 /* Rango de camas de la sala (C101–C140, el mismo que usa el resto del
    programa — ver "Importar MI (101-140)"). El desplegable "▼" lista las
@@ -1378,9 +1388,8 @@ function renderCamaAddDropdown(){
     });
   });
 }
-// Se mantiene el nombre viejo (renderCamaVisibleSelect) como alias, porque
-// se llama desde renderCamasVisiblesBar(): así no hace falta tocar ese punto.
-function renderCamaVisibleSelect(){ renderCamaAddDropdown(); }
+// (antes existía acá un alias renderCamaVisibleSelect(); ya no hace falta:
+// ver la nota en renderCamasVisiblesBar().)
 (function initCamaAddCombobox(){
   const input = document.getElementById('camaAddInput');
   const wrap = document.getElementById('camaAddWrap');
@@ -1445,7 +1454,7 @@ function renderSidebar(){
     // tener que abrir el combobox de camas aparte.
     const nCama = bedNumberOfPatient(p);
     const puedeAgregar = !!f && p.cama && !isNaN(nCama) && !getCamasVisibles().includes(String(nCama));
-    chip.innerHTML = (puedeAgregar ? `<button type="button" class="addvis" title="Agregar a Camas mostradas">＋</button>` : '')
+    chip.innerHTML = (puedeAgregar ? `<button type="button" class="addvis" title="Agregar a Camas mostradas">＋ agregar</button>` : '')
       + `<span class="name">${escapeHtml(label)}</span><button class="del" title="Eliminar">×</button>`;
     chip.querySelector('.name').addEventListener('click',()=>{selectedId=p.id;lastRenderedPatientId=null;renderAll();scrollFormToTop();});
     chip.querySelector('.del').addEventListener('click',(e)=>{e.stopPropagation();removePatient(p.id);});
@@ -3189,6 +3198,7 @@ fld('clearAllBtn').addEventListener('click', ()=>{
   addPatient();
 });
 fld('patientSearch').addEventListener('input', (e)=>{ sidebarFilter = e.target.value; renderSidebar(); });
+fld('patientSearch').addEventListener('focus', ()=>{ closeCamaAddDropdown(); });
 /* El agregado de cama a "Camas mostradas" ahora lo maneja el combobox propio
    (ver initCamaAddCombobox, más arriba, junto a renderCamaAddDropdown). */
 
