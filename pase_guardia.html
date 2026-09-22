@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-   Versión: 24 (21/09/2026)
+   Versión: 24 (22/09/2026)
 -->
 <html lang="es-AR">
 <head>
@@ -42,11 +42,35 @@
     color:var(--accent-dark);background:#eef4f2;border:1px solid var(--accent);border-radius:11px;padding:2px 5px 2px 8px;}
   .cv-chip button{background:none;border:none;color:var(--accent-dark);font-size:12px;cursor:pointer;line-height:1;padding:0 1px;}
   .cv-chip button:hover{color:var(--danger);}
-  .cv-add{display:flex;align-items:center;gap:3px;margin-left:auto;}
+  .cv-add{display:flex;align-items:center;gap:3px;margin-left:auto;position:relative;}
   .cv-add input{width:52px;font-family:'IBM Plex Mono',monospace;font-size:11px;padding:3px 5px;border:1px solid var(--line-soft);border-radius:2px;background:var(--field-bg);color:var(--ink);}
   .cv-add button{font-size:11px;font-weight:700;border:1px solid var(--ink);background:var(--panel);color:var(--ink);border-radius:2px;padding:3px 7px;cursor:pointer;}
   .cv-add button:hover{background:var(--ink);color:var(--paper);}
   .cv-add select{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;padding:3px 6px;border:1px solid var(--ink);border-radius:2px;background:var(--panel);color:var(--ink);cursor:pointer;}
+  /* Combobox propio para agregar cama a la vista: reemplaza al <select> nativo
+     (en mobile el picker nativo del SO siempre reabría arriba de todo, sin
+     recordar el scroll). Con esta lista propia el scroll queda bajo nuestro
+     control y además sirve para buscar tipeando. */
+  #camaAddInput{width:70px;}
+  .cv-dropdown{
+    position:absolute; top:calc(100% + 3px); right:0; z-index:40;
+    background:var(--panel); border:1px solid var(--ink); border-radius:3px;
+    max-height:220px; overflow-y:auto; min-width:110px;
+    box-shadow:2px 3px 6px rgba(0,0,0,.18);
+  }
+  .cv-dropdown .cv-opt{
+    padding:6px 10px; font-family:'IBM Plex Mono',monospace; font-size:12px;
+    cursor:pointer; white-space:nowrap;
+  }
+  .cv-dropdown .cv-opt:hover, .cv-dropdown .cv-opt.hi{background:var(--accent);color:#fff;}
+  .cv-dropdown .cv-empty{padding:6px 10px;font-size:11px;color:var(--muted);}
+  /* Botón "＋" para agregar a la vista un paciente encontrado por el buscador. */
+  .patient-chip .addvis{
+    color:var(--accent-dark); font-weight:700; border:1px solid var(--accent-dark);
+    background:none; cursor:pointer; font-size:12px; line-height:1; padding:1px 5px;
+    border-radius:2px; margin-right:4px; flex-shrink:0;
+  }
+  .patient-chip .addvis:hover{background:var(--accent-dark);color:#fff;}
   .cv-note{font-size:10px;color:var(--muted);line-height:1.35;margin-bottom:8px;}
   .pase-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
   .pase-actions button{flex:1;min-width:110px;}
@@ -210,6 +234,14 @@
   .so-bulk-btn:hover{background:var(--accent-dark);border-color:var(--accent-dark);color:#fff;}
   .vitals-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
   @media (max-width:640px){ .vitals-grid{grid-template-columns:1fr 1fr;} }
+  /* Checklist de frases de VSC (subfebril/febril/taquicárdico/etc.), calculado
+     según los valores cargados arriba (TA/FC/SatO2/T°). Sin marcar por
+     defecto; si se tilda una, reemplaza al número crudo por la frase
+     correspondiente en el texto generado. */
+  .vsc-options{margin:2px 0 12px;}
+  .vsc-options .vsc-row{display:flex;align-items:flex-start;gap:6px;padding:3px 0;font-size:12px;}
+  .vsc-options .vsc-row input{margin-top:2px;flex-shrink:0;}
+  .vsc-options .vsc-empty{font-size:10.5px;color:var(--muted);}
 
 
   .out-col{padding:16px clamp(10px,2vw,20px);position:sticky;top:0;}
@@ -601,8 +633,9 @@
     <div class="camas-visibles-bar" id="camasVisiblesBar">
       <span class="cv-label">Camas mostradas:</span>
       <div id="camasVisiblesChips" style="display:contents;"></div>
-      <div class="cv-add">
-        <select id="camaVisibleSelect" title="Agregar cama a la vista"></select>
+      <div class="cv-add" id="camaAddWrap">
+        <input type="text" id="camaAddInput" placeholder="+ cama" title="Agregar cama a la vista" autocomplete="off" inputmode="numeric">
+        <div class="cv-dropdown" id="camaAddDropdown" hidden></div>
       </div>
     </div>
     <div class="cv-note"></div>
@@ -668,7 +701,7 @@ const SISTEMAS = {
   },
   resp: { label:'Respiratorio',
     normal:[
-      {id:'mecanica',text:'buena mecánica ventilatoria',variants:['buena mecánica ventilatoria','mecánica ventilatoria conservada'],antagonistas:['tiraje']},
+      {id:'mecanica',text:'buena mecánica ventilatoria',variants:['buena mecánica ventilatoria','mecánica ventilatoria conservada'],antagonistas:['tiraje','malamecanica']},
       {id:'mv',text:'buena entrada de aire bilateral, murmullo vesicular conservado',variants:['buena entrada de aire bilateral, murmullo vesicular conservado','murmullo vesicular conservado bilateral'],antagonistas:['mvdism']},
       {id:'sinagregados',text:'sin ruidos agregados',antagonistas:['crepitantes','sibilancias','roncus']},
       {id:'sintiraje',text:'sin tiraje',antagonistas:['tiraje']},
@@ -679,6 +712,7 @@ const SISTEMAS = {
       {id:'sibilancias',text:'sibilancias',detail:true,detailLabel:'ubicación',antagonistas:['sinagregados']},
       {id:'roncus',text:'roncus',detail:true,detailLabel:'ubicación',antagonistas:['sinagregados']},
       {id:'tiraje',text:'tiraje',antagonistas:['mecanica','sintiraje']},
+      {id:'malamecanica',text:'mala mecánica ventilatoria',variants:['mala mecánica ventilatoria','mala mecánica ventilatoria, con uso de músculos accesorios'],antagonistas:['mecanica']},
       {id:'o2sup',text:'requerimiento de oxígeno suplementario',detail:true,detailLabel:'cantidad / dispositivo',antagonistas:['sat']},
       {id:'mvdism',text:'murmullo vesicular disminuido / abolido',detail:true,detailLabel:'ubicación',antagonistas:['mv']}
     ]
@@ -1296,18 +1330,90 @@ function renderCamasVisiblesBar(){
    puede elegir buscando (tipeando el número salta a la opción) o con el
    mouse. Al elegir una, se agrega a la vista y se crea su carpeta. */
 const CAMA_RANGO_MIN = 101, CAMA_RANGO_MAX = 140;
-function renderCamaVisibleSelect(){
-  const sel = fld('camaVisibleSelect');
-  if(!sel) return;
+/* Combobox propio (input + lista propia) para agregar una cama a "Camas
+   mostradas". Reemplaza al <select> nativo: en el celular, el picker nativo
+   del sistema operativo siempre reabría arriba de todo (en C102) en vez de
+   recordar el scroll o la selección previa, lo que hacía muy difícil
+   encontrar camas más avanzadas en la lista. Con una lista propia (un simple
+   <div> desplegable) el scroll queda bajo control nuestro y además permite
+   tipear para filtrar. */
+let camaAddHiIdx = -1;
+function camaAddOpciones(filtro){
   const visibles = getCamasVisibles();
-  let opts = '<option value="" disabled selected hidden></option>';
+  const f = (filtro||'').trim();
+  const out = [];
   for(let n=CAMA_RANGO_MIN; n<=CAMA_RANGO_MAX; n++){
     const c = String(n);
     if(visibles.includes(c)) continue;
-    opts += `<option value="${c}">C${c}</option>`;
+    if(f && c.indexOf(f)===-1) continue;
+    out.push(c);
   }
-  sel.innerHTML = opts;
+  return out;
 }
+function closeCamaAddDropdown(){
+  const dd = fld('camaAddDropdown');
+  if(dd){ dd.hidden = true; dd.innerHTML=''; }
+  camaAddHiIdx = -1;
+}
+function renderCamaAddDropdown(){
+  const input = fld('camaAddInput');
+  const dd = fld('camaAddDropdown');
+  if(!input || !dd) return;
+  const opciones = camaAddOpciones(input.value);
+  if(!opciones.length){
+    dd.innerHTML = '<div class="cv-empty">Sin camas disponibles</div>';
+    dd.hidden = false;
+    camaAddHiIdx = -1;
+    return;
+  }
+  dd.innerHTML = opciones.map((c,i)=>`<div class="cv-opt${i===camaAddHiIdx?' hi':''}" data-cama="${c}">C${c}</div>`).join('');
+  dd.hidden = false;
+  dd.querySelectorAll('.cv-opt[data-cama]').forEach(el=>{
+    el.addEventListener('mousedown', (e)=>{
+      // mousedown (no click) para que dispare antes del blur del input.
+      e.preventDefault();
+      addCamaVisible(el.dataset.cama);
+      input.value = '';
+      closeCamaAddDropdown();
+    });
+  });
+}
+// Se mantiene el nombre viejo (renderCamaVisibleSelect) como alias, porque
+// se llama desde renderCamasVisiblesBar(): así no hace falta tocar ese punto.
+function renderCamaVisibleSelect(){ renderCamaAddDropdown(); }
+(function initCamaAddCombobox(){
+  const input = document.getElementById('camaAddInput');
+  const wrap = document.getElementById('camaAddWrap');
+  if(!input || !wrap) return;
+  input.addEventListener('focus', renderCamaAddDropdown);
+  input.addEventListener('input', ()=>{ camaAddHiIdx = -1; renderCamaAddDropdown(); });
+  input.addEventListener('keydown', (e)=>{
+    const dd = fld('camaAddDropdown');
+    const opts = dd ? Array.from(dd.querySelectorAll('.cv-opt[data-cama]')) : [];
+    if(e.key === 'ArrowDown'){
+      e.preventDefault();
+      if(!opts.length) return;
+      camaAddHiIdx = Math.min(camaAddHiIdx+1, opts.length-1);
+      renderCamaAddDropdown();
+    } else if(e.key === 'ArrowUp'){
+      e.preventDefault();
+      if(!opts.length) return;
+      camaAddHiIdx = Math.max(camaAddHiIdx-1, 0);
+      renderCamaAddDropdown();
+    } else if(e.key === 'Enter'){
+      e.preventDefault();
+      const opciones = camaAddOpciones(input.value);
+      const elegida = camaAddHiIdx>=0 ? opciones[camaAddHiIdx] : opciones[0];
+      if(elegida){ addCamaVisible(elegida); input.value=''; closeCamaAddDropdown(); }
+    } else if(e.key === 'Escape'){
+      closeCamaAddDropdown();
+      input.blur();
+    }
+  });
+  document.addEventListener('click', (e)=>{
+    if(!wrap.contains(e.target)) closeCamaAddDropdown();
+  });
+})();
 function addCamaVisible(cama){
   const list = getCamasVisibles();
   if(!list.includes(cama)) list.push(cama);
@@ -1334,9 +1440,17 @@ function renderSidebar(){
     if(f && label.toLowerCase().indexOf(f)===-1) return;
     const chip = document.createElement('div');
     chip.className = 'patient-chip'+(p.id===selectedId?' active':'')+' '+estadoClass(p);
-    chip.innerHTML = `<span class="name">${escapeHtml(label)}</span><button class="del" title="Eliminar">×</button>`;
+    // Buscando por cama/nombre: si ese paciente todavía no está entre las
+    // "Camas mostradas", se agrega un botón "＋" para sumarlo a la vista sin
+    // tener que abrir el combobox de camas aparte.
+    const nCama = bedNumberOfPatient(p);
+    const puedeAgregar = !!f && p.cama && !isNaN(nCama) && !getCamasVisibles().includes(String(nCama));
+    chip.innerHTML = (puedeAgregar ? `<button type="button" class="addvis" title="Agregar a Camas mostradas">＋</button>` : '')
+      + `<span class="name">${escapeHtml(label)}</span><button class="del" title="Eliminar">×</button>`;
     chip.querySelector('.name').addEventListener('click',()=>{selectedId=p.id;lastRenderedPatientId=null;renderAll();scrollFormToTop();});
     chip.querySelector('.del').addEventListener('click',(e)=>{e.stopPropagation();removePatient(p.id);});
+    const addBtn = chip.querySelector('.addvis');
+    if(addBtn) addBtn.addEventListener('click',(e)=>{ e.stopPropagation(); addCamaVisible(String(nCama)); });
     list.appendChild(chip);
   });
   renderCamasVisiblesBar();
@@ -1620,9 +1734,12 @@ function lastDetail(p, key, kind, id){
 function captureEvolUiState(){
   const box = fld('evolBuilder');
   if(!box || !box.firstElementChild) return null;
-  const st = { checks:{}, details:{}, fields:{}, scrollY: window.pageYOffset, fechaAutoSync: fechaAutoSync };
+  const st = { checks:{}, details:{}, fields:{}, vsc:{}, scrollY: window.pageYOffset, fechaAutoSync: fechaAutoSync };
   box.querySelectorAll('input[type="checkbox"][data-sys]').forEach(c=>{
     st.checks[c.dataset.sys+'|'+c.dataset.kind+'|'+c.dataset.id] = c.checked;
+  });
+  box.querySelectorAll('input[data-vsc]').forEach(c=>{
+    st.vsc[c.dataset.vsc] = c.checked;
   });
   box.querySelectorAll('input.detail-input').forEach(i=>{
     st.details[i.dataset.sys+'|'+i.dataset.kind+'|'+i.dataset.detailFor] = i.value;
@@ -1659,6 +1776,14 @@ function restoreEvolUiState(st){
     if(!el) return;
     if(id === 'evolEstado' && !Array.from(el.options).some(o=>o.value===st.fields[id])) return;
     el.value = st.fields[id];
+  });
+  // Los campos de TA/FC/SatO2/T° recién quedaron con su valor restaurado:
+  // recién ahora se puede recalcular qué opciones de VSC corresponden, y
+  // volver a tildar las que estaban tildadas.
+  renderVscOptions(getSelected());
+  Object.keys(st.vsc||{}).forEach(id=>{
+    const c = box.querySelector(`input[data-vsc="${id}"]`);
+    if(c) c.checked = st.vsc[id];
   });
   fechaAutoSync = st.fechaAutoSync;
   const ai = fld('apply_infecto');
@@ -1725,13 +1850,14 @@ function renderEvolBuilder(p, stateOverride){
       <div id="estadoConfigList"></div>
       <button type="button" id="estadoAddOptBtn" class="secondary small">+ Agregar opción de estado</button>
     </div>
-    <div class="vitals-grid" style="margin-bottom:12px;">
+    <div class="vitals-grid" style="margin-bottom:6px;">
       <div class="field"><label>TA</label><input type="text" id="evolTA" placeholder="120/80"></div>
       <div class="field"><label>FC</label><input type="text" id="evolFC"></div>
       <div class="field"><label>SatO2 %</label><input type="text" id="evolSat"></div>
       <div class="field"><label>FiO2 % (21 = aire ambiente)</label><input type="text" id="evolFio2" placeholder="21"></div>
       <div class="field"><label>T°</label><input type="text" id="evolT"></div>
     </div>
+    <div class="vsc-options" id="vscOptions"></div>
   `;
 
   SYS_ORDER.forEach(key=>{
@@ -1823,6 +1949,12 @@ function renderEvolBuilder(p, stateOverride){
   `;
 
   box.innerHTML = html;
+
+  renderVscOptions(p);
+  ['evolTA','evolFC','evolSat','evolT'].forEach(id=>{
+    const el = fld(id);
+    if(el) el.addEventListener('input', ()=>renderVscOptions(p));
+  });
 
   // Acordeón: al abrir un sistema, se pliegan los demás (uno a la vez). Los
   // signos vitales no son parte de este acordeón (quedan siempre visibles,
@@ -2263,10 +2395,30 @@ function avisoSalidasGuardadas(){
   setTimeout(()=>{ if(st.textContent === msg) st.textContent = ''; }, 2500);
 }
 
+/* ¿Este sistema "arranca por lo patológico"? Se mira el primer ítem normal
+   de la lista (para respiratorio: "buena mecánica ventilatoria", que es lo
+   que se escribe primero, como "BMV, BEAB..."). Si ese ítem normal NO está
+   tildado y en cambio sí está tildado alguno de sus antagonistas (p. ej.
+   "mala mecánica ventilatoria"), este sistema en particular pasa a
+   redactarse con lo patológico primero y lo normal después — el resto de
+   los sistemas no se ve afectado por esto. */
+function systemStartsPathological(key, salida){
+  const merged = getMergedItems(key);
+  const lead = merged.normal[0];
+  if(!lead) return false;
+  const leadChk = document.querySelector(`[data-sys="${key}"][data-kind="normal"][data-id="${lead.id}"]`);
+  const leadOn = leadChk && leadChk.checked && (!salida || itemIncluidoEn(salida, key, 'normal', lead.id));
+  if(leadOn) return false;
+  const antagonistas = lead.antagonistas || [];
+  return antagonistas.some(aid=>{
+    const chk = document.querySelector(`[data-sys="${key}"][data-kind="alt"][data-id="${aid}"]`);
+    return chk && chk.checked && (!salida || itemIncluidoEn(salida, key, 'alt', aid));
+  });
+}
 function collectSystemParts(key, patient, salida){
   const merged = getMergedItems(key);
   const exclude = EXCLUDE_FROM_JOIN[key] || [];
-  const parts = [];
+  const normalParts = [];
   merged.normal.forEach(item=>{
     if(exclude.indexOf(item.id)!==-1) return;
     const chk = document.querySelector(`[data-sys="${key}"][data-kind="normal"][data-id="${item.id}"]`);
@@ -2276,9 +2428,10 @@ function collectSystemParts(key, patient, salida){
         const det = detailValFor(key,'normal',item.id);
         if(det) t += ` (${det})`;
       }
-      parts.push(t);
+      normalParts.push(t);
     }
   });
+  const altParts = [];
   merged.alteraciones.forEach(item=>{
     if(exclude.indexOf(item.id)!==-1) return;
     const chk = document.querySelector(`[data-sys="${key}"][data-kind="alt"][data-id="${item.id}"]`);
@@ -2288,10 +2441,10 @@ function collectSystemParts(key, patient, salida){
         const det = detailValFor(key,'alt',item.id);
         if(det) t += ` (${det})`;
       }
-      parts.push(t);
+      altParts.push(t);
     }
   });
-  return parts;
+  return systemStartsPathological(key, salida) ? altParts.concat(normalParts) : normalParts.concat(altParts);
 }
 function collectSystemPhrase(key, patient, salida){
   return collectSystemParts(key, patient, salida).join(', ');
@@ -2337,6 +2490,71 @@ function buildCsvLine(){
   const fio2 = val('evolFio2') || '21';
   return `CSV: TA: ${ta}, FC: ${fc}, SatO2: ${sat}% (${fio2}%), T°: ${t}°C.`;
 }
+
+/* ================= VSC — checklist de frases según los valores cargados =================
+   Debajo de TA/FC/SatO2/FiO2/T° se ofrece, para T° y FC (los dos determinantes
+   que el pediste explícitamente: subfebril/febril y taquicárdico/a), una
+   frase lista para usar en vez del número crudo. Se calcula sola según el
+   valor cargado y arranca SIN TILDAR — si se tilda, esa frase reemplaza al
+   dato numérico en el texto (HC / pase largo / pase corto); si no se tilda
+   nada, el texto sigue mostrando el CSV tal cual estaba.
+   Umbrales (ajustables acá si hace falta):
+     T°:  <37.2 afebril · 37.2–37.9 subfebril · ≥38 febril
+     FC:  <60 bradicárdico/a · 60–100 normocárdico/a · >100 taquicárdico/a */
+function parseNumVsc(str){
+  if(!str) return NaN;
+  const n = parseFloat(String(str).replace(',', '.').replace(/[^0-9.\-]/g,''));
+  return isNaN(n) ? NaN : n;
+}
+function generoCardio(p, masc, fem){
+  return (p && p.sexo === 'M') ? masc : fem;
+}
+/* Un único ítem por determinante (T° y FC): el que corresponde al valor
+   cargado en este momento. Cuando el valor es normal, se ofrece igual la
+   versión en prosa ("afebril", "normocárdico/a") por si se prefiere esa
+   redacción a mostrar el número. */
+function vscDeterminantes(p){
+  const det = [];
+  const t = parseNumVsc(val('evolT'));
+  if(!isNaN(t)){
+    if(t >= 38) det.push({id:'t_febril', label:`presentando registro febril (${val('evolT')}°C)`, phrase:`presentando registro febril (${val('evolT')}°C)`});
+    else if(t >= 37.2) det.push({id:'t_subfebril', label:`presentando registro subfebril (${val('evolT')}°C)`, phrase:`presentando registro subfebril (${val('evolT')}°C)`});
+    else det.push({id:'t_afebril', label:'afebril', phrase:'afebril'});
+  }
+  const fc = parseNumVsc(val('evolFC'));
+  if(!isNaN(fc)){
+    if(fc > 100) det.push({id:'fc_taqui', label:`${generoCardio(p,'taquicárdico','taquicárdica')} (${val('evolFC')} lpm)`, phrase:`${generoCardio(p,'taquicárdico','taquicárdica')} (${val('evolFC')} lpm)`});
+    else if(fc < 60) det.push({id:'fc_bradi', label:`${generoCardio(p,'bradicárdico','bradicárdica')} (${val('evolFC')} lpm)`, phrase:`${generoCardio(p,'bradicárdico','bradicárdica')} (${val('evolFC')} lpm)`});
+    else det.push({id:'fc_normo', label:`${generoCardio(p,'normocárdico','normocárdica')}`, phrase:generoCardio(p,'normocárdico','normocárdica')});
+  }
+  return det;
+}
+function renderVscOptions(p){
+  const box = fld('vscOptions');
+  if(!box) return;
+  const checkedAntes = {};
+  box.querySelectorAll('input[data-vsc]').forEach(c=>{ checkedAntes[c.dataset.vsc] = c.checked; });
+  const det = vscDeterminantes(p);
+  if(!det.length){ box.innerHTML=''; return; }
+  box.innerHTML = det.map(d=>`<label class="vsc-row"><input type="checkbox" data-vsc="${d.id}" ${checkedAntes[d.id]?'checked':''}> ${escapeHtml(d.label)}</label>`).join('');
+  box.querySelectorAll('input[data-vsc]').forEach(c=>{
+    c.addEventListener('change', ()=>updateDraftPreview(p));
+  });
+}
+/* Frase con lo tildado en el checklist de VSC (vacía si no se tildó nada). */
+function buildVscObservacionesSentence(p){
+  const box = fld('vscOptions');
+  if(!box) return '';
+  const det = vscDeterminantes(p);
+  const elegidas = [];
+  box.querySelectorAll('input[data-vsc]:checked').forEach(c=>{
+    const d = det.find(x=>x.id===c.dataset.vsc);
+    if(d) elegidas.push(d.phrase);
+  });
+  if(!elegidas.length) return '';
+  return capitalize(elegidas.join(', ')) + '. ';
+}
+
 function activeMiSummary(p){
   if(!p || !p.mi || !p.mi.length) return '';
   return p.mi.filter(i=>!i.resuelto).map(i=>i.text).join(' + ');
@@ -2535,6 +2753,7 @@ function buildExamBody(p, salida){
   const estudioInforme = fld('evolEstudioInforme') ? fld('evolEstudioInforme').value.trim() : '';
 
   let out = bloqueOn(salida,'csv') ? buildCsvLine() + ' ' : '';
+  out += buildVscObservacionesSentence(p);
   if(cv) out += `${capitalize(cv)}${trendPhraseFor('cv',p)}. `;
   if(bloqueOn(salida,'estudio') && estudioTipo && estudioInforme) out += `Se recibe informe de ${estudioTipo}: ${estudioInforme}. `;
   if(resp) out += `A nivel pulmonar, ${resp}${trendPhraseFor('resp',p)}. `;
@@ -2565,6 +2784,13 @@ function dxSentence(p){
 
 /* Arma cualquiera de los tres textos: fecha, [diagnóstico], [apertura neurológica] y el cuerpo.
    Por defecto: HC lleva diagnóstico; el PASE (corta y completa) va directo al examen del día. */
+/* Si el paciente tiene algo cargado en CULT (cultivos), se menciona al final
+   de la historia clínica, el pase largo y el pase corto — no solo en la
+   tabla del archivero. */
+function cultivosSentence(p){
+  if(!p || !p.cult || !String(p.cult).trim()) return '';
+  return `Cultivos: ${String(p.cult).trim()}.`;
+}
 function buildSalidaText(p, salida){
   const fecha = fmtFechaDMY(fld('evolFecha').value) || '(fecha)';
   const estado = fld('evolEstado').value;
@@ -2572,6 +2798,7 @@ function buildSalidaText(p, salida){
   if(bloqueOn(salida,'dx')) partes.push(dxSentence(p));
   if(bloqueOn(salida,'apertura')) partes.push(buildOpeningExamSentence(p, estado, salida));
   partes.push(salida === 'corta' ? buildCuerpoCorto(p) : buildExamBody(p, salida));
+  partes.push(cultivosSentence(p));
   return partes.filter(Boolean).join(' ').trim();
 }
 function buildHistoriaClinicaText(p){ return buildSalidaText(p, 'hc'); }
@@ -2594,8 +2821,11 @@ function shortSystemSentences(key, p, prefijoNormal){
     if(isOn('corta', key, 'alt', item.id)) alts.push(itemPhrase(key,'alt',item.id,p));
   });
   const out = [];
-  if(normales.length) out.push((prefijoNormal||'') + normales.join(', '));
-  return out.concat(alts);
+  const normalSentence = normales.length ? [(prefijoNormal||'') + normales.join(', ')] : [];
+  // Mismo criterio que en el pase largo: si este sistema arranca por lo
+  // patológico (ver systemStartsPathological), las alteraciones van primero.
+  if(systemStartsPathological(key, 'corta')) return out.concat(alts, normalSentence);
+  return out.concat(normalSentence, alts);
 }
 function shortCatDiuSentences(p){
   const S = 'corta';
@@ -2645,6 +2875,7 @@ function buildCuerpoCorto(p){
   const estudioInforme = fld('evolEstudioInforme') ? fld('evolEstudioInforme').value.trim() : '';
 
   let out = bloqueOn(S,'csv') ? buildCsvLine() + ' ' : '';
+  out += buildVscObservacionesSentence(p);
   const hallazgos = [].concat(
     shortSystemSentences('cv', p, ''),
     (bloqueOn(S,'estudio') && estudioTipo && estudioInforme) ? [`Se recibe informe de ${estudioTipo}: ${estudioInforme}`] : [],
@@ -2958,12 +3189,8 @@ fld('clearAllBtn').addEventListener('click', ()=>{
   addPatient();
 });
 fld('patientSearch').addEventListener('input', (e)=>{ sidebarFilter = e.target.value; renderSidebar(); });
-fld('camaVisibleSelect').addEventListener('change', (e)=>{
-  const cama = e.target.value;
-  if(!cama) return;
-  addCamaVisible(cama);
-  e.target.value = '';
-});
+/* El agregado de cama a "Camas mostradas" ahora lo maneja el combobox propio
+   (ver initCamaAddCombobox, más arriba, junto a renderCamaAddDropdown). */
 
 (function(){
   const today = new Date();
@@ -4362,14 +4589,13 @@ const auth = getAuth(app);
 /* ================= Sesiones largas para cuentas específicas =================
    Para "soloquimicayaruqui@gmail.com" y "pases@gmail.com" (dispositivos fijos
    de uso diario): la sesión se guarda con persistencia LOCAL (sobrevive a
-   cerrar la app/navegador) y se mantiene abierta hasta 24 horas desde el
-   login, sin cerrarse por 5 minutos de inactividad como el resto de las
-   cuentas. Pasadas las 24 horas (o si se cierra sesión a mano con el botón),
-   hay que loguearse de nuevo. El resto de las cuentas sigue exactamente
-   igual que antes (sesión de pestaña + 5 min de inactividad). */
+   cerrar la app/navegador, abrir otra pestaña/ventana, etc.) y queda abierta
+   indefinidamente, sin vencimiento por tiempo ni por 5 minutos de
+   inactividad. Solo se cierra si se aprieta "Cerrar sesión" a mano (o se
+   cierra sesión desde otro dispositivo/Firebase). El resto de las cuentas
+   sigue exactamente igual que antes (sesión de pestaña + 5 min de
+   inactividad). */
 const LONG_SESSION_EMAILS = ['soloquimicayaruqui@gmail.com', 'pases@gmail.com'];
-const LONG_SESSION_MS = 24 * 60 * 60 * 1000;
-const LS_SESSION_EXPIRES = 'authSessionExpiresAt';
 const LS_PREFILL_EMAIL = 'authPrefillEmail'; // clave compartida con guardias.html (mismo origen)
 function esCuentaLarga(email){ return LONG_SESSION_EMAILS.includes(String(email||'').trim().toLowerCase()); }
 
@@ -4420,10 +4646,7 @@ async function intentarLogin(){
     await signInWithEmailAndPassword(auth, email, pass);
     $password.value = '';
     if(esCuentaLarga(email)){
-      localStorage.setItem(LS_SESSION_EXPIRES, String(Date.now() + LONG_SESSION_MS));
       try{ localStorage.setItem(LS_PREFILL_EMAIL, email); }catch(e){}
-    } else {
-      localStorage.removeItem(LS_SESSION_EXPIRES);
     }
   }catch(err){
     $loginError.textContent = traducirErrorAuth(err.code || '');
@@ -4447,7 +4670,6 @@ $email.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(
 $logoutBtn.addEventListener('click', ()=>{
   if(!confirm('¿Cerrar sesión en este equipo?')) return;
   cierreManual = true;
-  localStorage.removeItem(LS_SESSION_EXPIRES);
   signOut(auth);
 });
 
@@ -4459,9 +4681,7 @@ const INACTIVITY_LIMIT_MS = 5 * 60 * 1000;
 let inactivityTimer = null;
 let cierreManual = false;
 let cierrePorInactividad = false;
-let cierrePorVencimiento = false;
 let sesionLargaActiva = false;
-let checkSesionLargaTimer = null;
 
 function pausarTimerInactividad(){
   if(inactivityTimer){ clearTimeout(inactivityTimer); inactivityTimer = null; }
@@ -4481,34 +4701,16 @@ document.addEventListener('visibilitychange', ()=>{
   if(document.visibilityState === 'visible') reiniciarTimerInactividad();
 });
 
-function chequearVencimientoSesionLarga(){
-  const exp = parseInt(localStorage.getItem(LS_SESSION_EXPIRES) || '0', 10);
-  if(!exp){
-    // Sesión larga sin marca de vencimiento (por ej. quedó abierta de antes
-    // de este cambio): se le da un vencimiento nuevo de 24 hs desde ahora,
-    // en vez de cerrarla de golpe.
-    localStorage.setItem(LS_SESSION_EXPIRES, String(Date.now() + LONG_SESSION_MS));
-    return;
-  }
-  if(Date.now() > exp){
-    cierrePorVencimiento = true;
-    if(checkSesionLargaTimer){ clearInterval(checkSesionLargaTimer); checkSesionLargaTimer = null; }
-    signOut(auth);
-  }
-}
-
 onAuthStateChanged(auth, (user)=>{
   if(user){
     $userTag.textContent = user.email || '';
     $body.className = 'auth-in';
     sesionLargaActiva = esCuentaLarga(user.email);
     if(sesionLargaActiva){
+      // Sesión sin vencimiento: no hay timer de inactividad ni chequeo de
+      // expiración. Queda abierta hasta que se cierre sesión a mano.
       pausarTimerInactividad();
-      chequearVencimientoSesionLarga();
-      if(checkSesionLargaTimer) clearInterval(checkSesionLargaTimer);
-      checkSesionLargaTimer = setInterval(chequearVencimientoSesionLarga, 5 * 60 * 1000);
     } else {
-      if(checkSesionLargaTimer){ clearInterval(checkSesionLargaTimer); checkSesionLargaTimer = null; }
       reiniciarTimerInactividad();
     }
     if(window.iniciarAppPrincipal) window.iniciarAppPrincipal();
@@ -4516,15 +4718,11 @@ onAuthStateChanged(auth, (user)=>{
     $userTag.textContent = '';
     $body.className = 'auth-out';
     pausarTimerInactividad();
-    if(checkSesionLargaTimer){ clearInterval(checkSesionLargaTimer); checkSesionLargaTimer = null; }
     sesionLargaActiva = false;
     $loginNote.textContent = cierrePorInactividad
       ? 'Se cerró la sesión automáticamente por 5 minutos de inactividad.'
-      : cierrePorVencimiento
-        ? 'Se cerró la sesión automáticamente: pasaron 24 horas desde el último inicio de sesión.'
-        : '';
+      : '';
     cierrePorInactividad = false;
-    cierrePorVencimiento = false;
     cierreManual = false;
     try{
       const prefill = localStorage.getItem(LS_PREFILL_EMAIL);
