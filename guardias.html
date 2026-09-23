@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-   Versión: 16 (20/09/2026)
+   Versión: 11 (13/09/2026)
    Herramienta: Guardias — pendientes por cama
 
    Notas de arquitectura para el futuro (leer antes de tocar el código):
@@ -12,24 +12,31 @@
      separadas de "pacientes" que usa pase_guardia.html, así que no hay
      interferencia entre las dos apps aunque compartan el mismo proyecto de
      Firebase.
-   - Esta herramienta NO pide login (a diferencia de "Pase de guardia"), para
-     que cualquiera con el link la pueda usar, igual que Laboratorio o
-     Balance hídrico. Si en las reglas de Firestore del proyecto "pases-c121c"
-     la escritura está limitada a usuarios autenticados, la sincronización en
-     la nube va a fallar en silencio y la app va a seguir funcionando 100%
-     igual pero solo en el dispositivo local (se avisa con una etiqueta chica
-     en el encabezado). Para habilitar la sincronización entre dispositivos
-     hay que sumar en las reglas de Firestore algo como:
-       match /guardia_camas/{camaId} { allow read, write: if true; }
-       match /config/guardiaItems   { allow read, write: if true; }
-     (o la condición que corresponda según cómo estén armadas las reglas
-     actuales del proyecto).
+   - Esta herramienta pide login con Firebase Authentication, igual que
+     "Pase de guardia" (mismo proyecto "pases-c121c", ver el bloque de
+     login más abajo para el detalle de persistencia de sesión).
 -->
 <html lang="es-AR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Guardias — pendientes por cama</title>
+<!-- ===== PWA: para que el ícono de la pantalla de inicio abra siempre
+     la misma ventana (en vez de una pestaña nueva de Chrome cada vez) ===== -->
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#2f5d5a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Guardia">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<script>
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', ()=>{
+      navigator.serviceWorker.register('/sw.js').catch(()=>{});
+    });
+  }
+</script>
 <style>
   :root{
     --paper:#f6f5f1; --ink:#1c2321; --line:#111111; --line-soft:#c9c4b8;
@@ -365,10 +372,11 @@ try{
 /* ================= Login con Firebase Authentication =================
    Mismo proyecto y misma lógica de sesión que pase_guardia.html (ver ese
    archivo para más comentarios): sesión de pestaña + 5 min de inactividad
-   para la mayoría de las cuentas; sesión local de hasta 24 hs para las dos
-   cuentas de uso diario (LONG_SESSION_EMAILS). El correo precargado se
-   comparte entre esta página y pase_guardia.html vía localStorage (mismo
-   origen). */
+   para la mayoría de las cuentas; sesión LOCAL sin vencimiento (ni por
+   tiempo ni por inactividad, solo se corta con "Cerrar sesión" a mano)
+   para las cuentas de uso diario (LONG_SESSION_EMAILS). El correo
+   precargado se comparte entre esta página y pase_guardia.html vía
+   localStorage (mismo origen). */
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
   getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut,
@@ -388,8 +396,6 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
 const LONG_SESSION_EMAILS = ['soloquimicayaruqui@gmail.com', 'pases@gmail.com'];
-const LONG_SESSION_MS = 24 * 60 * 60 * 1000;
-const LS_SESSION_EXPIRES = 'authSessionExpiresAt';
 const LS_PREFILL_EMAIL = 'authPrefillEmail';
 function esCuentaLarga(email){ return LONG_SESSION_EMAILS.includes(String(email||'').trim().toLowerCase()); }
 
@@ -432,10 +438,7 @@ async function intentarLogin(){
     await signInWithEmailAndPassword(auth, email, pass);
     $password.value = '';
     if(esCuentaLarga(email)){
-      localStorage.setItem(LS_SESSION_EXPIRES, String(Date.now() + LONG_SESSION_MS));
       try{ localStorage.setItem(LS_PREFILL_EMAIL, email); }catch(e){}
-    } else {
-      localStorage.removeItem(LS_SESSION_EXPIRES);
     }
   }catch(err){
     $loginError.textContent = traducirErrorAuth(err.code || '');
@@ -457,7 +460,6 @@ $email.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(
 $logoutBtn.addEventListener('click', ()=>{
   if(!confirm('¿Cerrar sesión en este equipo?')) return;
   cierreManual = true;
-  localStorage.removeItem(LS_SESSION_EXPIRES);
   signOut(auth);
 });
 
@@ -465,9 +467,7 @@ const INACTIVITY_LIMIT_MS = 5 * 60 * 1000;
 let inactivityTimer = null;
 let cierreManual = false;
 let cierrePorInactividad = false;
-let cierrePorVencimiento = false;
 let sesionLargaActiva = false;
-let checkSesionLargaTimer = null;
 
 function pausarTimerInactividad(){
   if(inactivityTimer){ clearTimeout(inactivityTimer); inactivityTimer = null; }
@@ -487,31 +487,16 @@ document.addEventListener('visibilitychange', ()=>{
   if(document.visibilityState === 'visible') reiniciarTimerInactividad();
 });
 
-function chequearVencimientoSesionLarga(){
-  const exp = parseInt(localStorage.getItem(LS_SESSION_EXPIRES) || '0', 10);
-  if(!exp){
-    localStorage.setItem(LS_SESSION_EXPIRES, String(Date.now() + LONG_SESSION_MS));
-    return;
-  }
-  if(Date.now() > exp){
-    cierrePorVencimiento = true;
-    if(checkSesionLargaTimer){ clearInterval(checkSesionLargaTimer); checkSesionLargaTimer = null; }
-    signOut(auth);
-  }
-}
-
 onAuthStateChanged(auth, (user)=>{
   if(user){
     $userTag.textContent = user.email || '';
     $body.className = 'auth-in';
     sesionLargaActiva = esCuentaLarga(user.email);
     if(sesionLargaActiva){
+      // Sesión sin vencimiento: no hay timer de inactividad. Queda abierta
+      // hasta que se cierre sesión a mano.
       pausarTimerInactividad();
-      chequearVencimientoSesionLarga();
-      if(checkSesionLargaTimer) clearInterval(checkSesionLargaTimer);
-      checkSesionLargaTimer = setInterval(chequearVencimientoSesionLarga, 5 * 60 * 1000);
     } else {
-      if(checkSesionLargaTimer){ clearInterval(checkSesionLargaTimer); checkSesionLargaTimer = null; }
       reiniciarTimerInactividad();
     }
     if(window.iniciarGuardiasApp) window.iniciarGuardiasApp();
@@ -519,15 +504,11 @@ onAuthStateChanged(auth, (user)=>{
     $userTag.textContent = '';
     $body.className = 'auth-out';
     pausarTimerInactividad();
-    if(checkSesionLargaTimer){ clearInterval(checkSesionLargaTimer); checkSesionLargaTimer = null; }
     sesionLargaActiva = false;
     $loginNote.textContent = cierrePorInactividad
       ? 'Se cerró la sesión automáticamente por 5 minutos de inactividad.'
-      : cierrePorVencimiento
-        ? 'Se cerró la sesión automáticamente: pasaron 24 horas desde el último inicio de sesión.'
-        : '';
+      : '';
     cierrePorInactividad = false;
-    cierrePorVencimiento = false;
     cierreManual = false;
     try{
       const prefill = localStorage.getItem(LS_PREFILL_EMAIL);
