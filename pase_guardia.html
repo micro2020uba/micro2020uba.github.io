@@ -1,12 +1,30 @@
 <!DOCTYPE html>
 <!--
-   Versión: 25 (23/09/2026)
+   Versión: 26 (23/09/2026)
 -->
 <html lang="es-AR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pase de guardia — archivero</title>
+<!-- ===== PWA: para que el ícono de la pantalla de inicio abra siempre
+     la misma ventana (en vez de una pestaña nueva de Chrome cada vez) ===== -->
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#2f5d5a">
+<!-- Android/Chrome: instalar como app en vez de acceso directo de navegador -->
+<meta name="mobile-web-app-capable" content="yes">
+<!-- iOS/Safari: abrir en modo standalone (sin barra de direcciones) -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Guardia">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<script>
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', ()=>{
+      navigator.serviceWorker.register('/sw.js').catch(()=>{});
+    });
+  }
+</script>
 <style>
   :root{
     --paper:#f6f5f1; --ink:#1c2321; --line:#111111; --line-soft:#c9c4b8;
@@ -413,8 +431,9 @@
 
   /* ===== Modal "Importar pase (.md)" ===== */
   .imp-drop{display:block;border:2px dashed var(--line-soft);border-radius:4px;padding:16px;text-align:center;
-    cursor:pointer;background:var(--panel);}
+    cursor:pointer;background:var(--panel);transition:border-color .15s,background .15s;}
   .imp-drop:hover{border-color:var(--accent-dark);}
+  .imp-drop.dragover{border-color:var(--accent-dark);background:var(--accent-soft,#eef4ff);}
   .imp-drop input{display:none;}
   .imp-drop b{display:block;font-size:13px;margin-bottom:4px;}
   .imp-fname{font-size:11.5px;color:var(--muted);font-family:'IBM Plex Mono',monospace;}
@@ -594,7 +613,7 @@
     <div class="pat-list-content" id="importPaseContent">
       <label class="imp-drop" id="impDrop">
         <input type="file" id="impFile" accept=".md,.markdown,.txt,text/markdown,text/plain">
-        <b>Elegí el .md del pase de sala</b>
+        <b>Elegí el .md del pase de sala o soltalo acá</b>
         <span class="imp-fname" id="impName">ningún archivo elegido</span>
       </label>
       <div class="imp-opts">
@@ -4359,6 +4378,26 @@ function avisoNuevoIngreso(code, nuevo, sexo){
   return txt + '.';
 }
 
+/* Compara nombres para detectar "misma persona" cuando el DNI no alcanza
+   (falta en la ficha vieja, en el .md de hoy, o en los dos). Ignora
+   mayúsculas, acentos y el orden/puntuación de las palabras: alcanza con
+   que compartan una palabra de 3+ letras para asumir que es la misma
+   persona (cubre variantes de tipeo, orden Apellido/Nombre, apodos
+   parciales, etc.). Si no hay nombre de un lado no se puede comparar,
+   así que no se asume nada por nombre solo. */
+function palabrasNombre(s){
+  return String(s||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .toLowerCase().replace(/[^a-z0-9\s]/g,' ')
+    .split(/\s+/).filter(Boolean);
+}
+function mismaPersonaPorNombre(a, b){
+  const wa = palabrasNombre(a), wb = palabrasNombre(b);
+  if(!wa.length || !wb.length) return null; /* no se puede comparar */
+  const setB = new Set(wb.filter(w=>w.length>=3));
+  return wa.some(w=>w.length>=3 && setB.has(w));
+}
+
 function analizarImport(parsed){
   const porCama = {};
   patients.forEach(p=>{
@@ -4377,7 +4416,18 @@ function analizarImport(parsed){
     const teniaPaciente = !!(cur && (soloDigitos(cur.dni) || (cur.nombre||'').trim()));
     const dniViejo = soloDigitos(cur && cur.dni);
     const dniNuevo = soloDigitos(nuevo.dni);
-    const reemplazo = teniaPaciente && !!dniViejo && !!dniNuevo && dniViejo !== dniNuevo;
+    /* La cama es fija, el paciente no: si el DNI viejo y el nuevo están
+       los dos cargados, manda el DNI (identificador único). Si falta uno
+       de los dos (pasa seguido: hay fichas sin DNI cargado), no podemos
+       guiarnos por DNI solo — ahí se compara el nombre para no dejar
+       pasar un ingreso nuevo como si fuera una actualización de datos
+       del paciente anterior. */
+    const dniDistinto = !!dniViejo && !!dniNuevo && dniViejo !== dniNuevo;
+    const dniAmbosCargados = !!dniViejo && !!dniNuevo;
+    const nombreDistinto = !dniAmbosCargados
+      ? (mismaPersonaPorNombre(cur && cur.nombre, nuevo.nombre) === false)
+      : false;
+    const reemplazo = teniaPaciente && (dniDistinto || nombreDistinto);
 
     const ref = (cur && cur.lastImport) || null;
     const campos = IMPORT_FIELDS.map(f=>{
@@ -4469,7 +4519,7 @@ function renderImportReport(plan){
       lista.forEach(e=>{
         html += '<div class="imp-cama" data-cama="'+impEsc(e.code)+'">';
         html += '<div class="imp-cama-head"><b>'+impEsc(e.code)+'</b>';
-        if(e.accion==='reemplazo'){
+        if(e.accion==='reemplazo' || e.accion==='ingreso' || e.accion==='ficha-nueva'){
           html += '<span class="imp-tag imp-tag-nuevo">paciente nuevo</span>';
         }
         html += '</div>';
@@ -4609,6 +4659,7 @@ function deshacerImport(){
   const closeBtn = document.getElementById('importPaseCloseBtn');
   const cancelBtn = document.getElementById('impCancelBtn');
   const fileInput = document.getElementById('impFile');
+  const dropZone = document.getElementById('impDrop');
   const applyBtn = document.getElementById('impApplyBtn');
   const undoBtn = document.getElementById('impUndoBtn');
   if(!overlay || !openBtn) return;
@@ -4687,6 +4738,56 @@ function deshacerImport(){
   fileInput.addEventListener('change', (e)=>{
     if(e.target.files && e.target.files[0]) analizarArchivo(e.target.files[0]);
   });
+
+  /* Arrastrar y soltar el .md sobre el cuadro de carga, además de elegirlo
+     por el explorador de archivos de siempre. */
+  const EXT_MD_OK = /\.(md|markdown|txt)$/i;
+  function esArchivoDeTexto(file){
+    if(!file) return false;
+    if(EXT_MD_OK.test(file.name||'')) return true;
+    const t = (file.type||'').toLowerCase();
+    return t === 'text/markdown' || t === 'text/plain' || t === '';
+  }
+  if(dropZone){
+    let dragDepth = 0;
+    dropZone.addEventListener('dragenter', (e)=>{
+      e.preventDefault();
+      dragDepth++;
+      dropZone.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragover', (e)=>{
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    });
+    dropZone.addEventListener('dragleave', ()=>{
+      dragDepth = Math.max(0, dragDepth-1);
+      if(dragDepth === 0) dropZone.classList.remove('dragover');
+    });
+    dropZone.addEventListener('drop', (e)=>{
+      e.preventDefault();
+      dragDepth = 0;
+      dropZone.classList.remove('dragover');
+      const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if(!file) return;
+      if(!esArchivoDeTexto(file)){
+        setImpStatus('Ese archivo no parece un .md/.txt del pase de sala.', true);
+        return;
+      }
+      /* Se refleja también en el input real (por si después se cambia la
+         fecha o el checkbox "Separar MI y ASOC", que releen fileInput.files). */
+      try{
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        fileInput.files = dt.files;
+      }catch(err){ /* Safari viejo: no pasa nada, igual lo procesamos abajo */ }
+      analizarArchivo(file);
+    });
+  }
+  /* Si se suelta el archivo fuera del cuadro pero dentro del modal, no
+     dejar que el navegador lo abra como si fuera una navegación. */
+  overlay.addEventListener('dragover', (e)=>{ e.preventDefault(); });
+  overlay.addEventListener('drop', (e)=>{ e.preventDefault(); });
+
   document.getElementById('impSplit').addEventListener('change', ()=>{
     if(fileInput.files && fileInput.files[0]) analizarArchivo(fileInput.files[0]);
   });
