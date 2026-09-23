@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
- Versión: 8 (13/09/2026)
+ Versión: 24 (23/09/2026)
 -->
 <html lang="es">
 <head>
@@ -488,6 +488,33 @@
   }
   .breakdown .plus{color:var(--ink-soft); margin:0 1px;}
 
+  .opt-value{display:flex; align-items:center; gap:4px;}
+  .row .opt-remove{
+    flex:0 0 auto;
+    background:transparent;
+    border:none;
+    color:var(--ink-soft);
+    font-size:.95rem;
+    line-height:1;
+    cursor:pointer;
+    padding:0 0 0 2px;
+  }
+  .row .opt-remove:hover{color:var(--negativo);}
+  .add-field{margin-top:4px;}
+  .add-field select{
+    width:100%;
+    padding:5px 8px;
+    border:1px dashed var(--border-strong);
+    border-radius:6px;
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:.74rem;
+    color:var(--ink-soft);
+    background:#fff;
+    cursor:pointer;
+  }
+  .add-field select:hover{border-color:var(--egreso);}
+  .add-field select:focus{outline:2px solid var(--egreso); outline-offset:1px;}
+
   .col-total{
     display:flex;
     justify-content:space-between;
@@ -858,15 +885,19 @@
     {key:'alim',  label:'Alim. parenteral',     type:'input'},
     {key:'atb',   label:'Antibióticos (ATB)',   type:'atb'},
     {key:'ae',    label:'Agua endógena (AE)',   type:'auto'},
-    {key:'transf',label:'Transfusiones',        type:'input'},
     {key:'exp',   label:'Expansiones',          type:'input'},
   ];
   const EGR_FIELDS = [
     {key:'diuresis', label:'Diuresis (D)',          type:'input'},
     {key:'catarsis', label:'Catarsis/Diarrea',      type:'input'},
-    {key:'vomitos',  label:'Vómitos',               type:'input'},
-    {key:'drenajes', label:'Drenajes',              type:'input'},
     {key:'pi',       label:'Pérdidas insens. (PI)', type:'auto'},
+  ];
+  // Campos que no se muestran por defecto en cada cuadrante: aparecen solo
+  // cuando se agregan desde el selector "+ Agregar" de ese cuadrante.
+  const OPTIONAL_FIELDS = [
+    {key:'transf',   label:'Transfusiones', type:'input', side:'ing'},
+    {key:'drenajes', label:'Drenajes',      type:'input', side:'egr'},
+    {key:'vomitos',  label:'Vómitos',       type:'input', side:'egr'},
   ];
 
   const state = {
@@ -882,9 +913,30 @@
       vo:'0', alim:0, transf:0, exp:0,
       diuresis:0, catarsis:0, vomitos:0, drenajes:0,
       atb:false,
-      confirmed:false
+      confirmed:false,
+      opt:{ transf:false, drenajes:false, vomitos:false }
     }))
   };
+
+  // Normaliza un bloque cargado desde localStorage o desde un registro del
+  // historial: si no trae "opt" (registros guardados antes de que estos tres
+  // campos fueran opcionales), se infiere activo cuando ya tiene un valor
+  // cargado distinto de 0, para no perder datos previos de vista.
+  function normalizeBlock(b){
+    const nb = {
+      vo: (b.vo===undefined || b.vo===null) ? '0' : String(b.vo),
+      alim:Number(b.alim)||0, transf:Number(b.transf)||0, exp:Number(b.exp)||0,
+      diuresis:Number(b.diuresis)||0, catarsis:Number(b.catarsis)||0,
+      vomitos:Number(b.vomitos)||0, drenajes:Number(b.drenajes)||0,
+      atb:!!b.atb, confirmed:!!b.confirmed
+    };
+    nb.opt = {
+      transf: b.opt ? !!b.opt.transf : nb.transf !== 0,
+      drenajes: b.opt ? !!b.opt.drenajes : nb.drenajes !== 0,
+      vomitos: b.opt ? !!b.opt.vomitos : nb.vomitos !== 0,
+    };
+    return nb;
+  }
 
   const STORAGE_KEY = 'bh_calc_estado_v1';
   const HISTORY_KEY = 'bh_calc_historial_v1';
@@ -984,13 +1036,7 @@
       if (saved.baseline.prev) Object.assign(state.baseline.prev, saved.baseline.prev);
     }
     if (Array.isArray(saved.blocks) && saved.blocks.length === 4){
-      state.blocks = saved.blocks.map(b=>({
-        vo: (b.vo===undefined || b.vo===null) ? '0' : String(b.vo),
-        alim:Number(b.alim)||0, transf:Number(b.transf)||0, exp:Number(b.exp)||0,
-        diuresis:Number(b.diuresis)||0, catarsis:Number(b.catarsis)||0,
-        vomitos:Number(b.vomitos)||0, drenajes:Number(b.drenajes)||0,
-        atb:!!b.atb, confirmed:!!b.confirmed
-      }));
+      state.blocks = saved.blocks.map(normalizeBlock);
       _blocksRestored = true;
     }
   })();
@@ -1104,6 +1150,83 @@
     return bd;
   }
 
+  // ---------- campos opcionales por cuadrante (Transfusiones/Drenajes/Vómitos) ----------
+  function buildAddControl(side){
+    const wrap = document.createElement('div');
+    wrap.className = 'add-field';
+    const select = document.createElement('select');
+    select.dataset.role = 'addField';
+    select.dataset.side = side;
+    select.innerHTML = '<option value="">+ Agregar…</option>';
+    wrap.appendChild(select);
+    return wrap;
+  }
+
+  function ensureOptionalRow(panel, field){
+    const wrap = panel.querySelector(`[data-role="${field.side}Rows"]`);
+    if (!wrap || wrap.querySelector(`[data-opt-key="${field.key}"]`)) return;
+    const row = buildRow(field, field.side);
+    row.dataset.optKey = field.key;
+    // agrupa el input y el botón de quitar para no romper el space-between de la fila
+    const inp = row.querySelector('.rinput');
+    const valueWrap = document.createElement('span');
+    valueWrap.className = 'opt-value';
+    if (inp){
+      row.removeChild(inp);
+      valueWrap.appendChild(inp);
+    }
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'opt-remove';
+    removeBtn.dataset.role = 'removeOpt';
+    removeBtn.dataset.key = field.key;
+    removeBtn.title = 'Quitar ' + field.label;
+    removeBtn.textContent = '×';
+    valueWrap.appendChild(removeBtn);
+    row.appendChild(valueWrap);
+    const bd = buildBreakdownRow(field);
+    if (field.side === 'egr'){
+      // se inserta antes de PI (auto), que siempre queda al final de egresos
+      const autoRow = wrap.querySelector('[data-type="auto"]');
+      wrap.insertBefore(row, autoRow);
+      wrap.insertBefore(bd, autoRow);
+    } else {
+      wrap.appendChild(row);
+      wrap.appendChild(bd);
+    }
+  }
+
+  function removeOptionalRowDom(panel, field){
+    const wrap = panel.querySelector(`[data-role="${field.side}Rows"]`);
+    if (!wrap) return;
+    const row = wrap.querySelector(`[data-opt-key="${field.key}"]`);
+    if (!row) return;
+    const bd = row.nextElementSibling;
+    row.remove();
+    if (bd && bd.classList.contains('breakdown') && bd.dataset.breakdownKey === field.key) bd.remove();
+  }
+
+  function refreshAddSelect(panel, side){
+    const select = panel.querySelector(`select[data-role="addField"][data-side="${side}"]`);
+    if (!select) return;
+    const qIndex = Number(panel.dataset.q);
+    const block = state.blocks[qIndex];
+    const available = OPTIONAL_FIELDS.filter(f=> f.side===side && !block.opt[f.key]);
+    select.innerHTML = '<option value="">+ Agregar…</option>' + available.map(f=>`<option value="${f.key}">${f.label}</option>`).join('');
+    select.style.display = available.length ? '' : 'none';
+  }
+
+  function syncOptionalRowsForPanel(panel){
+    const qIndex = Number(panel.dataset.q);
+    const block = state.blocks[qIndex];
+    OPTIONAL_FIELDS.forEach(f=>{
+      if (block.opt[f.key]) ensureOptionalRow(panel, f);
+      else removeOptionalRowDom(panel, f);
+    });
+    refreshAddSelect(panel, 'ing');
+    refreshAddSelect(panel, 'egr');
+  }
+
   function buildPanel(qIndex){
     const hour = HOURS[qIndex];
     const range = HOUR_RANGES[qIndex];
@@ -1134,11 +1257,13 @@
     colIng.className = 'col';
     colIng.innerHTML = `<p class="col-title ing">Ingresos</p>`;
     const ingRowsWrap = document.createElement('div');
+    ingRowsWrap.dataset.role = 'ingRows';
     ING_FIELDS.forEach(f=>{
       ingRowsWrap.appendChild(buildRow(f,'ing'));
       if (f.type==='input' || f.type==='atb') ingRowsWrap.appendChild(buildBreakdownRow(f));
     });
     colIng.appendChild(ingRowsWrap);
+    colIng.appendChild(buildAddControl('ing'));
     const ingTotal = document.createElement('div');
     ingTotal.className = 'col-total ing';
     ingTotal.innerHTML = `<span>Total ingresos</span><span class="val" data-role="ingTotal">0 ml</span>`;
@@ -1148,11 +1273,13 @@
     colEgr.className = 'col';
     colEgr.innerHTML = `<p class="col-title egr">Egresos</p>`;
     const egrRowsWrap = document.createElement('div');
+    egrRowsWrap.dataset.role = 'egrRows';
     EGR_FIELDS.forEach(f=>{
       egrRowsWrap.appendChild(buildRow(f,'egr'));
       if (f.type==='input') egrRowsWrap.appendChild(buildBreakdownRow(f));
     });
     colEgr.appendChild(egrRowsWrap);
+    colEgr.appendChild(buildAddControl('egr'));
     const egrTotal = document.createElement('div');
     egrTotal.className = 'col-total egr';
     egrTotal.innerHTML = `<span>Total egresos</span><span class="val" data-role="egrTotal">0 ml</span>`;
@@ -1352,6 +1479,7 @@
 
     for (let i=0;i<4;i++){
       const panel = quartersEl.children[i];
+      syncOptionalRowsForPanel(panel);
       const q = computeQuarter(i);
       const block = state.blocks[i];
 
@@ -1598,6 +1726,27 @@
       state.blocks[q].confirmed = t.checked;
       recalcAll();
     }
+    if (t.dataset.role === 'addField'){
+      const panel = t.closest('.panel');
+      const q = Number(panel.dataset.q);
+      const key = t.value;
+      if (!key) return;
+      state.blocks[q].opt[key] = true;
+      recalcAll();
+    }
+  });
+  // quitar un campo opcional (Transfusiones/Drenajes/Vómitos) ya agregado a un cuadrante
+  quartersEl.addEventListener('click', e=>{
+    const btn = e.target.closest('[data-role="removeOpt"]');
+    if (!btn) return;
+    const panel = btn.closest('.panel');
+    const q = Number(panel.dataset.q);
+    const key = btn.dataset.key;
+    const current = Number(state.blocks[q][key]) || 0;
+    if (current !== 0 && !confirm(`¿Quitar este campo? El valor cargado (${fmt(current)} ml) se pone en 0.`)) return;
+    state.blocks[q][key] = 0;
+    state.blocks[q].opt[key] = false;
+    recalcAll();
   });
 
   document.getElementById('copyBtn').addEventListener('click', ()=>{
@@ -1632,7 +1781,8 @@
     state.blocks = [0,1,2,3].map(()=>({
       vo:'0', alim:0, transf:0, exp:0,
       diuresis:0, catarsis:0, vomitos:0, drenajes:0,
-      atb:false, confirmed:false
+      atb:false, confirmed:false,
+      opt:{ transf:false, drenajes:false, vomitos:false }
     }));
     applyAtbDefaults('12');
     syncFormFromState();
@@ -1712,6 +1862,7 @@
     } else if (btn.dataset.act === 'cargar'){
       if (!confirm('¿Cargar este registro? Se reemplazan los datos que estás cargando ahora (podés guardarlos antes si querés conservarlos).')) return;
       Object.assign(state, JSON.parse(JSON.stringify(rec.snapshot)));
+      if (Array.isArray(state.blocks)) state.blocks = state.blocks.map(normalizeBlock);
       syncFormFromState();
       recalcAll();
     } else if (btn.dataset.act === 'borrar'){
