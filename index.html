@@ -6,17 +6,17 @@
 <title>Panel principal</title>
 <!-- ===== PWA: para que el ícono de la pantalla de inicio abra siempre
      la misma ventana (en vez de una pestaña nueva de Chrome cada vez) ===== -->
-<link rel="manifest" href="/manifest.webmanifest">
+<link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2f5d5a">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Guardia">
-<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <script>
   if('serviceWorker' in navigator){
     window.addEventListener('load', ()=>{
-      navigator.serviceWorker.register('/sw.js').catch(()=>{});
+      navigator.serviceWorker.register('sw.js').catch(()=>{});
     });
   }
 </script>
@@ -258,11 +258,13 @@
 
 /* ---- Pase de guardia: navegación de página completa ---- */
 document.getElementById('openPaseBtn').addEventListener('click', ()=>{
+  try{localStorage.setItem('pwa_last','pase')}catch(e){}
   window.location.href = 'pase_guardia.html?v=' + encodeURIComponent(PASE_VERSION);
 });
 
 /* ---- Guardias: navegación de página completa (sin login) ---- */
 document.getElementById('openGuardiasBtn').addEventListener('click', ()=>{
+  try{localStorage.setItem('pwa_last','guardias')}catch(e){}
   window.location.href = 'guardias.html?v=' + encodeURIComponent(GUARDIAS_VERSION);
 });
 
@@ -274,6 +276,7 @@ document.getElementById('openGuardiasBtn').addEventListener('click', ()=>{
   const closeBtn = document.getElementById('laboStandaloneCloseBtn');
 
   function openLaboStandalone(){
+    try{localStorage.setItem('pwa_last','labo')}catch(e){}
     if(!frame.dataset.loaded){
       frame.src = 'conversor-labo.html?v=' + encodeURIComponent(LABO_VERSION);
       frame.dataset.loaded = '1';
@@ -281,6 +284,7 @@ document.getElementById('openGuardiasBtn').addEventListener('click', ()=>{
     overlay.classList.add('open');
   }
   function closeLaboStandalone(){
+    try{localStorage.removeItem('pwa_last')}catch(e){}
     overlay.classList.remove('open');
   }
 
@@ -302,6 +306,7 @@ document.getElementById('openGuardiasBtn').addEventListener('click', ()=>{
   const closeBtn = document.getElementById('calcStandaloneCloseBtn');
 
   function openCalcStandalone(){
+    try{localStorage.setItem('pwa_last','calc')}catch(e){}
     if(!frame.dataset.loaded){
       frame.src = 'calculadoras_clinicas.html?v=' + encodeURIComponent(CALC_VERSION);
       frame.dataset.loaded = '1';
@@ -309,6 +314,7 @@ document.getElementById('openGuardiasBtn').addEventListener('click', ()=>{
     overlay.classList.add('open');
   }
   function closeCalcStandalone(){
+    try{localStorage.removeItem('pwa_last')}catch(e){}
     overlay.classList.remove('open');
   }
 
@@ -330,6 +336,7 @@ document.getElementById('openGuardiasBtn').addEventListener('click', ()=>{
   const closeBtn = document.getElementById('bhStandaloneCloseBtn');
 
   function openBhStandalone(){
+    try{localStorage.setItem('pwa_last','bh')}catch(e){}
     if(!frame.dataset.loaded){
       frame.src = 'calculadora_balance_hidrico.html?v=' + encodeURIComponent(BH_VERSION);
       frame.dataset.loaded = '1';
@@ -337,6 +344,7 @@ document.getElementById('openGuardiasBtn').addEventListener('click', ()=>{
     overlay.classList.add('open');
   }
   function closeBhStandalone(){
+    try{localStorage.removeItem('pwa_last')}catch(e){}
     overlay.classList.remove('open');
   }
 
@@ -348,6 +356,21 @@ document.getElementById('openGuardiasBtn').addEventListener('click', ()=>{
   document.addEventListener('keydown', (e)=>{
     if(e.key === 'Escape' && overlay.classList.contains('open')) closeBhStandalone();
   });
+})();
+
+/* ---- Reabrir la última herramienta al tocar el ícono de la app ----
+   El manifest lanza la app con "?source=pwa". Cada herramienta guarda en
+   localStorage ('pwa_last') cuál fue la última que abriste. Si entrás por
+   el ícono y quedó una guardada, se abre sola. Si volvés al panel con
+   "← Inicio" (sin ?source=pwa), se borra y el panel queda como pantalla actual. */
+(function restoreLastTool(){
+  try{
+    const fromApp = new URLSearchParams(location.search).get('source') === 'pwa';
+    const last = localStorage.getItem('pwa_last');
+    if(!fromApp){ localStorage.removeItem('pwa_last'); return; }
+    const ids = { pase:'openPaseBtn', guardias:'openGuardiasBtn', labo:'openLaboBtn', calc:'openCalcBtn', bh:'openBhBtn' };
+    if(last && ids[last]) document.getElementById(ids[last]).click();
+  }catch(e){}
 })();
 </script>
 
