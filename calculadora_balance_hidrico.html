@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
- Versión: 24 (23/09/2026)
+ Versión: 26 (23/09/2026)
 -->
 <html lang="es">
 <head>
@@ -713,6 +713,7 @@
         <div class="field">
           <label for="phpPlan">Plan PHP (24 hs)</label>
           <select id="phpPlan">
+            <option value="0">Intermitente · sin PHP</option>
             <option value="7">A 7 · 500 ml</option>
             <option value="14">A 14 · 1000 ml</option>
             <option value="21" selected>A 21 · 1500 ml</option>
@@ -873,7 +874,7 @@
 
 <script>
 (function(){
-  const PLAN_VOLUMES = {7:500, 14:1000, 21:1500, 28:2000};
+  const PLAN_VOLUMES = {0:0, 7:500, 14:1000, 21:1500, 28:2000}; // 0 = plan intermitente (sin PHP continuo)
   const HOURS = [6,12,18,24];
   const HOUR_RANGES = ['00-6hs','6-12hs','12-18hs','18-00hs'];
   const QCOLORS = ['#2F9E44','#1C7ED6','#C2410C','#152A52'];
@@ -1026,7 +1027,7 @@
     if (typeof saved.cama === 'string') state.cama = saved.cama;
     if (typeof saved.nombre === 'string') state.nombre = saved.nombre;
     if (saved.peso) state.peso = saved.peso;
-    if (saved.phpPlan) state.phpPlan = saved.phpPlan;
+    if (saved.phpPlan !== undefined && saved.phpPlan !== null && Number(saved.phpPlan) in PLAN_VOLUMES) state.phpPlan = Number(saved.phpPlan);
     if (saved.atbFreq) state.atbFreq = saved.atbFreq;
     if (saved.atbStartHour !== undefined) state.atbStartHour = Number(saved.atbStartHour) || 0;
     if (saved.bhGoal) state.bhGoal = saved.bhGoal;
@@ -1460,7 +1461,9 @@
   function recalcAll(){
     // sync PHP readout
     const plan = PLAN_VOLUMES[state.phpPlan]||0;
-    document.getElementById('phpReadout').textContent = fmt(plan/4) + ' ml cada 6 hs';
+    document.getElementById('phpReadout').textContent = (Number(state.phpPlan) === 0)
+      ? 'Vía intermitente: sin PHP continuo (0 ml)'
+      : fmt(plan/4) + ' ml cada 6 hs';
 
     // sync balance previo (baseline) UI
     const baseline = state.baseline;
