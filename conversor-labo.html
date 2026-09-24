@@ -79,6 +79,41 @@
   .reftable td:first-child{font-weight:700;white-space:nowrap;padding-right:8px;}
   .reftable td:last-child{color:var(--muted);text-align:right;}
 
+  .gascalc-grid label.gc-chk{flex-direction:row;align-items:center;gap:6px;align-self:end;padding-bottom:6px;}
+  .gascalc-grid label.gc-chk input{width:auto;}
+
+  /* ===== Pedido de laboratorio ===== */
+  .pedido-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0 12px;}
+  .fb-status{font-size:10.5px;font-family:'IBM Plex Mono',monospace;color:var(--muted);}
+  .fb-status.ok{color:var(--accent-dark);}
+  .fb-status.warn{color:#a15c00;}
+  .pedido-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:12px;}
+  .pf{border:1px solid var(--line-soft);border-radius:3px;background:var(--field-bg);padding:8px 10px;}
+  .pf-head{display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap;}
+  .pf-num{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;color:var(--accent-dark);min-width:22px;}
+  .pf-name{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;flex:1;min-width:120px;}
+  .pf-head input[type=checkbox]{margin:0;cursor:pointer;}
+  .pf-ord{display:inline-flex;align-items:center;gap:2px;}
+  .pf-ord button{border:1px solid var(--line-soft);background:#fff;color:var(--muted);border-radius:2px;cursor:pointer;font-size:10px;padding:1px 5px;line-height:1.3;}
+  .pf-ord button:hover{border-color:var(--accent-dark);color:var(--accent-dark);}
+  .pf-ord button:disabled{opacity:.35;cursor:default;}
+  .pf-ord select{font-size:10.5px;border:1px solid var(--line-soft);background:#fff;border-radius:2px;padding:1px 2px;}
+  .pf-block{margin-top:6px;}
+  .pf-block-h{font-size:9.5px;font-weight:700;color:var(--accent-dark);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;}
+  .pf-chip{display:inline-flex;align-items:center;gap:1px;border:1px solid var(--line-soft);background:#fff;border-radius:11px;padding:1px 2px 1px 7px;margin:2px 3px 2px 0;font-size:11.5px;}
+  .pf-chip label{display:inline-flex;align-items:center;gap:4px;cursor:pointer;}
+  .pf-chip input[type=checkbox]{margin:0;cursor:pointer;}
+  .pf-chip select.mv{appearance:none;-webkit-appearance:none;border:none;background:transparent;width:22px;color:var(--muted);cursor:pointer;font-size:12px;padding:0;text-align:center;}
+  .pf-chip select.mv:hover{color:var(--accent-dark);}
+  .pf-chip.custom{border-color:var(--accent-dark);}
+  .pf-chip .x{border:none;background:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0 4px 0 1px;line-height:1;}
+  .pf-chip .x:hover{color:var(--danger);}
+  .pf-add{display:inline-block;margin:2px 0;}
+  .pf-add input{width:96px;font-size:11px;padding:2px 6px;border:1px dashed var(--line-soft);border-radius:11px;background:transparent;}
+  .pf-add input:focus{border-color:var(--accent-dark);outline:none;background:#fff;}
+  #pedidoOutput{min-height:70px;border:1px solid var(--line-soft);background:var(--field-bg);padding:10px 12px;font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:12pt;line-height:1.6;white-space:pre-wrap;word-break:break-word;border-radius:2px;color:#000;margin-top:6px;}
+  #pedidoOutput:empty::before{content:"Tildá los estudios que querés pedir y acá aparece el pedido ordenado por prioridad.";color:var(--muted);font-style:italic;font-size:11.5px;font-family:'IBM Plex Sans',Arial,sans-serif;}
+
   html.labo-copying, html.labo-copying body, html.labo-copying *{
     background:transparent !important; background-color:transparent !important; background-image:none !important;
   }
@@ -129,8 +164,27 @@
       </div>
     </div>
 
+    <details class="checklist-wrap" id="laboPedidoDetails">
+      <summary>3. Pedido de laboratorio (ordenado por prioridad)</summary>
+      <p class="note">Perfiles ordenados de mayor a menor prioridad. Tildá lo que querés pedir y abajo se arma el pedido listo para copiar. Podés <b>mover un dato</b> a otro perfil o grupo con el botón ⇄ de cada dato, <b>cambiar el orden</b> de los perfiles con ▲ ▼ o eligiendo la posición, y <b>agregar un dato</b> que falte escribiéndolo en el casillero "＋ dato" de cada grupo (Enter). Los cambios de estructura (orden, movimientos y datos agregados) se guardan solos; lo tildado es solo de esta sesión.</p>
+      <div class="pedido-toolbar">
+        <button type="button" class="btn-tiny" id="pedMarcarTodo">Marcar todo</button>
+        <button type="button" class="btn-tiny" id="pedDesmarcarTodo">Desmarcar todo</button>
+        <button type="button" class="btn-tiny" id="pedAgregarPerfil">＋ Agregar perfil</button>
+        <button type="button" class="btn-tiny" id="pedRestaurar">Restaurar valores por defecto</button>
+        <span class="fb-status" id="pedFbStatus"></span>
+      </div>
+      <div class="pedido-grid" id="pedidoGrid"></div>
+      <h3 style="margin:16px 0 0;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-dark);">Pedido generado</h3>
+      <div id="pedidoOutput" contenteditable="true" spellcheck="false"></div>
+      <div class="out-footer">
+        <button type="button" class="btn-secondary" id="pedCopiarBtn">Copiar pedido</button>
+        <span id="pedStatus" style="font-size:11px;color:var(--accent-dark);font-family:'IBM Plex Mono',monospace;"></span>
+      </div>
+    </details>
+
     <details class="checklist-wrap" id="laboGasCalcDetails">
-      <summary>3. Calculadora de gases en sangre (uso manual)</summary>
+      <summary>4. Calculadora de gases en sangre (uso manual)</summary>
       <div class="gascalc-grid">
         <label>pH <input type="number" step="0.001" id="gcPh"></label>
         <label>pCO2 (mmHg) <input type="number" step="0.1" id="gcPco2"></label>
@@ -138,17 +192,18 @@
         <label>pO2 (mmHg) <input type="number" step="0.1" id="gcPo2"></label>
         <label>FiO2 (%) <input type="number" step="1" id="gcFio2" placeholder="21 = aire ambiente"></label>
         <label>Edad (años) <input type="number" step="1" id="gcEdad"></label>
+        <label class="gc-chk"><input type="checkbox" id="gcVenoso"> Muestra venosa</label>
       </div>
       <div class="controls">
         <button type="button" class="btn-primary" id="gcCalcularBtn">Calcular</button>
         <button type="button" class="btn-secondary" id="gcLimpiarBtn">Limpiar</button>
       </div>
       <div id="gcResultado" class="gascalc-result"></div>
-      <p class="note">Se autocompleta y calcula solo al pegar un laboratorio con gases en sangre; también se puede cargar y calcular a mano (se recalcula solo, a medida que se van cargando los valores). Fórmulas: Ac. Met. (Winter) pCO2 esp. = 1.5×HCO3 + 8 ± 2 · Alc. Met. ΔpCO2 = ΔHCO3 × 0.6 · Ac. Resp. aguda ΔHCO3 = ΔpCO2 × 0.1 (corregida ×0.3) · Alc. Resp. aguda ΔHCO3 = ΔpCO2 × 0.2 (corregida ×0.4) · PAFI = pO2/FiO2 × 100 · PO2 esperada por edad = 102 − (0.33 × edad).</p>
+      <p class="note">Se autocompleta y calcula solo al pegar un laboratorio con gases en sangre; también se puede cargar y calcular a mano (se recalcula solo, a medida que se van cargando los valores). Si la muestra es venosa (se tilda sola cuando el laboratorio dice "venoso"), se usan referencias venosas (pH 7,31–7,41; pCO2 41–51 mmHg) y no se evalúa oxigenación. Fórmulas: Ac. Met. (Winter) pCO2 esp. = 1.5×HCO3 + 8 ± 2 · Alc. Met. ΔpCO2 = ΔHCO3 × 0.6 · Ac. Resp. aguda ΔHCO3 = ΔpCO2 × 0.1 (corregida ×0.3) · Alc. Resp. aguda ΔHCO3 = ΔpCO2 × 0.2 (corregida ×0.4) · PAFI = pO2/FiO2 × 100 · PO2 esperada por edad = 102 − (0.33 × edad).</p>
     </details>
 
     <details class="checklist-wrap">
-      <summary>4. Parámetros a incluir (tildados por defecto)</summary>
+      <summary>5. Parámetros a incluir (tildados por defecto)</summary>
       <div class="checklist-toolbar">
         <button type="button" class="btn-tiny" id="laboMarcarTodos">Marcar todos</button>
         <button type="button" class="btn-tiny" id="laboDesmarcarTodos">Desmarcar todos</button>
@@ -157,7 +212,7 @@
     </details>
 
     <details class="checklist-wrap">
-      <summary>5. Valores normales de laboratorio</summary>
+      <summary>6. Valores normales de laboratorio</summary>
       <p class="note">Rangos orientativos para adultos, tomados de bibliografía general. Cada laboratorio valida su propio rango según el método y el equipo que usa: el que manda siempre es el que figura en el informe (por eso el programa calcula "alterado/normal" con el rango que trae cada laboratorio, no con esta tabla).</p>
       <div class="refrange-grid" id="laboRefRangeGrid"></div>
     </details>
@@ -165,6 +220,26 @@
 </div>
 
 <script>
+/* =========================================================================
+   FIREBASE — pedido de laboratorio (sección 3)
+   =========================================================================
+   Para que los cambios del pedido (orden, datos movidos y datos agregados)
+   queden guardados en Firebase, completá acá el mismo firebaseConfig que ya
+   usan tus otras herramientas (Consola de Firebase > Configuración del
+   proyecto > Tus apps). Si dejás projectId vacío, el pedido se guarda solo
+   en este navegador (localStorage) y no falla nada.
+   Se usa Cloud Firestore, documento: labo_config/pedido
+   ========================================================================= */
+const LABO_FIREBASE_CONFIG = {
+  apiKey: '',
+  authDomain: '',
+  projectId: '',
+  storageBucket: '',
+  messagingSenderId: '',
+  appId: ''
+};
+const LABO_FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
+
 function fld(id){ return document.getElementById(id); }
 
 (function(){
@@ -283,6 +358,7 @@ function fld(id){ return document.getElementById(id); }
   const LABO_MASTER = [
     {code:'GB',            cat:'hemograma', kind:'std',    l1:true,  l2:true,  aliases:[/\brecuento de gl[oó]bulos blancos\b/i]},
     {code:'N',             cat:'hemograma', kind:'pct',    l1:true,  l2:true,  aliases:[/\bneutrofilos?\s+segmentados\b/i]},
+    {code:'Cayados',       cat:'hemograma', kind:'pct',    l1:false, l2:true,  aliases:[/\bneutrofilos?\s+en\s+cayado\b/i, /\bcayados?\b/i]},
     {code:'L',             cat:'hemograma', kind:'pct',    l1:true,  l2:true,  aliases:[/\blinfocitos\b/i]},
     {code:'M',             cat:'hemograma', kind:'pct',    l1:false, l2:true,  aliases:[/\bmonocitos\b/i]},
     {code:'E',             cat:'hemograma', kind:'pct',    l1:false, l2:true,  aliases:[/\beosinofilos\b/i]},
@@ -304,7 +380,7 @@ function fld(id){ return document.getElementById(id); }
     {code:'RIN',  cat:'coagulograma', kind:'raw',    l1:false, l2:true, aliases:[/\brin\b/i]},
     {code:'KPTT', cat:'coagulograma', kind:'std',    l1:false, l2:true, aliases:[/\btromboplastina parcial activada\b/i, /\bk\.?p\.?t\.?t\.?/i]},
 
-    {code:'PCR',   cat:'quimica', kind:'std',    l1:true,  l2:true,  aliases:[/\bproteina c reactiva\b/i]},
+    {code:'PCR',   cat:'quimica', kind:'std',    l1:true,  l2:true,  aliases:[/\bprote[ií]na\s+c\s*-?\s*reactiva\b/i]},
     {code:'GLUC',  cat:'quimica', kind:'std',    l1:true,  l2:true,  aliases:[/\bglucosa\b/i]},
     {code:'HbA1c', cat:'quimica', kind:'pctstd', l1:true,  l2:false, aliases:[/\bhba1c\b/i, /\bhemoglobina glicosilada\b/i]},
     {code:'UREA',  cat:'quimica', kind:'std',    l1:true,  l2:true,  aliases:[/\burea\b/i]},
@@ -320,9 +396,13 @@ function fld(id){ return document.getElementById(id); }
     {code:'Na', cat:'ionograma', kind:'std', l1:true, l2:true, aliases:[/\bsodio\b/i]},
     {code:'K',  cat:'ionograma', kind:'std', l1:true, l2:true, aliases:[/\bpotasio\b/i]},
     {code:'CL', cat:'ionograma', kind:'std', l1:true, l2:true, aliases:[/\bcloro\b/i]},
-    {code:'Ca', cat:'ionograma', kind:'std', l1:true, l2:true, aliases:[/\bcalcemia\b/i]},
-    {code:'P',  cat:'ionograma', kind:'std', l1:true, l2:true, aliases:[/\bfosfatemia\b/i]},
-    {code:'Mg', cat:'ionograma', kind:'std', l1:true, l2:true, aliases:[/\bmagnesemia\b/i]},
+    {code:'Ca', cat:'ionograma', kind:'std', l1:true, l2:true, aliases:[/\bcalcemia\b/i, /\bcalcio\s+(?:total|s[eé]rico|plasm[aá]tico)\b/i, /\bcalcio\b(?!\s+(?:i[oó]nico|ionizado|en\s+orina|urinario))/i]},
+    {code:'Ca ion', cat:'ionograma', kind:'std', l1:false, l2:true, aliases:[/\bcalcio\s+(?:i[oó]nico|ionizado)\b/i]},
+    {code:'P',  cat:'ionograma', kind:'std', l1:true, l2:true, aliases:[/\bfosfatemia\b/i, /\bf[oó]sforo\b(?!\s+en\s+orina)/i]},
+    {code:'Mg', cat:'ionograma', kind:'std', l1:true, l2:true, aliases:[/\bmagnesemia\b/i, /\bmagnesio\b(?!\s+en\s+orina)/i]},
+
+    {code:'PTH',          cat:'calcico', kind:'std', l1:false, l2:true, aliases:[/\bpth\b/i, /\bparathormona\b/i, /\bhormona\s+paratiroidea\b/i]},
+    {code:'Vit D 25-OH',  cat:'calcico', kind:'std', l1:false, l2:true, aliases:[/\b25\s*-?\s*(?:oh|hidroxi)\s*-?\s*vitamina\s*d\b/i, /\bvitamina\s*d\s*\(?\s*25\s*-?\s*(?:oh|hidroxi)/i, /\b25\s*-?\s*oh\s*-?\s*d\b/i, /\bvitamina\s*d\b/i]},
 
     {code:'GPT', cat:'hepatico', kind:'std', l1:true, l2:true, aliases:[/\btransaminasa gpt\b/i]},
     {code:'GOT', cat:'hepatico', kind:'std', l1:true, l2:true, aliases:[/\btransaminasa got\b/i]},
@@ -366,7 +446,12 @@ function fld(id){ return document.getElementById(id); }
     {code:'T3',  cat:'tiroideo', kind:'std', l1:false, l2:true, aliases:[/\bt3\s*\(?\s*triiodotironina\s*\)?/i, /\btriiodotironina\b/i]},
     {code:'T4L', cat:'tiroideo', kind:'std', l1:false, l2:true, aliases:[/\bt4\s*-?\s*libre\b/i]},
 
-    {code:'IgA', cat:'inmunologia', kind:'std', l1:false, l2:true, aliases:[/\binmunoglobulina a\b/i]},
+    {code:'IgA', cat:'inmunologia', kind:'std', l1:false, l2:true, aliases:[/\binmunoglobulina a\b/i, /\biga\s+(?:s[eé]rica\s+)?total\b/i]},
+
+    {code:'tTG IgA', cat:'celiaquia', kind:'numqual', l1:false, l2:true, aliases:[/transglutaminasa[^\d]{0,50}?\biga\b/i, /\bttg\s*-?\s*iga\b/i]},
+    {code:'EMA IgA', cat:'celiaquia', kind:'numqual', l1:false, l2:true, aliases:[/endomisio\b/i, /\bema\s*-?\s*iga\b/i]},
+    {code:'DGP IgA', cat:'celiaquia', kind:'numqual', l1:false, l2:true, aliases:[/gliadina\b[^\d]{0,50}?\biga\b/i, /\bdgp\s*-?\s*iga\b/i]},
+    {code:'DGP IgG', cat:'celiaquia', kind:'numqual', l1:false, l2:true, aliases:[/gliadina\b[^\d]{0,50}?\bigg\b/i, /\bdgp\s*-?\s*igg\b/i]},
 
     {code:'VDRL',         cat:'serologia', kind:'qual', l1:false, l2:true, aliases:[/\bvdrl\b/i]},
     {code:'HBc Total',    cat:'serologia', kind:'qual', l1:false, l2:true, aliases:[/\bhepatitis b\s*-\s*core total\b/i]},
@@ -378,6 +463,11 @@ function fld(id){ return document.getElementById(id); }
     {code:'HIV Ac',       cat:'serologia', kind:'qual', l1:false, l2:true, aliases:[/\banti-hiv 1-2\b/i]},
     {code:'Chagas ELISA', cat:'serologia', kind:'qual', l1:false, l2:true, aliases:[/\bchagas\b(?!\s*hai)/i]},
     {code:'Chagas HAI',   cat:'serologia', kind:'qual', l1:false, l2:true, aliases:[/\bchagas hai\b/i]},
+
+    {code:'Ag COVID',    cat:'test_rapidos', kind:'qual', l1:false, l2:true, aliases:[/\bag\.?\s*para\s*covid\b/i, /\bant[ií]geno\s+(?:para\s+)?(?:covid|sars-?\s*cov-?\s*2)\b/i]},
+    {code:'Influenza A', cat:'test_rapidos', kind:'qual', l1:false, l2:true, aliases:[/\binfluenza\s*a\b/i]},
+    {code:'Influenza B', cat:'test_rapidos', kind:'qual', l1:false, l2:true, aliases:[/\binfluenza\s*b\b/i]},
+    {code:'VSR',         cat:'test_rapidos', kind:'qual', l1:false, l2:true, aliases:[/\bvsr\b/i, /\bvirus\s+sincicial\s+respiratorio\b/i]},
 
     {code:'pH',          cat:'acidobase', kind:'gas', l1:false, l2:true, aliases:[/\bph\b/i], fixedRange:{low:7.35, high:7.45}},
     {code:'pCO2',        cat:'acidobase', kind:'gas', l1:false, l2:true, aliases:[/\bpco2\b/i], fixedRange:{low:35, high:45}},
@@ -397,6 +487,7 @@ function fld(id){ return document.getElementById(id); }
     {id:'quimica',      label:'Química general (renal / glucemia / PCR / LDH / amilasa)'},
     {id:'cardiaco',     label:'Marcadores cardíacos (CPK / Troponina)'},
     {id:'ionograma',    label:'Ionograma (Na/K/Cl + Ca/P/Mg)'},
+    {id:'calcico',      label:'Perfil cálcico (PTH / vitamina D; Ca, P, Mg, ALB, CR y FG están en sus grupos)'},
     {id:'hepatico',     label:'Perfil hepático'},
     {id:'proteinograma',label:'Proteinograma electroforético'},
     {id:'lipidico',     label:'Perfil lipídico'},
@@ -405,16 +496,21 @@ function fld(id){ return document.getElementById(id); }
     {id:'oncologicos',  label:'Marcadores oncológicos'},
     {id:'tiroideo',     label:'Función tiroidea (TSH/T3/T4)'},
     {id:'inmunologia',  label:'Autoinmunidad / Inmunoglobulinas'},
+    {id:'celiaquia',    label:'Perfil celiaquía (IgA total está en Inmunoglobulinas)'},
     {id:'serologia',    label:'Serología (solo se listan si dan reactivo)'},
+    {id:'test_rapidos', label:'Test rápidos (COVID / Influenza / VSR)'},
     {id:'acidobase',    label:'Estado ácido-base'},
     {id:'liquidos_puncion', label:'Líquidos de punción'},
     {id:'uroanalisis', label:'Uroanálisis / Urocultivo'},
+    {id:'orina24', label:'Orina de 24 horas', refOnly:true},
   ];
 
+  /* Filas que empiezan con "§" son subtítulos dentro de un grupo. */
   const LABO_REF_RANGES = {
     hemograma: [
       ['GB','4,0 - 11,0 10³/mm³'],
       ['N','40 - 70 %'],
+      ['Cayados','0 - 5 %'],
       ['L','20 - 45 %'],
       ['M','2 - 10 %'],
       ['E','1 - 6 %'],
@@ -457,8 +553,20 @@ function fld(id){ return document.getElementById(id); }
       ['K','3,5 - 5,1 mEq/L'],
       ['CL','98 - 107 mEq/L'],
       ['Ca','8,5 - 10,5 mg/dL'],
+      ['Ca ion','4,6 - 5,3 mg/dL (1,15 - 1,32 mmol/L)'],
       ['P','2,5 - 4,5 mg/dL'],
       ['Mg','1,7 - 2,2 mg/dL'],
+    ],
+    calcico: [
+      ['PTH (intacta)','15 - 65 pg/mL'],
+      ['Calcemia total','8,5 - 10,5 mg/dL'],
+      ['Ca corregido','Ca total + 0,8 × (4,0 − ALB); usar si ALB < 4 g/dL'],
+      ['Albúmina (ALB)','3,5 - 5,0 g/dL (para interpretar/corregir la calcemia)'],
+      ['Fósforo (P)','2,5 - 4,5 mg/dL'],
+      ['Magnesio (Mg)','1,7 - 2,2 mg/dL'],
+      ['25-OH vitamina D','Déficit <20 · insuficiencia 20-29 · suficiente ≥30 ng/mL'],
+      ['Creatinina (CR)','Hombre 0,7-1,3 / Mujer 0,6-1,1 mg/dL'],
+      ['Función renal (FG)','ERC: G1 ≥90 · G2 60-89 · G3a 45-59 · G3b 30-44 · G4 15-29 · G5 <15 mL/min/1,73m²'],
     ],
     hepatico: [
       ['GPT','Hasta 35-45 U/L'],
@@ -504,7 +612,13 @@ function fld(id){ return document.getElementById(id); }
       ['AFP','< 8,0 - 10 ng/mL (varía con edad/embarazo)'],
     ],
     inmunologia: [
-      ['IgA','70 - 400 mg/dL'],
+      ['IgA (total)','70 - 400 mg/dL'],
+    ],
+    celiaquia: [
+      ['Anti-tTG IgA','Negativo: < 20 U/mL (varía según kit; vale el rango del informe)'],
+      ['IgA total','70 - 400 mg/dL (si es muy baja hay falsos negativos: pedir tTG/DGP IgG)'],
+      ['EMA IgA (antiendomisio)','Negativo'],
+      ['DGP IgG / IgA','Negativo: < 20 U/mL (varía según kit; vale el rango del informe)'],
     ],
     tiroideo: [
       ['TSH','0,35 - 4,5 µUI/mL'],
@@ -512,17 +626,76 @@ function fld(id){ return document.getElementById(id); }
       ['T4L','0,7 - 1,8 ng/dL'],
     ],
     serologia: [
-      ['VDRL / HBc / HBsAc / HBsAg / HCV / HIV / Chagas','No reactivo / Negativo'],
+      ['VDRL','No reactivo'],
+      ['§HBV — hepatitis B (4 marcadores)',''],
+      ['HBc total (anti-core total)','No reactivo'],
+      ['HBc IgM (anti-core IgM)','No reactivo'],
+      ['HBsAc (anti-HBs)','Reactivo ≥ 10 mUI/mL = inmune (vacuna o infección resuelta)'],
+      ['HBsAg (antígeno de superficie)','No reactivo'],
+      ['HCV','No reactivo'],
+      ['§HIV',''],
+      ['Ac totales 1 y 2 / Ag','No reactivo'],
+      ['Chagas (ELISA / HAI)','No reactivo'],
+    ],
+    test_rapidos: [
+      ['Ag COVID','No reactivo'],
+      ['Influenza A','No reactivo'],
+      ['Influenza B','No reactivo'],
+      ['VSR','No reactivo'],
     ],
     acidobase: [
+      ['§Arterial',''],
       ['pH','7,35 - 7,45'],
       ['pCO2','35 - 45 mmHg'],
       ['pO2','80 - 200 mmHg (o ajustado por edad)'],
       ['HCO3','22 - 26 mEq/L'],
-      ['base buffer / EB','-2 a +2'],
       ['SO2','95 - 100 %'],
+      ['§Venoso (sangre venosa periférica)',''],
+      ['pH','7,31 - 7,41'],
+      ['pCO2','41 - 51 mmHg'],
+      ['pO2','35 - 45 mmHg (no evalúa oxigenación)'],
+      ['HCO3','22 - 26 mEq/L'],
+      ['SO2','60 - 80 %'],
+      ['§Ambos',''],
+      ['HCO3 estándar (cHCO3st)','22 - 26 mmol/L'],
+      ['base buffer / EB','-2 a +2'],
       ['Anión GAP','8 - 16'],
-      ['Ac Lac','0,5 - 2,2 mmol/L'],
+      ['Ac Lac','0,5 - 2,2 mmol/L (= 4 - 20 mg/dL)'],
+    ],
+    liquidos_puncion: [
+      ['Aspecto','Límpido / claro (turbio o hemático = alterado)'],
+      ['GLU','60 - 100 mg/dL'],
+      ['Prot T','Junto con GASA: ≥ 2,5 g/dL orienta a causa cardíaca; < 2,5 a cirrosis'],
+      ['Amilasa','0 - 100 U/L'],
+      ['LDH','0 - 250 U/L'],
+      ['Bilirrubina','0 - 0,6 mg/dL'],
+      ['Rto. de Leucocitos','0 - 500 /mm³ (PMN ≥ 250/mm³ sugiere peritonitis bacteriana)'],
+      ['Rto de Hematíes','No se observan'],
+      ['GASA','≥ 1,1 g/dL = hipertensión portal; < 1,1 = causa no portal'],
+    ],
+    uroanalisis: [
+      ['Color / Aspecto','Amarillo / límpido'],
+      ['δ (densidad)','1,005 - 1,030'],
+      ['pH','5,0 - 8,0'],
+      ['Prot / GLU / Cetonas / Pigmentos biliares / Hb / Nitritos / Esterasa','Negativo'],
+      ['Urobilinógeno','Normal (≤ 1 mg/dL)'],
+      ['Hematíes / Leucocitos (sedimento)','Hasta 5 por campo (el programa marca alterado si > 5)'],
+      ['Cilindros / Cristales','Ausentes o escasos'],
+      ['Bacterias','Ausentes o escasas'],
+      ['Urocultivo','Sin desarrollo (positivo ≥ 10⁵ UFC/mL)'],
+    ],
+    orina24: [
+      ['Volumen','800 - 2000 mL/24 hs'],
+      ['CaU','100 - 300 mg/24 hs'],
+      ['Prot','< 0,15 g/24 hs'],
+      ['P','400 - 1300 mg/24 hs'],
+      ['Mg','73 - 122 mg/24 hs'],
+      ['Na','40 - 220 mEq/24 hs'],
+      ['K','25 - 125 mEq/24 hs'],
+      ['CL','110 - 250 mEq/24 hs'],
+      ['GLUC','< 0,5 g/24 hs'],
+      ['UREA','12 - 20 g/24 hs'],
+      ['CR','Hombre 1,0-2,0 / Mujer 0,8-1,8 g/24 hs'],
     ],
   };
   function laboBuildRefRangeTable(){
@@ -541,6 +714,15 @@ function fld(id){ return document.getElementById(id); }
       table.className = 'reftable';
       rows.forEach(([code, range])=>{
         const tr = document.createElement('tr');
+        if(code.charAt(0)==='§'){
+          const th = document.createElement('td');
+          th.colSpan = 2;
+          th.textContent = code.slice(1);
+          th.style.cssText = 'background:#eaf0ee;color:var(--accent-dark);font-weight:700;text-transform:uppercase;font-size:10px;letter-spacing:.04em;padding:3px 4px;white-space:normal;text-align:left;';
+          tr.appendChild(th);
+          table.appendChild(tr);
+          return;
+        }
         const tdCode = document.createElement('td');
         tdCode.textContent = code;
         const tdRange = document.createElement('td');
@@ -757,11 +939,46 @@ function fld(id){ return document.getElementById(id); }
           if(re.lastIndex === m.index) re.lastIndex++;
           continue;
         }
-        if(/\bno\s+reactivo\b|\bnegativo\b/.test(win)){
+        // Gana la palabra que aparece PRIMERO en la ventana (así "Reactivo ... No reactivo"
+        // de estudios consecutivos, ej. COVID / Influenza A / Influenza B, no se confunde).
+        const mNeg = win.match(/\bno\s+reactivo\b|\bnegativo\b/);
+        const mPos = win.match(/\breactivo\b|\bpositivo\b/);
+        if(mNeg && (!mPos || mNeg.index <= mPos.index)){
           return {pos:m.index, value:'No reactivo', reactive:false};
         }
-        if(/\breactivo\b|\bpositivo\b/.test(win)){
+        if(mPos){
           return {pos:m.index, value:'Reactivo', reactive:true};
+        }
+        if(re.lastIndex === m.index) re.lastIndex++;
+      }
+    }
+    return null;
+  }
+  // Resultado que puede venir numérico (con rango) o cualitativo (Negativo / Positivo / No reactivo)
+  function laboExtractNumQual(flat, param, sex){
+    const QRE = /\b(no\s+reactivo|reactivo|negativo|positivo|d[eé]bilmente\s+positivo|indeterminado|dudoso)\b/i;
+    for(const rx of param.aliases){
+      const re = new RegExp(rx.source, rx.flags.replace('g','')+'g');
+      let m;
+      while((m = re.exec(flat)) !== null){
+        const after = m.index + m[0].length;
+        const win = flat.slice(after, after+60);
+        if(/no\s+se\s+realiza|pendiente/i.test(win.slice(0,40))){
+          if(re.lastIndex === m.index) re.lastIndex++;
+          continue;
+        }
+        const numM = win.match(/-?\d+(?:[.,]\d+)?/);
+        const qM = win.match(QRE);
+        if(numM && (!qM || numM.index < qM.index)){
+          const numRes = laboFindNumberAfter(flat, after, 40);
+          if(numRes && numRes.value!=null){
+            const range = laboFindRangeAfter(flat, numRes.endPos, param.rangeWindow || 90, sex);
+            return {kind:'num', value:numRes.value, range, pos:m.index};
+          }
+        } else if(qM){
+          const w = qM[1].toLowerCase().replace(/\s+/g,' ');
+          const abnormal = !/^(no reactivo|negativo)$/.test(w);
+          return {kind:'qual', text:w.charAt(0).toUpperCase()+w.slice(1), abnormal, pos:m.index};
         }
         if(re.lastIndex === m.index) re.lastIndex++;
       }
@@ -1348,6 +1565,7 @@ function fld(id){ return document.getElementById(id); }
   function laboBuildChecklist(){
     $checklistGrid.innerHTML = '';
     LABO_CATS.forEach(cat=>{
+      if(cat.refOnly) return;
       const group = document.createElement('div');
       group.className = 'catgroup';
       const h4 = document.createElement('h4');
@@ -1473,6 +1691,20 @@ function fld(id){ return document.getElementById(id); }
     'TSH':  {alto:'TSH elevada; sugiere hipotiroidismo (primario si T4 libre baja); correlacionar con T4 libre y clínica', bajo:'TSH baja; sugiere hipertiroidismo o supresión hipofisaria; correlacionar con T4/T3 libres'},
     'T3':   {bajo:'T3 baja; en contexto de enfermedad aguda considerar síndrome del eutiroideo enfermo, correlacionar con TSH y T4 libre', alto:'T3 alta; considerar hipertiroidismo'},
     'T4L':  {bajo:'T4 libre baja; junto con TSH alta orienta a hipotiroidismo primario', alto:'T4 libre alta; orienta a hipertiroidismo'},
+    'PTH':  {alto:'PTH elevada; con calcemia alta orienta a hiperparatiroidismo primario, con calcemia baja o normal a hiperparatiroidismo secundario (déficit de vitamina D, enfermedad renal crónica, hipocalcemia sostenida); correlacionar con calcio, fósforo, 25-OH vitamina D y función renal', bajo:'PTH baja; con calcemia baja orienta a hipoparatiroidismo, con calcemia alta a hipercalcemia PTH-independiente (neoplasias, exceso de vitamina D); valorar magnesio'},
+    'Vit D 25-OH': {bajo:'déficit/insuficiencia de vitamina D (25-OH); valorar suplementación y correlacionar con calcio, fósforo y PTH'},
+    'Ca ion': {bajo:'hipocalcemia iónica (fracción activa), no depende de la albúmina; valorar reposición, magnesio y PTH', alto:'hipercalcemia iónica; evaluar causa (PTH, neoplasia, vitamina D) e hidratación'},
+    'IgA':  {bajo:'IgA total baja; considerar déficit de IgA (puede dar falsos negativos en la serología celíaca IgA: usar anti-tTG/DGP IgG)'},
+    'tTG IgA': {alto:'anti-transglutaminasa tisular IgA positivo; sugiere enfermedad celíaca, correlacionar con IgA total, EMA y confirmar con biopsia duodenal antes de indicar dieta sin gluten'},
+    'EMA IgA': {alto:'anticuerpos antiendomisio IgA positivos; alta especificidad para enfermedad celíaca, correlacionar con anti-tTG y biopsia duodenal'},
+    'DGP IgA': {alto:'anticuerpos anti-péptidos deaminados de gliadina IgA elevados; compatibles con enfermedad celíaca, correlacionar con anti-tTG y biopsia duodenal'},
+    'DGP IgG': {alto:'anticuerpos anti-péptidos deaminados de gliadina IgG elevados; útiles si hay déficit de IgA, correlacionar con anti-tTG y biopsia duodenal'},
+  };
+  const LABO_EXPLAIN_REACTIVO = {
+    'Ag COVID':    'test rápido reactivo para COVID; considerar aislamiento respiratorio según protocolo institucional y correlacionar con clínica (confirmar con PCR si corresponde)',
+    'Influenza A': 'test rápido reactivo para influenza A; considerar aislamiento respiratorio y tratamiento antiviral (oseltamivir) según clínica y factores de riesgo',
+    'Influenza B': 'test rápido reactivo para influenza B; considerar aislamiento respiratorio y tratamiento antiviral (oseltamivir) según clínica y factores de riesgo',
+    'VSR':         'test rápido reactivo para virus sincicial respiratorio; considerar aislamiento respiratorio y tratamiento de sostén',
   };
   const LABO_ABBR_TITLES = {
     'AFP':'α-fetoproteína',
@@ -1493,7 +1725,126 @@ function fld(id){ return document.getElementById(id); }
     const color = hcm==null ? '' : (hcm<27 ? 'hipocrómica' : 'normocrómica');
     return [size, color].filter(Boolean).join(' ');
   }
-  function laboBuildExplicaciones(found){
+  /* ---------------------------------------------------------------------
+     POTASIO — clasificación y conducta (basado en la clase "Diskalemias")
+     Hipokalemia: leve 3-3,5 · moderada 2,5-3 · severa <2,5 (mEq/L)
+     Hiperkalemia: >5,5; gravedad según ECG (5,5-6,5 · 6,5-8 · >8)
+     Usa, si están en el mismo laboratorio: Mg, HCO3, glucemia, CR/UREA/FG, CPK
+     y K urinario de 24 hs.
+  --------------------------------------------------------------------- */
+  function laboBuildKalemia(f, byCode, ctx){
+    ctx = ctx || {};
+    const K = laboToNumber(f.text);
+    if(K==null) return null;
+    let dir = f.dir;
+    if(!dir){ if(K<3.5) dir = 'bajo'; else if(K>5.5) dir = 'alto'; }
+    if(!dir) return null;
+
+    const num = c => (byCode[c] ? laboToNumber(byCode[c].text) : null);
+    const dirOf = c => (byCode[c] ? byCode[c].dir : null);
+    const fmt = laboFmtNumber;
+    const mg = num('Mg'), mgDir = dirOf('Mg');
+    const hco3 = num('HCO3');
+    const acidosisMet = hco3!=null && hco3 < 22;
+    const alcalosisMet = hco3!=null && hco3 > 26;
+    const glucNum = num('GLUC');
+    const glucAlta = dirOf('GLUC')==='alto' && glucNum!=null && glucNum >= 250; // hiperglucemia grave (posible cetoacidosis / déficit de insulina)
+    const crF = byCode['CR'], ureaF = byCode['UREA'], fgF = byCode['FG'];
+    const renalAlt = !!((crF && crF.dir==='alto') || (ureaF && ureaF.dir==='alto') || (fgF && fgF.dir==='bajo'));
+    const renalTxt = [crF && `CR ${crF.text}`, ureaF && `UREA ${ureaF.text}`, fgF && `FG ${fgF.text}`].filter(Boolean).join(', ');
+    const cpkAlta = dirOf('CPK')==='alto';
+    let kUri = null;
+    if(ctx.orina24){
+      const it = ctx.orina24.find(x=>x.code==='K');
+      if(it) kUri = laboToNumber(it.text);
+    }
+    const bullet = t => `<br>• ${t}`;
+    const sub = t => `<br>&nbsp;&nbsp;&nbsp;&nbsp;${t}`;
+    const out = [];
+
+    if(dir==='bajo'){
+      const grado = K>=3 ? 'leve (3–3,5 mEq/L)' : (K>=2.5 ? 'moderada (2,5–3 mEq/L)' : 'severa (<2,5 mEq/L)');
+      out.push(`<br>${laboRed(`K ${f.text}`)}: <b>hipokalemia ${grado}</b>.`);
+
+      let ecg;
+      if(K<2.5) ecg = 'a este nivel se esperan descenso marcado del ST, onda T negativa y onda U muy prominente, con riesgo de arritmias (extrasístoles, taquicardia ventricular, torsades de pointes)';
+      else if(K<3) ecg = 'a este nivel se esperan descenso del ST, aplanamiento de la onda T y aumento de amplitud de la onda U';
+      else ecg = 'la hipokalemia leve suele no producir cambios en el ECG';
+      out.push(bullet(`<b>ECG obligatorio</b> en todo paciente con hipokalemia: ${ecg}.`));
+
+      const ori = [];
+      if(mgDir==='bajo') ori.push(`hipomagnesemia (Mg ${byCode['Mg'].text}): perpetúa la hipokalemia (aumenta la pérdida urinaria de K), por eso se repone Mg en simultáneo`);
+      else if(mg==null) ori.push('solicitar magnesemia (la hipomagnesemia es frecuente y perpetúa la hipokalemia)');
+      if(alcalosisMet) ori.push(`alcalosis metabólica (HCO3 ${fmt(hco3)}): orienta a vómitos, diuréticos o hiperaldosteronismo`);
+      if(acidosisMet) ori.push(`acidosis metabólica (HCO3 ${fmt(hco3)}): orienta a pérdida de HCO3 (diarrea), acidosis tubular renal o cetoacidosis`);
+      if(glucAlta) ori.push(`hiperglucemia (GLUC ${byCode['GLUC'].text}): en una cetoacidosis diabética o con insulina a dosis altas el K se redistribuye al intracelular${K<3.3 ? '; con K <3,3 mEq/L en cetoacidosis se posterga la insulina hasta reponer el potasio' : ''}`);
+      if(kUri!=null) ori.push(`K urinario ${fmt(kUri)} mEq/24 hs: ${kUri<20 ? 'orienta a pérdida extrarrenal (digestiva), redistribución o baja ingesta' : 'orienta a pérdida renal (diuréticos, hiperaldosteronismo, tubulopatías)'}`);
+      else ori.push('solicitar K urinario de 24 hs (<20 mEq: pérdida extrarrenal, redistribución o baja ingesta; >20 mEq: pérdida renal)');
+      out.push(bullet(`<b>Orientación etiológica</b>: ${ori.join('; ')}.`));
+
+      let trat;
+      if(K>=3){
+        trat = 'reposición VO 40–100 mEq/día: Kaon (gluconato de potasio, jarabe) 10 mL c/8 hs y/o ClK en cápsulas (Control K, 15 mEq); si tiene PHP, agregar 30 mEq/L de ClK (2 ampollas de 15 mEq)';
+      } else if(K>=2.5){
+        trat = 'lo mismo que en la leve + carga EV de K: 3 ampollas de ClK en 300 mL de SF a pasar en 3 hs; agregar 1 ampolla de sulfato de Mg en el PHP y 1 en la carga. Si hay cambios en el ECG, tratar como hipokalemia severa';
+      } else {
+        trat = 'PHP con 45 mEq/L de ClK (3 ampollas de 15 mEq) + carga EV por vía central: 2 cargas de 60 mEq de ClK en 200 mL de SF a pasar en 2 hs, con 1 hora de intervalo entre cada carga; agregar sulfato de Mg (1 ampolla en el PHP y 1 en la carga); con monitoreo cardíaco';
+      }
+      out.push(bullet(`<b>Tratamiento</b>: ${trat}.`));
+      let prec = '<b>NO administrar K EV en bolo</b> (riesgo de arritmias fatales); no pasar las cargas en dextrosa (Dx), ya que puede reducir aún más la kalemia; controlar la kalemia luego de la reposición.';
+      if(renalAlt) prec += ` Con función renal alterada (${renalTxt}) reponer con cautela y controles más frecuentes.`;
+      out.push(bullet(prec));
+    } else {
+      let titulo;
+      if(K<=5.5) titulo = 'potasio levemente elevado</b> (por encima del rango del laboratorio, pero ≤5,5 mEq/L, por debajo del umbral de hiperkalemia)';
+      else if(K<=6.5) titulo = 'hiperkalemia leve</b> (5,5–6,5 mEq/L)';
+      else if(K<=8) titulo = 'hiperkalemia moderada</b> (6,5–8 mEq/L)';
+      else titulo = 'hiperkalemia severa</b> (>8 mEq/L)';
+      out.push(`<br>${laboRed(`K ${f.text}`)}: <b>${titulo}.`);
+
+      out.push(bullet('<b>Descartar pseudohiperkalemia</b> (muestra hemolizada, contracción muscular del miembro durante la extracción): repetir la muestra si no hay causa clínica ni cambios en el ECG.'));
+
+      let ecg;
+      if(K<=5.5) ecg = 'realizarlo sobre todo si hay insuficiencia renal, fármacos hiperkalemiantes o síntomas';
+      else if(K<=6.5) ecg = 'a este nivel se esperan onda T picuda ("en tienda de campaña") y QT corto';
+      else if(K<=8) ecg = 'a este nivel se esperan aplanamiento de la onda P, PR prolongado, QRS ancho, T picudas y posibles bloqueos AV';
+      else ecg = 'a este nivel se esperan fusión QRS-T, QRS ancho, patrón sinusoidal y riesgo de asistolia';
+      out.push(bullet(`<b>ECG inmediato</b>: la gravedad se define por los cambios del ECG y no siempre correlaciona con el valor de K; ${ecg}.`));
+
+      const cau = [];
+      if(renalAlt) cau.push(`deterioro de la función renal (${renalTxt}): IRA/ERC como causa o agravante (la caída del FG por sí sola no suele producir hiperkalemia, buscar además fármacos o acidosis)`);
+      if(acidosisMet) cau.push(`acidosis metabólica (HCO3 ${fmt(hco3)}): favorece la salida de K al extracelular`);
+      if(glucAlta) cau.push(`hiperglucemia (GLUC ${byCode['GLUC'].text}): considerar déficit de insulina`);
+      if(cpkAlta) cau.push(`CPK elevada (${byCode['CPK'].text}): considerar lisis celular / rabdomiólisis`);
+      if(!crF && !ureaF && !fgF) cau.push('completar con función renal y estado ácido-base');
+      cau.push('revisar y suspender fármacos hiperkalemiantes (IECA/ARA II, espironolactona, eplerenona, trimetoprim, heparina, β-bloqueantes, AINEs, digoxina)');
+      out.push(bullet(`<b>Causas a investigar</b>: ${cau.join('; ')}.`));
+
+      if(K<=5.5){
+        out.push(bullet('<b>Conducta</b>: suspender fármacos hiperkalemiantes, revisar la ingesta de potasio y repetir la kalemia; si el ECG es normal no suelen requerirse medidas de urgencia.'));
+      } else {
+        const bic = acidosisMet
+          ? `bicarbonato de sodio EV (hay acidosis metabólica, HCO3 ${fmt(hco3)})`
+          : 'bicarbonato de sodio EV solo si hay acidosis metabólica';
+        const hd = K>8
+          ? 'hemodiálisis de urgencia: es el tratamiento más eficaz y rápido en la hiperkalemia grave'
+          : 'hemodiálisis: tratamiento más eficaz y rápido, indicada en hiperkalemia grave o con insuficiencia renal que no responde';
+        if(K<=6.5){
+          out.push(bullet('<b>Conducta</b>: suspender fármacos hiperkalemiantes. Con ECG normal: favorecer la eliminación (furosemida EV si la función renal lo permite; resinas de intercambio catiónico) y controlar la kalemia. <b>Si hay cambios en el ECG</b>, tratar como hiperkalemia moderada/severa (pasos siguientes).'));
+        } else {
+          out.push(bullet('<b>Tratamiento</b> (con K >6,5 o cambios en el ECG, sin esperar la repetición):'));
+        }
+        out.push(sub(`1) <b>Estabilizar la membrana</b>: gluconato de calcio EV 10 mL al 10% lento en 2–5 min (efecto en 1–3 min, dura 30–60 min; no reduce el potasio pero previene arritmias).`));
+        out.push(sub(`2) <b>Redistribución al intracelular</b>: salbutamol nebulizado (40 gotas en 3 mL de SF c/4 hs) o EV; solución polarizante: 10 U de insulina corriente en 500 mL de dextrosa 10% a pasar en 1 h (efecto a los 30 min, dura ~6 hs; controlar HGT pre-intra-post); ${bic}.`));
+        out.push(sub(`3) <b>Eliminación del K</b>: furosemida EV si la función renal lo permite; resinas de intercambio catiónico (patiromer, Kayexalato: menos usado hoy); ${hd}.`));
+      }
+    }
+    out.push('<br>');
+    return out.join('');
+  }
+
+  function laboBuildExplicaciones(found, ctx){
+    ctx = ctx || {};
     const byCode = {};
     found.forEach(f=>{ byCode[f.code] = f; });
     const consumed = new Set();
@@ -1563,9 +1914,31 @@ function fld(id){ return document.getElementById(id); }
       ['Fe','transferrina','Sat Transf','TIBC','UIBC','ferritina'].forEach(c=>consumed.add(c));
     }
 
+    const caF = byCode['Ca'], albF = byCode['ALB'];
+    if(caF && albF){
+      const ca = laboToNumber(caF.text), alb = laboToNumber(albF.text);
+      if(ca!=null && alb!=null && alb < 4){
+        const corr = Math.round((ca + 0.8*(4-alb))*10)/10;
+        const rango = caF.range || {low:8.5, high:10.5};
+        const corrDir = laboDir(corr, rango);
+        if(caF.dir || corrDir){
+          let interp;
+          if(!corrDir) interp = caF.dir ? 'calcio corregido normal: la alteración de la calcemia total se explica por la hipoalbuminemia (pseudo-alteración), sin necesidad de reposición; si hay dudas, medir calcio iónico' : 'normal';
+          else if(corrDir==='bajo') interp = 'hipocalcemia verdadera; correlacionar con calcio iónico, PTH, 25-OH vitamina D, magnesio y fósforo, y valorar reposición';
+          else interp = 'hipercalcemia verdadera; evaluar causa (PTH, neoplasia, vitamina D) e hidratación';
+          sentences.push(`${laboRed(`Ca ${caF.text}`)} (ALB ${albF.text} g/dL): calcio corregido por albúmina [Ca + 0,8 × (4 − ALB)] ≈ ${laboFmtNumber(corr)} mg/dL; ${interp}.`);
+          consumed.add('Ca');
+        }
+      }
+    }
+
     Object.keys(LABO_EXPLAIN).forEach(code=>{
       if(consumed.has(code)) return;
       const f = byCode[code];
+      if(code==='K' && f){
+        const kBlock = laboBuildKalemia(f, byCode, ctx);
+        if(kBlock){ sentences.push(kBlock); consumed.add('K'); return; }
+      }
       if(!f || !f.dir) return;
       const txt = LABO_EXPLAIN[code][f.dir];
       if(!txt) return;
@@ -1576,7 +1949,10 @@ function fld(id){ return document.getElementById(id); }
     found.forEach(f=>{
       if(consumed.has(f.code)) return;
       if(f.abnormal && f.text==='Reactivo'){
-        sentences.push(`${laboRed(f.code)}: resultado reactivo; requiere confirmación con técnica complementaria y evaluación clínica.`);
+        const custom = LABO_EXPLAIN_REACTIVO[f.code];
+        sentences.push(custom
+          ? `${laboRed(f.code)}: ${custom}.`
+          : `${laboRed(f.code)}: resultado reactivo; requiere confirmación con técnica complementaria y evaluación clínica.`);
         consumed.add(f.code);
       }
     });
@@ -1590,22 +1966,25 @@ function fld(id){ return document.getElementById(id); }
     opts = opts || {};
     if(v.ph==null || v.pco2==null || v.hco3==null) return null;
     const ph=v.ph, pco2=v.pco2, hco3=v.hco3;
-    const acidemia = ph<7.35, alcalemia = ph>7.45;
+    const ven = !!v.venoso;
+    // Muestra venosa: pH 7,31-7,41 y pCO2 41-51 (basal ~45) en lugar de 7,35-7,45 y 35-45 (basal 40)
+    const T = ven ? {phLo:7.31, phHi:7.41, pcoHi:51, pcoLo:41, base:45} : {phLo:7.35, phHi:7.45, pcoHi:45, pcoLo:35, base:40};
+    const acidemia = ph<T.phLo, alcalemia = ph>T.phHi;
     let primario, compensacion = '';
     if(acidemia){
-      primario = (hco3<22) ? 'acidosis metabólica' : ((pco2>45) ? 'acidosis respiratoria' : 'acidemia (trastorno mixto, a definir con clínica)');
+      primario = (hco3<22) ? 'acidosis metabólica' : ((pco2>T.pcoHi) ? 'acidosis respiratoria' : 'acidemia (trastorno mixto, a definir con clínica)');
     } else if(alcalemia){
-      primario = (hco3>26) ? 'alcalosis metabólica' : ((pco2<35) ? 'alcalosis respiratoria' : 'alcalemia (trastorno mixto, a definir con clínica)');
-    } else if(pco2>45 && hco3>26){
+      primario = (hco3>26) ? 'alcalosis metabólica' : ((pco2<T.pcoLo) ? 'alcalosis respiratoria' : 'alcalemia (trastorno mixto, a definir con clínica)');
+    } else if(pco2>T.pcoHi && hco3>26){
       primario = opts.showMixedValues
         ? `trastorno mixto opuesto [acidosis respiratoria (pCO2: ${laboFmtNumber(pco2)}) + alcalosis metabólica (HCO3: ${laboFmtNumber(hco3)})] con pH compensado`
         : 'trastorno mixto opuesto (acidosis respiratoria + alcalosis metabólica) con pH compensado';
-    } else if(pco2<35 && hco3<22){
+    } else if(pco2<T.pcoLo && hco3<22){
       primario = opts.showMixedValues
         ? `trastorno mixto opuesto [alcalosis respiratoria (pCO2: ${laboFmtNumber(pco2)}) + acidosis metabólica (HCO3: ${laboFmtNumber(hco3)})] con pH compensado`
         : 'trastorno mixto opuesto (alcalosis respiratoria + acidosis metabólica) con pH compensado';
     } else {
-      primario = 'equilibrio ácido-base dentro de parámetros normales';
+      primario = ven ? 'equilibrio ácido-base dentro de parámetros normales para una muestra venosa' : 'equilibrio ácido-base dentro de parámetros normales';
     }
     if(primario==='acidosis metabólica'){
       const exp = laboWinterExpected(hco3);
@@ -1613,21 +1992,23 @@ function fld(id){ return document.getElementById(id); }
       else if(pco2 > exp.high) compensacion = `la pCO2 (${laboFmtNumber(pco2)}) está por encima de la esperada (${laboFmtNumber(exp.low)}–${laboFmtNumber(exp.high)} mmHg, fórmula de Winter), lo que sugiere una acidosis respiratoria sobreagregada (trastorno mixto)`;
       else compensacion = `la pCO2 (${laboFmtNumber(pco2)}) es la esperada para el grado de acidosis metabólica (${laboFmtNumber(exp.low)}–${laboFmtNumber(exp.high)} mmHg, fórmula de Winter), compatible con compensación respiratoria adecuada`;
     } else if(primario==='alcalosis metabólica'){
-      const expPco2 = laboR1(40 + (hco3-24)*0.6);
+      const expPco2 = laboR1(T.base + (hco3-24)*0.6);
       compensacion = `la pCO2 esperada por compensación respiratoria es de aprox. ${laboFmtNumber(expPco2)} mmHg (ΔpCO2 = ΔHCO3 × 0.6); la pCO2 medida es ${laboFmtNumber(pco2)} mmHg`;
     } else if(primario==='acidosis respiratoria'){
-      const dpco2 = pco2-40;
+      const dpco2 = pco2-T.base;
       const expAcute = laboR1(24 + dpco2*0.1), expChronic = laboR1(24 + dpco2*0.3);
       const fase = hco3<=expAcute+2 ? 'un componente predominantemente agudo' : (hco3>=expChronic-2 ? 'un componente crónico/corregido' : 'un cuadro parcialmente compensado (mixto)');
       compensacion = `con ΔHCO3 = ΔpCO2 × 0.1 (aguda) el HCO3 esperado es ≈${laboFmtNumber(expAcute)} mEq/L, y con ΔHCO3 = ΔpCO2 × 0.3 (crónica/corregida) sería ≈${laboFmtNumber(expChronic)} mEq/L; el HCO3 medido (${laboFmtNumber(hco3)} mEq/L) orienta a ${fase}`;
     } else if(primario==='alcalosis respiratoria'){
-      const dpco2 = 40-pco2;
+      const dpco2 = T.base-pco2;
       const expAcute = laboR1(24 - dpco2*0.2), expChronic = laboR1(24 - dpco2*0.4);
       compensacion = `con ΔHCO3 = ΔpCO2 × 0.2 (aguda) el HCO3 esperado es ≈${laboFmtNumber(expAcute)} mEq/L, y con ΔHCO3 = ΔpCO2 × 0.4 (crónica/corregida) sería ≈${laboFmtNumber(expChronic)} mEq/L; el HCO3 medido es ${laboFmtNumber(hco3)} mEq/L`;
     }
     const parts = [`Trastorno primario sugerido: <b>${primario}</b>${compensacion ? ('. Compensación: '+compensacion+'.') : '.'}`];
 
-    if(v.po2!=null){
+    if(ven){
+      parts.push('<b>Muestra VENOSA</b>: se usaron referencias venosas (pH 7,31–7,41; pCO2 41–51 mmHg). La pO2/SO2 venosa no permite evaluar la oxigenación (no se calcula PAFI ni hipoxemia) y la interpretación de la ventilación es aproximada; si hace falta, correlacionar con clínica y gasometría arterial.');
+    } else if(v.po2!=null){
       let hipoxTxt = '';
       if(v.edad!=null){
         const esperado = laboR1(102-(0.33*v.edad));
@@ -1666,11 +2047,11 @@ function fld(id){ return document.getElementById(id); }
       const expAcuteAlc = laboR1(24 - dAl*0.2), expChronicAlc = laboR1(24 - dAl*0.4);
       lines.push(`Alc. Resp. aguda: ΔHCO3 = ΔpCO2 × 0.2 (corregida ×0.4) = (40−${f(v.pco2)}) × 0.2/0.4 → HCO3 esp. ≈ ${f(expAcuteAlc)} mEq/L (aguda) / ≈ ${f(expChronicAlc)} mEq/L (corregida)`);
     }
-    if(v.po2!=null && v.fio2!=null && v.fio2>0){
+    if(v.po2!=null && v.fio2!=null && v.fio2>0 && !v.venoso){
       const pafi = Math.round((v.po2/v.fio2)*10000)/100;
       lines.push(`PAFI = pO2/FiO2 × 100 = ${f(v.po2)}/${f(v.fio2)} × 100 ≈ ${f(pafi)}`);
     }
-    if(v.edad!=null){
+    if(v.edad!=null && !v.venoso){
       const esp = laboR1(102-(0.33*v.edad));
       const extra = v.po2!=null ? `; PO2 medida ${f(v.po2)} mmHg` : '';
       lines.push(`PO2 esperada por edad = 102 − (0.33 × ${f(v.edad)}) ≈ ${f(esp)} mmHg${extra}`);
@@ -1747,13 +2128,18 @@ function fld(id){ return document.getElementById(id); }
     const flatMasked = laboMaskRanges(flat, liquidosRanges.concat(textStudyRanges).concat(orina24Ranges));
     const sex = laboDetectSex(flat);
     const age = laboDetectAge(flat);
+    const esVenoso = /estado\s+[aá]cido[\s-]*base\s+venos[oa]|gasometr[ií]a\s+venosa|gases?\s+(?:en\s+sangre\s+)?venos[oa]s?/i.test(flat);
+    const LABO_VENOUS_RANGES = {
+      'pH':{low:7.31, high:7.41}, 'pCO2':{low:41, high:51}, 'pO2':{low:35, high:45},
+      'HCO3':{low:22, high:26}, 'SO2':{low:60, high:80},
+    };
     const fio2Match = flat.match(/\bfio2\s*:?\s*(\d+(?:[.,]\d+)?)\s*%?/i);
     const fio2 = fio2Match ? laboToNumber(fio2Match[1]) : null;
 
     const found = [];
     LABO_MASTER.forEach(param=>{
       if(!laboEnabled[laboEnabledKey(param)]) return;
-      let text = null, abnormal = false, ok = false, pos = null, dir = null;
+      let text = null, abnormal = false, ok = false, pos = null, dir = null, rng = null;
       if(param.kind==='pct'){
         const r = laboExtractPct(flatMasked, param);
         if(r && r.value!=null){ text = `${laboFmtNumber(r.value)}%`; abnormal = false; ok = true; pos = r.pos; }
@@ -1768,7 +2154,9 @@ function fld(id){ return document.getElementById(id); }
         if(r){
           text = laboFmtNumber(r.value);
           let range = param.fixedRange;
-          if(param.code==='pO2' && age!=null){
+          if(esVenoso && LABO_VENOUS_RANGES[param.code]){
+            range = LABO_VENOUS_RANGES[param.code];
+          } else if(param.code==='pO2' && age!=null){
             const esperado = 102-0.33*age;
             range = {low: esperado-10, high: 200};
           }
@@ -1779,14 +2167,21 @@ function fld(id){ return document.getElementById(id); }
       } else if(param.kind==='qual'){
         const r = laboExtractQual(flatMasked, param);
         if(r){ text = r.value; abnormal = r.reactive; ok = true; pos = r.pos; }
+      } else if(param.kind==='numqual'){
+        const r = laboExtractNumQual(flatMasked, param, sex);
+        if(r){
+          if(r.kind==='num'){ text = laboFmtNumber(r.value); abnormal = laboIsAbnormal(r.value, r.range); dir = laboDir(r.value, r.range); rng = r.range; }
+          else { text = r.text; abnormal = r.abnormal; dir = r.abnormal ? 'alto' : null; }
+          ok = true; pos = r.pos;
+        }
       } else if(param.kind==='raw'){
         const r = laboExtractStd(flatMasked, param, sex);
         if(r){ text = laboFmtNumber(r.value); abnormal = false; dir = null; ok = true; pos = r.pos; }
       } else {
         const r = laboExtractStd(flatMasked, param, sex);
-        if(r){ text = laboFmtNumber(r.value); abnormal = laboIsAbnormal(r.value, r.range); dir = laboDir(r.value, r.range); ok = true; pos = r.pos; }
+        if(r){ text = laboFmtNumber(r.value); abnormal = laboIsAbnormal(r.value, r.range); dir = laboDir(r.value, r.range); rng = r.range; ok = true; pos = r.pos; }
       }
-      if(ok) found.push({code:param.code, text, abnormal, l1:param.l1, l2:param.l2, pos, dir});
+      if(ok) found.push({code:param.code, text, abnormal, l1:param.l1, l2:param.l2, pos, dir, range:rng});
     });
 
     const CORE_ALIAS_ALL = LABO_MASTER.flatMap(p=>p.aliases).concat(LABO_LIQUIDOS_FIELDS.flatMap(f=>f.aliases||[])).concat(TEXT_STUDY_ALIAS_ALL);
@@ -1886,10 +2281,14 @@ function fld(id){ return document.getElementById(id); }
 
     const line2Html = buildLine(line2Items);
     let line1Html = buildLine(line1Items.filter(x=>x.l1 || x.abnormal));
-    if(serologyNegGroups.length){
-      const sero = `Serología: no reactivo para ${serologyNegGroups.join(', ')}.`;
-      line1Html = line1Html ? `${line1Html}<br>${sero}` : `${prefix}${sero}`;
-    }
+    const RAPID_CODES = ['Ag COVID','Influenza A','Influenza B','VSR'];
+    const rapidNeg = found.filter(f=>RAPID_CODES.includes(f.code) && !f.abnormal).map(f=>f.code);
+    const negSentences = [];
+    if(serologyNegGroups.length) negSentences.push(`Serología: no reactivo para ${serologyNegGroups.join(', ')}.`);
+    if(rapidNeg.length) negSentences.push(`Test rápido: no reactivo para ${rapidNeg.join(', ')}.`);
+    negSentences.forEach(sent=>{
+      line1Html = line1Html ? `${line1Html}<br>${sent}` : `${prefix}${sent}`;
+    });
 
     let out = '';
     if(line2Html) out += `<span style="${LABO_FONT}"><b>LABORATORIO COMPLETO:</b><br>${line2Html}</span>`;
@@ -1936,6 +2335,7 @@ function fld(id){ return document.getElementById(id); }
       po2:  (found.find(f=>f.code==='pO2') ? laboToNumber(found.find(f=>f.code==='pO2').text) : null),
       edad: age,
       fio2: fio2,
+      venoso: esVenoso,
     };
     const abgInterp = laboBuildAcidBase(gasV, {showMixedValues:true});
     if(abgInterp){
@@ -1948,16 +2348,17 @@ function fld(id){ return document.getElementById(id); }
     if(gasV.po2!=null)  fld('gcPo2').value = gasV.po2;
     if(gasV.edad!=null) fld('gcEdad').value = gasV.edad;
     if(gasV.fio2!=null) fld('gcFio2').value = gasV.fio2;
+    if(gasV.ph!=null && gasV.pco2!=null && gasV.hco3!=null) fld('gcVenoso').checked = !!esVenoso;
 
     if(gasV.ph!=null && gasV.pco2!=null && gasV.hco3!=null){
       $gasCalcDetails.open = true;
       $gcResultado.innerHTML = laboBuildGasResultHtml(gasV, {showMixedValues:false});
     }
 
-    const explicaciones = laboBuildExplicaciones(found);
+    const explicaciones = laboBuildExplicaciones(found, {venoso: esVenoso, orina24: orina24Result ? orina24Result.items : null});
     if(explicaciones.length){
       if(out) out += '<br><br>';
-      out += `<span style="${LABO_FONT}"><b>Explicación de alteraciones</b>: ${explicaciones.join(' ')}</span>`;
+      out += `<span style="${LABO_FONT}"><b>Explicación de alteraciones</b>: ${explicaciones.join(' ').replace(/<br>\s+/g, '<br>')}</span>`;
     }
 
     $output.innerHTML = out;
@@ -1968,7 +2369,7 @@ function fld(id){ return document.getElementById(id); }
     const liqTxt = liquidosBlocks.length ? ` Líquidos de punción: ${liquidosBlocks.length} estudio(s).` : '';
     const uroTxt = textStudyBlocks.length ? ` Uroanálisis/urocultivo: ${textStudyBlocks.length} estudio(s).` : '';
     const gasaTxt = gasaBlock ? ' GASA calculado.' : (ascAlb!=null ? ' Falta el laboratorio plasmático para calcular el GASA.' : '');
-    const abgTxt = abgInterp ? ' Se detectó y analizó el estado ácido-base (ver sección 4 para ajustar a mano).' : '';
+    const abgTxt = abgInterp ? ` Se detectó y analizó el estado ácido-base${esVenoso ? ' (muestra venosa)' : ''} (ver sección 4 para ajustar a mano).` : '';
     const pendTxt = pendingList ? ` Ojo: esta orden tiene estudios aún pendientes de resultado (${pendingList}), no incluidos en la conversión.` : '';
     $status.textContent = `Listo. Renglón completo: ${line2Items.length} dato(s). Renglón resumen: ${line1CoreCount} del listado + ${catalogAlteradosFueraCore} alterado(s) adicionales del catálogo + ${extrasCount} adicional(es) alterado(s) fuera de catálogo.${liqTxt}${uroTxt}${gasaTxt}${abgTxt}${pendTxt}`;
   }
@@ -2087,8 +2488,9 @@ function fld(id){ return document.getElementById(id); }
       po2: laboNumInput('gcPo2'),
       fio2: laboNumInput('gcFio2'),
       edad: laboNumInput('gcEdad'),
+      venoso: fld('gcVenoso').checked,
     };
-    if(v.ph==null && v.pco2==null && v.hco3==null && v.po2==null && v.fio2==null && v.edad==null){
+    if(v.ph==null && v.pco2==null && v.hco3==null && v.po2==null && v.fio2==null && v.edad==null && !v.venoso){
       $gcResultado.innerHTML = '';
       return;
     }
@@ -2108,8 +2510,10 @@ function fld(id){ return document.getElementById(id); }
   ['gcPh','gcPco2','gcHco3','gcPo2','gcFio2','gcEdad'].forEach(id=>{
     fld(id).addEventListener('input', laboGcAutoCalcular);
   });
+  fld('gcVenoso').addEventListener('change', laboGcAutoCalcular);
   fld('gcLimpiarBtn').addEventListener('click', ()=>{
     ['gcPh','gcPco2','gcHco3','gcPo2','gcFio2','gcEdad'].forEach(id=>{ fld(id).value = ''; });
+    fld('gcVenoso').checked = false;
     $gcResultado.innerHTML = '';
   });
 
@@ -2118,6 +2522,469 @@ function fld(id){ return document.getElementById(id); }
   laboBuildChecklist();
   laboBuildRefRangeTable();
   window.laboProcesar = laboProcesar;
+})();
+
+/* =========================================================================
+   SECCIÓN 3 — PEDIDO DE LABORATORIO
+   Perfiles ordenados por prioridad (de mayor a menor). Cada perfil tiene
+   uno o más grupos (ej. RUTINA → Hemograma / Glucemia / Función renal /
+   Ionograma). Se puede mover un dato a otro perfil/grupo, reordenar los
+   perfiles y agregar datos; la estructura se guarda en Firebase (Firestore,
+   documento labo_config/pedido) y en localStorage como respaldo.
+   ========================================================================= */
+(function(){
+  const LS_KEY = 'labo_pedido_v1';
+  const FB_COLLECTION = 'labo_config';
+  const FB_DOC = 'pedido';
+  const $grid = fld('pedidoGrid');
+  const $out = fld('pedidoOutput');
+  const $fbStatus = fld('pedFbStatus');
+  const $status = fld('pedStatus');
+
+  /* ---- Estructura por defecto ---------------------------------------- */
+  function slug(t){
+    return String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9α-ω]+/g,'_').replace(/^_+|_+$/g,'') || 'x';
+  }
+  const DEFAULT_SPEC = [
+    {id:'rutina', nombre:'RUTINA', bloques:[
+      {id:'hemograma', nombre:'HEMOGRAMA', compacto:true, items:['GB','N','L','M','E','B','GR','HB','HTO','PLAQ','VCM','HCM','CHCM','RDW','VPM']},
+      {id:'glucemia',  nombre:'GLUCEMIA',  items:['GLUCEMIA']},
+      {id:'renal',     nombre:'FUNCIÓN RENAL', items:['Urea','Cr','FG']},
+      {id:'ionograma', nombre:'IONOGRAMA', items:['Na','K','Cl']},
+    ]},
+    {id:'hemostasia', nombre:'HEMOSTASIA', items:['TP%','RIN','KPTT']},
+    {id:'reactantes', nombre:'REACTANTES DE FASE AGUDA', items:['PCR','ERS']},
+    {id:'hepatico',   nombre:'PERFIL HEPÁTICO', items:['GPT','GOT','FAL','BT','BD','GGT','Prot T','ALB']},
+    {id:'lipidico',   nombre:'PERFIL LIPÍDICO', items:['Colesterol T','HDL','No HDL','LDL','Tg','IR']},
+    {id:'ferrico',    nombre:'PERFIL FÉRRICO', items:['Fe','Transferrina','Sat de transferrina','TIBC','UIBC','Ferritina','Ac Fólico','Vit B12','Reticulocitos']},
+    {id:'acidobase',  nombre:'ESTADO ÁCIDO-BASE (arterial o venoso)', items:['pH','pCO2','pO2','HCO3','EB','SO2','Anión GAP','Ac Lac']},
+    {id:'nutricional',nombre:'PERFIL NUTRICIONAL', items:['Mg','Ca','P']},
+    {id:'quimica',    nombre:'QUÍMICA GENERAL', items:['HbA1c','LDH','Amilasa']},
+    {id:'cardiaco',   nombre:'MARCADORES CARDÍACOS', items:['CPK','Troponina']},
+    {id:'serologia',  nombre:'SEROLOGÍA', bloques:[
+      {id:'vdrl', nombre:'VDRL', items:['VDRL']},
+      {id:'hbv',  nombre:'HBV',  items:['HBc total','HBsAc','HBsAg','HBc IgM']},
+      {id:'hcv',  nombre:'HCV',  items:['HCV']},
+      {id:'hiv',  nombre:'HIV',  items:['Ac totales 1 y 2']},
+    ]},
+    {id:'tiroideo',   nombre:'FUNCIÓN TIROIDEA', items:['TSH','T3','T4L']},
+    {id:'proteinograma', nombre:'PROTEINOGRAMA', items:['α1','α2','β1','β2','γ','Relación A/G']},
+    {id:'celiaquia',  nombre:'PERFIL CELIAQUÍA', items:['Anti-tTG IgA','IgA total','EMA IgA','DGP IgG/IgA']},
+    {id:'oncologicos',nombre:'MARCADORES ONCOLÓGICOS', items:['AFP','PSA']},
+  ];
+  function buildDefaults(){
+    return {
+      version: 1,
+      updatedAt: 0,
+      perfiles: DEFAULT_SPEC.map(p=>{
+        const bloques = (p.bloques || [{id:'g', nombre:'', items:p.items}]).map(b=>({
+          id: b.id, nombre: b.nombre, compacto: !!b.compacto,
+          items: b.items.map(lbl=>({id: p.id+'.'+b.id+'.'+slug(lbl), label: lbl})),
+        }));
+        return {id:p.id, nombre:p.nombre, bloques};
+      }),
+    };
+  }
+
+  let state = null;
+  const sel = new Set();     // ids de datos tildados (solo esta sesión)
+  let refs = [];             // checkboxes de perfil (para estado indeterminado)
+
+  function uid(prefix){ return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+  function norm(t){ return String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim(); }
+  function valid(st){
+    return st && Array.isArray(st.perfiles) && st.perfiles.length &&
+      st.perfiles.every(p=>p && p.id && typeof p.nombre==='string' && Array.isArray(p.bloques) && p.bloques.length &&
+        p.bloques.every(b=>b && b.id && Array.isArray(b.items) && b.items.every(it=>it && it.id && typeof it.label==='string')));
+  }
+
+  /* ---- Persistencia: localStorage + Firebase ------------------------- */
+  let fb = null;              // {db, fs} cuando Firebase está listo
+  let fbTried = false;
+  const fbConfigured = !!(LABO_FIREBASE_CONFIG && LABO_FIREBASE_CONFIG.projectId && LABO_FIREBASE_CONFIG.apiKey);
+
+  function setFbStatus(txt, cls){
+    $fbStatus.textContent = txt || '';
+    $fbStatus.className = 'fb-status' + (cls ? ' '+cls : '');
+  }
+  async function fbInit(){
+    if(fb || fbTried || !fbConfigured) return fb;
+    fbTried = true;
+    try{
+      const appMod = await import(LABO_FIREBASE_SDK + 'firebase-app.js');
+      const fs = await import(LABO_FIREBASE_SDK + 'firebase-firestore.js');
+      const app = appMod.getApps().length ? appMod.getApp() : appMod.initializeApp(LABO_FIREBASE_CONFIG);
+      try{
+        // Si ya iniciaste sesión en otra herramienta del mismo sitio, Firestore usa esa sesión.
+        const authMod = await import(LABO_FIREBASE_SDK + 'firebase-auth.js');
+        authMod.getAuth(app);
+      }catch(e){ /* sin auth: se usa acceso público según tus reglas */ }
+      fb = {db: fs.getFirestore(app), fs};
+    }catch(e){
+      console.error('Firebase (pedido):', e);
+      fb = null;
+    }
+    return fb;
+  }
+  function localLoad(){
+    try{
+      const st = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+      return valid(st) ? st : null;
+    }catch(e){ return null; }
+  }
+  function localSave(){
+    try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){}
+  }
+  async function fbLoad(){
+    const f = await fbInit();
+    if(!f) return {ok:false};
+    try{
+      const ref = f.fs.doc(f.db, FB_COLLECTION, FB_DOC);
+      const snap = await f.fs.getDoc(ref);
+      if(!snap.exists()) return {ok:true, data:null};
+      const d = snap.data();
+      const st = JSON.parse(d.json);
+      return {ok:true, data: valid(st) ? st : null};
+    }catch(e){
+      console.error('Firebase (leer pedido):', e);
+      return {ok:false, error:e};
+    }
+  }
+  async function fbSave(){
+    const f = await fbInit();
+    if(!f) throw new Error('Firebase no disponible');
+    const ref = f.fs.doc(f.db, FB_COLLECTION, FB_DOC);
+    await f.fs.setDoc(ref, {
+      json: JSON.stringify(state),
+      updatedAtMs: state.updatedAt,
+      updatedAt: f.fs.serverTimestamp(),
+    });
+  }
+  let saveTimer = null;
+  function scheduleSave(){
+    state.updatedAt = Date.now();
+    localSave();
+    if(!fbConfigured){
+      setFbStatus('Guardado solo en este navegador (Firebase sin configurar).', 'warn');
+      return;
+    }
+    setFbStatus('Guardando en Firebase…');
+    if(saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(async ()=>{
+      try{
+        await fbSave();
+        setFbStatus('Guardado en Firebase ✓', 'ok');
+      }catch(e){
+        console.error('Firebase (guardar pedido):', e);
+        setFbStatus('No se pudo guardar en Firebase (quedó guardado en este navegador). Revisá la conexión o las reglas de Firestore.', 'warn');
+      }
+    }, 700);
+  }
+
+  /* ---- Estructura: helpers ------------------------------------------- */
+  function destinations(){
+    const list = [];
+    state.perfiles.forEach((p,pi)=>{
+      p.bloques.forEach(b=>{
+        let label = `${pi+1}) ${p.nombre}`;
+        if(p.bloques.length>1) label += ' › ' + (b.nombre || '(general)');
+        list.push({value: p.id+'|'+b.id, label});
+      });
+    });
+    return list;
+  }
+  function findItem(itemId){
+    for(const p of state.perfiles) for(const b of p.bloques){
+      const idx = b.items.findIndex(it=>it.id===itemId);
+      if(idx>=0) return {p,b,idx,it:b.items[idx]};
+    }
+    return null;
+  }
+  function moveItem(itemId, destValue){
+    const [pid,bid] = destValue.split('|');
+    const found = findItem(itemId);
+    const dp = state.perfiles.find(p=>p.id===pid);
+    const db = dp && dp.bloques.find(b=>b.id===bid);
+    if(!found || !db || found.b===db) return;
+    found.b.items.splice(found.idx,1);
+    db.items.push(found.it);
+    scheduleSave(); render();
+  }
+  function moveProfile(from, to){
+    if(to<0 || to>=state.perfiles.length || from===to) return;
+    const [p] = state.perfiles.splice(from,1);
+    state.perfiles.splice(to,0,p);
+    scheduleSave(); render();
+  }
+  function addItem(p, b, label){
+    label = String(label||'').trim();
+    if(!label) return;
+    b.items.push({id: uid('c_'), label, custom:true});
+    scheduleSave(); render();
+  }
+  function removeItem(itemId){
+    const f = findItem(itemId);
+    if(!f) return;
+    f.b.items.splice(f.idx,1);
+    sel.delete(itemId);
+    scheduleSave(); render();
+  }
+
+  /* ---- Render -------------------------------------------------------- */
+  function el(tag, cls, txt){
+    const e = document.createElement(tag);
+    if(cls) e.className = cls;
+    if(txt!=null) e.textContent = txt;
+    return e;
+  }
+  function profileItemIds(p){ return p.bloques.flatMap(b=>b.items.map(it=>it.id)); }
+  function updateTri(){
+    refs.forEach(({cb, ids})=>{
+      const n = ids.filter(id=>sel.has(id)).length;
+      cb.checked = ids.length>0 && n===ids.length;
+      cb.indeterminate = n>0 && n<ids.length;
+    });
+  }
+  function buildChip(it, dests, curValue){
+    const chip = el('span', 'pf-chip' + (it.custom ? ' custom' : ''));
+    const lab = document.createElement('label');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = sel.has(it.id);
+    cb.addEventListener('change', ()=>{
+      if(cb.checked) sel.add(it.id); else sel.delete(it.id);
+      updateTri(); updateOutput();
+    });
+    lab.appendChild(cb);
+    lab.appendChild(document.createTextNode(it.label));
+    chip.appendChild(lab);
+
+    const mv = document.createElement('select');
+    mv.className = 'mv';
+    mv.title = 'Mover este dato a otro perfil / grupo';
+    const o0 = document.createElement('option'); o0.value = ''; o0.textContent = '⇄';
+    mv.appendChild(o0);
+    dests.forEach(d=>{
+      if(d.value===curValue) return;
+      const o = document.createElement('option'); o.value = d.value; o.textContent = d.label;
+      mv.appendChild(o);
+    });
+    mv.addEventListener('change', ()=>{ if(mv.value) moveItem(it.id, mv.value); });
+    chip.appendChild(mv);
+
+    if(it.custom){
+      const x = el('button', 'x', '×');
+      x.type = 'button';
+      x.title = 'Quitar este dato agregado por vos';
+      x.addEventListener('click', ()=>removeItem(it.id));
+      chip.appendChild(x);
+    }
+    return chip;
+  }
+  function render(){
+    if(!state) return;
+    refs = [];
+    $grid.innerHTML = '';
+    const dests = destinations();
+    const total = state.perfiles.length;
+    state.perfiles.forEach((p,pi)=>{
+      const box = el('div','pf');
+      const head = el('div','pf-head');
+      head.appendChild(el('span','pf-num',(pi+1)+')'));
+      const all = document.createElement('input');
+      all.type = 'checkbox';
+      all.title = 'Tildar / destildar todo el perfil';
+      const ids = profileItemIds(p);
+      refs.push({cb: all, ids});
+      all.addEventListener('change', ()=>{
+        ids.forEach(id=>{ if(all.checked) sel.add(id); else sel.delete(id); });
+        all.indeterminate = false;
+        render(); updateOutput();
+      });
+      head.appendChild(all);
+      head.appendChild(el('span','pf-name',p.nombre));
+
+      const ord = el('span','pf-ord');
+      const up = el('button',null,'▲'); up.type='button'; up.title='Subir de prioridad'; up.disabled = pi===0;
+      up.addEventListener('click', ()=>moveProfile(pi, pi-1));
+      const down = el('button',null,'▼'); down.type='button'; down.title='Bajar de prioridad'; down.disabled = pi===total-1;
+      down.addEventListener('click', ()=>moveProfile(pi, pi+1));
+      const pos = document.createElement('select');
+      pos.title = 'Elegir la posición de este perfil';
+      for(let k=1;k<=total;k++){
+        const o = document.createElement('option'); o.value = k-1; o.textContent = k;
+        if(k-1===pi) o.selected = true;
+        pos.appendChild(o);
+      }
+      pos.addEventListener('change', ()=>moveProfile(pi, parseInt(pos.value,10)));
+      ord.appendChild(up); ord.appendChild(down); ord.appendChild(pos);
+      if(p.custom){
+        const del = el('button',null,'🗑'); del.type='button'; del.title='Eliminar este perfil (agregado por vos)';
+        del.addEventListener('click', ()=>{
+          if(!confirm(`¿Eliminar el perfil "${p.nombre}" y sus datos?`)) return;
+          ids.forEach(id=>sel.delete(id));
+          state.perfiles.splice(pi,1);
+          scheduleSave(); render(); updateOutput();
+        });
+        ord.appendChild(del);
+      }
+      head.appendChild(ord);
+      box.appendChild(head);
+
+      p.bloques.forEach(b=>{
+        const bl = el('div','pf-block');
+        const nombre = (b.nombre||'').trim();
+        const soloIgual = b.items.length===1 && norm(b.items[0].label)===norm(nombre);
+        if(p.bloques.length>1 && nombre && !soloIgual) bl.appendChild(el('div','pf-block-h',nombre));
+        const cur = p.id+'|'+b.id;
+        b.items.forEach(it=>bl.appendChild(buildChip(it, dests, cur)));
+        const addWrap = el('span','pf-add');
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.placeholder = '＋ dato';
+        inp.title = 'Agregar un dato que falte en este grupo (Enter)';
+        inp.addEventListener('keydown', (e)=>{
+          if(e.key==='Enter'){ e.preventDefault(); addItem(p, b, inp.value); }
+        });
+        addWrap.appendChild(inp);
+        bl.appendChild(addWrap);
+        box.appendChild(bl);
+      });
+      $grid.appendChild(box);
+    });
+    updateTri();
+  }
+
+  /* ---- Pedido generado ----------------------------------------------- */
+  function fechaTxt(){
+    const v = fld('laboFecha').value;
+    if(!v) return '';
+    const [y,m,d] = v.split('-');
+    return `${d}/${m}/${y}`;
+  }
+  function buildOutputHtml(){
+    if(!state) return '';
+    const lines = [];
+    let n = 0;
+    state.perfiles.forEach(p=>{
+      const partes = [];
+      p.bloques.forEach(b=>{
+        const chosen = b.items.filter(it=>sel.has(it.id));
+        if(!chosen.length) return;
+        const nombre = (b.nombre||'').trim();
+        const labels = chosen.map(it=>it.label);
+        if(!nombre){ partes.push(labels.join(', ')); return; }
+        if(labels.length===1 && norm(labels[0])===norm(nombre)){ partes.push(nombre); return; }
+        if(b.compacto && chosen.length===b.items.length){ partes.push(`${nombre} completo`); return; }
+        partes.push(`${nombre} (${labels.join(', ')})`);
+      });
+      if(!partes.length) return;
+      n++;
+      lines.push(`<b>${n}) ${p.nombre}</b>: ${partes.join('; ')}.`);
+    });
+    if(!lines.length) return '';
+    const f = fechaTxt();
+    return `<b>PEDIDO DE LABORATORIO</b>${f ? ' ('+f+')' : ''}<br>` + lines.join('<br>');
+  }
+  function updateOutput(){
+    $out.innerHTML = buildOutputHtml();
+    $status.textContent = '';
+  }
+
+  /* ---- Copiar (mismo criterio que el renglón de LABO: negro, sin fondo) */
+  $out.addEventListener('copy', (e)=>{
+    const s = window.getSelection();
+    if(!s || s.rangeCount===0 || s.isCollapsed) return;
+    const range = s.getRangeAt(0);
+    if(!$out.contains(range.commonAncestorContainer)) return;
+    const box = document.createElement('div');
+    box.appendChild(range.cloneContents());
+    box.querySelectorAll('*').forEach(x=>{ x.style.background='transparent'; x.style.backgroundColor='transparent'; });
+    const html = `<div style="background:transparent;color:#000000;font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:12pt;">${box.innerHTML}</div>`;
+    if(e.clipboardData){
+      e.clipboardData.setData('text/html', html);
+      e.clipboardData.setData('text/plain', box.innerText);
+      e.preventDefault();
+    }
+  });
+  fld('pedCopiarBtn').addEventListener('click', async ()=>{
+    if(!$out.innerHTML.trim()){ $status.textContent = 'Tildá al menos un estudio para armar el pedido.'; return; }
+    let ok = false;
+    document.documentElement.classList.add('labo-copying');
+    try{
+      const range = document.createRange();
+      range.selectNodeContents($out);
+      const s = window.getSelection();
+      s.removeAllRanges(); s.addRange(range);
+      ok = document.execCommand('copy');
+      s.removeAllRanges();
+    }catch(e){ ok = false; }
+    document.documentElement.classList.remove('labo-copying');
+    if(ok){ $status.textContent = 'Pedido copiado.'; return; }
+    try{
+      await navigator.clipboard.writeText($out.innerText);
+      $status.textContent = 'Pedido copiado como texto simple.';
+    }catch(e){
+      $status.textContent = 'No se pudo copiar automáticamente. Seleccioná el texto manualmente.';
+    }
+  });
+
+  /* ---- Botones de la barra ------------------------------------------- */
+  fld('pedMarcarTodo').addEventListener('click', ()=>{
+    state.perfiles.forEach(p=>profileItemIds(p).forEach(id=>sel.add(id)));
+    render(); updateOutput();
+  });
+  fld('pedDesmarcarTodo').addEventListener('click', ()=>{
+    sel.clear(); render(); updateOutput();
+  });
+  fld('pedAgregarPerfil').addEventListener('click', ()=>{
+    const nombre = (prompt('Nombre del nuevo perfil (ej. PERFIL CÁLCICO):') || '').trim();
+    if(!nombre) return;
+    state.perfiles.push({id: uid('p_'), nombre: nombre.toUpperCase(), custom:true, bloques:[{id:'g', nombre:'', items:[]}]});
+    scheduleSave(); render();
+  });
+  fld('pedRestaurar').addEventListener('click', ()=>{
+    if(!confirm('¿Restaurar el orden y los datos por defecto? Se pierden los datos agregados y los movimientos que hiciste.')) return;
+    sel.clear();
+    state = buildDefaults();
+    scheduleSave(); render(); updateOutput();
+  });
+  fld('laboFecha').addEventListener('change', updateOutput);
+
+  /* ---- Inicio: local primero (rápido) y después Firebase ------------- */
+  async function init(){
+    state = localLoad() || buildDefaults();
+    render(); updateOutput();
+    if(!fbConfigured){
+      setFbStatus('Firebase sin configurar: el pedido se guarda solo en este navegador.', 'warn');
+      return;
+    }
+    setFbStatus('Conectando con Firebase…');
+    const r = await fbLoad();
+    if(!r.ok){
+      setFbStatus('No se pudo leer Firebase (se usa la copia de este navegador).', 'warn');
+      return;
+    }
+    if(!r.data){
+      // Primera vez: se siembra Firebase con lo que hay
+      state.updatedAt = state.updatedAt || Date.now();
+      try{ await fbSave(); setFbStatus('Guardado en Firebase ✓', 'ok'); }
+      catch(e){ setFbStatus('No se pudo guardar en Firebase. Revisá las reglas de Firestore.', 'warn'); }
+      return;
+    }
+    if((r.data.updatedAt||0) >= (state.updatedAt||0)){
+      state = r.data;
+      localSave();
+      render(); updateOutput();
+      setFbStatus('Sincronizado con Firebase ✓', 'ok');
+    } else {
+      // La copia local es más nueva: se sube
+      try{ await fbSave(); setFbStatus('Guardado en Firebase ✓', 'ok'); }
+      catch(e){ setFbStatus('No se pudo guardar en Firebase. Revisá las reglas de Firestore.', 'warn'); }
+    }
+  }
+  init();
+  window.laboPedido = {get state(){ return state; }, sel};
 })();
 </script>
 </body>
