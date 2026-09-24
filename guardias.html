@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-   Versión: 26 (23/09/2026)
+   Versión: 11 (13/09/2026)
    Herramienta: Guardias — pendientes por cama
 
    Notas de arquitectura para el futuro (leer antes de tocar el código):
@@ -23,17 +23,19 @@
 <title>Guardias — pendientes por cama</title>
 <!-- ===== PWA: para que el ícono de la pantalla de inicio abra siempre
      la misma ventana (en vez de una pestaña nueva de Chrome cada vez) ===== -->
-<link rel="manifest" href="/manifest.webmanifest">
+<!-- Recuerda esta pantalla para reabrirla al tocar el ícono de la app -->
+<script>try{localStorage.setItem('pwa_last','guardias')}catch(e){}</script>
+<link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2f5d5a">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Guardia">
-<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <script>
   if('serviceWorker' in navigator){
     window.addEventListener('load', ()=>{
-      navigator.serviceWorker.register('/sw.js').catch(()=>{});
+      navigator.serviceWorker.register('sw.js').catch(()=>{});
     });
   }
 </script>
