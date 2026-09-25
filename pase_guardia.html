@@ -1281,7 +1281,10 @@ function relocatePatientToCama(p){
   p.cama = code;
   p.id = code;
   if(selectedId === viejo) selectedId = code;
-  savePatientNow(p);
+  // Es la misma persona, solo cambia el número de cama: los pendientes de
+  // guardia (manejo/datos/hechos) tienen que viajar con ella al documento
+  // nuevo, porque el documento viejo se borra a continuación.
+  savePatientNow(p, {includeGuardiaFields:true});
   deletePatientRemote(viejo);
   renderAll();
 }
@@ -1311,17 +1314,34 @@ function ensureFichaForCama(cama){
    la página enseguida después de elegir la opción, porque el timer del debounce nunca llegaba
    a disparar. */
 const pendingSavePatients = {};
-function patientDataForSave(p){
+/* manejo/datos/hechos son los "pendientes de guardia" que administra
+   guardias.html, no esta pantalla. Antes patientDataForSave() los mandaba
+   siempre (con lo que esta pantalla tuviera cargado en memoria en ese
+   momento), y savePatientNow() escribía el documento ENTERO sin merge. Si
+   la copia local de acá estaba un poco desactualizada respecto de lo último
+   que guardias.html había guardado (algo normal: alcanza con que este
+   celular estuviera en segundo plano un momento y se perdiera un onSnapshot),
+   el próximo guardado de esta pantalla —así fuera solo tipear el MC—
+   pisaba esos tres campos con la versión vieja, y los pendientes ya
+   borrados "revivían". Por default ahora se excluyen del guardado y se usa
+   merge:true, para que Firestore deje esos campos tal cual están (los
+   sigue escribiendo guardias.html). Sólo cuando de verdad corresponde
+   resetearlos —vaciar la carpeta, o un paciente nuevo en la cama al
+   importar el pase— se piden explícitamente con includeGuardiaFields. */
+function patientDataForSave(p, opts){
   p.updatedAt = Date.now();
-  const { id, ...rest } = p;
+  const { id, manejo, datos, hechos, ...rest } = p;
+  if(opts && opts.includeGuardiaFields){
+    rest.manejo = manejo; rest.datos = datos; rest.hechos = hechos;
+  }
   return rest;
 }
-function savePatientNow(p){
+function savePatientNow(p, opts){
   const fs = fsApi();
   if(!fs || !p || !p.id) return;
   clearTimeout(saveTimers[p.id]);
   delete pendingSavePatients[p.id];
-  fs.setDoc(fs.doc(fs.db,'pacientes',p.id), patientDataForSave(p)).catch(()=>{
+  fs.setDoc(fs.doc(fs.db,'pacientes',p.id), patientDataForSave(p, opts), {merge:true}).catch(()=>{
     fld('status').textContent = 'No se pudo guardar en la nube — revisá tu conexión.';
   });
 }
@@ -1408,7 +1428,7 @@ function vaciarCarpeta(p){
   delete p.salidasPropias;
   delete p.checksPropios;
   p.cama = cama;
-  savePatientNow(p);
+  savePatientNow(p, {includeGuardiaFields:true});
   lastRenderedPatientId = null;
   renderAll();
 }
@@ -4429,7 +4449,7 @@ function intentarUnificacion(){
   fld('status').textContent = 'Unificando la base en un documento por cama…';
   Promise.all(codes.map(code=>{
     const t = porCama[code];
-    return fs.setDoc(fs.doc(fs.db, 'pacientes', code), patientDataForSave(t))
+    return fs.setDoc(fs.doc(fs.db, 'pacientes', code), patientDataForSave(t, {includeGuardiaFields:true}), {merge:true})
       .then(()=>Promise.all(borrarPorCama[code].map(id=>fs.deleteDoc(fs.doc(fs.db, 'pacientes', id)).catch(()=>{}))));
   })).then(()=>{
     guardarFlagUnificacion();
@@ -4761,7 +4781,7 @@ function aplicarImport(plan){
       deletePatientRemote(viejo);
       if(selectedId === viejo) selectedId = e.code;
     }
-    undoEntries.push({ code: e.code, esNueva: esNueva, antes: JSON.parse(JSON.stringify(p)) });
+    undoEntries.push({ code: e.code, esNueva: esNueva, reset: !!e.reset, antes: JSON.parse(JSON.stringify(p)) });
     p.cama = e.code;
     aAplicar.forEach(c=>{ p[c.key] = c.next; });
     if(e.sexo && !p.sexo) p.sexo = e.sexo;
@@ -4775,7 +4795,7 @@ function aplicarImport(plan){
     }
     p.lastImport = snapshotImport(p);
     p.lastImportAt = Date.now();
-    savePatientNow(p);
+    savePatientNow(p, e.reset ? {includeGuardiaFields:true} : undefined);
     camas++;
     if(e.aviso) avisos.push(e.aviso);
   });
@@ -4797,7 +4817,7 @@ function deshacerImport(){
     } else {
       const idx = patients.findIndex(x=>x.id===u.code);
       if(idx!==-1) patients[idx] = u.antes; else patients.push(u.antes);
-      savePatientNow(u.antes);
+      savePatientNow(u.antes, u.reset ? {includeGuardiaFields:true} : undefined);
     }
   });
   lastImportUndo = null;
