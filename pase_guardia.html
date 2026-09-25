@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-   Versión: 25 (23/09/2026)
+   Versión: 25 (28/09/2026)
 -->
 <html lang="es-AR">
 <head>
@@ -743,7 +743,7 @@ const SISTEMAS = {
   cv: { label:'Cardiovascular',
     normal:[
       {id:'ritmoregular',text:'ritmo regular',antagonistas:['arritmia']},
-      {id:'r1r2',text:'R1 y R2 en 4 focos, normofonéticos',variants:['R1 y R2 en 4 focos, normofonéticos','R1-R2 normofonéticos en 4 focos'],antagonistas:[]},
+      {id:'r1r2',text:'R1 y R2 en 4 focos, normofonéticos',variants:['R1 y R2 en 4 focos, normofonéticos','R1-R2 normofonéticos en 4 focos'],antagonistas:['hipofoneticos']},
       {id:'silencios',text:'impresionan libres',variants:['impresionan libres','sin soplos evidentes'],antagonistas:['soplo']},
       {id:'sinfallo',text:'sin signos de falla agudo de bomba',variants:['sin signos de falla agudo de bomba','sin signos de falla agudo de bomba'],antagonistas:['fallo']},
       {id:'decubito',text:'tolera decúbito dorsal',antagonistas:['nodecubito']},
@@ -753,6 +753,7 @@ const SISTEMAS = {
     ],
     alteraciones:[
       {id:'arritmia',text:'arritmia / ritmo irregular',detail:true,detailLabel:'detalle',antagonistas:['ritmoregular']},
+      {id:'hipofoneticos',text:'R1 y R2 en 4 focos, hipofonéticos',antagonistas:['r1r2']},
       {id:'soplo',text:'soplo',detail:true,detailLabel:'foco / intensidad',antagonistas:['silencios']},
       {id:'fallo',text:'signos de fallo de bomba',antagonistas:['sinfallo','iy']},
       {id:'rhypos',text:'reflejo hepatoyugular positivo',antagonistas:['rhyneg']},
@@ -1291,7 +1292,14 @@ function ensureFichaForCama(cama){
    paciente (así estaba diseñado desde antes con localStorage), así que basta con enganchar el
    guardado ahí para cubrir todos los puntos de edición sin tocar cada uno. Los cambios de texto
    (data-f) se guardan con un pequeño debounce para no escribir en cada tecla; las acciones
-   estructurales (alta, baja, vaciar carpeta, nueva evolución) se guardan al toque. */
+   estructurales (alta, baja, vaciar carpeta, nueva evolución) se guardan al toque.
+   pendingSavePatients guarda una referencia a cada paciente con un guardado debounceado
+   pendiente (por id), para poder "vaciarlos" de una si la página se cierra o se recarga
+   antes de que se cumplan los 700ms — ver flushPendingSaves() más abajo. Sin esto, un cambio
+   hecho con un <select> o checkbox (una sola acción, sin tipeo) se podía perder si se recargaba
+   la página enseguida después de elegir la opción, porque el timer del debounce nunca llegaba
+   a disparar. */
+const pendingSavePatients = {};
 function patientDataForSave(p){
   p.updatedAt = Date.now();
   const { id, ...rest } = p;
@@ -1301,6 +1309,7 @@ function savePatientNow(p){
   const fs = fsApi();
   if(!fs || !p || !p.id) return;
   clearTimeout(saveTimers[p.id]);
+  delete pendingSavePatients[p.id];
   fs.setDoc(fs.doc(fs.db,'pacientes',p.id), patientDataForSave(p)).catch(()=>{
     fld('status').textContent = 'No se pudo guardar en la nube — revisá tu conexión.';
   });
@@ -1308,12 +1317,28 @@ function savePatientNow(p){
 function schedulePatientSave(p, delay){
   if(!p || !p.id) return;
   clearTimeout(saveTimers[p.id]);
+  pendingSavePatients[p.id] = p;
   saveTimers[p.id] = setTimeout(()=>savePatientNow(p), delay==null?700:delay);
 }
+/* Guarda de una todo lo que haya quedado con el debounce pendiente. Se llama al
+   cerrar/recargar la pestaña y al ocultarse (pasar a otra app en el celular), que es
+   cuando el timer de 700ms corre riesgo de no llegar a disparar solo. */
+function flushPendingSaves(){
+  Object.keys(pendingSavePatients).forEach(id=>{
+    const p = pendingSavePatients[id];
+    delete pendingSavePatients[id];
+    savePatientNow(p);
+  });
+}
+window.addEventListener('beforeunload', flushPendingSaves);
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'hidden') flushPendingSaves();
+});
 function deletePatientRemote(id){
   const fs = fsApi();
   if(!fs) return;
   clearTimeout(saveTimers[id]);
+  delete pendingSavePatients[id];
   fs.deleteDoc(fs.doc(fs.db,'pacientes',id)).catch(()=>{});
 }
 function saveCustomLocal(){
@@ -1367,6 +1392,7 @@ function vaciarCarpeta(p){
   p.nombre=''; p.sexo=''; p.edad=''; p.dni=''; p.fi=''; p.mc=''; p.ant=''; p.mi=[]; p.asoc=[]; p.cult=''; p.ic='';
   p.evol=''; p.evolCount=0; p.lastEstado=''; p.lastChecklist=null;
   p.manejo=[]; p.datos={}; p.hechos={};
+  delete p.plantillaSeleccionada;
   p.lastImport = null;
   delete p.salidasPropias;
   delete p.checksPropios;
@@ -1716,7 +1742,13 @@ function renderForm(){
   col.querySelectorAll('[data-f]').forEach(el=>{ el.value = p[el.dataset.f]||''; });
   col.querySelectorAll('[data-f]').forEach(el=>{
     el.addEventListener('input',()=>{ p[el.dataset.f]=el.value; renderSidebar(); renderPreview(); updateDraftPreview(p); });
-    el.addEventListener('change',()=>{ p[el.dataset.f]=el.value; renderSidebar(); renderPreview(); updateDraftPreview(p); });
+    el.addEventListener('change',()=>{
+      p[el.dataset.f]=el.value; renderSidebar(); renderPreview(); updateDraftPreview(p);
+      // Un <select> (ej. Sexo) se elige de una sola vez, no de a tipeo: no tiene sentido
+      // esperar el debounce de 700ms para guardarlo, y esperarlo es justamente lo que hacía
+      // que se perdiera si se recargaba la página enseguida después de elegir la opción.
+      if(el.tagName === 'SELECT') savePatientNow(p);
+    });
     if(el.dataset.f === 'cama'){
       el.addEventListener('blur',()=>{ relocatePatientToCama(p); });
     }
@@ -2135,15 +2167,23 @@ function renderEvolBuilder(p, stateOverride){
   fld('evolFecha').value = new Date().toISOString().slice(0,10);
   fld('evolFecha').addEventListener('input', ()=>{ fechaAutoSync = false; updateDraftPreview(p); });
 
+  // Se recuerda qué plantilla quedó aplicada a este paciente (p.plantillaSeleccionada,
+  // se guarda en su ficha) para que el <select> la muestre marcada la próxima vez que
+  // se abra su carpeta, en vez de volver siempre a "— seleccionar y aplicar —".
+  fld('evolPlantilla').value = p.plantillaSeleccionada || '';
+  if(fld('borrarPlantillaBtn')) fld('borrarPlantillaBtn').style.display =
+    (p.plantillaSeleccionada && p.plantillaSeleccionada.indexOf('custom:')===0) ? '' : 'none';
   fld('evolPlantilla').addEventListener('change', (e)=>{
     const raw = e.target.value;
     const del = fld('borrarPlantillaBtn');
     if(del) del.style.display = raw.indexOf('custom:')===0 ? '' : 'none';
-    if(!raw) return;
+    p.plantillaSeleccionada = raw;
+    if(!raw){ savePatientNow(p); return; }
     const tipo = raw.indexOf('builtin:')===0 ? 'builtin' : (raw.indexOf('custom:')===0 ? 'custom' : '');
     const key = tipo==='builtin' ? raw.slice('builtin:'.length) : raw.slice('custom:'.length);
     if(tipo==='builtin') aplicarPlantilla(p, key);
     else if(tipo==='custom') aplicarPlantillaCustom(p, key);
+    savePatientNow(p);
     const status = fld('status');
     const tplAplicada = tipo==='custom' && checklistConfig.customPlantillas && checklistConfig.customPlantillas[key];
     status.textContent = (tplAplicada && tplAplicada.salidas)
@@ -2315,6 +2355,7 @@ document.body.addEventListener('click', (e)=>{
     if(!confirm('¿Borrar la plantilla propia de este paciente y volver a usar la plantilla general?')) return;
     delete p.salidasPropias;
     delete p.checksPropios;
+    delete p.plantillaSeleccionada;
     savePatientNow(p);
     renderEvolBuilder(p);
     const st = fld('status');
@@ -3122,7 +3163,7 @@ function buildCuerpoCorto(p){
   const hallazgos = [].concat(
     shortSystemSentences('cv', p, ''),
     (bloqueOn(S,'estudio') && estudioTipo && estudioInforme) ? [`Se recibe informe de ${estudioTipo}: ${estudioInforme}`] : [],
-    shortSystemSentences('resp', p, 'A nivel pulmonar, '),
+    shortSystemSentences('resp', p, ''),
     shortAbdomenSentences(p),
     shortCatDiuSentences(p),
     shortMiembrosSentences(p),
