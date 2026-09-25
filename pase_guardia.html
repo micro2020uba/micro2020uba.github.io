@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-   Versión: 28 (25/09/2026)
+   Versión: 25 (23/09/2026)
 -->
 <html lang="es-AR">
 <head>
@@ -1101,6 +1101,17 @@ function aplicarPlantillaCustom(patient, name){
     renderEvolBuilder(patient);
   }
 }
+/* Orden de "Mis plantillas": primero las que se llaman como una cama (C101, C102...),
+   de menor a mayor número; después el resto de las plantillas propias (con nombre
+   libre, ej. "Neumonía de la comunidad"), en orden alfabético. */
+function esNombrePlantillaCama(nombre){ return /^C\d+$/.test(nombre); }
+function ordenarNombresPlantillas(customPlantillas){
+  const nombres = Object.keys(customPlantillas || {});
+  const camas = nombres.filter(esNombrePlantillaCama)
+    .sort((a,b)=>parseInt(a.slice(1),10)-parseInt(b.slice(1),10));
+  const otras = nombres.filter(n=>!esNombrePlantillaCama(n)).sort((a,b)=>a.localeCompare(b,'es'));
+  return camas.concat(otras);
+}
 function captureCurrentAsPlantillaSet(){
   const set = {};
   SYS_ORDER.forEach(key=>{
@@ -1812,22 +1823,6 @@ function getMergedItems(key){
   };
 }
 
-/* Plantilla propia de una CAMA: si "Mis plantillas" tiene una guardada con el mismo nombre que
-   la cama del paciente (ej. "C101"), es la que arranca marcada para un paciente sin evoluciones
-   ni plantilla propia todavía — en vez de la plantilla general "Paciente estable / en observación".
-   Si la cama no tiene plantilla propia, no hace nada (sigue el fallback de siempre). */
-function plantillaPorCama(p){
-  const nombre = p && p.cama ? String(p.cama).trim() : '';
-  if(!nombre) return null;
-  return (checklistConfig.customPlantillas && checklistConfig.customPlantillas[nombre]) || null;
-}
-function getDefaultConCama(p, key, kind, id){
-  const tpl = plantillaPorCama(p);
-  const cfg = tpl && tpl.set && tpl.set[key];
-  const map = cfg && (kind==='normal' ? cfg.normal : cfg.alt);
-  if(map && Object.prototype.hasOwnProperty.call(map, id)) return map[id];
-  return getDefaultChecked(key, kind, id);
-}
 function getDefaultChecked(key, kind, id){
   const cfg = checklistConfig.defaults && checklistConfig.defaults[key];
   const map = cfg && (kind==='normal' ? cfg.normal : cfg.alt);
@@ -1882,10 +1877,9 @@ function lastChecked(p, key, kind, id, fallback){
     const map = kind==='normal' ? lc.systems[key].normal : lc.systems[key].alt;
     if(map && Object.prototype.hasOwnProperty.call(map, id)) return !!map[id];
   }
-  // Sin historial previo para este paciente: si la cama ya tiene su propia plantilla guardada
-  // (con el mismo nombre que la cama, ej. "C101"), arrancamos desde ahí; si no, desde el default
-  // configurado para este ítem (editable con la estrella ★ del checklist).
-  return !!getDefaultConCama(p, key, kind, id);
+  // Sin historial previo para este paciente: arrancamos desde el default configurado
+  // para este ítem (editable con la estrella ★ del checklist).
+  return !!getDefaultChecked(key, kind, id);
 }
 function lastDetail(p, key, kind, id){
   if(tieneChecksPropios(p)){
@@ -1900,7 +1894,7 @@ function lastDetail(p, key, kind, id){
     if(v) return v;
   }
   if(!lc){
-    const v = getDefaultConCama(p, key, kind, id);
+    const v = getDefaultChecked(key, kind, id);
     if(typeof v === 'string') return v;
   }
   return '';
@@ -1987,19 +1981,15 @@ function renderEvolBuilder(p, stateOverride){
   const estadoOpts = getEstadoOptions();
   const lastEstado = (p && p.lastEstado && estadoOpts.some(o=>o.value===p.lastEstado)) ? p.lastEstado : estadoOpts[0].value;
   const customPlantillas = checklistConfig.customPlantillas || {};
-  // "Mis plantillas" van primero y en orden ascendente (las nombrás con el número de cama,
-  // ej. C101, C106, C109… — el orden numérico/alfabético natural las deja bien ordenadas).
-  const nombresCustomOrdenados = Object.keys(customPlantillas).sort((a,b)=>
-    a.localeCompare(b, undefined, {numeric:true, sensitivity:'base'}));
   let html = `
     <div class="field" style="margin-bottom:4px;">
       <label>Plantilla según motivo de internación</label>
       <select id="evolPlantilla">
         <option value="">— seleccionar y aplicar —</option>
-        ${nombresCustomOrdenados.length ? `<optgroup label="Mis plantillas">
-          ${nombresCustomOrdenados.map(name=>`<option value="custom:${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('')}
-        </optgroup>` : ''}
         ${Object.keys(PLANTILLAS).map(k=>`<option value="builtin:${k}">${escapeHtml(plantillaLabelBuiltin(k))}</option>`).join('')}
+        ${Object.keys(customPlantillas).length ? `<optgroup label="Mis plantillas">
+          ${ordenarNombresPlantillas(customPlantillas).map(name=>`<option value="custom:${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('')}
+        </optgroup>` : ''}
       </select>
     </div>
     <div class="plantilla-actions">
@@ -2188,17 +2178,24 @@ function renderEvolBuilder(p, stateOverride){
   fld('evolFecha').value = new Date().toISOString().slice(0,10);
   fld('evolFecha').addEventListener('input', ()=>{ fechaAutoSync = false; updateDraftPreview(p); });
 
+  // Si esta cama tiene una "Mi plantilla" guardada con su mismo número (ej. la cama
+  // C101 con una plantilla llamada "C101"), se aplica sola la primera vez que se abre
+  // la carpeta (mientras no tenga otra plantilla ya elegida) en vez de dejar la
+  // plantilla de signos normales por defecto ("Paciente estable / en observación").
+  if(!p.plantillaSeleccionada){
+    const codigoCama = camaCode(p.cama) || (esNombrePlantillaCama(p.id) ? p.id : '');
+    if(codigoCama && checklistConfig.customPlantillas && checklistConfig.customPlantillas[codigoCama]){
+      p.plantillaSeleccionada = 'custom:'+codigoCama;
+      aplicarPlantillaCustom(p, codigoCama);
+      savePatientNow(p);
+    }
+  }
   // Se recuerda qué plantilla quedó aplicada a este paciente (p.plantillaSeleccionada,
   // se guarda en su ficha) para que el <select> la muestre marcada la próxima vez que
-  // se abra su carpeta. Si todavía no eligió ninguna a mano y la cama ya tiene su propia
-  // plantilla guardada (mismo nombre que la cama) y el paciente no tiene evoluciones ni
-  // checks propios todavía, se muestra esa — para un paciente realmente nuevo en la cama,
-  // en cambio, no hay plantilla de cama y se vuelve a "— seleccionar y aplicar —".
-  const plantillaCamaVigente = (!p.plantillaSeleccionada && !tieneChecksPropios(p) && !p.lastChecklist && p.cama && checklistConfig.customPlantillas && checklistConfig.customPlantillas[String(p.cama).trim()])
-    ? 'custom:'+String(p.cama).trim() : '';
-  fld('evolPlantilla').value = p.plantillaSeleccionada || plantillaCamaVigente || '';
+  // se abra su carpeta, en vez de volver siempre a "— seleccionar y aplicar —".
+  fld('evolPlantilla').value = p.plantillaSeleccionada || '';
   if(fld('borrarPlantillaBtn')) fld('borrarPlantillaBtn').style.display =
-    ((p.plantillaSeleccionada || plantillaCamaVigente).indexOf('custom:')===0) ? '' : 'none';
+    (p.plantillaSeleccionada && p.plantillaSeleccionada.indexOf('custom:')===0) ? '' : 'none';
   fld('evolPlantilla').addEventListener('change', (e)=>{
     const raw = e.target.value;
     const del = fld('borrarPlantillaBtn');
@@ -2454,7 +2451,7 @@ function renderAdministrarPlantillasBox(p){
       <input type="text" class="pl-admin-nombre" value="${escapeHtml(plantillaLabelBuiltin(k))}">
       <button type="button" class="pl-admin-guardar" title="Guardar nombre">✓</button>
     </div>`).join('');
-  const filasCustom = Object.keys(customPlantillas).map(nombre=>`
+  const filasCustom = ordenarNombresPlantillas(customPlantillas).map(nombre=>`
     <div class="pl-admin-row" data-tipo="custom" data-key="${escapeHtml(nombre)}">
       <input type="text" class="pl-admin-nombre" value="${escapeHtml(nombre)}">
       <button type="button" class="pl-admin-guardar" title="Guardar nombre">✓</button>
@@ -3342,20 +3339,21 @@ document.body.addEventListener('click', (e)=>{
   const listKey = kind === 'normal' ? 'normal' : 'alteraciones';
   const otroListKey = listKey === 'normal' ? 'alteraciones' : 'normal';
   const id = 'custom_'+Date.now()+'_a';
-  // Todo lo nuevo (sea un signo normal o un hallazgo/alteración pensado para un paciente puntual)
-  // se suma marcado por defecto a la plantilla base "Paciente estable / en observación" — la que
-  // se usa para las camas que todavía no tienen su propia plantilla — para que esa plantilla se
-  // vaya completando y sirva de punto de partida para armar la de cada cama a puro tilde/destilde.
   if(antagText){
     const antagId = 'custom_'+Date.now()+'_b';
     checklistConfig.custom[sysKey][listKey].push({ id, text, antagonistas:[antagId] });
     checklistConfig.custom[sysKey][otroListKey].push({ id: antagId, text: antagText, antagonistas:[id] });
-    setDefaultChecked(sysKey, kind, id, true);
-    setDefaultChecked(sysKey, kind==='normal'?'alt':'normal', antagId, true);
   } else {
     checklistConfig.custom[sysKey][listKey].push({ id, text, antagonistas:[] });
-    setDefaultChecked(sysKey, kind, id, true);
   }
+  // El ítem nuevo queda tildado en la plantilla de signos normales por defecto
+  // ("Paciente estable / en observación"), para que esa plantilla se vaya
+  // completando con todo lo nuevo que se agrega — aunque haya nacido como un
+  // signo puntual de un paciente en particular. Si se creó junto con su
+  // antagónimo, solo se tilda el lado que se escribió acá; el antagónimo queda
+  // sin tildar (no tiene sentido que ambos lados de un antagonista arranquen
+  // marcados a la vez).
+  setDefaultChecked(sysKey, kind, id, true);
   input.value = '';
   if(antagInput) antagInput.value = '';
   saveCustomLocal();
@@ -3371,9 +3369,11 @@ document.body.addEventListener('change', (e)=>{
   if(!checklistConfig.custom) checklistConfig.custom = {};
   if(!checklistConfig.custom[sysKey]) checklistConfig.custom[sysKey] = {normal:[], alteraciones:[]};
   const listKey = kind === 'normal' ? 'normal' : 'alteraciones';
-  const id = 'custom_'+Date.now();
-  checklistConfig.custom[sysKey][listKey].push({ id, text: text, antagonistas:[] });
-  setDefaultChecked(sysKey, kind, id, true);
+  const idNuevo = 'custom_'+Date.now();
+  checklistConfig.custom[sysKey][listKey].push({ id:idNuevo, text: text, antagonistas:[] });
+  // Igual que al agregar un ítem a mano: queda tildado en la plantilla por
+  // defecto para que se sume al vocabulario "de base".
+  setDefaultChecked(sysKey, kind, idNuevo, true);
   saveCustomLocal();
   renderEvolBuilder(getSelected());
 });
