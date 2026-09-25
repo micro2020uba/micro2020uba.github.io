@@ -1124,7 +1124,7 @@ function captureCurrentAsPlantillaSet(){
   return set;
 }
 let patients = [];
-let checklistConfig = { custom:{}, edits:{}, hidden:{}, order:{}, customPlantillas:{}, nombresPlantillas:{}, defaults:{}, salidas:{}, estadoOptions:null, camasVisibles:null };
+let checklistConfig = { custom:{}, edits:{}, hidden:{}, order:{}, info:{}, customPlantillas:{}, nombresPlantillas:{}, defaults:{}, salidas:{}, estadoOptions:null, camasVisibles:null };
 let selectedId = null;
 
 /* Ya no existe el botón "Agregar entrada de hoy a EVOL", que era lo único que guardaba la
@@ -1150,22 +1150,35 @@ function fld(id){ return document.getElementById(id); }
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 /* ================= Info emergente para ciertas frases del checklist =================
-   Algunas frases del checklist (por ahora "sin signo de foco motor agudo" y "sin
-   signos de falla agudo de bomba") abrevian una lista larga de signos clínicos.
-   Se muestran en azul, como un hipervínculo, y al tocarlas abren una ventanita
-   con el detalle — sin salir del checklist ni tildar/destildar nada. */
+   Cualquier frase del checklist (normal o alteración, de cualquier sistema) puede
+   tener una "info ampliada": un texto más largo que no entra en la frase corta.
+   Cuando la tiene, se muestra en azul, como un hipervínculo, y al tocarla abre una
+   ventanita con el detalle — sin salir del checklist ni tildar/destildar nada.
+   Se edita/agrega/quita con el botón 🔗 de cada frase (ver chkInfoBtn más abajo) y
+   se guarda en checklistConfig.info[sistema][id], compartido entre dispositivos.
+   ITEM_INFO son los textos de fábrica (por ahora "sin signo de foco motor agudo" y
+   "sin signos de falla agudo de bomba"); si el usuario edita esa frase con 🔗, su
+   texto reemplaza al de fábrica para esa frase. Para separar en párrafos dentro del
+   textito, se deja una línea en blanco entre cada uno. */
 const ITEM_INFO = {
   sinfoco: 'Monoparesia, hemiparesia, monoplejía, hemiplejía, asimetría facial periférica o central, paresia facial, hipertonía espástica o rígida, hipotonía o flacidez muscular, ataxia, marcha atáxica, apraxia o dismetría, temblor esencial o de reposo, mioclonías o fasciculaciones.',
   sinfallo: 'Ortopnea, disnea paroxística nocturna, taquipnea, taquicardia, ingurgitación yugular, reflujo hepatoyugular, estertores crepitantes alveolares, tercer ruido cardíaco por galope ventricular, cuarto ruido cardíaco por galope auricular, ritmo de galope, edema agudo de pulmón, esputo asalmonado, hipotensión arterial sistémica, oliguria, anuria, cianosis central o periférica, hipoperfusión tisular, llenado capilar lento, livedo reticularis, diaforesis fría, alteración del sensorio, encefalopatía hipóxica.\n\nSignos de congestión (perfil húmedo). Indican un aumento en las presiones de llenado ventricular y acumulación de líquido retrógrada: ortopnea, disnea paroxística nocturna, taquipnea, ingurgitación yugular, reflujo hepatoyugular, estertores crepitantes alveolares, tercer ruido cardíaco (R3), edema agudo de pulmón, esputo asalmonado.\n\nSignos de hipoperfusión (perfil frío). Indican un gasto cardíaco críticamente bajo e incapacidad de perfundir los órganos vitales: hipotensión arterial sistémica, taquicardia compensatoria, oliguria, anuria, cianosis periférica, llenado capilar lento, livedo reticularis, diaforesis fría, alteración del sensorio (encefalopatía hipóxica).'
 };
+// Texto de info vigente para una frase (lo editado por el usuario tiene prioridad
+// sobre el de fábrica); '' si esa frase no tiene info ampliada.
+function itemInfoText(sysKey, id){
+  const custom = checklistConfig.info && checklistConfig.info[sysKey] && checklistConfig.info[sysKey][id];
+  if(typeof custom === 'string' && custom) return custom;
+  return ITEM_INFO[id] || '';
+}
 // Si una frase tiene info asociada, se escribe como hipervínculo (clase info-link);
 // si no, como texto plano de siempre. Se usa en las dos listas (normal / alteraciones).
-function itemLabelHtml(item){
-  if(ITEM_INFO[item.id]) return `<span class="info-link" data-info-id="${item.id}">${escapeHtml(item.text)}</span>`;
+function itemLabelHtml(item, sysKey){
+  if(itemInfoText(sysKey, item.id)) return `<span class="info-link" data-info-sys="${sysKey}" data-info-id="${item.id}">${escapeHtml(item.text)}</span>`;
   return escapeHtml(item.text);
 }
-function showItemInfo(id){
-  const txt = ITEM_INFO[id];
+function showItemInfo(sysKey, id){
+  const txt = itemInfoText(sysKey, id);
   if(!txt) return;
   const body = fld('infoModalBody');
   if(!body) return;
@@ -1177,7 +1190,7 @@ document.addEventListener('click', (e)=>{
   const link = e.target.closest ? e.target.closest('.info-link') : null;
   if(link){
     e.preventDefault(); // no debe tildar/destildar el checkbox del <label> que lo contiene
-    showItemInfo(link.dataset.infoId);
+    showItemInfo(link.dataset.infoSys, link.dataset.infoId);
     return;
   }
   if(e.target && e.target.id === 'infoModalClose'){ hideItemInfo(); return; }
@@ -1240,7 +1253,7 @@ function newPatient(cama){
   const code = camaCode(cama);
   const fs = fsApi();
   const id = code || (fs ? fs.doc(fs.pacientesCol).id : ('local'+Date.now()));
-  return { id, cama:code, nombre:'', sexo:'', edad:'', dni:'', fi:'', mc:'', ant:'', mi:[], asoc:[], cult:'', evol:'', evolCount:0, lastEstado:'', lastChecklist:null, manejo:[], datos:{}, hechos:{} };
+  return { id, cama:code, nombre:'', sexo:'', edad:'', dni:'', fi:'', mc:'', ant:'', mi:[], asoc:[], cult:'', ic:'', evol:'', evolCount:0, lastEstado:'', lastChecklist:null, manejo:[], datos:{}, hechos:{} };
 }
 /* Si cambia el número de cama de una ficha, el documento tiene que
    mudarse al id nuevo (y borrarse el viejo) para no dejar duplicados. */
@@ -1351,7 +1364,7 @@ function vaciarCarpeta(p){
   const camaTxt = p.cama ? `de la cama ${p.cama}` : '';
   if(!confirm(`¿Vaciar la carpeta ${camaTxt}? Se van a borrar todos los datos del paciente actual (nombre, EVOL, MI, ASOC, etc.). La carpeta queda con el mismo número de cama, lista para el próximo paciente.`)) return;
   const cama = p.cama;
-  p.nombre=''; p.sexo=''; p.edad=''; p.dni=''; p.fi=''; p.mc=''; p.ant=''; p.mi=[]; p.asoc=[]; p.cult='';
+  p.nombre=''; p.sexo=''; p.edad=''; p.dni=''; p.fi=''; p.mc=''; p.ant=''; p.mi=[]; p.asoc=[]; p.cult=''; p.ic='';
   p.evol=''; p.evolCount=0; p.lastEstado=''; p.lastChecklist=null;
   p.manejo=[]; p.datos={}; p.hechos={};
   p.lastImport = null;
@@ -1687,6 +1700,13 @@ function renderForm(){
       </div>
     </details>
 
+    <details class="collapsible">
+      <summary>IC — Interconsultas</summary>
+      <div class="collapsible-body">
+        <div class="field"><textarea data-f="ic" placeholder="Ej.: Interconsulta con Cardiología por..."></textarea></div>
+      </div>
+    </details>
+
     <fieldset>
       <legend>EVOL — Evolución</legend>
       <div id="evolBuilder"></div>
@@ -1987,7 +2007,7 @@ function renderEvolBuilder(p, stateOverride){
       const checked = lastChecked(p, key, 'normal', item.id, true);
       const detailVal = item.detail ? lastDetail(p, key, 'normal', item.id) : '';
       html += `<div class="chk-row-wrap">
-        <label class="chk-row"><input type="checkbox" data-sys="${key}" data-kind="normal" data-id="${item.id}" ${checked?'checked':''}> ${itemLabelHtml(item)}</label>`;
+        <label class="chk-row"><input type="checkbox" data-sys="${key}" data-kind="normal" data-id="${item.id}" ${checked?'checked':''}> ${itemLabelHtml(item,key)}</label>`;
       if(item.detail){
         html += `<input type="text" class="detail-input" data-detail-for="${item.id}" data-sys="${key}" data-kind="normal" placeholder="${escapeHtml(item.detailLabel)}" value="${escapeHtml(detailVal)}">`;
       }
@@ -1996,6 +2016,7 @@ function renderEvolBuilder(p, stateOverride){
           <button type="button" class="chkUpBtn" title="Subir" ${idx===0?'disabled':''}>▲</button>
           <button type="button" class="chkDownBtn" title="Bajar" ${idx===sys.normal.length-1?'disabled':''}>▼</button>
           <button type="button" class="chkEditBtn" title="Editar frase">✎</button>
+          <button type="button" class="chkInfoBtn" title="${itemInfoText(key,item.id)?'Editar/quitar info ampliada (hipervínculo)':'Agregar info ampliada (hipervínculo)'}">🔗</button>
           <button type="button" class="chkDelBtn" title="Eliminar frase">✕</button>
         </span></div>`;
     });
@@ -2011,7 +2032,7 @@ function renderEvolBuilder(p, stateOverride){
       const checked = lastChecked(p, key, 'alt', item.id, false);
       const detailVal = item.detail ? lastDetail(p, key, 'alt', item.id) : '';
       html += `<div class="chk-row-wrap">
-        <label class="chk-row"><input type="checkbox" data-sys="${key}" data-kind="alt" data-id="${item.id}" ${checked?'checked':''}> ${itemLabelHtml(item)}</label>`;
+        <label class="chk-row"><input type="checkbox" data-sys="${key}" data-kind="alt" data-id="${item.id}" ${checked?'checked':''}> ${itemLabelHtml(item,key)}</label>`;
       if(item.detail){
         html += `<input type="text" class="detail-input" data-detail-for="${item.id}" data-sys="${key}" data-kind="alt" placeholder="${escapeHtml(item.detailLabel)}" value="${escapeHtml(detailVal)}">`;
       }
@@ -2020,6 +2041,7 @@ function renderEvolBuilder(p, stateOverride){
           <button type="button" class="chkUpBtn" title="Subir" ${idx===0?'disabled':''}>▲</button>
           <button type="button" class="chkDownBtn" title="Bajar" ${idx===sys.alteraciones.length-1?'disabled':''}>▼</button>
           <button type="button" class="chkEditBtn" title="Editar frase">✎</button>
+          <button type="button" class="chkInfoBtn" title="${itemInfoText(key,item.id)?'Editar/quitar info ampliada (hipervínculo)':'Agregar info ampliada (hipervínculo)'}">🔗</button>
           <button type="button" class="chkDelBtn" title="Eliminar frase">✕</button>
         </span></div>`;
     });
@@ -2958,6 +2980,12 @@ function buildExamBody(p, salida){
 
   // LAB / IMG (en la historia clínica va en negrita): después del último sistema y antes del cierre.
   if(bloqueOn(salida,'labimg')) out += LAB_IMG_TXT + ' ';
+  // Cultivos e interconsultas (si hay algo cargado): después del motivo de internación
+  // y del resto del cuerpo, siempre antes de la frase de cierre por Estado general.
+  const cult = cultivosSentence(p);
+  if(cult) out += cult + ' ';
+  const ic = interconsultasSentence(p);
+  if(ic) out += ic + ' ';
   if(bloqueOn(salida,'cierre')) out += closingEstadoSentence(estado);
   out += noChangeClause(p, estado);
   out += estadoTrendPhrase(p.lastEstado, estado);
@@ -2981,6 +3009,12 @@ function cultivosSentence(p){
   if(!p || !p.cult || !String(p.cult).trim()) return '';
   return `Cultivos: ${String(p.cult).trim()}.`;
 }
+/* Interconsultas (IC): mismo criterio que Cultivos — si hay algo cargado, se
+   menciona al final del cuerpo del examen, justo antes de la frase de cierre. */
+function interconsultasSentence(p){
+  if(!p || !p.ic || !String(p.ic).trim()) return '';
+  return `Interconsultas: ${String(p.ic).trim()}.`;
+}
 function buildSalidaText(p, salida){
   const fecha = fmtFechaDMY(fld('evolFecha').value) || '(fecha)';
   const estado = fld('evolEstado').value;
@@ -2988,7 +3022,6 @@ function buildSalidaText(p, salida){
   if(bloqueOn(salida,'dx')) partes.push(dxSentence(p));
   if(bloqueOn(salida,'apertura')) partes.push(buildOpeningExamSentence(p, estado, salida));
   partes.push(salida === 'corta' ? buildCuerpoCorto(p) : buildExamBody(p, salida));
-  partes.push(cultivosSentence(p));
   return partes.filter(Boolean).join(' ').trim();
 }
 function buildHistoriaClinicaText(p){ return buildSalidaText(p, 'hc'); }
@@ -3057,6 +3090,26 @@ function shortMiembrosSentences(p){
   if(normales.length) out.push('Miembros ' + normales.join(', '));
   return out.concat(alts);
 }
+/* Abdomen en el PASE corto: si el examen es normal (ninguna alteración digestiva
+   tildada) se resume como "Abdomen S/P", en vez de listar blando/depresible/
+   indoloro/etc. — esa descripción completa se sigue viendo entera en la HISTORIA
+   CLÍNICA y en el PASE completo (buildExamBody no usa esta función). Si hay
+   alguna alteración tildada, se arma igual que antes (shortSystemSentences). */
+function shortAbdomenSentences(p){
+  const merged = getMergedItems('dig');
+  const exclude = EXCLUDE_FROM_JOIN.dig || [];
+  const hayAlteracion = merged.alteraciones.some(item=>{
+    if(exclude.indexOf(item.id)!==-1) return false;
+    return isChecked('dig','alt',item.id);
+  });
+  const base = shortSystemSentences('dig', p, 'Abdomen ');
+  if(hayAlteracion) return base; // hay patología: se arma igual que antes, sin cambios.
+  // Sin alteraciones: si el abdomen normal está configurado para aparecer en el
+  // PASE corto, se resume como "Abdomen S/P" en vez de la descripción completa.
+  // Si no está configurado (caso de fábrica), queda vacío como antes, así el
+  // resumen genérico de "nada tildado" sigue funcionando igual que siempre.
+  return base.length ? ['Abdomen S/P'] : [];
+}
 function buildCuerpoCorto(p){
   const S = 'corta';
   const estado = fld('evolEstado').value;
@@ -3070,7 +3123,7 @@ function buildCuerpoCorto(p){
     shortSystemSentences('cv', p, ''),
     (bloqueOn(S,'estudio') && estudioTipo && estudioInforme) ? [`Se recibe informe de ${estudioTipo}: ${estudioInforme}`] : [],
     shortSystemSentences('resp', p, 'A nivel pulmonar, '),
-    shortSystemSentences('dig', p, 'Abdomen '),
+    shortAbdomenSentences(p),
     shortCatDiuSentences(p),
     shortMiembrosSentences(p),
     infectoAplica ? shortSystemSentences('infecto', p, 'Desde el punto de vista infectológico, ') : []
@@ -3081,6 +3134,10 @@ function buildCuerpoCorto(p){
     out += 'BMV, BEAB. R1 y R2 en 4 focos, sin falla aguda de bomba. Abdomen S/P. Resto del examen físico sin cambios. Diuresis y catarsis conservadas. ';
   }
   if(bloqueOn(S,'labimg')) out += LAB_IMG_TXT + ' ';
+  const cult = cultivosSentence(p);
+  if(cult) out += cult + ' ';
+  const ic = interconsultasSentence(p);
+  if(ic) out += ic + ' ';
   if(bloqueOn(S,'cierre')) out += closingEstadoSentence(estado);
   return out.trim();
 }
@@ -3249,7 +3306,7 @@ document.body.addEventListener('change', (e)=>{
    Estos cambios son globales (afectan el vocabulario compartido de todos los pacientes
    y dispositivos), no algo por-paciente — por eso se guardan en checklistConfig. */
 document.body.addEventListener('click', (e)=>{
-  const btn = e.target.closest ? e.target.closest('.chkEditBtn,.chkDelBtn,.chkUpBtn,.chkDownBtn,.chkDefaultBtn') : null;
+  const btn = e.target.closest ? e.target.closest('.chkEditBtn,.chkDelBtn,.chkUpBtn,.chkDownBtn,.chkDefaultBtn,.chkInfoBtn') : null;
   if(!btn || btn.disabled) return;
   const wrap = btn.closest('.chk-actions');
   if(!wrap) return;
@@ -3292,6 +3349,19 @@ document.body.addEventListener('click', (e)=>{
     if(!checklistConfig.edits) checklistConfig.edits = {};
     if(!checklistConfig.edits[sysKey]) checklistConfig.edits[sysKey] = {};
     checklistConfig.edits[sysKey][id] = texto;
+    saveCustomLocal();
+    renderEvolBuilder(getSelected());
+    return;
+  }
+  if(btn.classList.contains('chkInfoBtn')){
+    const actual = itemInfoText(sysKey, id);
+    const nuevo = prompt('Info ampliada para esta frase (se muestra como hipervínculo azul; para verla, tocá la frase en el checklist). Dejá el campo vacío para quitarla. Para separar en párrafos, dejá una línea en blanco entre cada uno:', actual);
+    if(nuevo === null) return;
+    const texto = nuevo.trim();
+    if(!checklistConfig.info) checklistConfig.info = {};
+    if(!checklistConfig.info[sysKey]) checklistConfig.info[sysKey] = {};
+    if(texto) checklistConfig.info[sysKey][id] = texto;
+    else delete checklistConfig.info[sysKey][id];
     saveCustomLocal();
     renderEvolBuilder(getSelected());
     return;
@@ -3339,6 +3409,7 @@ function rowsFor(p){
     ['MI', itemListHtml(p.mi)],
     ['ASOC', itemListHtml(p.asoc)],
     ['CULT', escapeHtml(p.cult)],
+    ['IC', escapeHtml(p.ic)],
     ['EVOL', escapeHtml(p.evol)]
   ];
 }
@@ -3381,6 +3452,7 @@ function buildPlainText(list){
     text += `MI: ${p.mi.map(i=>(i.resuelto?'[RESUELTO] ':'')+i.text).join(' / ')}\n`;
     text += `ASOC: ${p.asoc.map(i=>(i.resuelto?'[RESUELTO] ':'')+i.text).join(' / ')}\n`;
     if(p.cult) text += `CULT: ${p.cult}\n`;
+    if(p.ic) text += `IC: ${p.ic}\n`;
     text += `EVOL:\n${p.evol||''}\n\n`;
   });
   return text.trim();
@@ -3495,7 +3567,7 @@ function iniciarAppPrincipal(){
         ? { custom: data.custom||{}, edits: data.edits||{}, hidden: data.hidden||{}, order: data.order||{}, customPlantillas: data.customPlantillas||{}, nombresPlantillas: data.nombresPlantillas||{}, defaults: data.defaults||{}, salidas: (data.salidas && typeof data.salidas === 'object') ? data.salidas : {}, estadoOptions: data.estadoOptions||null, camasVisibles: Array.isArray(data.camasVisibles) ? data.camasVisibles.map(String) : null }
         : { custom:{}, edits:{}, hidden:{}, order:{}, customPlantillas:{}, nombresPlantillas:{}, defaults:{}, salidas:{}, estadoOptions:null, camasVisibles:null };
     } else {
-      checklistConfig = { custom:{}, edits:{}, hidden:{}, order:{}, customPlantillas:{}, nombresPlantillas:{}, defaults:{}, salidas:{}, estadoOptions:null, camasVisibles:null };
+      checklistConfig = { custom:{}, edits:{}, hidden:{}, order:{}, info:{}, customPlantillas:{}, nombresPlantillas:{}, defaults:{}, salidas:{}, estadoOptions:null, camasVisibles:null };
     }
     const activeInsideForm = document.activeElement && fld('formCol') && fld('formCol').contains(document.activeElement);
     if(getSelected() && !activeInsideForm) renderForm();
@@ -4198,7 +4270,7 @@ function textoNoVacio(v){
 }
 
 function fusionarEnFicha(target, origen){
-  ['nombre','sexo','edad','dni','fi','mc','ant','cult','evol','lastEstado'].forEach(k=>{
+  ['nombre','sexo','edad','dni','fi','mc','ant','cult','ic','evol','lastEstado'].forEach(k=>{
     if(!textoNoVacio(target[k]) && textoNoVacio(origen[k])) target[k] = origen[k];
   });
   // guardias.html llamaba "paciente" al nombre y guardaba MI como texto plano
@@ -4895,10 +4967,19 @@ function esCuentaLarga(email){ return LONG_SESSION_EMAILS.includes(String(email|
 // Persistencia "de sesión": la sesión vive mientras la pestaña/ventana está
 // abierta. Al cerrar la ventana del navegador, Firebase la descarta sola y
 // la próxima vez pide login de nuevo. (Recargar la página SÍ mantiene la sesión.)
-// Para las cuentas de sesión larga se cambia a persistencia LOCAL más abajo,
-// justo antes de intentar el login (setPersistence solo afecta al próximo
-// signIn, no a la sesión ya iniciada).
-setPersistence(auth, browserSessionPersistence).catch(()=>{});
+// Para las cuentas de sesión larga se cambia a persistencia LOCAL en
+// intentarLogin(), justo antes de iniciar sesión.
+//
+// IMPORTANTE — por qué NO se llama acá a setPersistence(auth, browserSessionPersistence)
+// como antes: setPersistence no solo define qué persistencia usa el PRÓXIMO login,
+// sino que además migra a la sesión YA INICIADA (si la hay) al nuevo tipo de
+// persistencia, de inmediato. Como este archivo se carga de cero cada vez que se
+// abre desde el ícono del celular (nueva pestaña/ventana), llamarlo acá ANTES de
+// saber qué cuenta tiene la sesión abierta downgradeaba a las cuentas de sesión
+// larga (que habían iniciado sesión con persistencia LOCAL) a persistencia de
+// sesión en cada apertura — y como sessionStorage no se comparte entre pestañas
+// nuevas, la sesión se perdía enseguida. Alcanza con fijar la persistencia
+// correcta en cada login (más abajo), sin tocarla acá al cargar la página.
 
 const $body = document.body;
 const $email = document.getElementById('loginEmail');
@@ -4967,9 +5048,9 @@ $logoutBtn.addEventListener('click', ()=>{
 });
 
 /* ================= Cierre automático por inactividad (5 min) =================
-   No aplica a las cuentas de sesión larga (LONG_SESSION_EMAILS): para esas,
-   en cambio, se controla un vencimiento absoluto de 24 hs desde el login
-   (chequeoSesionLarga más abajo), sin importar la actividad. */
+   No aplica a las cuentas de sesión larga (LONG_SESSION_EMAILS): para esas
+   la sesión queda abierta indefinidamente (persistencia LOCAL, sin timer de
+   inactividad) hasta que se cierre a mano con "Cerrar sesión". */
 const INACTIVITY_LIMIT_MS = 5 * 60 * 1000;
 let inactivityTimer = null;
 let cierreManual = false;
