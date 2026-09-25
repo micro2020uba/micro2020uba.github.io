@@ -606,6 +606,19 @@ onAuthStateChanged(auth, (user)=>{
   let lastLocalEdit = {}; // { camaNum: timestampMs } — para no dejar que un onSnapshot atrasado pise una edición reciente
   const saveDebouncers = {}; // debounce de escritura a Firestore por cama
   let itemsSaveTimer = null;
+  // pendingCamaWrite[bed] = true mientras haya un cambio local de esa cama
+  // que todavía no se confirmó guardado en la nube (por red caída, por
+  // Firestore no conectado todavía, o por el reintento en curso). Mientras
+  // esté en true, un onSnapshot no puede pisar el estado local de esa cama
+  // aunque hayan pasado varios segundos: así no vuelven a aparecer ítems
+  // que ya se habían borrado/limpiado si la escritura tardó o falló.
+  const pendingCamaWrite = {};
+  // camaWriteGen[bed] se incrementa cada vez que se programa un guardado
+  // nuevo para esa cama. Cada intento de guardado "recuerda" el número que
+  // tenía al programarse; si al confirmarse ya hay un número más nuevo (es
+  // decir, se cargó otro cambio mientras tanto), no libera pendingCamaWrite
+  // porque ese guardado más nuevo todavía tiene que confirmarse él solo.
+  const camaWriteGen = {};
 
   function masterItems(){ return FIXED_ITEMS.concat(state.customItems); }
 
@@ -648,25 +661,51 @@ onAuthStateChanged(auth, (user)=>{
   setSyncTag('', 'verificando conexión…');
 
   function scheduleFsSaveCama(bed){
-    if(!fsReady) return;
+    // Se marca como "pendiente de confirmar" ya mismo, incluso si Firestore
+    // no está listo todavía: así ningún onSnapshot posterior puede pisar
+    // esta cama hasta que la escritura realmente se confirme en la nube.
+    pendingCamaWrite[bed] = true;
+    const myGen = (camaWriteGen[bed] || 0) + 1;
+    camaWriteGen[bed] = myGen;
     clearTimeout(saveDebouncers[bed]);
-    saveDebouncers[bed] = setTimeout(()=>{
-      const fs = window.__guardiaFs;
-      const c = state.camas[bed];
-      /* merge:true es clave: en ese mismo documento viven ANT, MC, ASOC,
-         cultivos y la evolución que carga el archivero. Si escribiéramos
-         el documento entero, los borraríamos. */
-      fs.setDoc(fs.doc(fs.camasCol, camaDocId(bed)), {
-        cama: camaDocId(bed),
-        nombre: c.paciente, dni: c.dni, edad: c.edad,
-        mi: miFromText(c.mi, c._miArr),
-        manejo: c.manejo, datos: c.datos, hechos: c.hechos,
-        updatedAt: Date.now()
-      }, {merge:true}).catch(err=>{
-        console.warn('No se pudo sincronizar la cama '+bed+' con la nube.', err);
-        setSyncTag('off','sin conexión a la nube (solo local)');
-      });
-    }, 600);
+    saveDebouncers[bed] = setTimeout(()=> attemptFsSaveCama(bed, myGen), 600);
+  }
+
+  function attemptFsSaveCama(bed, myGen, retryDelayMs){
+    if(!fsReady || !window.__guardiaFs){
+      // Todavía no hay conexión con Firestore: no se abandona el guardado,
+      // se reintenta más adelante en vez de perder el cambio en silencio.
+      saveDebouncers[bed] = setTimeout(()=> attemptFsSaveCama(bed, myGen), retryDelayMs || 1500);
+      return;
+    }
+    const fs = window.__guardiaFs;
+    const c = state.camas[bed];
+    /* merge:true es clave: en ese mismo documento viven ANT, MC, ASOC,
+       cultivos y la evolución que carga el archivero. Si escribiéramos
+       el documento entero, los borraríamos. */
+    fs.setDoc(fs.doc(fs.camasCol, camaDocId(bed)), {
+      cama: camaDocId(bed),
+      nombre: c.paciente, dni: c.dni, edad: c.edad,
+      mi: miFromText(c.mi, c._miArr),
+      manejo: c.manejo, datos: c.datos, hechos: c.hechos,
+      updatedAt: Date.now()
+    }, {merge:true}).then(()=>{
+      // Solo se libera el bloqueo si, mientras tanto, no se programó un
+      // guardado más nuevo para esta misma cama (ese otro guardado, con un
+      // número de generación mayor, es el que va a confirmar el último
+      // estado y el que decide cuándo liberar el bloqueo).
+      if(camaWriteGen[bed] === myGen) pendingCamaWrite[bed] = false;
+    }).catch(err=>{
+      console.warn('No se pudo sincronizar la cama '+bed+' con la nube, reintentando…', err);
+      setSyncTag('off','sin conexión a la nube (solo local)');
+      // Reintento con backoff en vez de abandonar: si no reintentáramos acá,
+      // este cambio quedaría solo en localStorage y un onSnapshot posterior
+      // (de OTRA cama, o de otro dispositivo) podría traer de vuelta el dato
+      // viejo de esta cama, porque la nube nunca se enteró del cambio.
+      if(camaWriteGen[bed] !== myGen) return; // ya hay un guardado más nuevo en camino
+      const nextDelay = Math.min((retryDelayMs || 1500) * 1.6, 20000);
+      saveDebouncers[bed] = setTimeout(()=> attemptFsSaveCama(bed, myGen, nextDelay), nextDelay);
+    });
   }
 
   function scheduleFsSaveItems(){
@@ -708,6 +747,12 @@ onAuthStateChanged(auth, (user)=>{
         // Si edité esta cama hace menos de 3s, no dejo que la nube la pise
         // (probablemente sea el eco de mi propio guardado, o llegó tarde).
         if(Date.now() - lastEdit < 3000) return;
+        // Si todavía hay un guardado de esta cama sin confirmar en la nube
+        // (red caída, Firestore recién conectando, o un reintento en curso),
+        // tampoco se acepta lo que llega de la nube: sería el dato viejo de
+        // antes del cambio, y lo pisaría. Sin esto, un "Limpiar" o un ítem
+        // borrado podía "revivir" si la escritura tardaba más de 3 segundos.
+        if(pendingCamaWrite[bed]) return;
         // No tocar un campo que el usuario está escribiendo ahora mismo.
         const row = document.querySelector('tr[data-bed="'+bed+'"]');
         const isFocusedHere = row && row.contains(document.activeElement) && document.activeElement.isContentEditable;
@@ -762,10 +807,67 @@ onAuthStateChanged(auth, (user)=>{
   }
 
   /* ============================= Render ============================= */
+  // renderTable() reconstruye TODA la tabla (tbody.innerHTML = ...), así que
+  // si en ese momento el usuario está escribiendo en un campo contenteditable,
+  // ese nodo se destruye y se crea uno nuevo: se pierde el foco y, en el
+  // celular, eso cierra el teclado en pleno tipeo. Antes esto pasaba cada vez
+  // que render() se disparaba por un cambio de OTRA cama (por ejemplo, un
+  // onSnapshot de la nube mientras se escribe en otra fila). Para evitarlo,
+  // se guarda qué campo tenía el foco y en qué posición estaba el cursor
+  // antes de redibujar, y se restaura después.
+  function captureFocus(){
+    const el = document.activeElement;
+    if(!el || !el.isContentEditable) return null;
+    const tr = el.closest('tr[data-bed]');
+    if(!tr) return null;
+    let selector = null;
+    if(el.dataset.field) selector = '[data-field="'+el.dataset.field+'"]';
+    else if(el.dataset.datos) selector = '[data-datos="'+CSS.escape(el.dataset.datos)+'"]';
+    else if(el.dataset.hgt) selector = '[data-hgt="'+CSS.escape(el.dataset.hgt)+'"]';
+    else if(el.hasAttribute('data-hgt-legacy')) selector = '[data-hgt-legacy]';
+    if(!selector) return null;
+
+    let offset = 0;
+    const sel = window.getSelection();
+    if(sel && sel.rangeCount){
+      try{
+        const range = sel.getRangeAt(0);
+        const preRange = range.cloneRange();
+        preRange.selectNodeContents(el);
+        preRange.setEnd(range.endContainer, range.endOffset);
+        offset = preRange.toString().length;
+      }catch(e){}
+    }
+    return {bed: tr.dataset.bed, selector, offset};
+  }
+
+  function restoreFocus(saved){
+    if(!saved) return;
+    const tr = document.querySelector('tr[data-bed="'+saved.bed+'"]');
+    if(!tr) return;
+    const el = tr.querySelector(saved.selector);
+    if(!el) return;
+    el.focus();
+    try{
+      let node = el.firstChild;
+      if(!node){ node = document.createTextNode(''); el.appendChild(node); }
+      const len = node.textContent.length;
+      const pos = Math.max(0, Math.min(saved.offset, len));
+      const range = document.createRange();
+      range.setStart(node, pos);
+      range.collapse(true);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }catch(e){}
+  }
+
   function render(){
+    const saved = captureFocus();
     renderTable();
     renderSummary();
     renderSummaryByBed();
+    restoreFocus(saved);
   }
 
   function renderTable(){
