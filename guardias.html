@@ -344,7 +344,7 @@
    autenticación más abajo. */
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
-  getFirestore, collection, doc, setDoc, onSnapshot
+  getFirestore, collection, doc, setDoc, onSnapshot, deleteField
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -360,7 +360,7 @@ try{
   const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
   const db = getFirestore(app);
   window.__guardiaFs = {
-    db, doc, setDoc, onSnapshot,
+    db, doc, setDoc, onSnapshot, deleteField,
     camasCol: collection(db, 'pacientes'),
     itemsDocRef: doc(db, 'config', 'guardiaItems')
   };
@@ -622,6 +622,31 @@ onAuthStateChanged(auth, (user)=>{
 
   function masterItems(){ return FIXED_ITEMS.concat(state.customItems); }
 
+  // Firestore, al hacer merge:true de un campo que es un mapa (como "hechos"
+  // o "datos"), NO borra las claves que faltan en lo que se manda a
+  // guardar: solo agrega/actualiza las que sí vienen. Por eso, si local-
+  // mente se hace delete c.hechos['RAO'] (al destildar el checkbox) y
+  // después se manda solo lo que quedó en c.hechos, "RAO" sigue existiendo
+  // como true en el documento de la nube para siempre. Un rato después
+  // (o desde otro dispositivo, o al recargar) el onSnapshot trae ese
+  // "RAO: true" viejo y vuelve a tildar el ítem que ya se había
+  // desmarcado. La solución es mandar, para cada clave posible (todo
+  // masterItems(), el universo de ítems que puede tener "hechos"/"datos"),
+  // o bien su valor actual, o bien deleteField() si ya no está: así el
+  // merge sí borra en la nube lo que se borró en local.
+  function fsMergeSafeMap(currentObj){
+    const fs = window.__guardiaFs;
+    const out = {};
+    masterItems().forEach(key=>{
+      if(Object.prototype.hasOwnProperty.call(currentObj, key)){
+        out[key] = currentObj[key];
+      }else if(fs && fs.deleteField){
+        out[key] = fs.deleteField();
+      }
+    });
+    return out;
+  }
+
   function blankCama(){ return {paciente:'', dni:'', edad:'', mi:'', _miArr:null, manejo:[], datos:{}, hechos:{}}; }
 
   function loadLocal(){
@@ -687,7 +712,9 @@ onAuthStateChanged(auth, (user)=>{
       cama: camaDocId(bed),
       nombre: c.paciente, dni: c.dni, edad: c.edad,
       mi: miFromText(c.mi, c._miArr),
-      manejo: c.manejo, datos: c.datos, hechos: c.hechos,
+      manejo: c.manejo,
+      datos: fsMergeSafeMap(c.datos),
+      hechos: fsMergeSafeMap(c.hechos),
       updatedAt: Date.now()
     }, {merge:true}).then(()=>{
       // Solo se libera el bloqueo si, mientras tanto, no se programó un
@@ -1164,27 +1191,13 @@ onAuthStateChanged(auth, (user)=>{
   });
   popCloseBtn.addEventListener('click', function(e){ e.stopPropagation(); closeManejoPopover(); });
 
-  document.addEventListener('click', function(e){
-    if(e.target.closest('.manejo-pop')) return; // click dentro del popover: no cerrar
-    closeManejoPopover();
-  });
-  document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape') closeManejoPopover();
-  });
-  // El popover es position:fixed relativo al botón que lo abrió; si la página
-  // hace scroll o la ventana cambia de tamaño, lo más simple y seguro es
-  // cerrarlo en vez de intentar reposicionarlo en cada evento. OJO: en el
-  // celular, tocar el campo "agregar opción nueva" para escribir abre el
-  // teclado, y eso por sí solo ya dispara scroll/resize (el navegador
-  // mueve la vista para que el campo quede visible) — si cerráramos el
-  // popover en ese momento, nunca se podría escribir ni agregar nada
-  // nuevo. Por eso, mientras el foco esté dentro del popover (el usuario
-  // está escribiendo ahí) no se cierra por estos dos eventos.
-  function focoDentroDelPopover(){
-    return !!(document.activeElement && manejoPopEl.contains(document.activeElement));
-  }
-  window.addEventListener('scroll', function(){ if(focoDentroDelPopover()) return; closeManejoPopover(); }, true);
-  window.addEventListener('resize', function(){ if(focoDentroDelPopover()) return; closeManejoPopover(); });
+  // El popover ahora se cierra ÚNICAMENTE con el botón "x" (popCloseBtn).
+  // Antes también se cerraba al hacer click afuera y al hacer scroll/resize,
+  // pero como el popover es position:fixed y tiene overflow-y:auto (para
+  // poder desplazarse por la lista de opciones), desplazarse dentro de él
+  // con el dedo disparaba un evento "scroll" en fase de captura sobre
+  // window y lo cerraba por error. Se quitó esa lógica para que scrollear
+  // la lista, o tocar fuera de ella, no lo cierre más.
 
   function renderSummary(){
     const box = document.getElementById('summaryList');
