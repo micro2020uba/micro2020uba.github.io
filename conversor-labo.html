@@ -92,7 +92,6 @@
   .pf-head{display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap;}
   .pf-num{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;color:var(--accent-dark);min-width:22px;}
   .pf-name{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;flex:1;min-width:120px;}
-  .pf-head input[type=checkbox]{margin:0;cursor:pointer;}
   .pf-ord{display:inline-flex;align-items:center;gap:2px;}
   .pf-ord button{border:1px solid var(--line-soft);background:#fff;color:var(--muted);border-radius:2px;cursor:pointer;font-size:10px;padding:1px 5px;line-height:1.3;}
   .pf-ord button:hover{border-color:var(--accent-dark);color:var(--accent-dark);}
@@ -100,23 +99,25 @@
   .pf-ord select{font-size:10.5px;border:1px solid var(--line-soft);background:#fff;border-radius:2px;padding:1px 2px;}
   .pf-block{margin-top:6px;}
   .pf-block-h{font-size:9.5px;font-weight:700;color:var(--accent-dark);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;}
-  .pf-chip{display:inline-flex;align-items:center;gap:1px;border:1px solid var(--line-soft);background:#fff;border-radius:11px;padding:1px 2px 1px 7px;margin:2px 3px 2px 0;font-size:11.5px;}
-  .pf-chip label{display:inline-flex;align-items:center;gap:4px;cursor:pointer;}
-  .pf-chip input[type=checkbox]{margin:0;cursor:pointer;}
-  .pf-chip select.mv{appearance:none;-webkit-appearance:none;border:none;background:transparent;width:22px;color:var(--muted);cursor:pointer;font-size:12px;padding:0;text-align:center;}
-  .pf-chip select.mv:hover{color:var(--accent-dark);}
+  .pf-chip{display:inline-flex;align-items:center;gap:1px;border:1px solid var(--line-soft);background:#fff;border-radius:11px;padding:1px 7px;margin:2px 3px 2px 0;font-size:11.5px;cursor:pointer;user-select:none;-webkit-user-select:none;}
+  .pf-chip:hover{border-color:var(--accent-dark);}
+  .pf-chip.sel{background:var(--accent-dark);border-color:var(--accent-dark);color:#fff;}
+  .pf-chip.sel .x{color:#fff;}
   .pf-chip.custom{border-color:var(--accent-dark);}
   .pf-chip .x{border:none;background:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0 4px 0 1px;line-height:1;}
   .pf-chip .x:hover{color:var(--danger);}
   .pf-add{display:inline-block;margin:2px 0;}
   .pf-add input{width:96px;font-size:11px;padding:2px 6px;border:1px dashed var(--line-soft);border-radius:11px;background:transparent;}
   .pf-add input:focus{border-color:var(--accent-dark);outline:none;background:#fff;}
-  #pedidoOutput{min-height:70px;border:1px solid var(--line-soft);background:var(--field-bg);padding:10px 12px;font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:12pt;line-height:1.6;white-space:pre-wrap;word-break:break-word;border-radius:2px;color:#000;margin-top:6px;}
-  #pedidoOutput:empty::before{content:"Tildá los estudios que querés pedir y acá aparece el pedido ordenado por prioridad.";color:var(--muted);font-style:italic;font-size:11.5px;font-family:'IBM Plex Sans',Arial,sans-serif;}
-
-  html.labo-copying, html.labo-copying body, html.labo-copying *{
-    background:transparent !important; background-color:transparent !important; background-image:none !important;
-  }
+  .pf-movebar{display:flex;position:sticky;top:0;z-index:5;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px;padding:7px 10px;border:1px solid var(--accent-dark);background:var(--field-bg);border-radius:3px;font-size:11.5px;}
+  .pf-movebar .hint{color:var(--muted);}
+  .pf-movebar.on{background:#fff8e6;}
+  .pf-movebar select:disabled,.pf-movebar button:disabled{opacity:.45;cursor:default;}
+  .pf-here{display:none;margin:2px 0 2px 3px;border:1px solid var(--accent-dark);background:var(--accent-dark);color:#fff;border-radius:11px;font-size:11px;padding:2px 9px;cursor:pointer;}
+  .pf-here:hover{filter:brightness(1.15);}
+  .pedido-grid.has-sel .pf-here{display:inline-block;}
+  .pedido-grid.has-sel .pf-here.hide{display:none;}
+  .pf-movebar select{font-size:11.5px;border:1px solid var(--line-soft);background:#fff;border-radius:2px;padding:2px 4px;max-width:100%;}
 </style>
 </head>
 <body>
@@ -166,21 +167,21 @@
 
     <details class="checklist-wrap" id="laboPedidoDetails">
       <summary>3. Pedido de laboratorio (ordenado por prioridad)</summary>
-      <p class="note">Perfiles ordenados de mayor a menor prioridad. Tildá lo que querés pedir y abajo se arma el pedido listo para copiar. Podés <b>mover un dato</b> a otro perfil o grupo con el botón ⇄ de cada dato, <b>cambiar el orden</b> de los perfiles con ▲ ▼ o eligiendo la posición, y <b>agregar un dato</b> que falte escribiéndolo en el casillero "＋ dato" de cada grupo (Enter). Los cambios de estructura (orden, movimientos y datos agregados) se guardan solos; lo tildado es solo de esta sesión.</p>
+      <p class="note">Lista para no olvidarte de nada al pedir, ordenada de mayor a menor prioridad. Para <b>pasar datos a otro perfil o grupo</b>: tocá uno o varios datos (se marcan en color) y elegí el destino en la barra que aparece. Podés <b>cambiar el orden</b> de los perfiles con ▲ ▼ o eligiendo la posición, y <b>agregar un dato</b> que falte en el casillero "＋ dato" de cada grupo (Enter). Todos los cambios se guardan solos.</p>
       <div class="pedido-toolbar">
-        <button type="button" class="btn-tiny" id="pedMarcarTodo">Marcar todo</button>
-        <button type="button" class="btn-tiny" id="pedDesmarcarTodo">Desmarcar todo</button>
         <button type="button" class="btn-tiny" id="pedAgregarPerfil">＋ Agregar perfil</button>
         <button type="button" class="btn-tiny" id="pedRestaurar">Restaurar valores por defecto</button>
         <span class="fb-status" id="pedFbStatus"></span>
       </div>
-      <div class="pedido-grid" id="pedidoGrid"></div>
-      <h3 style="margin:16px 0 0;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-dark);">Pedido generado</h3>
-      <div id="pedidoOutput" contenteditable="true" spellcheck="false"></div>
-      <div class="out-footer">
-        <button type="button" class="btn-secondary" id="pedCopiarBtn">Copiar pedido</button>
-        <span id="pedStatus" style="font-size:11px;color:var(--accent-dark);font-family:'IBM Plex Mono',monospace;"></span>
+      <div class="pf-movebar" id="pedMoveBar">
+        <span id="pedMoveCount"></span>
+        <span class="hint" id="pedMoveHint">Si un dato no corresponde a su perfil: tocalo (podés marcar varios) y elegí a qué perfil pasarlo.</span>
+        <span id="pedMoveTo" style="display:none;">→ pasar a:</span>
+        <select id="pedMoveDest" disabled></select>
+        <button type="button" class="btn-tiny" id="pedMoveGo" disabled>Mover</button>
+        <button type="button" class="btn-tiny" id="pedMoveCancel" style="display:none;">Cancelar selección</button>
       </div>
+      <div class="pedido-grid" id="pedidoGrid"></div>
     </details>
 
     <details class="checklist-wrap" id="laboGasCalcDetails">
@@ -223,20 +224,24 @@
 /* =========================================================================
    FIREBASE — pedido de laboratorio (sección 3)
    =========================================================================
-   Para que los cambios del pedido (orden, datos movidos y datos agregados)
-   queden guardados en Firebase, completá acá el mismo firebaseConfig que ya
-   usan tus otras herramientas (Consola de Firebase > Configuración del
-   proyecto > Tus apps). Si dejás projectId vacío, el pedido se guarda solo
-   en este navegador (localStorage) y no falla nada.
-   Se usa Cloud Firestore, documento: labo_config/pedido
+   Mismo proyecto de Firebase que el resto de las herramientas (pases-c121c).
+   Se usa Cloud Firestore, documento: config/laboPedido — la colección
+   "config" ya está habilitada en tus reglas actuales, así que no hace
+   falta agregar nada en la consola de Firebase.
+
+   Las reglas piden request.auth != null, y esta página no tiene login
+   (es de acceso libre, como la calculadora de balance hídrico), así que
+   se inicia sesión anónima (signInAnonymously) apenas carga la página.
+   Si algún día sacás el projectId de acá, el pedido sigue funcionando
+   pero se guarda solo en este navegador (localStorage).
    ========================================================================= */
 const LABO_FIREBASE_CONFIG = {
-  apiKey: '',
-  authDomain: '',
-  projectId: '',
-  storageBucket: '',
-  messagingSenderId: '',
-  appId: ''
+  apiKey: 'AIzaSyDrBZV9QSlG27Sl0rXbwP7HGWBHQTYe56I',
+  authDomain: 'pases-c121c.firebaseapp.com',
+  projectId: 'pases-c121c',
+  storageBucket: 'pases-c121c.firebasestorage.app',
+  messagingSenderId: '261660416072',
+  appId: '1:261660416072:web:e500450ad82c33de1be07d'
 };
 const LABO_FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
 
@@ -2528,18 +2533,16 @@ function fld(id){ return document.getElementById(id); }
    SECCIÓN 3 — PEDIDO DE LABORATORIO
    Perfiles ordenados por prioridad (de mayor a menor). Cada perfil tiene
    uno o más grupos (ej. RUTINA → Hemograma / Glucemia / Función renal /
-   Ionograma). Se puede mover un dato a otro perfil/grupo, reordenar los
-   perfiles y agregar datos; la estructura se guarda en Firebase (Firestore,
+   Ionograma). Es una lista de recordatorio (sin tildes): se pueden marcar varios datos y
+   pasarlos juntos a otro perfil/grupo, reordenar los perfiles y agregar datos; la estructura se guarda en Firebase (Firestore,
    documento labo_config/pedido) y en localStorage como respaldo.
    ========================================================================= */
 (function(){
   const LS_KEY = 'labo_pedido_v1';
-  const FB_COLLECTION = 'labo_config';
-  const FB_DOC = 'pedido';
+  const FB_COLLECTION = 'config';
+  const FB_DOC = 'laboPedido';
   const $grid = fld('pedidoGrid');
-  const $out = fld('pedidoOutput');
   const $fbStatus = fld('pedFbStatus');
-  const $status = fld('pedStatus');
 
   /* ---- Estructura por defecto ---------------------------------------- */
   function slug(t){
@@ -2587,8 +2590,7 @@ function fld(id){ return document.getElementById(id); }
   }
 
   let state = null;
-  const sel = new Set();     // ids de datos tildados (solo esta sesión)
-  let refs = [];             // checkboxes de perfil (para estado indeterminado)
+  const sel = new Set();     // ids de datos marcados para mover (solo esta sesión)
 
   function uid(prefix){ return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
   function norm(t){ return String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim(); }
@@ -2599,8 +2601,9 @@ function fld(id){ return document.getElementById(id); }
   }
 
   /* ---- Persistencia: localStorage + Firebase ------------------------- */
-  let fb = null;              // {db, fs} cuando Firebase está listo
+  let fb = null;               // {db, fs} cuando Firebase está listo
   let fbTried = false;
+  let fbAuthReady = null;      // promesa: se resuelve cuando hay sesión anónima
   const fbConfigured = !!(LABO_FIREBASE_CONFIG && LABO_FIREBASE_CONFIG.projectId && LABO_FIREBASE_CONFIG.apiKey);
 
   function setFbStatus(txt, cls){
@@ -2613,12 +2616,19 @@ function fld(id){ return document.getElementById(id); }
     try{
       const appMod = await import(LABO_FIREBASE_SDK + 'firebase-app.js');
       const fs = await import(LABO_FIREBASE_SDK + 'firebase-firestore.js');
+      const authMod = await import(LABO_FIREBASE_SDK + 'firebase-auth.js');
       const app = appMod.getApps().length ? appMod.getApp() : appMod.initializeApp(LABO_FIREBASE_CONFIG);
-      try{
-        // Si ya iniciaste sesión en otra herramienta del mismo sitio, Firestore usa esa sesión.
-        const authMod = await import(LABO_FIREBASE_SDK + 'firebase-auth.js');
-        authMod.getAuth(app);
-      }catch(e){ /* sin auth: se usa acceso público según tus reglas */ }
+      const auth = authMod.getAuth(app);
+      // Tus reglas piden "request.auth != null"; esta sección no tiene login
+      // propio, así que se usa una sesión anónima (igual que el historial
+      // de la calculadora de balance hídrico).
+      fbAuthReady = new Promise((resolve)=>{
+        authMod.onAuthStateChanged(auth, (user)=>{ if(user) resolve(user); });
+      });
+      authMod.signInAnonymously(auth).catch(e=>{
+        console.error('Firebase (sesión anónima, pedido):', e);
+      });
+      await fbAuthReady;
       fb = {db: fs.getFirestore(app), fs};
     }catch(e){
       console.error('Firebase (pedido):', e);
@@ -2700,15 +2710,22 @@ function fld(id){ return document.getElementById(id); }
     }
     return null;
   }
-  function moveItem(itemId, destValue){
+  function moveItems(itemIds, destValue){
     const [pid,bid] = destValue.split('|');
-    const found = findItem(itemId);
     const dp = state.perfiles.find(p=>p.id===pid);
     const db = dp && dp.bloques.find(b=>b.id===bid);
-    if(!found || !db || found.b===db) return;
-    found.b.items.splice(found.idx,1);
-    db.items.push(found.it);
-    scheduleSave(); render();
+    if(!db) return;
+    let moved = 0;
+    itemIds.forEach(id=>{
+      const found = findItem(id);
+      if(!found || found.b===db) return;
+      found.b.items.splice(found.idx,1);
+      db.items.push(found.it);
+      moved++;
+    });
+    sel.clear();
+    if(moved) scheduleSave();
+    render();
   }
   function moveProfile(from, to){
     if(to<0 || to>=state.perfiles.length || from===to) return;
@@ -2738,70 +2755,71 @@ function fld(id){ return document.getElementById(id); }
     return e;
   }
   function profileItemIds(p){ return p.bloques.flatMap(b=>b.items.map(it=>it.id)); }
-  function updateTri(){
-    refs.forEach(({cb, ids})=>{
-      const n = ids.filter(id=>sel.has(id)).length;
-      cb.checked = ids.length>0 && n===ids.length;
-      cb.indeterminate = n>0 && n<ids.length;
+  function buildChip(it){
+    const chip = el('span', 'pf-chip' + (it.custom ? ' custom' : '') + (sel.has(it.id) ? ' sel' : ''));
+    chip.setAttribute('role','button');
+    chip.title = 'Tocá para marcar este dato y pasarlo a otro perfil / grupo';
+    chip.appendChild(document.createTextNode(it.label));
+    chip.addEventListener('click', ()=>{
+      if(sel.has(it.id)) sel.delete(it.id); else sel.add(it.id);
+      chip.classList.toggle('sel', sel.has(it.id));
+      updateMoveBar();
     });
-  }
-  function buildChip(it, dests, curValue){
-    const chip = el('span', 'pf-chip' + (it.custom ? ' custom' : ''));
-    const lab = document.createElement('label');
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.checked = sel.has(it.id);
-    cb.addEventListener('change', ()=>{
-      if(cb.checked) sel.add(it.id); else sel.delete(it.id);
-      updateTri(); updateOutput();
-    });
-    lab.appendChild(cb);
-    lab.appendChild(document.createTextNode(it.label));
-    chip.appendChild(lab);
-
-    const mv = document.createElement('select');
-    mv.className = 'mv';
-    mv.title = 'Mover este dato a otro perfil / grupo';
-    const o0 = document.createElement('option'); o0.value = ''; o0.textContent = '⇄';
-    mv.appendChild(o0);
-    dests.forEach(d=>{
-      if(d.value===curValue) return;
-      const o = document.createElement('option'); o.value = d.value; o.textContent = d.label;
-      mv.appendChild(o);
-    });
-    mv.addEventListener('change', ()=>{ if(mv.value) moveItem(it.id, mv.value); });
-    chip.appendChild(mv);
-
     if(it.custom){
       const x = el('button', 'x', '×');
       x.type = 'button';
       x.title = 'Quitar este dato agregado por vos';
-      x.addEventListener('click', ()=>removeItem(it.id));
+      x.addEventListener('click', (e)=>{ e.stopPropagation(); removeItem(it.id); });
       chip.appendChild(x);
     }
     return chip;
   }
+  const $moveBar = fld('pedMoveBar');
+  const $moveDest = fld('pedMoveDest');
+  const $moveCount = fld('pedMoveCount');
+  function updateMoveBar(){
+    const n = sel.size;
+    $moveBar.classList.toggle('on', n>0);
+    $moveCount.textContent = n===0 ? '' : (n===1 ? '1 dato marcado' : n+' datos marcados');
+    fld('pedMoveHint').style.display = n>0 ? 'none' : '';
+    fld('pedMoveTo').style.display = n>0 ? '' : 'none';
+    $moveDest.disabled = n===0;
+    fld('pedMoveGo').disabled = n===0;
+    fld('pedMoveCancel').style.display = n>0 ? '' : 'none';
+    $grid.classList.toggle('has-sel', n>0);
+    const ids = Array.from(sel);
+    $grid.querySelectorAll('.pf-here').forEach(btn=>{
+      const dest = btn.dataset.dest;
+      const allHere = ids.length>0 && ids.every(id=>{ const f = findItem(id); return f && (f.p.id+'|'+f.b.id)===dest; });
+      btn.classList.toggle('hide', allHere);
+      btn.textContent = '⇩ Mover acá ' + (n===1 ? 'el marcado' : 'los ' + n + ' marcados');
+    });
+  }
+  function fillMoveDest(){
+    const prev = $moveDest.value;
+    $moveDest.innerHTML = '';
+    const o0 = document.createElement('option'); o0.value=''; o0.textContent='— elegir perfil / grupo —';
+    $moveDest.appendChild(o0);
+    destinations().forEach(d=>{
+      const o = document.createElement('option'); o.value = d.value; o.textContent = d.label;
+      $moveDest.appendChild(o);
+    });
+    if(prev) $moveDest.value = prev;
+  }
+  fld('pedMoveGo').addEventListener('click', ()=>{
+    if(!$moveDest.value){ $moveDest.focus(); return; }
+    moveItems(Array.from(sel), $moveDest.value);
+    $moveDest.value = '';
+  });
+  fld('pedMoveCancel').addEventListener('click', ()=>{ sel.clear(); render(); });
   function render(){
     if(!state) return;
-    refs = [];
     $grid.innerHTML = '';
-    const dests = destinations();
     const total = state.perfiles.length;
     state.perfiles.forEach((p,pi)=>{
       const box = el('div','pf');
       const head = el('div','pf-head');
       head.appendChild(el('span','pf-num',(pi+1)+')'));
-      const all = document.createElement('input');
-      all.type = 'checkbox';
-      all.title = 'Tildar / destildar todo el perfil';
-      const ids = profileItemIds(p);
-      refs.push({cb: all, ids});
-      all.addEventListener('change', ()=>{
-        ids.forEach(id=>{ if(all.checked) sel.add(id); else sel.delete(id); });
-        all.indeterminate = false;
-        render(); updateOutput();
-      });
-      head.appendChild(all);
       head.appendChild(el('span','pf-name',p.nombre));
 
       const ord = el('span','pf-ord');
@@ -2824,7 +2842,7 @@ function fld(id){ return document.getElementById(id); }
           if(!confirm(`¿Eliminar el perfil "${p.nombre}" y sus datos?`)) return;
           ids.forEach(id=>sel.delete(id));
           state.perfiles.splice(pi,1);
-          scheduleSave(); render(); updateOutput();
+          scheduleSave(); render();
         });
         ord.appendChild(del);
       }
@@ -2836,8 +2854,13 @@ function fld(id){ return document.getElementById(id); }
         const nombre = (b.nombre||'').trim();
         const soloIgual = b.items.length===1 && norm(b.items[0].label)===norm(nombre);
         if(p.bloques.length>1 && nombre && !soloIgual) bl.appendChild(el('div','pf-block-h',nombre));
-        const cur = p.id+'|'+b.id;
-        b.items.forEach(it=>bl.appendChild(buildChip(it, dests, cur)));
+        b.items.forEach(it=>bl.appendChild(buildChip(it)));
+        const here = el('button','pf-here','⇩ Mover acá');
+        here.type = 'button';
+        here.dataset.dest = p.id+'|'+b.id;
+        here.title = 'Pasar los datos marcados a ' + p.nombre + (nombre ? ' › ' + nombre : '');
+        here.addEventListener('click', ()=>moveItems(Array.from(sel), p.id+'|'+b.id));
+        bl.appendChild(here);
         const addWrap = el('span','pf-add');
         const inp = document.createElement('input');
         inp.type = 'text';
@@ -2852,91 +2875,11 @@ function fld(id){ return document.getElementById(id); }
       });
       $grid.appendChild(box);
     });
-    updateTri();
+    fillMoveDest();
+    updateMoveBar();
   }
-
-  /* ---- Pedido generado ----------------------------------------------- */
-  function fechaTxt(){
-    const v = fld('laboFecha').value;
-    if(!v) return '';
-    const [y,m,d] = v.split('-');
-    return `${d}/${m}/${y}`;
-  }
-  function buildOutputHtml(){
-    if(!state) return '';
-    const lines = [];
-    let n = 0;
-    state.perfiles.forEach(p=>{
-      const partes = [];
-      p.bloques.forEach(b=>{
-        const chosen = b.items.filter(it=>sel.has(it.id));
-        if(!chosen.length) return;
-        const nombre = (b.nombre||'').trim();
-        const labels = chosen.map(it=>it.label);
-        if(!nombre){ partes.push(labels.join(', ')); return; }
-        if(labels.length===1 && norm(labels[0])===norm(nombre)){ partes.push(nombre); return; }
-        if(b.compacto && chosen.length===b.items.length){ partes.push(`${nombre} completo`); return; }
-        partes.push(`${nombre} (${labels.join(', ')})`);
-      });
-      if(!partes.length) return;
-      n++;
-      lines.push(`<b>${n}) ${p.nombre}</b>: ${partes.join('; ')}.`);
-    });
-    if(!lines.length) return '';
-    const f = fechaTxt();
-    return `<b>PEDIDO DE LABORATORIO</b>${f ? ' ('+f+')' : ''}<br>` + lines.join('<br>');
-  }
-  function updateOutput(){
-    $out.innerHTML = buildOutputHtml();
-    $status.textContent = '';
-  }
-
-  /* ---- Copiar (mismo criterio que el renglón de LABO: negro, sin fondo) */
-  $out.addEventListener('copy', (e)=>{
-    const s = window.getSelection();
-    if(!s || s.rangeCount===0 || s.isCollapsed) return;
-    const range = s.getRangeAt(0);
-    if(!$out.contains(range.commonAncestorContainer)) return;
-    const box = document.createElement('div');
-    box.appendChild(range.cloneContents());
-    box.querySelectorAll('*').forEach(x=>{ x.style.background='transparent'; x.style.backgroundColor='transparent'; });
-    const html = `<div style="background:transparent;color:#000000;font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:12pt;">${box.innerHTML}</div>`;
-    if(e.clipboardData){
-      e.clipboardData.setData('text/html', html);
-      e.clipboardData.setData('text/plain', box.innerText);
-      e.preventDefault();
-    }
-  });
-  fld('pedCopiarBtn').addEventListener('click', async ()=>{
-    if(!$out.innerHTML.trim()){ $status.textContent = 'Tildá al menos un estudio para armar el pedido.'; return; }
-    let ok = false;
-    document.documentElement.classList.add('labo-copying');
-    try{
-      const range = document.createRange();
-      range.selectNodeContents($out);
-      const s = window.getSelection();
-      s.removeAllRanges(); s.addRange(range);
-      ok = document.execCommand('copy');
-      s.removeAllRanges();
-    }catch(e){ ok = false; }
-    document.documentElement.classList.remove('labo-copying');
-    if(ok){ $status.textContent = 'Pedido copiado.'; return; }
-    try{
-      await navigator.clipboard.writeText($out.innerText);
-      $status.textContent = 'Pedido copiado como texto simple.';
-    }catch(e){
-      $status.textContent = 'No se pudo copiar automáticamente. Seleccioná el texto manualmente.';
-    }
-  });
 
   /* ---- Botones de la barra ------------------------------------------- */
-  fld('pedMarcarTodo').addEventListener('click', ()=>{
-    state.perfiles.forEach(p=>profileItemIds(p).forEach(id=>sel.add(id)));
-    render(); updateOutput();
-  });
-  fld('pedDesmarcarTodo').addEventListener('click', ()=>{
-    sel.clear(); render(); updateOutput();
-  });
   fld('pedAgregarPerfil').addEventListener('click', ()=>{
     const nombre = (prompt('Nombre del nuevo perfil (ej. PERFIL CÁLCICO):') || '').trim();
     if(!nombre) return;
@@ -2947,14 +2890,13 @@ function fld(id){ return document.getElementById(id); }
     if(!confirm('¿Restaurar el orden y los datos por defecto? Se pierden los datos agregados y los movimientos que hiciste.')) return;
     sel.clear();
     state = buildDefaults();
-    scheduleSave(); render(); updateOutput();
+    scheduleSave(); render();
   });
-  fld('laboFecha').addEventListener('change', updateOutput);
 
   /* ---- Inicio: local primero (rápido) y después Firebase ------------- */
   async function init(){
     state = localLoad() || buildDefaults();
-    render(); updateOutput();
+    render();
     if(!fbConfigured){
       setFbStatus('Firebase sin configurar: el pedido se guarda solo en este navegador.', 'warn');
       return;
@@ -2975,7 +2917,7 @@ function fld(id){ return document.getElementById(id); }
     if((r.data.updatedAt||0) >= (state.updatedAt||0)){
       state = r.data;
       localSave();
-      render(); updateOutput();
+      render();
       setFbStatus('Sincronizado con Firebase ✓', 'ok');
     } else {
       // La copia local es más nueva: se sube
