@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
- Versión: 26 (23/09/2026)
+ Versión: 28 (24/09/2026)
 -->
 <html lang="es">
 <head>
@@ -110,21 +110,12 @@
     min-width:180px;
   }
   .bh-goal select{ width:100%; }
+  /* Tarjeta de balance actual: usa el mismo formato de tarjeta completa que
+     el resto de las secciones (.report-card), no una insignia flotante. */
   .bh-actual{
-    background:#F7F9FB;
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    box-shadow:var(--shadow);
-    padding:14px 20px;
     margin-bottom:16px;
-    display:flex;
-    align-items:center;
-    gap:22px;
-    flex-wrap:wrap;
     transition:background .15s, color .15s;
   }
-  .bh-actual .bh-eyebrow{ margin-bottom:0; }
-  .bh-actual .bh-match{ margin-top:0; }
   .field label{
     display:block;
     font-size:.68rem;
@@ -157,14 +148,6 @@
     margin-top:6px;
     font-family:'IBM Plex Mono', monospace;
   }
-  .bh-actual .bh-eyebrow{
-    font-size:.68rem;
-    text-transform:uppercase;
-    letter-spacing:.05em;
-    font-weight:600;
-    color:var(--ink-soft);
-    margin-bottom:6px;
-  }
   .bh-actual .bh-row{
     display:flex;
     align-items:baseline;
@@ -183,7 +166,15 @@
   .bh-actual .bh-match{
     font-size:.72rem;
     font-weight:600;
-    margin-top:4px;
+    margin-top:6px;
+  }
+  .bh-actual .bh-detail{
+    margin-top:10px;
+    padding-top:10px;
+    border-top:1px solid var(--border);
+    font-size:.8rem;
+    font-family:'IBM Plex Mono', monospace;
+    color:var(--ink-soft);
   }
 
   .ref-card{
@@ -454,6 +445,8 @@
   }
   .row:last-of-type{border-bottom:none;}
   .row .rlabel{font-size:.78rem; color:var(--ink); flex:0 0 auto; white-space:nowrap;}
+  .row.subrow{padding-left:14px;}
+  .row.subrow .rlabel{font-size:.72rem; color:var(--ink-soft);}
   .row .rinput{
     width:64px;
     padding:4px 6px;
@@ -681,6 +674,33 @@
     .panel-body{grid-template-columns:1fr;}
     .col + .col{border-left:none; border-top:1px solid var(--border);}
   }
+
+  /* ---------- Celulares: controles más grandes al tacto y menos ajustado ---------- */
+  @media (max-width: 520px){
+    body{padding:12px 12px 50px;}
+    .page-head{gap:10px;}
+    .patient-section.ids{flex-wrap:wrap; row-gap:10px;}
+    .field-nombre{flex:1 1 100%;}
+    .field-nombre input{width:100%;}
+    .field-cama input, .field-peso input{width:100%;}
+    .field-cama, .field-peso{flex:1 1 90px;}
+    .atb-card, .baseline-card, #doseCard{padding:14px;}
+    .atb-card .field, .baseline-fields .field{min-width:0; flex:1 1 160px;}
+    .atb-card .field select, .baseline-fields .field select{width:100%;}
+    /* casilleros y checkboxes más grandes para tocar sin errar */
+    .panel-head .confirm{padding:7px 10px; font-size:.76rem;}
+    .panel-head .confirm input, .row .atb-inline input[type=checkbox], .baseline-toggle input{
+      width:20px; height:20px;
+    }
+    .row{padding:7px 0;}
+    .row .rinput{min-height:34px; width:72px; font-size:.88rem;}
+    .add-field select{padding:8px;}
+    button.btn{padding:10px 14px; font-size:.84rem;}
+    .report-actions{flex-wrap:wrap;}
+    .report-actions .btn{flex:1 1 auto;}
+    .bh-actual .bh-value{font-size:1.3rem;}
+    .bh-row{gap:8px;}
+  }
 </style>
 </head>
 <body>
@@ -792,6 +812,31 @@
     <div class="atb-hint">Es la hora del reloj a la que arranca tu cuadrante "6 hs" (por ejemplo, si tu primer bloque cargado va de 6 a 12, poné 06:00). Con esa hora y la frecuencia, la calculadora asume que el ATB se da a horarios fijos del reloj (p. ej. cada 8 hs → 8, 16 y 24 hs) y tilda sola los cuadrantes que corresponden. Tildá o destildá cualquier casillero si el horario real difiere.</div>
   </div>
 
+  <div class="atb-card" id="doseCard">
+    <h2>Alimentación enteral y agua libre</h2>
+    <div class="field">
+      <label for="enteralRate">Ritmo de alim. enteral</label>
+      <select id="enteralRate">
+        <option value="0" selected>No indicada</option>
+        <option value="21">21 ml/h · 7 gotas/min</option>
+        <option value="42">42 ml/h · 14 gotas/min</option>
+        <option value="63">63 ml/h · 21 gotas/min</option>
+        <option value="84">84 ml/h · 28 gotas/min</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="aguaLibreRate">Ritmo de agua libre</label>
+      <select id="aguaLibreRate">
+        <option value="0" selected>No indicada</option>
+        <option value="21">21 ml/h · 7 gotas/min</option>
+        <option value="42">42 ml/h · 14 gotas/min</option>
+        <option value="63">63 ml/h · 21 gotas/min</option>
+        <option value="84">84 ml/h · 28 gotas/min</option>
+      </select>
+    </div>
+    <div class="atb-hint">Cada cuadrante tildado suma el ritmo elegido × 6 hs (aparecen como subítems de Vía oral, en cada cuadrante). Al elegir un ritmo se tildan los 4 cuadrantes; destildá el casillero puntual si en ese bloque no se administró (por ejemplo, todavía no había arrancado o se suspendió).</div>
+  </div>
+
   <div class="baseline-card" id="baselineCard">
     <h2>Continuar un balance ya iniciado</h2>
     <label class="baseline-toggle"><input type="checkbox" id="baselineEnabled"> Me dieron un plan empezado (por ejemplo, para terminar de completar desde las 12 hs)</label>
@@ -810,6 +855,8 @@
         <div class="col">
           <p class="col-title ing">Ingresos previos (manuales)</p>
           <div class="row"><span class="rlabel">Vía oral (VO):</span><input type="number" class="rinput" data-prev-key="vo" value="0" min="0" step="any"></div>
+          <div class="row subrow"><span class="rlabel">↳ Alim. enteral:</span><input type="number" class="rinput" data-prev-key="enteral" value="0" min="0" step="any"></div>
+          <div class="row subrow"><span class="rlabel">↳ Agua libre:</span><input type="number" class="rinput" data-prev-key="aguaLibre" value="0" min="0" step="any"></div>
           <div class="row"><span class="rlabel">Alim. parenteral:</span><input type="number" class="rinput" data-prev-key="alim" value="0" min="0" step="any"></div>
           <div class="row"><span class="rlabel">Antibióticos (ATB):</span><input type="number" class="rinput" data-prev-key="atb" value="0" min="0" step="any"></div>
           <div class="row"><span class="rlabel">Transfusiones:</span><input type="number" class="rinput" data-prev-key="transf" value="0" min="0" step="any"></div>
@@ -828,13 +875,14 @@
 
   <main class="quarters" id="quarters"></main>
 
-  <div class="bh-actual" id="bhTypeBadge">
-    <div class="bh-eyebrow">Actual (calculado)</div>
+  <div class="report-card bh-actual" id="bhTypeBadge">
+    <h2>Balance hidroelectrolítico actual <span style="font-weight:400; text-transform:none; letter-spacing:0;">(calculado)</span></h2>
     <div class="bh-row">
       <span class="bh-value">—</span>
       <span class="bh-tagline">sin datos</span>
     </div>
     <div class="bh-match" id="bhMatch"></div>
+    <div class="bh-detail" id="bhDetail"></div>
   </div>
 
   <div class="report-card">
@@ -876,12 +924,34 @@
 (function(){
   const PLAN_VOLUMES = {0:0, 7:500, 14:1000, 21:1500, 28:2000}; // 0 = plan intermitente (sin PHP continuo)
   const HOURS = [6,12,18,24];
-  const HOUR_RANGES = ['00-6hs','6-12hs','12-18hs','18-00hs'];
   const QCOLORS = ['#2F9E44','#1C7ED6','#C2410C','#152A52'];
+
+  // Rangos horarios (reloj) de cada cuadrante, según la "hora real de inicio"
+  // elegida (state.atbStartHour). Ej.: inicio 06:00 -> ['06:00-12:00hs', ...,
+  // '00:00-06:00hs']. El límite exacto de medianoche se muestra como "24:00"
+  // al final de un tramo y como "00:00" al empezar el siguiente.
+  function fmtClockHour(h, isEnd){
+    let m = ((h % 24) + 24) % 24;
+    if (m === 0 && isEnd) m = 24;
+    return String(m).padStart(2,'0') + ':00';
+  }
+  function computeHourRanges(startHour){
+    const start = ((Number(startHour)||0) % 24 + 24) % 24;
+    return [0,1,2,3].map(i=>{
+      const from = start + 6*i;
+      const to = start + 6*(i+1);
+      return `${fmtClockHour(from,false)}-${fmtClockHour(to,true)}hs`;
+    });
+  }
   const ATB_DOSE = 100; // los ATB siempre se disuelven en 100 ml — constante, no editable
 
+  // Ritmos de goteo disponibles para alim. enteral y agua libre (ml/h -> gotas/min)
+  const DOSE_RATES = {21:7, 42:14, 63:21, 84:28};
+
   const ING_FIELDS = [
-    {key:'vo',    label:'Vía oral (VO)',        type:'input', expr:true},
+    {key:'vo',        label:'Vía oral (VO)',          type:'input', expr:true},
+    {key:'enteral',   label:'↳ Alim. enteral',        type:'dose', rateKey:'enteralRate', sub:true},
+    {key:'aguaLibre', label:'↳ Agua libre',           type:'dose', rateKey:'aguaLibreRate', sub:true},
     {key:'php',   label:'PHP',                  type:'auto'},
     {key:'alim',  label:'Alim. parenteral',     type:'input'},
     {key:'atb',   label:'Antibióticos (ATB)',   type:'atb'},
@@ -908,10 +978,13 @@
     phpPlan: 21,
     atbFreq: '12',
     atbStartHour: 0,
+    enteralRate: 0,
+    aguaLibreRate: 0,
     bhGoal: 'neutro-pos',
-    baseline: { enabled:false, hourIndex:1, prev:{ vo:0, alim:0, transf:0, exp:0, atb:0, diuresis:0, catarsis:0, vomitos:0, drenajes:0 } },
+    baseline: { enabled:false, hourIndex:1, prev:{ vo:0, alim:0, transf:0, exp:0, atb:0, enteral:0, aguaLibre:0, diuresis:0, catarsis:0, vomitos:0, drenajes:0 } },
     blocks: [0,1,2,3].map(()=>({
       vo:'0', alim:0, transf:0, exp:0,
+      enteral:false, aguaLibre:false,
       diuresis:0, catarsis:0, vomitos:0, drenajes:0,
       atb:false,
       confirmed:false,
@@ -929,7 +1002,7 @@
       alim:Number(b.alim)||0, transf:Number(b.transf)||0, exp:Number(b.exp)||0,
       diuresis:Number(b.diuresis)||0, catarsis:Number(b.catarsis)||0,
       vomitos:Number(b.vomitos)||0, drenajes:Number(b.drenajes)||0,
-      atb:!!b.atb, confirmed:!!b.confirmed
+      atb:!!b.atb, enteral:!!b.enteral, aguaLibre:!!b.aguaLibre, confirmed:!!b.confirmed
     };
     nb.opt = {
       transf: b.opt ? !!b.opt.transf : nb.transf !== 0,
@@ -1030,6 +1103,9 @@
     if (saved.phpPlan !== undefined && saved.phpPlan !== null && Number(saved.phpPlan) in PLAN_VOLUMES) state.phpPlan = Number(saved.phpPlan);
     if (saved.atbFreq) state.atbFreq = saved.atbFreq;
     if (saved.atbStartHour !== undefined) state.atbStartHour = Number(saved.atbStartHour) || 0;
+    const VALID_RATES = [0,21,42,63,84];
+    if (VALID_RATES.includes(Number(saved.enteralRate))) state.enteralRate = Number(saved.enteralRate);
+    if (VALID_RATES.includes(Number(saved.aguaLibreRate))) state.aguaLibreRate = Number(saved.aguaLibreRate);
     if (saved.bhGoal) state.bhGoal = saved.bhGoal;
     if (saved.baseline){
       state.baseline.enabled = !!saved.baseline.enabled;
@@ -1095,6 +1171,8 @@
     label.textContent = field.label + ':';
     row.appendChild(label);
 
+    if (field.sub) row.classList.add('subrow');
+
     if (field.type === 'auto'){
       const auto = document.createElement('span');
       auto.className = 'rauto';
@@ -1119,6 +1197,23 @@
       row.appendChild(wrap);
       row.dataset.side = side;
       row.dataset.type = 'atbRow';
+    } else if (field.type === 'dose'){
+      const wrap = document.createElement('span');
+      wrap.className = 'atb-inline';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.dataset.side = side;
+      cb.dataset.key = field.key;
+      cb.dataset.type = 'doseCheckbox';
+      const dose = document.createElement('span');
+      dose.className = 'atb-dose';
+      dose.dataset.role = 'doseLabel';
+      wrap.appendChild(cb);
+      wrap.appendChild(dose);
+      row.appendChild(wrap);
+      row.dataset.side = side;
+      row.dataset.key = field.key;
+      row.dataset.type = 'doseRow';
     } else {
       const inp = document.createElement('input');
       inp.className = 'rinput';
@@ -1230,7 +1325,7 @@
 
   function buildPanel(qIndex){
     const hour = HOURS[qIndex];
-    const range = HOUR_RANGES[qIndex];
+    const range = computeHourRanges(state.atbStartHour)[qIndex];
     const color = QCOLORS[qIndex];
     const panel = document.createElement('div');
     panel.className = 'panel unconfirmed';
@@ -1239,7 +1334,7 @@
     const head = document.createElement('div');
     head.className = 'panel-head';
     head.style.background = color;
-    head.innerHTML = `<span class="hour">${hour} hs (${range})</span>`;
+    head.innerHTML = `<span class="hour" data-role="hourLabel">${hour} hs (${range})</span>`;
     const confirmLabel = document.createElement('label');
     confirmLabel.className = 'confirm';
     confirmLabel.innerHTML = `<input type="checkbox" data-role="confirm" data-q="${qIndex}"> Confirmar bloque`;
@@ -1261,7 +1356,7 @@
     ingRowsWrap.dataset.role = 'ingRows';
     ING_FIELDS.forEach(f=>{
       ingRowsWrap.appendChild(buildRow(f,'ing'));
-      if (f.type==='input' || f.type==='atb') ingRowsWrap.appendChild(buildBreakdownRow(f));
+      if (f.type==='input' || f.type==='atb' || f.type==='dose') ingRowsWrap.appendChild(buildBreakdownRow(f));
     });
     colIng.appendChild(ingRowsWrap);
     colIng.appendChild(buildAddControl('ing'));
@@ -1325,6 +1420,29 @@
     return sum;
   }
 
+  // Alim. enteral / agua libre: cada cuadrante tildado suma ritmo(ml/h) × 6 hs.
+  function doseRateOf(key){
+    const field = ING_FIELDS.find(f=>f.key===key);
+    return field ? (Number(state[field.rateKey])||0) : 0;
+  }
+  function doseDeltaFor(key, i){
+    return state.blocks[i][key] ? doseRateOf(key)*6 : 0;
+  }
+  function doseCumulative(key, uptoIndex){
+    const start = getStartIndex();
+    let sum=0;
+    for (let i=start;i<=uptoIndex;i++) sum += doseDeltaFor(key,i);
+    return sum;
+  }
+  // Al elegir/quitar un ritmo, tilda o destilda solo los cuadrantes que el
+  // usuario no haya tocado a mano todavía no aplica: por simplicidad, tildar
+  // los 4 cuadrantes cuando se elige un ritmo, y destildarlos cuando se
+  // vuelve a "No indicada" (el usuario puede destildar cuadrantes puntuales).
+  function applyDoseDefaults(key){
+    const on = doseRateOf(key) > 0;
+    state.blocks.forEach(b=> b[key] = on);
+  }
+
   // PHP, agua endógena y pérdidas insensibles: siempre acumulados desde el inicio
   // del plan (hora 0) según la fórmula, sin importar si hay un balance previo
   // cargado — no dependen de qué tan detallado esté el registro anterior.
@@ -1350,7 +1468,7 @@
       return {
         hour, locked:true, isBaselinePoint:false,
         auto:{php:0, ae:0, pi:0},
-        vo:0, alim:0, transf:0, exp:0, atb:0,
+        vo:0, alim:0, transf:0, exp:0, atb:0, enteral:0, aguaLibre:0,
         diuresis:0, catarsis:0, vomitos:0, drenajes:0,
         ingreso:0, egreso:0, bh:0
       };
@@ -1362,19 +1480,20 @@
       const auto = autoValues(hour);
       const vo = Number(prev.vo)||0, alim = Number(prev.alim)||0,
             transf = Number(prev.transf)||0, exp = Number(prev.exp)||0, atb = Number(prev.atb)||0,
+            enteral = Number(prev.enteral)||0, aguaLibre = Number(prev.aguaLibre)||0,
             diuresis = Number(prev.diuresis)||0, catarsis = Number(prev.catarsis)||0,
             vomitos = Number(prev.vomitos)||0, drenajes = Number(prev.drenajes)||0;
-      const ingreso = vo + auto.php + alim + atb + auto.ae + transf + exp;
+      const ingreso = vo + auto.php + alim + atb + auto.ae + transf + exp + enteral + aguaLibre;
       const egreso = diuresis + catarsis + vomitos + drenajes + auto.pi;
       return {
         hour, locked:true, isBaselinePoint:true,
-        auto, vo, alim, transf, exp, atb, diuresis, catarsis, vomitos, drenajes,
+        auto, vo, alim, transf, exp, atb, enteral, aguaLibre, diuresis, catarsis, vomitos, drenajes,
         ingreso, egreso, bh: ingreso-egreso
       };
     }
 
     const auto = autoValues(hour);
-    const prevIng = baseline.enabled ? { vo:Number(prev.vo)||0, alim:Number(prev.alim)||0, transf:Number(prev.transf)||0, exp:Number(prev.exp)||0, atb:Number(prev.atb)||0 } : { vo:0, alim:0, transf:0, exp:0, atb:0 };
+    const prevIng = baseline.enabled ? { vo:Number(prev.vo)||0, alim:Number(prev.alim)||0, transf:Number(prev.transf)||0, exp:Number(prev.exp)||0, atb:Number(prev.atb)||0, enteral:Number(prev.enteral)||0, aguaLibre:Number(prev.aguaLibre)||0 } : { vo:0, alim:0, transf:0, exp:0, atb:0, enteral:0, aguaLibre:0 };
     const prevEgr = baseline.enabled ? { diuresis:Number(prev.diuresis)||0, catarsis:Number(prev.catarsis)||0, vomitos:Number(prev.vomitos)||0, drenajes:Number(prev.drenajes)||0 } : { diuresis:0, catarsis:0, vomitos:0, drenajes:0 };
 
     const vo = prevIng.vo + fieldsCumulative('vo', i);
@@ -1382,16 +1501,18 @@
     const transf = prevIng.transf + fieldsCumulative('transf', i);
     const exp = prevIng.exp + fieldsCumulative('exp', i);
     const atb = prevIng.atb + atbCumulative(i);
+    const enteral = prevIng.enteral + doseCumulative('enteral', i);
+    const aguaLibre = prevIng.aguaLibre + doseCumulative('aguaLibre', i);
     const diuresis = prevEgr.diuresis + fieldsCumulative('diuresis', i);
     const catarsis = prevEgr.catarsis + fieldsCumulative('catarsis', i);
     const vomitos = prevEgr.vomitos + fieldsCumulative('vomitos', i);
     const drenajes = prevEgr.drenajes + fieldsCumulative('drenajes', i);
 
-    const ingreso = vo + auto.php + alim + atb + auto.ae + transf + exp;
+    const ingreso = vo + auto.php + alim + atb + auto.ae + transf + exp + enteral + aguaLibre;
     const egreso = diuresis + catarsis + vomitos + drenajes + auto.pi;
     const bh = ingreso - egreso;
 
-    return {hour, locked:false, auto, vo, alim, transf, exp, atb, diuresis, catarsis, vomitos, drenajes, ingreso, egreso, bh};
+    return {hour, locked:false, auto, vo, alim, transf, exp, atb, enteral, aguaLibre, diuresis, catarsis, vomitos, drenajes, ingreso, egreso, bh};
   }
 
   function getLastConfirmed(){
@@ -1446,7 +1567,9 @@
       if (prevVal !== 0) parts.push({v:prevVal, prev:true});
     }
     for (let i=start;i<=uptoIndex;i++){
-      const v = key === 'atb' ? atbDeltaFor(i) : valueOf(key, state.blocks[i]);
+      const v = key === 'atb' ? atbDeltaFor(i)
+        : (key === 'enteral' || key === 'aguaLibre') ? doseDeltaFor(key, i)
+        : valueOf(key, state.blocks[i]);
       if (v !== 0) parts.push({v, i});
     }
     if (parts.length === 0){ el.innerHTML = ''; return; }
@@ -1479,12 +1602,15 @@
     });
 
     let lastConfirmed = getLastConfirmed();
+    const hourRanges = computeHourRanges(state.atbStartHour);
 
     for (let i=0;i<4;i++){
       const panel = quartersEl.children[i];
       syncOptionalRowsForPanel(panel);
       const q = computeQuarter(i);
       const block = state.blocks[i];
+      const hourLabel = panel.querySelector('[data-role="hourLabel"]');
+      if (hourLabel) hourLabel.textContent = `${HOURS[i]} hs (${hourRanges[i]})`;
 
       panel.classList.toggle('locked', q.locked);
       panel.classList.toggle('unconfirmed', !q.locked && !block.confirmed);
@@ -1505,13 +1631,13 @@
           lockNote.innerHTML = `Incluido en el acumulado recibido hasta las ${HOURS[baselineIdx]} hs — sin detalle propio disponible.`;
         }
         // deja los inputs del bloque bloqueados sin poder editarse
-        panel.querySelectorAll('input').forEach(inp=>{ if (inp.dataset.type==='delta' || inp.dataset.type==='atbCheckbox') inp.disabled = true; });
+        panel.querySelectorAll('input').forEach(inp=>{ if (inp.dataset.type==='delta' || inp.dataset.type==='atbCheckbox' || inp.dataset.type==='doseCheckbox') inp.disabled = true; });
       } else {
         confirmLabel.style.display = '';
         confirmCb.disabled = false;
         confirmCb.checked = !!block.confirmed;
         foot.classList.remove('hide-when-locked');
-        panel.querySelectorAll('input').forEach(inp=>{ if (inp.dataset.type==='delta' || inp.dataset.type==='atbCheckbox') inp.disabled = false; });
+        panel.querySelectorAll('input').forEach(inp=>{ if (inp.dataset.type==='delta' || inp.dataset.type==='atbCheckbox' || inp.dataset.type==='doseCheckbox') inp.disabled = false; });
 
         // auto fields
         panel.querySelectorAll('[data-type="auto"]').forEach(row=>{
@@ -1526,6 +1652,17 @@
         atbCb.checked = block.atb;
         const atbDoseLabel = atbRow.querySelector('[data-role="atbDoseLabel"]');
         atbDoseLabel.textContent = block.atb ? (fmt(ATB_DOSE) + ' ml') : '— ml';
+
+        // dose rows (alim. enteral / agua libre)
+        panel.querySelectorAll('[data-type="doseRow"]').forEach(row=>{
+          const key = row.dataset.key;
+          const rate = doseRateOf(key);
+          const cb = row.querySelector('input[type=checkbox]');
+          cb.checked = !!block[key];
+          cb.disabled = rate <= 0;
+          const doseLabel = row.querySelector('[data-role="doseLabel"]');
+          doseLabel.textContent = (block[key] && rate>0) ? (fmt(rate*6) + ' ml') : '— ml';
+        });
 
         // input rows + breakdowns
         panel.querySelectorAll('[data-type="delta"]').forEach(inp=>{
@@ -1562,13 +1699,15 @@
     // header BH type badge
     const badge = document.getElementById('bhTypeBadge');
     const matchEl = document.getElementById('bhMatch');
+    const detailEl = document.getElementById('bhDetail');
     if (lastConfirmed === -1){
       badge.querySelector('.bh-tagline').textContent = 'sin datos';
       badge.querySelector('.bh-value').textContent = '—';
-      badge.style.background = '#F7F9FB';
+      badge.style.background = 'var(--panel)';
       badge.querySelector('.bh-value').style.color = 'var(--ink-soft)';
       badge.querySelector('.bh-tagline').style.color = 'var(--ink-soft)';
       matchEl.textContent = '';
+      detailEl.textContent = '';
     } else {
       const q = computeQuarter(lastConfirmed);
       const cls = classify(q.bh);
@@ -1578,6 +1717,7 @@
       badge.style.background = colors.bg;
       badge.querySelector('.bh-value').style.color = colors.fg;
       badge.querySelector('.bh-tagline').style.color = colors.fg;
+      detailEl.textContent = `Ingresos ${fmt(q.ingreso)} ml · Egresos ${fmt(q.egreso)} ml`;
 
       if (cls.cls === state.bhGoal){
         matchEl.textContent = '✓ ' + cls.tag + ' — coincide con el objetivo (' + GOAL_LABELS[state.bhGoal] + ')';
@@ -1664,6 +1804,16 @@
     applyAtbDefaults(state.atbFreq);
     recalcAll();
   });
+  document.getElementById('enteralRate').addEventListener('change', e=>{
+    state.enteralRate = Number(e.target.value) || 0;
+    applyDoseDefaults('enteral');
+    recalcAll();
+  });
+  document.getElementById('aguaLibreRate').addEventListener('change', e=>{
+    state.aguaLibreRate = Number(e.target.value) || 0;
+    applyDoseDefaults('aguaLibre');
+    recalcAll();
+  });
   document.getElementById('bhGoal').addEventListener('change', e=>{
     state.bhGoal = e.target.value;
     recalcAll();
@@ -1724,6 +1874,12 @@
       state.blocks[q].atb = t.checked;
       recalcAll();
     }
+    if (t.dataset.type === 'doseCheckbox'){
+      const panel = t.closest('.panel');
+      const q = Number(panel.dataset.q);
+      state.blocks[q][t.dataset.key] = t.checked;
+      recalcAll();
+    }
     if (t.dataset.role === 'confirm'){
       const q = Number(t.dataset.q);
       state.blocks[q].confirmed = t.checked;
@@ -1779,10 +1935,13 @@
     state.phpPlan = 21;
     state.atbFreq = '12';
     state.atbStartHour = 0;
+    state.enteralRate = 0;
+    state.aguaLibreRate = 0;
     state.bhGoal = 'neutro-pos';
-    state.baseline = { enabled:false, hourIndex:1, prev:{ vo:0, alim:0, transf:0, exp:0, atb:0, diuresis:0, catarsis:0, vomitos:0, drenajes:0 } };
+    state.baseline = { enabled:false, hourIndex:1, prev:{ vo:0, alim:0, transf:0, exp:0, atb:0, enteral:0, aguaLibre:0, diuresis:0, catarsis:0, vomitos:0, drenajes:0 } };
     state.blocks = [0,1,2,3].map(()=>({
       vo:'0', alim:0, transf:0, exp:0,
+      enteral:false, aguaLibre:false,
       diuresis:0, catarsis:0, vomitos:0, drenajes:0,
       atb:false, confirmed:false,
       opt:{ transf:false, drenajes:false, vomitos:false }
@@ -1921,6 +2080,8 @@
     document.getElementById('phpPlan').value = state.phpPlan;
     document.getElementById('atbFreq').value = state.atbFreq;
     document.getElementById('atbStartHour').value = state.atbStartHour;
+    document.getElementById('enteralRate').value = state.enteralRate;
+    document.getElementById('aguaLibreRate').value = state.aguaLibreRate;
     document.getElementById('bhGoal').value = state.bhGoal;
     document.getElementById('baselineEnabled').checked = state.baseline.enabled;
     document.getElementById('baselineHour').value = state.baseline.hourIndex;
