@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <!--
- Versión: 28 (24/09/2026)
+ Versión: 29 (25/09/2026) — soporte para múltiples antibióticos, cada uno
+ con su propia frecuencia y horario de administración (todos diluidos en
+ 100 ml SF).
 -->
 <html lang="es">
 <head>
@@ -241,6 +243,37 @@
   }
   .atb-card .field{min-width:150px;}
   .atb-hint{font-size:.76rem; color:var(--ink-soft); flex:1; min-width:220px;}
+  .atb-list{
+    width:100%;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .atb-item{
+    display:flex;
+    align-items:flex-end;
+    gap:14px;
+    flex-wrap:wrap;
+    padding:10px 12px;
+    background:var(--atb-soft);
+    border:1px solid var(--border);
+    border-radius:8px;
+  }
+  .atb-item .field{min-width:130px; margin-bottom:0;}
+  .atb-item .field-atb-nombre input{width:150px;}
+  .atb-item-remove{
+    flex:0 0 auto;
+    background:transparent;
+    border:none;
+    color:var(--ink-soft);
+    font-size:1.05rem;
+    line-height:1;
+    cursor:pointer;
+    padding:6px 2px;
+    margin-bottom:2px;
+  }
+  .atb-item-remove:hover{color:var(--negativo);}
+  .atb-add-btn{align-self:flex-start;}
 
   /* ---------- Balance previo (continuar un balance ya iniciado) ---------- */
   .baseline-card{
@@ -771,17 +804,7 @@
   <div class="atb-card">
     <h2>Antibióticos (ATB)</h2>
     <div class="field">
-      <label for="atbFreq">Frecuencia</label>
-      <select id="atbFreq">
-        <option value="6">Cada 6 hs</option>
-        <option value="8">Cada 8 hs</option>
-        <option value="12" selected>Cada 12 hs</option>
-        <option value="24">Cada 24 hs</option>
-        <option value="none">No indicado</option>
-      </select>
-    </div>
-    <div class="field">
-      <label for="atbStartHour">Hora real de inicio</label>
+      <label for="atbStartHour">Hora real de inicio del plan</label>
       <select id="atbStartHour">
         <option value="0" selected>00:00 hs</option>
         <option value="1">01:00 hs</option>
@@ -809,7 +832,10 @@
         <option value="23">23:00 hs</option>
       </select>
     </div>
-    <div class="atb-hint">Es la hora del reloj a la que arranca tu cuadrante "6 hs" (por ejemplo, si tu primer bloque cargado va de 6 a 12, poné 06:00). Con esa hora y la frecuencia, la calculadora asume que el ATB se da a horarios fijos del reloj (p. ej. cada 8 hs → 8, 16 y 24 hs) y tilda sola los cuadrantes que corresponden. Tildá o destildá cualquier casillero si el horario real difiere.</div>
+    <div class="atb-hint">Es la hora del reloj a la que arranca tu cuadrante "6 hs" (por ejemplo, si tu primer bloque cargado va de 6 a 12, poné 06:00) — se usa solo para mostrar el horario de reloj de cada cuadrante.</div>
+    <div class="atb-list" id="atbList"></div>
+    <button type="button" class="btn small ghost atb-add-btn" id="addAtbBtn">+ Agregar antibiótico</button>
+    <div class="atb-hint">Cada antibiótico se diluye en 100 ml de SF y tiene su propia frecuencia y horario de administración — por ejemplo, uno cada 6 hs y otro cada 8 o 12 hs, cada uno a su horario. Con esos datos la calculadora tilda sola los cuadrantes que corresponden a cada antibiótico; tildá o destildá cualquier casillero si el horario real difiere. Cuando coinciden dos o más en el mismo cuadrante, se suman los 100 ml de cada uno.</div>
   </div>
 
   <div class="atb-card" id="doseCard">
@@ -926,8 +952,8 @@
   const HOURS = [6,12,18,24];
   const QCOLORS = ['#2F9E44','#1C7ED6','#C2410C','#152A52'];
 
-  // Rangos horarios (reloj) de cada cuadrante, según la "hora real de inicio"
-  // elegida (state.atbStartHour). Ej.: inicio 06:00 -> ['06:00-12:00hs', ...,
+  // Rangos horarios (reloj) de cada cuadrante, según la "hora real de inicio
+  // del plan" elegida (state.atbStartHour). Ej.: inicio 06:00 -> ['06:00-12:00hs', ...,
   // '00:00-06:00hs']. El límite exacto de medianoche se muestra como "24:00"
   // al final de un tramo y como "00:00" al empezar el siguiente.
   function fmtClockHour(h, isEnd){
@@ -948,13 +974,25 @@
   // Ritmos de goteo disponibles para alim. enteral y agua libre (ml/h -> gotas/min)
   const DOSE_RATES = {21:7, 42:14, 63:21, 84:28};
 
+  // Frecuencias disponibles por antibiótico y horas de administración (00 a 23 hs)
+  const ATB_FREQ_OPTIONS = [
+    {value:'6',    label:'Cada 6 hs'},
+    {value:'8',    label:'Cada 8 hs'},
+    {value:'12',   label:'Cada 12 hs'},
+    {value:'24',   label:'Cada 24 hs'},
+    {value:'none', label:'No indicado'},
+  ];
+  const ATB_HOUR_OPTIONS = Array.from({length:24}, (_,h)=>({
+    value:String(h), label:String(h).padStart(2,'0') + ':00 hs'
+  }));
+
   const ING_FIELDS = [
     {key:'vo',        label:'Vía oral (VO)',          type:'input', expr:true},
     {key:'enteral',   label:'↳ Alim. enteral',        type:'dose', rateKey:'enteralRate', sub:true},
     {key:'aguaLibre', label:'↳ Agua libre',           type:'dose', rateKey:'aguaLibreRate', sub:true},
     {key:'php',   label:'PHP',                  type:'auto'},
     {key:'alim',  label:'Alim. parenteral',     type:'input'},
-    {key:'atb',   label:'Antibióticos (ATB)',   type:'atb'},
+    {key:'atb',   label:'Antibióticos (ATB)',   type:'atbGroup'},
     {key:'ae',    label:'Agua endógena (AE)',   type:'auto'},
     {key:'exp',   label:'Expansiones',          type:'input'},
   ];
@@ -976,8 +1014,10 @@
     cama: '',
     peso: 60,
     phpPlan: 21,
-    atbFreq: '12',
-    atbStartHour: 0,
+    // Uno o más antibióticos, cada uno con su propia frecuencia y horario de
+    // administración; todos se diluyen en 100 ml SF (ATB_DOSE, más abajo).
+    atbList: [ { id:'atb1', nombre:'', freq:'12', startHour:0 } ],
+    atbStartHour: 0, // hora real de inicio del PLAN (para el rótulo de cada cuadrante)
     enteralRate: 0,
     aguaLibreRate: 0,
     bhGoal: 'neutro-pos',
@@ -986,24 +1026,59 @@
       vo:'0', alim:0, transf:0, exp:0,
       enteral:false, aguaLibre:false,
       diuresis:0, catarsis:0, vomitos:0, drenajes:0,
-      atb:false,
+      atb:{}, // { [antibioticoId]: boolean } — tildado en este cuadrante
       confirmed:false,
       opt:{ transf:false, drenajes:false, vomitos:false }
     }))
   };
 
+  // Genera un id nuevo y estable para un antibiótico agregado a mano.
+  function newAtbId(){
+    return 'atb_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+  }
+
+  // Homogeneiza una lista de antibióticos venida de localStorage/historial
+  // (o el formato viejo de una sola frecuencia global) a la forma actual.
+  function migrateAtbListFrom(obj){
+    if (!obj) return null;
+    if (Array.isArray(obj.atbList) && obj.atbList.length){
+      const validFreq = ATB_FREQ_OPTIONS.map(o=>o.value);
+      return obj.atbList.map((a,idx)=>({
+        id: (a && a.id) ? String(a.id) : ('atb'+(idx+1)),
+        nombre: (a && typeof a.nombre === 'string') ? a.nombre : '',
+        freq: (a && validFreq.includes(String(a.freq))) ? String(a.freq) : '12',
+        startHour: (a && a.startHour!==undefined) ? (((Number(a.startHour)||0)%24+24)%24) : 0
+      }));
+    }
+    if (obj.atbFreq){
+      // formato viejo: una sola frecuencia global -> un antibiótico único
+      return [{ id:'atb1', nombre:'', freq:String(obj.atbFreq), startHour: Number(obj.atbStartHour)||0 }];
+    }
+    return null;
+  }
+
   // Normaliza un bloque cargado desde localStorage o desde un registro del
   // historial: si no trae "opt" (registros guardados antes de que estos tres
   // campos fueran opcionales), se infiere activo cuando ya tiene un valor
-  // cargado distinto de 0, para no perder datos previos de vista.
-  function normalizeBlock(b){
+  // cargado distinto de 0, para no perder datos previos de vista. atbIds es
+  // la lista de antibióticos vigente, para reconstruir block.atb como mapa;
+  // el formato viejo (b.atb booleano) se traslada al primer antibiótico.
+  function normalizeBlock(b, atbIds){
+    const ids = atbIds || [];
     const nb = {
       vo: (b.vo===undefined || b.vo===null) ? '0' : String(b.vo),
       alim:Number(b.alim)||0, transf:Number(b.transf)||0, exp:Number(b.exp)||0,
       diuresis:Number(b.diuresis)||0, catarsis:Number(b.catarsis)||0,
       vomitos:Number(b.vomitos)||0, drenajes:Number(b.drenajes)||0,
-      atb:!!b.atb, enteral:!!b.enteral, aguaLibre:!!b.aguaLibre, confirmed:!!b.confirmed
+      enteral:!!b.enteral, aguaLibre:!!b.aguaLibre, confirmed:!!b.confirmed
     };
+    nb.atb = {};
+    if (b.atb && typeof b.atb === 'object' && !Array.isArray(b.atb)){
+      ids.forEach(id=> nb.atb[id] = !!b.atb[id]);
+    } else {
+      const legacy = !!b.atb;
+      ids.forEach((id,idx)=> nb.atb[id] = idx===0 ? legacy : false);
+    }
     nb.opt = {
       transf: b.opt ? !!b.opt.transf : nb.transf !== 0,
       drenajes: b.opt ? !!b.opt.drenajes : nb.drenajes !== 0,
@@ -1101,8 +1176,9 @@
     if (typeof saved.nombre === 'string') state.nombre = saved.nombre;
     if (saved.peso) state.peso = saved.peso;
     if (saved.phpPlan !== undefined && saved.phpPlan !== null && Number(saved.phpPlan) in PLAN_VOLUMES) state.phpPlan = Number(saved.phpPlan);
-    if (saved.atbFreq) state.atbFreq = saved.atbFreq;
     if (saved.atbStartHour !== undefined) state.atbStartHour = Number(saved.atbStartHour) || 0;
+    const migratedAtbList = migrateAtbListFrom(saved);
+    if (migratedAtbList) state.atbList = migratedAtbList;
     const VALID_RATES = [0,21,42,63,84];
     if (VALID_RATES.includes(Number(saved.enteralRate))) state.enteralRate = Number(saved.enteralRate);
     if (VALID_RATES.includes(Number(saved.aguaLibreRate))) state.aguaLibreRate = Number(saved.aguaLibreRate);
@@ -1113,32 +1189,44 @@
       if (saved.baseline.prev) Object.assign(state.baseline.prev, saved.baseline.prev);
     }
     if (Array.isArray(saved.blocks) && saved.blocks.length === 4){
-      state.blocks = saved.blocks.map(normalizeBlock);
+      const atbIds = state.atbList.map(a=>a.id);
+      state.blocks = saved.blocks.map(b=>normalizeBlock(b, atbIds));
       _blocksRestored = true;
     }
   })();
 
   // Calcula, para cada uno de los 4 cuadrantes, si le corresponde una dosis de
-  // ATB — asumiendo que el ATB se administra a horarios fijos del reloj que son
-  // múltiplos de la frecuencia (p. ej. cada 8 hs -> 8, 16, 24 hs), y que el
-  // cuadrante "6 hs" arranca en atbStartHour (hora real del reloj).
-  function computeAtbPattern(freq, startHour){
+  // este antibiótico — asumiendo que se administra a horarios fijos del reloj
+  // cada "freq" horas a partir de "atbHour" (p. ej. freq=8, atbHour=10 -> 10,
+  // 18, 02 hs), y que el cuadrante "6 hs" del plan arranca en turnoStart
+  // (hora real del reloj, la del plan, no la del antibiótico).
+  function computeAtbPattern(freq, atbHour, turnoStart){
     const n = Number(freq);
     if (freq === 'none' || !n) return [false,false,false,false];
-    const start = ((Number(startHour)||0) % 24 + 24) % 24;
+    const base = ((Number(atbHour)||0) % n + n) % n;
+    const start = ((Number(turnoStart)||0) % 24 + 24) % 24;
     return [0,1,2,3].map(i=>{
       for (let e = 6*i + 1; e <= 6*(i+1); e++){
         const h = (start + e) % 24;
-        if (h % n === 0) return true;
+        if (h % n === base) return true;
       }
       return false;
     });
   }
-  if (!_blocksRestored) applyAtbDefaults(state.atbFreq);
-  function applyAtbDefaults(freq){
-    const pattern = computeAtbPattern(freq, state.atbStartHour);
-    state.blocks.forEach((b,i)=> b.atb = pattern[i]);
+  // Recalcula el patrón tildado de UN antibiótico en los 4 cuadrantes (se usa
+  // cuando cambia su frecuencia u horario, o al agregarlo).
+  function applyAtbDefaultsForId(id){
+    const cfg = state.atbList.find(a=>a.id===id);
+    if (!cfg) return;
+    const pattern = computeAtbPattern(cfg.freq, cfg.startHour, state.atbStartHour);
+    state.blocks.forEach((b,i)=>{ b.atb[id] = pattern[i]; });
   }
+  // Recalcula el patrón de TODOS los antibióticos configurados (se usa cuando
+  // cambia la hora real de inicio del plan, o al restaurar sin datos guardados).
+  function applyAllAtbDefaults(){
+    state.atbList.forEach(cfg=> applyAtbDefaultsForId(cfg.id));
+  }
+  if (!_blocksRestored) applyAllAtbDefaults();
 
   const nf = new Intl.NumberFormat('es-AR');
   function fmt(n){ return nf.format(Math.round(n)); }
@@ -1181,22 +1269,6 @@
       row.dataset.side = side;
       row.dataset.type = 'auto';
       row.appendChild(auto);
-    } else if (field.type === 'atb'){
-      const wrap = document.createElement('span');
-      wrap.className = 'atb-inline';
-      const cb = document.createElement('input');
-      cb.type = 'checkbox';
-      cb.dataset.side = side;
-      cb.dataset.key = field.key;
-      cb.dataset.type = 'atbCheckbox';
-      const dose = document.createElement('span');
-      dose.className = 'atb-dose';
-      dose.dataset.role = 'atbDoseLabel';
-      wrap.appendChild(cb);
-      wrap.appendChild(dose);
-      row.appendChild(wrap);
-      row.dataset.side = side;
-      row.dataset.type = 'atbRow';
     } else if (field.type === 'dose'){
       const wrap = document.createElement('span');
       wrap.className = 'atb-inline';
@@ -1237,6 +1309,60 @@
       row.dataset.type = 'inputRow';
     }
     return row;
+  }
+
+  // Etiqueta a mostrar para un antibiótico: su nombre si lo cargaron, o
+  // "ATB N" según su posición en la lista.
+  function atbLabel(cfg, idx){
+    return (cfg.nombre && cfg.nombre.trim()) ? cfg.nombre.trim() : ('ATB ' + (idx+1));
+  }
+
+  // Subfila de un antibiótico puntual dentro del grupo "Antibióticos (ATB)"
+  // de un cuadrante: checkbox + dosis (100 ml si está tildado).
+  function buildAtbSubrow(cfg, idx){
+    const row = document.createElement('div');
+    row.className = 'row subrow';
+    row.dataset.type = 'atbItemRow';
+    row.dataset.atbId = cfg.id;
+    const label = document.createElement('span');
+    label.className = 'rlabel';
+    label.dataset.role = 'atbItemLabel';
+    label.textContent = '↳ ' + atbLabel(cfg, idx) + ':';
+    row.appendChild(label);
+    const wrap = document.createElement('span');
+    wrap.className = 'atb-inline';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.dataset.type = 'atbCheckbox';
+    cb.dataset.atbId = cfg.id;
+    const dose = document.createElement('span');
+    dose.className = 'atb-dose';
+    dose.dataset.role = 'atbItemDose';
+    wrap.appendChild(cb);
+    wrap.appendChild(dose);
+    row.appendChild(wrap);
+    return row;
+  }
+
+  // Sincroniza las subfilas de antibióticos de un panel con state.atbList:
+  // agrega las que falten, saca las que ya no existen y actualiza etiquetas
+  // y orden (se llama en cada recalcAll, igual que los campos opcionales).
+  function syncAtbSubrowsForPanel(panel){
+    const wrap = panel.querySelector('[data-role="atbSubrows"]');
+    if (!wrap) return;
+    const validIds = new Set(state.atbList.map(a=>a.id));
+    Array.from(wrap.children).forEach(row=>{
+      if (!validIds.has(row.dataset.atbId)) row.remove();
+    });
+    state.atbList.forEach((cfg, idx)=>{
+      let row = wrap.querySelector(`[data-atb-id="${cfg.id}"]`);
+      if (!row){
+        row = buildAtbSubrow(cfg, idx);
+      } else {
+        row.querySelector('[data-role="atbItemLabel"]').textContent = '↳ ' + atbLabel(cfg, idx) + ':';
+      }
+      wrap.appendChild(row); // (re)ubica al final, en el orden de state.atbList
+    });
   }
 
   function buildBreakdownRow(field){
@@ -1355,8 +1481,27 @@
     const ingRowsWrap = document.createElement('div');
     ingRowsWrap.dataset.role = 'ingRows';
     ING_FIELDS.forEach(f=>{
+      if (f.type === 'atbGroup'){
+        const totalRow = document.createElement('div');
+        totalRow.className = 'row';
+        totalRow.dataset.type = 'atbTotalRow';
+        const totalLabel = document.createElement('span');
+        totalLabel.className = 'rlabel';
+        totalLabel.textContent = f.label + ':';
+        totalRow.appendChild(totalLabel);
+        const totalVal = document.createElement('span');
+        totalVal.className = 'rauto';
+        totalVal.dataset.role = 'atbTotalValue';
+        totalRow.appendChild(totalVal);
+        ingRowsWrap.appendChild(totalRow);
+        const subrowsWrap = document.createElement('div');
+        subrowsWrap.dataset.role = 'atbSubrows';
+        ingRowsWrap.appendChild(subrowsWrap);
+        ingRowsWrap.appendChild(buildBreakdownRow(f));
+        return;
+      }
       ingRowsWrap.appendChild(buildRow(f,'ing'));
-      if (f.type==='input' || f.type==='atb' || f.type==='dose') ingRowsWrap.appendChild(buildBreakdownRow(f));
+      if (f.type==='input' || f.type==='dose') ingRowsWrap.appendChild(buildBreakdownRow(f));
     });
     colIng.appendChild(ingRowsWrap);
     colIng.appendChild(buildAddControl('ing'));
@@ -1411,7 +1556,10 @@
   }
 
   function atbDeltaFor(i){
-    return state.blocks[i].atb ? ATB_DOSE : 0;
+    const block = state.blocks[i];
+    let sum = 0;
+    state.atbList.forEach(cfg=>{ if (block.atb[cfg.id]) sum += ATB_DOSE; });
+    return sum;
   }
   function atbCumulative(uptoIndex){
     const start = getStartIndex();
@@ -1607,6 +1755,7 @@
     for (let i=0;i<4;i++){
       const panel = quartersEl.children[i];
       syncOptionalRowsForPanel(panel);
+      syncAtbSubrowsForPanel(panel);
       const q = computeQuarter(i);
       const block = state.blocks[i];
       const hourLabel = panel.querySelector('[data-role="hourLabel"]');
@@ -1646,12 +1795,16 @@
           box.textContent = fmt(q.auto[key]) + ' ml';
         });
 
-        // atb row
-        const atbRow = panel.querySelector('[data-type="atbRow"]');
-        const atbCb = atbRow.querySelector('input[type=checkbox]');
-        atbCb.checked = block.atb;
-        const atbDoseLabel = atbRow.querySelector('[data-role="atbDoseLabel"]');
-        atbDoseLabel.textContent = block.atb ? (fmt(ATB_DOSE) + ' ml') : '— ml';
+        // grupo de antibióticos: total del cuadrante + una subfila por cada uno
+        const atbTotalValueEl = panel.querySelector('[data-role="atbTotalValue"]');
+        if (atbTotalValueEl) atbTotalValueEl.textContent = fmt(atbDeltaFor(i)) + ' ml';
+        panel.querySelectorAll('[data-type="atbItemRow"]').forEach(row=>{
+          const id = row.dataset.atbId;
+          const cb = row.querySelector('input[type=checkbox]');
+          cb.checked = !!block.atb[id];
+          const doseLabel = row.querySelector('[data-role="atbItemDose"]');
+          doseLabel.textContent = block.atb[id] ? (fmt(ATB_DOSE) + ' ml') : '— ml';
+        });
 
         // dose rows (alim. enteral / agua libre)
         panel.querySelectorAll('[data-type="doseRow"]').forEach(row=>{
@@ -1794,14 +1947,112 @@
     state.phpPlan = Number(e.target.value);
     recalcAll();
   });
-  document.getElementById('atbFreq').addEventListener('change', e=>{
-    state.atbFreq = e.target.value;
-    applyAtbDefaults(state.atbFreq);
-    recalcAll();
-  });
   document.getElementById('atbStartHour').addEventListener('change', e=>{
     state.atbStartHour = Number(e.target.value) || 0;
-    applyAtbDefaults(state.atbFreq);
+    applyAllAtbDefaults();
+    recalcAll();
+  });
+
+  // ---------- lista dinámica de antibióticos ----------
+  const atbListEl = document.getElementById('atbList');
+
+  function renderAtbConfig(){
+    atbListEl.innerHTML = '';
+    state.atbList.forEach((cfg, idx)=>{
+      const item = document.createElement('div');
+      item.className = 'atb-item';
+      item.dataset.atbId = cfg.id;
+
+      const fieldNombre = document.createElement('div');
+      fieldNombre.className = 'field field-atb-nombre';
+      const labelNombre = document.createElement('label');
+      labelNombre.textContent = 'Antibiótico';
+      fieldNombre.appendChild(labelNombre);
+      const inpNombre = document.createElement('input');
+      inpNombre.type = 'text';
+      inpNombre.placeholder = 'ATB ' + (idx+1);
+      inpNombre.value = cfg.nombre || '';
+      inpNombre.dataset.atbField = 'nombre';
+      fieldNombre.appendChild(inpNombre);
+      item.appendChild(fieldNombre);
+
+      const fieldFreq = document.createElement('div');
+      fieldFreq.className = 'field';
+      const labelFreq = document.createElement('label');
+      labelFreq.textContent = 'Frecuencia';
+      fieldFreq.appendChild(labelFreq);
+      const selFreq = document.createElement('select');
+      selFreq.dataset.atbField = 'freq';
+      selFreq.innerHTML = ATB_FREQ_OPTIONS.map(o=>`<option value="${o.value}"${o.value===cfg.freq?' selected':''}>${o.label}</option>`).join('');
+      fieldFreq.appendChild(selFreq);
+      item.appendChild(fieldFreq);
+
+      const fieldHour = document.createElement('div');
+      fieldHour.className = 'field';
+      const labelHour = document.createElement('label');
+      labelHour.textContent = 'Horario de administración';
+      fieldHour.appendChild(labelHour);
+      const selHour = document.createElement('select');
+      selHour.dataset.atbField = 'startHour';
+      selHour.innerHTML = ATB_HOUR_OPTIONS.map(o=>`<option value="${o.value}"${Number(o.value)===Number(cfg.startHour)?' selected':''}>${o.label}</option>`).join('');
+      fieldHour.appendChild(selHour);
+      item.appendChild(fieldHour);
+
+      if (state.atbList.length > 1){
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'atb-item-remove';
+        removeBtn.dataset.role = 'removeAtb';
+        removeBtn.title = 'Quitar este antibiótico';
+        removeBtn.textContent = '×';
+        item.appendChild(removeBtn);
+      }
+
+      atbListEl.appendChild(item);
+    });
+  }
+
+  atbListEl.addEventListener('input', e=>{
+    const t = e.target;
+    if (t.dataset.atbField === 'nombre'){
+      const item = t.closest('.atb-item');
+      const cfg = state.atbList.find(a=>a.id===item.dataset.atbId);
+      if (cfg){ cfg.nombre = t.value; recalcAll(); }
+    }
+  });
+  atbListEl.addEventListener('change', e=>{
+    const t = e.target;
+    const item = t.closest('.atb-item');
+    if (!item) return;
+    const cfg = state.atbList.find(a=>a.id===item.dataset.atbId);
+    if (!cfg) return;
+    if (t.dataset.atbField === 'freq'){
+      cfg.freq = t.value;
+      applyAtbDefaultsForId(cfg.id);
+      recalcAll();
+    } else if (t.dataset.atbField === 'startHour'){
+      cfg.startHour = Number(t.value) || 0;
+      applyAtbDefaultsForId(cfg.id);
+      recalcAll();
+    }
+  });
+  atbListEl.addEventListener('click', e=>{
+    const btn = e.target.closest('[data-role="removeAtb"]');
+    if (!btn) return;
+    if (state.atbList.length <= 1) return;
+    const item = btn.closest('.atb-item');
+    const id = item.dataset.atbId;
+    if (!confirm('¿Quitar este antibiótico? Se borran sus casilleros tildados en los 4 cuadrantes.')) return;
+    state.atbList = state.atbList.filter(a=>a.id !== id);
+    state.blocks.forEach(b=>{ delete b.atb[id]; });
+    renderAtbConfig();
+    recalcAll();
+  });
+  document.getElementById('addAtbBtn').addEventListener('click', ()=>{
+    const id = newAtbId();
+    state.atbList.push({ id, nombre:'', freq:'12', startHour:0 });
+    applyAtbDefaultsForId(id);
+    renderAtbConfig();
     recalcAll();
   });
   document.getElementById('enteralRate').addEventListener('change', e=>{
@@ -1871,7 +2122,7 @@
     if (t.dataset.type === 'atbCheckbox'){
       const panel = t.closest('.panel');
       const q = Number(panel.dataset.q);
-      state.blocks[q].atb = t.checked;
+      state.blocks[q].atb[t.dataset.atbId] = t.checked;
       recalcAll();
     }
     if (t.dataset.type === 'doseCheckbox'){
@@ -1933,7 +2184,7 @@
     state.cama = '';
     state.peso = 60;
     state.phpPlan = 21;
-    state.atbFreq = '12';
+    state.atbList = [ { id:'atb1', nombre:'', freq:'12', startHour:0 } ];
     state.atbStartHour = 0;
     state.enteralRate = 0;
     state.aguaLibreRate = 0;
@@ -1943,10 +2194,10 @@
       vo:'0', alim:0, transf:0, exp:0,
       enteral:false, aguaLibre:false,
       diuresis:0, catarsis:0, vomitos:0, drenajes:0,
-      atb:false, confirmed:false,
+      atb:{}, confirmed:false,
       opt:{ transf:false, drenajes:false, vomitos:false }
     }));
-    applyAtbDefaults('12');
+    applyAllAtbDefaults();
     syncFormFromState();
     quartersEl.querySelectorAll('[data-role="confirm"]').forEach(cb=>cb.checked=false);
     recalcAll();
@@ -2024,7 +2275,12 @@
     } else if (btn.dataset.act === 'cargar'){
       if (!confirm('¿Cargar este registro? Se reemplazan los datos que estás cargando ahora (podés guardarlos antes si querés conservarlos).')) return;
       Object.assign(state, JSON.parse(JSON.stringify(rec.snapshot)));
-      if (Array.isArray(state.blocks)) state.blocks = state.blocks.map(normalizeBlock);
+      const migratedAtbList = migrateAtbListFrom(state);
+      if (migratedAtbList) state.atbList = migratedAtbList;
+      if (Array.isArray(state.blocks)){
+        const atbIds = state.atbList.map(a=>a.id);
+        state.blocks = state.blocks.map(b=>normalizeBlock(b, atbIds));
+      }
       syncFormFromState();
       recalcAll();
     } else if (btn.dataset.act === 'borrar'){
@@ -2078,8 +2334,8 @@
     document.getElementById('cama').value = state.cama || '';
     document.getElementById('peso').value = state.peso;
     document.getElementById('phpPlan').value = state.phpPlan;
-    document.getElementById('atbFreq').value = state.atbFreq;
     document.getElementById('atbStartHour').value = state.atbStartHour;
+    renderAtbConfig();
     document.getElementById('enteralRate').value = state.enteralRate;
     document.getElementById('aguaLibreRate').value = state.aguaLibreRate;
     document.getElementById('bhGoal').value = state.bhGoal;
