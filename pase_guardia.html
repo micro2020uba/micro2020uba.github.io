@@ -3346,14 +3346,16 @@ document.body.addEventListener('click', (e)=>{
   } else {
     checklistConfig.custom[sysKey][listKey].push({ id, text, antagonistas:[] });
   }
-  // El ítem nuevo queda tildado en la plantilla de signos normales por defecto
-  // ("Paciente estable / en observación"), para que esa plantilla se vaya
-  // completando con todo lo nuevo que se agrega — aunque haya nacido como un
-  // signo puntual de un paciente en particular. Si se creó junto con su
-  // antagónimo, solo se tilda el lado que se escribió acá; el antagónimo queda
-  // sin tildar (no tiene sentido que ambos lados de un antagonista arranquen
-  // marcados a la vez).
-  setDefaultChecked(sysKey, kind, id, true);
+  // Solo un signo NORMAL nuevo queda tildado de entrada en la plantilla de
+  // signos normales por defecto ("Paciente estable / en observación"), para
+  // que esa plantilla se vaya completando. Una ALTERACIÓN nueva (kind='alt')
+  // no se tilda sola ahí: tildar de entrada un hallazgo patológico en la
+  // plantilla del paciente sano generaba redacciones contradictorias/con
+  // frases sueltas (el hallazgo patológico nuevo aparecía a la vez que el
+  // signo normal ya existente). Las alteraciones nuevas quedan igual
+  // disponibles en el checklist, listas para tildarlas a mano en el paciente
+  // que corresponda.
+  if(kind === 'normal') setDefaultChecked(sysKey, kind, id, true);
   input.value = '';
   if(antagInput) antagInput.value = '';
   saveCustomLocal();
@@ -3371,9 +3373,9 @@ document.body.addEventListener('change', (e)=>{
   const listKey = kind === 'normal' ? 'normal' : 'alteraciones';
   const idNuevo = 'custom_'+Date.now();
   checklistConfig.custom[sysKey][listKey].push({ id:idNuevo, text: text, antagonistas:[] });
-  // Igual que al agregar un ítem a mano: queda tildado en la plantilla por
-  // defecto para que se sume al vocabulario "de base".
-  setDefaultChecked(sysKey, kind, idNuevo, true);
+  // Igual que al agregar un ítem a mano: solo se tilda solo de entrada si es
+  // un signo NORMAL (ver nota en el listener de "addCustomBtn").
+  if(kind === 'normal') setDefaultChecked(sysKey, kind, idNuevo, true);
   saveCustomLocal();
   renderEvolBuilder(getSelected());
 });
