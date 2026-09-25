@@ -807,68 +807,47 @@ onAuthStateChanged(auth, (user)=>{
   }
 
   /* ============================= Render ============================= */
-  // renderTable() reconstruye TODA la tabla (tbody.innerHTML = ...), así que
-  // si en ese momento el usuario está escribiendo en un campo contenteditable,
-  // ese nodo se destruye y se crea uno nuevo: se pierde el foco y, en el
-  // celular, eso cierra el teclado en pleno tipeo. Antes esto pasaba cada vez
-  // que render() se disparaba por un cambio de OTRA cama (por ejemplo, un
-  // onSnapshot de la nube mientras se escribe en otra fila). Para evitarlo,
-  // se guarda qué campo tenía el foco y en qué posición estaba el cursor
-  // antes de redibujar, y se restaura después.
-  function captureFocus(){
+  // renderTable() reconstruye TODA la tabla (tbody.innerHTML = ...). Si en
+  // ese momento el usuario está escribiendo en un campo contenteditable, ese
+  // nodo se destruye y se crea uno nuevo. Antes esto se intentó arreglar
+  // volviendo a enfocar el campo nuevo a mano, pero en el celular eso hace
+  // que el teclado lo trate como un campo "distinto" y le resetea el modo
+  // (por ejemplo, vuelve de símbolos a letras básicas) aunque sea, en los
+  // hechos, el mismo campo. La solución real es no tocar el DOM de la tabla
+  // mientras se está escribiendo: si llega un render() (por ejemplo, por un
+  // onSnapshot de la nube mientras se edita otra cama) y hay foco en algún
+  // campo editable de la tabla, se pospone; recién se aplica cuando el
+  // usuario sale de ese campo. El resumen (que no tiene campos editables) sí
+  // se actualiza al toque, sin esperar.
+  let renderTableQueued = false;
+  function isEditingTabla(){
     const el = document.activeElement;
-    if(!el || !el.isContentEditable) return null;
-    const tr = el.closest('tr[data-bed]');
-    if(!tr) return null;
-    let selector = null;
-    if(el.dataset.field) selector = '[data-field="'+el.dataset.field+'"]';
-    else if(el.dataset.datos) selector = '[data-datos="'+CSS.escape(el.dataset.datos)+'"]';
-    else if(el.dataset.hgt) selector = '[data-hgt="'+CSS.escape(el.dataset.hgt)+'"]';
-    else if(el.hasAttribute('data-hgt-legacy')) selector = '[data-hgt-legacy]';
-    if(!selector) return null;
-
-    let offset = 0;
-    const sel = window.getSelection();
-    if(sel && sel.rangeCount){
-      try{
-        const range = sel.getRangeAt(0);
-        const preRange = range.cloneRange();
-        preRange.selectNodeContents(el);
-        preRange.setEnd(range.endContainer, range.endOffset);
-        offset = preRange.toString().length;
-      }catch(e){}
-    }
-    return {bed: tr.dataset.bed, selector, offset};
-  }
-
-  function restoreFocus(saved){
-    if(!saved) return;
-    const tr = document.querySelector('tr[data-bed="'+saved.bed+'"]');
-    if(!tr) return;
-    const el = tr.querySelector(saved.selector);
-    if(!el) return;
-    el.focus();
-    try{
-      let node = el.firstChild;
-      if(!node){ node = document.createTextNode(''); el.appendChild(node); }
-      const len = node.textContent.length;
-      const pos = Math.max(0, Math.min(saved.offset, len));
-      const range = document.createRange();
-      range.setStart(node, pos);
-      range.collapse(true);
-      const sel = window.getSelection();
-      sel.removeAllRanges();
-      sel.addRange(range);
-    }catch(e){}
+    return !!(el && el.isContentEditable && el.closest('#tbody'));
   }
 
   function render(){
-    const saved = captureFocus();
-    renderTable();
     renderSummary();
     renderSummaryByBed();
-    restoreFocus(saved);
+    if(isEditingTabla()){
+      renderTableQueued = true;
+      return;
+    }
+    renderTable();
   }
+
+  function flushRenderTableSiHaceFalta(){
+    if(!renderTableQueued) return;
+    if(isEditingTabla()) return; // se movió a otro campo editable: sigue esperando
+    renderTableQueued = false;
+    renderTable();
+  }
+  // 'focusout' (a diferencia de 'blur') sí burbujea, así que un solo listener
+  // en el tbody alcanza aunque su contenido se reemplace en cada render.
+  document.getElementById('tbody').addEventListener('focusout', function(){
+    // Pequeño delay: cuando se pasa de un campo editable a otro (tab, o tocar
+    // otro campo), el foco nuevo se asienta recién después de este evento.
+    setTimeout(flushRenderTableSiHaceFalta, 30);
+  });
 
   function renderTable(){
     const tbody = document.getElementById('tbody');
