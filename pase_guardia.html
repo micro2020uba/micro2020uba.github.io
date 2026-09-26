@@ -4367,7 +4367,7 @@ function textoNoVacio(v){
   return !!String(v==null?'':v).trim();
 }
 
-function fusionarEnFicha(target, origen){
+function fusionarEnFicha(target, origen, fusionarPendientesGuardia){
   ['nombre','sexo','edad','dni','fi','mc','ant','cult','ic','evol','lastEstado'].forEach(k=>{
     if(!textoNoVacio(target[k]) && textoNoVacio(origen[k])) target[k] = origen[k];
   });
@@ -4381,9 +4381,22 @@ function fusionarEnFicha(target, origen){
   });
   if(!target.evolCount && origen.evolCount) target.evolCount = origen.evolCount;
   if(!target.lastChecklist && origen.lastChecklist) target.lastChecklist = origen.lastChecklist;
-  if((!Array.isArray(target.manejo) || !target.manejo.length) && Array.isArray(origen.manejo)) target.manejo = origen.manejo;
-  if(!target.datos || !Object.keys(target.datos).length){ if(origen.datos && typeof origen.datos==='object') target.datos = origen.datos; }
-  if(!target.hechos || !Object.keys(target.hechos).length){ if(origen.hechos && typeof origen.hechos==='object') target.hechos = origen.hechos; }
+  // manejo/datos/hechos son los "pendientes de guardia" que administra
+  // guardias.html en el documento C{cama} de una vez que ese documento ya
+  // existe como tal. Si esta unificación se reintenta más de una vez (por
+  // ejemplo porque una corrida anterior falló a mitad de camino, algo que
+  // pasaba antes de este arreglo), NO hay que volver a rellenar estos tres
+  // campos desde una fuente vieja aunque en ese momento estén vacíos: un
+  // "vacío" acá puede perfectamente significar que alguien ya resolvió y
+  // borró esos pendientes en guardias.html, no que falte completarlos.
+  // Por eso solo se fusionan la primera vez que se crea el documento nuevo
+  // de esa cama (fusionarPendientesGuardia en false para cualquier código
+  // que ya tuviera su propio documento C{cama} antes de esta corrida).
+  if(fusionarPendientesGuardia){
+    if((!Array.isArray(target.manejo) || !target.manejo.length) && Array.isArray(origen.manejo)) target.manejo = origen.manejo;
+    if(!target.datos || !Object.keys(target.datos).length){ if(origen.datos && typeof origen.datos==='object') target.datos = origen.datos; }
+    if(!target.hechos || !Object.keys(target.hechos).length){ if(origen.hechos && typeof origen.hechos==='object') target.hechos = origen.hechos; }
+  }
   return target;
 }
 
@@ -4398,6 +4411,10 @@ function intentarUnificacion(){
 
   const porCama = {};
   patients.forEach(p=>{ if(/^C\d+$/.test(p.id)) porCama[p.id] = p; });
+  // Códigos que YA tenían su propio documento C{cama} antes de esta corrida:
+  // para estos, nunca hay que rellenar manejo/datos/hechos desde una fuente
+  // vieja (ver el comentario dentro de fusionarEnFicha).
+  const yaExistiaComoNuevo = new Set(Object.keys(porCama));
 
   const borrarPorCama = {};
   function objetivo(code){
@@ -4418,7 +4435,7 @@ function intentarUnificacion(){
     if(!code) return; // carpeta nueva sin cama: se deja tal cual
     const t = objetivo(code);
     if(t === p) return;
-    fusionarEnFicha(t, p);
+    fusionarEnFicha(t, p, !yaExistiaComoNuevo.has(code));
     borrarPorCama[code].push(p.id);
     patients = patients.filter(x=>x!==p);
     if(selectedId === p.id) selectedId = t.id;
@@ -4428,7 +4445,7 @@ function intentarUnificacion(){
   legacyNumericDocs.forEach(r=>{
     const code = 'C' + r.id;
     const t = objetivo(code);
-    fusionarEnFicha(t, r.data || {});
+    fusionarEnFicha(t, r.data || {}, !yaExistiaComoNuevo.has(code));
     borrarPorCama[code].push(r.id);
   });
 
@@ -4437,7 +4454,7 @@ function intentarUnificacion(){
     const code = camaCode(item && item.cama);
     if(!code) return;
     const t = objetivo(code);
-    fusionarEnFicha(t, { nombre:item.nombre, dni:item.dni, edad:item.edad, mi:item.mi });
+    fusionarEnFicha(t, { nombre:item.nombre, dni:item.dni, edad:item.edad, mi:item.mi }, !yaExistiaComoNuevo.has(code));
   });
 
   const codes = Object.keys(borrarPorCama);
