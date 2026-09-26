@@ -261,6 +261,7 @@
   }
   .atb-item .field{min-width:130px; margin-bottom:0;}
   .atb-item .field-atb-nombre input{width:150px;}
+  .atb-item .field-atb-dilucion input{width:80px;}
   .atb-item-remove{
     flex:0 0 auto;
     background:transparent;
@@ -835,7 +836,7 @@
     <div class="atb-hint">Es la hora del reloj a la que arranca tu cuadrante "6 hs" (por ejemplo, si tu primer bloque cargado va de 6 a 12, poné 06:00) — se usa solo para mostrar el horario de reloj de cada cuadrante.</div>
     <div class="atb-list" id="atbList"></div>
     <button type="button" class="btn small ghost atb-add-btn" id="addAtbBtn">+ Agregar antibiótico</button>
-    <div class="atb-hint">Cada antibiótico se diluye en 100 ml de SF y tiene su propia frecuencia y horario de administración — por ejemplo, uno cada 6 hs y otro cada 8 o 12 hs, cada uno a su horario. Con esos datos la calculadora tilda sola los cuadrantes que corresponden a cada antibiótico; tildá o destildá cualquier casillero si el horario real difiere. Cuando coinciden dos o más en el mismo cuadrante, se suman los 100 ml de cada uno.</div>
+    <div class="atb-hint">Cada antibiótico tiene su propia frecuencia, horario de administración y dilución (por defecto 100 ml, pero podés cambiarla si ese antibiótico se diluye en más). Por ejemplo, uno cada 6 hs y otro cada 8 o 12 hs, cada uno a su horario. Con esos datos la calculadora tilda sola los cuadrantes que corresponden a cada antibiótico; tildá o destildá cualquier casillero si el horario real difiere. Cuando coinciden dos o más en el mismo cuadrante, se suman los ml de dilución de cada uno.</div>
   </div>
 
   <div class="atb-card" id="doseCard">
@@ -969,7 +970,7 @@
       return `${fmtClockHour(from,false)}-${fmtClockHour(to,true)}hs`;
     });
   }
-  const ATB_DOSE = 100; // los ATB siempre se disuelven en 100 ml — constante, no editable
+  const ATB_DOSE_DEFAULT = 100; // dilución por defecto para un antibiótico nuevo (editable por antibiótico)
 
   // Ritmos de goteo disponibles para alim. enteral y agua libre (ml/h -> gotas/min)
   const DOSE_RATES = {21:7, 42:14, 63:21, 84:28};
@@ -1015,8 +1016,9 @@
     peso: 60,
     phpPlan: 21,
     // Uno o más antibióticos, cada uno con su propia frecuencia y horario de
-    // administración; todos se diluyen en 100 ml SF (ATB_DOSE, más abajo).
-    atbList: [ { id:'atb1', nombre:'', freq:'12', startHour:0 } ],
+    // administración; cada uno se diluye en la cantidad de ml que se indique
+    // (por defecto 100, ver dilucion en cada entrada de atbList).
+    atbList: [ { id:'atb1', nombre:'', freq:'12', startHour:0, dilucion:ATB_DOSE_DEFAULT } ],
     atbStartHour: 0, // hora real de inicio del PLAN (para el rótulo de cada cuadrante)
     enteralRate: 0,
     aguaLibreRate: 0,
@@ -1047,12 +1049,13 @@
         id: (a && a.id) ? String(a.id) : ('atb'+(idx+1)),
         nombre: (a && typeof a.nombre === 'string') ? a.nombre : '',
         freq: (a && validFreq.includes(String(a.freq))) ? String(a.freq) : '12',
-        startHour: (a && a.startHour!==undefined) ? (((Number(a.startHour)||0)%24+24)%24) : 0
+        startHour: (a && a.startHour!==undefined) ? (((Number(a.startHour)||0)%24+24)%24) : 0,
+        dilucion: (a && Number(a.dilucion) > 0) ? Number(a.dilucion) : ATB_DOSE_DEFAULT
       }));
     }
     if (obj.atbFreq){
       // formato viejo: una sola frecuencia global -> un antibiótico único
-      return [{ id:'atb1', nombre:'', freq:String(obj.atbFreq), startHour: Number(obj.atbStartHour)||0 }];
+      return [{ id:'atb1', nombre:'', freq:String(obj.atbFreq), startHour: Number(obj.atbStartHour)||0, dilucion: ATB_DOSE_DEFAULT }];
     }
     return null;
   }
@@ -1558,7 +1561,7 @@
   function atbDeltaFor(i){
     const block = state.blocks[i];
     let sum = 0;
-    state.atbList.forEach(cfg=>{ if (block.atb[cfg.id]) sum += ATB_DOSE; });
+    state.atbList.forEach(cfg=>{ if (block.atb[cfg.id]) sum += (Number(cfg.dilucion) || ATB_DOSE_DEFAULT); });
     return sum;
   }
   function atbCumulative(uptoIndex){
@@ -1800,10 +1803,12 @@
         if (atbTotalValueEl) atbTotalValueEl.textContent = fmt(atbDeltaFor(i)) + ' ml';
         panel.querySelectorAll('[data-type="atbItemRow"]').forEach(row=>{
           const id = row.dataset.atbId;
+          const cfg = state.atbList.find(a=>a.id===id);
+          const dilucion = cfg ? (Number(cfg.dilucion) || ATB_DOSE_DEFAULT) : ATB_DOSE_DEFAULT;
           const cb = row.querySelector('input[type=checkbox]');
           cb.checked = !!block.atb[id];
           const doseLabel = row.querySelector('[data-role="atbItemDose"]');
-          doseLabel.textContent = block.atb[id] ? (fmt(ATB_DOSE) + ' ml') : '— ml';
+          doseLabel.textContent = block.atb[id] ? (fmt(dilucion) + ' ml') : '— ml';
         });
 
         // dose rows (alim. enteral / agua libre)
@@ -1998,6 +2003,20 @@
       fieldHour.appendChild(selHour);
       item.appendChild(fieldHour);
 
+      const fieldDilucion = document.createElement('div');
+      fieldDilucion.className = 'field field-atb-dilucion';
+      const labelDilucion = document.createElement('label');
+      labelDilucion.textContent = 'Dilución (ml)';
+      fieldDilucion.appendChild(labelDilucion);
+      const inpDilucion = document.createElement('input');
+      inpDilucion.type = 'number';
+      inpDilucion.min = '1';
+      inpDilucion.step = '1';
+      inpDilucion.value = Number(cfg.dilucion) || ATB_DOSE_DEFAULT;
+      inpDilucion.dataset.atbField = 'dilucion';
+      fieldDilucion.appendChild(inpDilucion);
+      item.appendChild(fieldDilucion);
+
       if (state.atbList.length > 1){
         const removeBtn = document.createElement('button');
         removeBtn.type = 'button';
@@ -2014,10 +2033,17 @@
 
   atbListEl.addEventListener('input', e=>{
     const t = e.target;
+    const item = t.closest('.atb-item');
+    if (!item) return;
+    const cfg = state.atbList.find(a=>a.id===item.dataset.atbId);
+    if (!cfg) return;
     if (t.dataset.atbField === 'nombre'){
-      const item = t.closest('.atb-item');
-      const cfg = state.atbList.find(a=>a.id===item.dataset.atbId);
-      if (cfg){ cfg.nombre = t.value; recalcAll(); }
+      cfg.nombre = t.value;
+      recalcAll();
+    } else if (t.dataset.atbField === 'dilucion'){
+      const n = Number(t.value);
+      if (n > 0) cfg.dilucion = n;
+      recalcAll();
     }
   });
   atbListEl.addEventListener('change', e=>{
@@ -2050,7 +2076,7 @@
   });
   document.getElementById('addAtbBtn').addEventListener('click', ()=>{
     const id = newAtbId();
-    state.atbList.push({ id, nombre:'', freq:'12', startHour:0 });
+    state.atbList.push({ id, nombre:'', freq:'12', startHour:0, dilucion:ATB_DOSE_DEFAULT });
     applyAtbDefaultsForId(id);
     renderAtbConfig();
     recalcAll();
@@ -2184,7 +2210,7 @@
     state.cama = '';
     state.peso = 60;
     state.phpPlan = 21;
-    state.atbList = [ { id:'atb1', nombre:'', freq:'12', startHour:0 } ];
+    state.atbList = [ { id:'atb1', nombre:'', freq:'12', startHour:0, dilucion:ATB_DOSE_DEFAULT } ];
     state.atbStartHour = 0;
     state.enteralRate = 0;
     state.aguaLibreRate = 0;
