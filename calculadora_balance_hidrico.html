@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
- Versión: 29 (25/09/2026) — soporte para múltiples antibióticos, cada uno
+ Versión: 28 (27/09/2026) — soporte para múltiples antibióticos, cada uno
  con su propia frecuencia y horario de administración (todos diluidos en
  100 ml SF).
 -->
@@ -988,7 +988,9 @@
   }));
 
   const ING_FIELDS = [
-    {key:'vo',        label:'Vía oral (VO)',          type:'input', expr:true},
+    {key:'voGroup',   label:'Vía oral (VO)',          type:'voGroup'},
+    {key:'voLiquido', label:'↳ Líquido',              type:'input', sub:true},
+    {key:'voSolido',  label:'↳ Sólido',               type:'input', sub:true},
     {key:'enteral',   label:'↳ Alim. enteral',        type:'dose', rateKey:'enteralRate', sub:true},
     {key:'aguaLibre', label:'↳ Agua libre',           type:'dose', rateKey:'aguaLibreRate', sub:true},
     {key:'php',   label:'PHP',                  type:'auto'},
@@ -1025,7 +1027,7 @@
     bhGoal: 'neutro-pos',
     baseline: { enabled:false, hourIndex:1, prev:{ vo:0, alim:0, transf:0, exp:0, atb:0, enteral:0, aguaLibre:0, diuresis:0, catarsis:0, vomitos:0, drenajes:0 } },
     blocks: [0,1,2,3].map(()=>({
-      vo:'0', alim:0, transf:0, exp:0,
+      voLiquido:0, voSolido:0, alim:0, transf:0, exp:0,
       enteral:false, aguaLibre:false,
       diuresis:0, catarsis:0, vomitos:0, drenajes:0,
       atb:{}, // { [antibioticoId]: boolean } — tildado en este cuadrante
@@ -1068,8 +1070,14 @@
   // el formato viejo (b.atb booleano) se traslada al primer antibiótico.
   function normalizeBlock(b, atbIds){
     const ids = atbIds || [];
+    const hasSplitVo = b.voLiquido !== undefined || b.voSolido !== undefined;
     const nb = {
-      vo: (b.vo===undefined || b.vo===null) ? '0' : String(b.vo),
+      // formato viejo: "vo" era un campo de texto libre (admitía "200+300").
+      // Si el bloque ya viene con voLiquido/voSolido se respeta tal cual;
+      // si no, el total viejo se vuelca entero a "Líquido" para no perder
+      // lo cargado (el usuario puede reasignar a Sólido a mano si hace falta).
+      voLiquido: hasSplitVo ? (Number(b.voLiquido)||0) : parseAmount(b.vo),
+      voSolido: hasSplitVo ? (Number(b.voSolido)||0) : 0,
       alim:Number(b.alim)||0, transf:Number(b.transf)||0, exp:Number(b.exp)||0,
       diuresis:Number(b.diuresis)||0, catarsis:Number(b.catarsis)||0,
       vomitos:Number(b.vomitos)||0, drenajes:Number(b.drenajes)||0,
@@ -1246,7 +1254,7 @@
     return sum;
   }
   function valueOf(key, block){
-    return key === 'vo' ? parseAmount(block.vo) : (Number(block[key]) || 0);
+    return key === 'vo' ? ((Number(block.voLiquido)||0) + (Number(block.voSolido)||0)) : (Number(block[key]) || 0);
   }
   function getStartIndex(){
     return state.baseline.enabled ? (Number(state.baseline.hourIndex) + 1) : 0;
@@ -1318,6 +1326,17 @@
   // "ATB N" según su posición en la lista.
   function atbLabel(cfg, idx){
     return (cfg.nombre && cfg.nombre.trim()) ? cfg.nombre.trim() : ('ATB ' + (idx+1));
+  }
+
+  // Texto entre paréntesis que muestra de qué antibióticos sale el total del
+  // cuadrante (ej. " (AMS 100 + Claritromicina 250)"), para que quede claro
+  // que el total YA los incluye y no hay que volver a sumarlos aparte.
+  function atbBreakdownText(block){
+    const parts = [];
+    state.atbList.forEach((cfg, idx)=>{
+      if (block.atb[cfg.id]) parts.push(`${atbLabel(cfg, idx)} ${fmt(Number(cfg.dilucion)||ATB_DOSE_DEFAULT)}`);
+    });
+    return parts.length ? ` (${parts.join(' + ')})` : '';
   }
 
   // Subfila de un antibiótico puntual dentro del grupo "Antibióticos (ATB)"
@@ -1484,6 +1503,25 @@
     const ingRowsWrap = document.createElement('div');
     ingRowsWrap.dataset.role = 'ingRows';
     ING_FIELDS.forEach(f=>{
+      if (f.type === 'voGroup'){
+        const totalRow = document.createElement('div');
+        totalRow.className = 'row';
+        totalRow.dataset.type = 'voTotalRow';
+        const totalLabel = document.createElement('span');
+        totalLabel.className = 'rlabel';
+        totalLabel.textContent = f.label + ':';
+        totalRow.appendChild(totalLabel);
+        const totalVal = document.createElement('span');
+        totalVal.className = 'rauto';
+        totalVal.dataset.role = 'voTotalValue';
+        totalRow.appendChild(totalVal);
+        ingRowsWrap.appendChild(totalRow);
+        const bd = document.createElement('div');
+        bd.className = 'breakdown';
+        bd.dataset.breakdownKey = 'vo';
+        ingRowsWrap.appendChild(bd);
+        return;
+      }
       if (f.type === 'atbGroup'){
         const totalRow = document.createElement('div');
         totalRow.className = 'row';
@@ -1798,9 +1836,19 @@
           box.textContent = fmt(q.auto[key]) + ' ml';
         });
 
+        // grupo de VO: total del cuadrante + desglose líquido/sólido, siempre visible
+        const voTotalValueEl = panel.querySelector('[data-role="voTotalValue"]');
+        if (voTotalValueEl){
+          const liq = Number(block.voLiquido)||0;
+          const sol = Number(block.voSolido)||0;
+          voTotalValueEl.textContent = `${fmt(liq+sol)} ml (${fmt(liq)} líq + ${fmt(sol)} sól)`;
+        }
+
         // grupo de antibióticos: total del cuadrante + una subfila por cada uno
+        // (el total ya incluye a cada tildado abajo — se aclara entre paréntesis
+        // para que no se sumen de nuevo "a mano" por error)
         const atbTotalValueEl = panel.querySelector('[data-role="atbTotalValue"]');
-        if (atbTotalValueEl) atbTotalValueEl.textContent = fmt(atbDeltaFor(i)) + ' ml';
+        if (atbTotalValueEl) atbTotalValueEl.textContent = fmt(atbDeltaFor(i)) + ' ml' + atbBreakdownText(block);
         panel.querySelectorAll('[data-type="atbItemRow"]').forEach(row=>{
           const id = row.dataset.atbId;
           const cfg = state.atbList.find(a=>a.id===id);
@@ -2217,7 +2265,7 @@
     state.bhGoal = 'neutro-pos';
     state.baseline = { enabled:false, hourIndex:1, prev:{ vo:0, alim:0, transf:0, exp:0, atb:0, enteral:0, aguaLibre:0, diuresis:0, catarsis:0, vomitos:0, drenajes:0 } };
     state.blocks = [0,1,2,3].map(()=>({
-      vo:'0', alim:0, transf:0, exp:0,
+      voLiquido:0, voSolido:0, alim:0, transf:0, exp:0,
       enteral:false, aguaLibre:false,
       diuresis:0, catarsis:0, vomitos:0, drenajes:0,
       atb:{}, confirmed:false,
