@@ -115,7 +115,7 @@
 
   <div class="tool-grid">
 
-    <!-- PASE DE GUARDIA: navega de página completa a pase_guardia.html.
+    <!-- PASE DE GUARDIA: navega de página completa a pases.html.
          El "?v=" de PASE_VERSION evita que el navegador sirva una copia
          vieja guardada en caché cuando subas cambios nuevos a ese archivo. -->
     <button type="button" class="tool-card" id="openPaseBtn">
@@ -240,7 +240,7 @@
 /* =========================================================================
    VERSIONES — CACHÉ DEL NAVEGADOR
    =========================================================================
-   Cada herramienta (pase_guardia.html, conversor-labo.html) vive en su
+   Cada herramienta (pases.html, conversor-labo.html) vive en su
    propio archivo y se actualiza subiendo SOLO ese archivo a GitHub. Para
    que el navegador no siga mostrando una copia vieja guardada en caché
    cuando subas una modificación nueva, cambiá acá abajo el número/fecha de
@@ -259,7 +259,7 @@
 /* ---- Pase de guardia: navegación de página completa ---- */
 document.getElementById('openPaseBtn').addEventListener('click', ()=>{
   try{localStorage.setItem('pwa_last','pase')}catch(e){}
-  window.location.href = 'pase_guardia.html?v=' + encodeURIComponent(PASE_VERSION);
+  window.location.href = 'pases.html?v=' + encodeURIComponent(PASE_VERSION);
 });
 
 /* ---- Guardias: navegación de página completa (sin login) ---- */
