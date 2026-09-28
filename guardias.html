@@ -9,7 +9,7 @@
      dispositivos cuando hay conexión). Colección nueva "guardia_camas"
      (un documento por cama) y "config/guardiaItems" para las opciones
      personalizadas de MANEJO. Son colecciones propias de esta herramienta,
-     separadas de "pacientes" que usa pase_guardia.html, así que no hay
+     separadas de "pacientes" que usa pases.html, así que no hay
      interferencia entre las dos apps aunque compartan el mismo proyecto de
      Firebase.
    - Esta herramienta pide login con Firebase Authentication, igual que
@@ -158,15 +158,21 @@
     overflow-y:auto;background:#ffffff;border:2px solid var(--ink);border-radius:4px;box-shadow:3px 5px 0 rgba(0,0,0,.15);padding:10px;
   }
   .manejo-pop.open{display:block;}
+  /* Barra "fantasma" (altura 0) que se queda pegada arriba del área con scroll
+     del popover, para que el botón de cerrar la acompañe siempre visible en
+     vez de desplazarse junto con las opciones. */
+  .manejo-pop .pop-close-bar{position:sticky;top:0;height:0;z-index:2;}
   .manejo-pop .opt{display:flex;align-items:center;gap:7px;padding:4px 2px;font-size:12px;border-radius:2px;}
   .manejo-pop .opt:hover{background:var(--field-bg);}
   .manejo-pop .opt input{margin:0;}
   .manejo-pop .opt label{flex:1;cursor:pointer;}
+  .manejo-pop .opt .opt-del{background:none;border:none;color:#8a3324;font-weight:700;font-size:12px;cursor:pointer;padding:0 4px;line-height:1;border-radius:50%;}
+  .manejo-pop .opt .opt-del:hover{color:#fff;background:#8a3324;}
   .manejo-pop .sep{border-top:1px dashed var(--line-soft);margin:7px 0;}
   .manejo-pop .add-row{display:flex;gap:5px;}
   .manejo-pop .add-row input{flex:1;font-size:11.5px;padding:5px 6px;border:1px solid var(--line-soft);border-radius:2px;font-family:inherit;}
   .manejo-pop .add-row button{font-size:11px;padding:5px 7px;background:var(--ink);color:var(--paper);border:none;border-radius:2px;font-weight:700;}
-  .manejo-pop .close-pop{position:absolute;top:5px;right:7px;background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;line-height:1;}
+  .manejo-pop .close-pop{position:absolute;top:5px;right:7px;background:#ffffff;color:var(--muted);font-size:15px;cursor:pointer;line-height:1;border:none;border-radius:50%;width:20px;height:20px;}
   .manejo-pop .close-pop:hover{color:var(--danger);}
 
   /* ===== DATOS: una línea por ítem de manejo seleccionado ===== */
@@ -318,7 +324,7 @@
      de la tabla para no heredar problemas de recorte (overflow) ni de orden de
      apilamiento (z-index) propios de las celdas de una tabla. -->
 <div class="manejo-pop" id="manejoPop">
-  <button type="button" class="close-pop" id="popCloseBtn">×</button>
+  <div class="pop-close-bar"><button type="button" class="close-pop" id="popCloseBtn">×</button></div>
   <div class="pop-options" id="popOptions"></div>
   <div class="sep"></div>
   <div class="add-row"><input type="text" placeholder="Nueva opción…" id="popNewItem"><button type="button" id="popAddBtn">Sumar</button></div>
@@ -328,14 +334,14 @@
 
 <script type="module">
 /* ================= Firestore: puente hacia el script clásico =================
-   Usa las mismas colecciones que pase_guardia.html para poder compartir las
+   Usa las mismas colecciones que pases.html para poder compartir las
    reglas de seguridad del proyecto "pases-c121c" (ambas exigen login):
    - pacientes/C{numeroDeCama} -> documento ÚNICO por cama, compartido con
-     pase_guardia.html: {cama, nombre, dni, edad, mi:[...], ant, mc, asoc,
+     pases.html: {cama, nombre, dni, edad, mi:[...], ant, mc, asoc,
      cult, fi, evol..., manejo:[...], datos:{...}, hechos:{...}, updatedAt}.
      Esta pantalla escribe solo nombre/dni/edad/mi/manejo/datos/hechos (con
      merge), así que no pisa lo que carga el archivero.
-     (Antes había un documento aparte por cama con id numérico; pase_guardia.html
+     (Antes había un documento aparte por cama con id numérico; pases.html
      los funde una sola vez en los C### y los borra. Nota histórica: IDs
      autogenerados tipo hash; acá los documentos usan el número de cama como
      ID ("101".."140"), así que no hay colisión posible entre las dos apps.)
@@ -372,12 +378,12 @@ try{
 
 <script type="module">
 /* ================= Login con Firebase Authentication =================
-   Mismo proyecto y misma lógica de sesión que pase_guardia.html (ver ese
+   Mismo proyecto y misma lógica de sesión que pases.html (ver ese
    archivo para más comentarios): sesión de pestaña + 5 min de inactividad
    para la mayoría de las cuentas; sesión LOCAL sin vencimiento (ni por
    tiempo ni por inactividad, solo se corta con "Cerrar sesión" a mano)
    para las cuentas de uso diario (LONG_SESSION_EMAILS). El correo
-   precargado se comparte entre esta página y pase_guardia.html vía
+   precargado se comparte entre esta página y pases.html vía
    localStorage (mismo origen). */
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
@@ -530,7 +536,7 @@ onAuthStateChanged(auth, (user)=>{
 
   /* Los datos del paciente (nombre, DNI, edad, MI) ya no se copian a mano
      acá: salen del documento único por cama que escribe el importador del
-     pase de sala en pase_guardia.html. Esta pantalla los muestra y los
+     pase de sala en pases.html. Esta pantalla los muestra y los
      deja editar, pero la fuente es la misma para las tres pantallas. */
 
   const FIXED_ITEMS = ["HGT","BH (+)","BH(-)","BH-N(+)","BH-N(-)","Curva T°","RAO","CC","LABO","TAC","Informe TAC"];
@@ -765,7 +771,7 @@ onAuthStateChanged(auth, (user)=>{
       let changed = false;
       snap.forEach(docSnap=>{
         // Solo los documentos por cama del formato nuevo (C101). Los de id
-        // numérico son de la versión anterior y los funde/borra pase_guardia.
+        // numérico son de la versión anterior y los funde/borra pases.html.
         if(!/^C\d+$/i.test(docSnap.id)) return;
         const bed = docSnap.id.replace(/\D/g,'');
         if(!BED_NUMBERS.includes(bed)) return;
@@ -1105,8 +1111,14 @@ onAuthStateChanged(auth, (user)=>{
     popOptionsEl.innerHTML = items.map((name, idx)=>{
       const checked = c.manejo.includes(name) ? 'checked' : '';
       const id = 'popopt-'+idx;
+      // Sólo las opciones personalizadas (agregadas por el usuario, no las
+      // fijas de FIXED_ITEMS) se pueden eliminar de la lista.
+      const isCustom = idx >= FIXED_ITEMS.length;
+      const delBtn = isCustom
+        ? '<button type="button" class="opt-del" data-del-item="'+esc(name)+'" title="Eliminar esta opción de la lista">✕</button>'
+        : '';
       return '<div class="opt"><input type="checkbox" id="'+id+'" data-item="'+esc(name)+'" '+checked+'>'+
-             '<label for="'+id+'">'+esc(name)+'</label></div>';
+             '<label for="'+id+'">'+esc(name)+'</label>'+delBtn+'</div>';
     }).join('');
   }
 
@@ -1165,6 +1177,21 @@ onAuthStateChanged(auth, (user)=>{
     saveLocal();
     scheduleFsSaveCama(bed);
     render(); // el popover no forma parte de la tabla, así que se mantiene abierto
+  });
+
+  // Eliminar una opción personalizada de la lista maestra (no toca los
+  // FIXED_ITEMS). Esto sólo la saca del listado para elegir de ahora en
+  // más: si algún paciente ya la tenía tildada, la sigue teniendo (el dato
+  // vive en c.manejo, no depende de la lista).
+  popOptionsEl.addEventListener('click', function(e){
+    const btn = e.target.closest('[data-del-item]');
+    if(!btn) return;
+    e.stopPropagation();
+    const name = btn.dataset.delItem;
+    if(!confirm('¿Eliminar "'+name+'" de la lista de opciones? (los pacientes que ya la tengan cargada no se ven afectados)')) return;
+    state.customItems = state.customItems.filter(x => x !== name);
+    scheduleFsSaveItems();
+    renderPopoverOptions();
   });
 
   // Agregar una opción nueva a la lista maestra desde el popover
