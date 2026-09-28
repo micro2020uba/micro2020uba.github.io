@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
- Versión: 28 (27/09/2026) — soporte para múltiples antibióticos, cada uno
+ Versión: 29 (25/09/2026) — soporte para múltiples antibióticos, cada uno
  con su propia frecuencia y horario de administración (todos diluidos en
  100 ml SF).
 -->
@@ -67,10 +67,43 @@
   }
   .page-head .sub{margin-bottom:14px;}
   .page-head button{flex-shrink:0;}
+  .page-head-actions{display:flex; gap:8px; flex-wrap:wrap; flex-shrink:0;}
+
+  .modal-overlay{
+    position:fixed; inset:0;
+    background:rgba(21,34,56,.45);
+    display:flex; align-items:center; justify-content:center;
+    padding:16px;
+    z-index:100;
+  }
+  .modal-box{
+    background:#fff;
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:16px 18px;
+    max-width:420px;
+    width:100%;
+    max-height:85vh;
+    overflow:auto;
+  }
+  .modal-head{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:10px;
+  }
+  .modal-head h2{
+    font-size:.68rem; text-transform:uppercase; letter-spacing:.05em;
+    color:var(--ink-soft); margin:0; font-weight:700;
+  }
+  .modal-close{
+    background:transparent; border:none; font-size:1.3rem; line-height:1;
+    cursor:pointer; color:var(--ink-soft); padding:2px 8px;
+  }
+  .modal-close:hover{color:var(--negativo);}
+  .modal-box .ref-card{border:none; box-shadow:none; padding:0;}
 
   .hero{
     display:grid;
-    grid-template-columns: 1fr 360px;
+    grid-template-columns: 1fr;
     align-items:start;
     gap:14px;
     margin-bottom:14px;
@@ -243,6 +276,33 @@
   }
   .atb-card .field{min-width:150px;}
   .atb-hint{font-size:.76rem; color:var(--ink-soft); flex:1; min-width:220px;}
+  .atb-enable-label{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    width:100%;
+    font-size:.85rem;
+    font-weight:600;
+    color:var(--ink);
+    cursor:pointer;
+  }
+  .atb-enable-label input{width:16px; height:16px; cursor:pointer;}
+  .atb-disabled-hint{
+    display:none;
+    width:100%;
+    font-size:.78rem;
+    color:var(--ink-soft);
+    font-style:italic;
+  }
+  #atbConfigBody{
+    display:flex;
+    gap:22px;
+    flex-wrap:wrap;
+    align-items:center;
+    width:100%;
+  }
+  .atb-card.atb-disabled #atbConfigBody{display:none;}
+  .atb-card.atb-disabled .atb-disabled-hint{display:block;}
   .atb-list{
     width:100%;
     display:flex;
@@ -250,15 +310,47 @@
     gap:10px;
   }
   .atb-item{
+    background:var(--atb-soft);
+    border:1px solid var(--border);
+    border-radius:8px;
+    overflow:hidden;
+  }
+  .atb-item-head{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 10px;
+    cursor:pointer;
+  }
+  .atb-item-summary{
+    flex:1 1 auto;
+    font-size:.82rem;
+    font-weight:600;
+    color:var(--ink);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .atb-toggle{
+    flex:0 0 auto;
+    background:transparent;
+    border:none;
+    color:var(--ink-soft);
+    font-size:.85rem;
+    line-height:1;
+    cursor:pointer;
+    padding:4px;
+    transition:transform .15s;
+  }
+  .atb-item.open .atb-toggle{transform:rotate(180deg);}
+  .atb-item-body{
     display:flex;
     align-items:flex-end;
     gap:14px;
     flex-wrap:wrap;
-    padding:10px 12px;
-    background:var(--atb-soft);
-    border:1px solid var(--border);
-    border-radius:8px;
+    padding:0 12px 12px;
   }
+  .atb-item:not(.open) .atb-item-body{display:none;}
   .atb-item .field{min-width:130px; margin-bottom:0;}
   .atb-item .field-atb-nombre input{width:150px;}
   .atb-item .field-atb-dilucion input{width:80px;}
@@ -267,88 +359,13 @@
     background:transparent;
     border:none;
     color:var(--ink-soft);
-    font-size:1.05rem;
+    font-size:.95rem;
     line-height:1;
     cursor:pointer;
-    padding:6px 2px;
-    margin-bottom:2px;
+    padding:4px 6px;
   }
   .atb-item-remove:hover{color:var(--negativo);}
   .atb-add-btn{align-self:flex-start;}
-
-  /* ---------- Balance previo (continuar un balance ya iniciado) ---------- */
-  .baseline-card{
-    background:var(--panel);
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    box-shadow:var(--shadow);
-    padding:14px 18px;
-    margin-bottom:16px;
-  }
-  .baseline-card h2{
-    font-size:.68rem;
-    text-transform:uppercase;
-    letter-spacing:.05em;
-    color:var(--ink-soft);
-    margin:0 0 10px;
-    font-weight:700;
-  }
-  .baseline-toggle{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    font-size:.86rem;
-    font-weight:600;
-    cursor:pointer;
-    user-select:none;
-  }
-  .baseline-toggle input{width:16px; height:16px; cursor:pointer; accent-color:var(--egreso);}
-  .baseline-fields{
-    display:flex;
-    gap:16px;
-    flex-wrap:wrap;
-    align-items:flex-end;
-    margin-top:12px;
-    padding-top:12px;
-    border-top:1px dashed var(--border);
-  }
-  .baseline-fields .field input, .baseline-fields .field select{width:150px;}
-  .baseline-manual{
-    display:flex;
-    gap:24px;
-    flex-wrap:wrap;
-    width:100%;
-    margin-top:4px;
-  }
-  .baseline-manual .col{flex:1; min-width:220px;}
-  .baseline-manual .col-title{
-    font-size:.72rem;
-    text-transform:uppercase;
-    letter-spacing:.04em;
-    font-weight:700;
-    margin:0 0 6px;
-  }
-  .baseline-manual .col-title.ing{color:var(--ingreso);}
-  .baseline-manual .col-title.egr{color:var(--egreso);}
-  .baseline-manual .row{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:8px;
-    margin-bottom:6px;
-  }
-  .baseline-manual .rlabel{font-size:.8rem; color:var(--ink-soft);}
-  .baseline-manual .rinput{width:90px;}
-  .baseline-readout{
-    font-size:.78rem;
-    font-weight:700;
-    font-family:'IBM Plex Mono', monospace;
-    padding:6px 10px;
-    border-radius:7px;
-    background:var(--egreso-soft);
-    color:var(--egreso);
-  }
-  .atb-hint.baseline-hint{width:100%; margin-top:10px;}
 
   /* ---------- Bloques bloqueados por balance previo ---------- */
   .panel.locked{background:#F7F9FB;}
@@ -705,11 +722,10 @@
     .patient-section + .patient-section{border-left:none; border-top:1px solid var(--border);}
     .patient-section.php-section{flex:0 0 auto;}
     .quarters{grid-template-columns:1fr; grid-template-rows:none;}
-    .panel-body{grid-template-columns:1fr;}
     .col + .col{border-left:none; border-top:1px solid var(--border);}
   }
 
-  /* ---------- Celulares: controles más grandes al tacto y menos ajustado ---------- */
+  /* ---------- Celulares: ingresos y egresos siempre visibles juntos, sin scroll horizontal ---------- */
   @media (max-width: 520px){
     body{padding:12px 12px 50px;}
     .page-head{gap:10px;}
@@ -718,17 +734,31 @@
     .field-nombre input{width:100%;}
     .field-cama input, .field-peso input{width:100%;}
     .field-cama, .field-peso{flex:1 1 90px;}
-    .atb-card, .baseline-card, #doseCard{padding:14px;}
-    .atb-card .field, .baseline-fields .field{min-width:0; flex:1 1 160px;}
-    .atb-card .field select, .baseline-fields .field select{width:100%;}
-    /* casilleros y checkboxes más grandes para tocar sin errar */
-    .panel-head .confirm{padding:7px 10px; font-size:.76rem;}
-    .panel-head .confirm input, .row .atb-inline input[type=checkbox], .baseline-toggle input{
-      width:20px; height:20px;
+    .atb-card, #doseCard{padding:14px;}
+    .atb-card .field{min-width:0; flex:1 1 160px;}
+    .atb-card .field select{width:100%;}
+    .atb-item-head{padding:7px 8px;}
+    .atb-item-summary{font-size:.76rem;}
+    .atb-item-remove{font-size:.8rem; padding:2px 5px;}
+    .panel-head{padding:7px 10px;}
+    .panel-head .hour{font-size:.82rem;}
+    .panel-head .confirm{padding:6px 8px; font-size:.66rem; gap:4px;}
+    .panel-head .confirm input, .row .atb-inline input[type=checkbox]{
+      width:17px; height:17px;
     }
-    .row{padding:7px 0;}
-    .row .rinput{min-height:34px; width:72px; font-size:.88rem;}
-    .add-field select{padding:8px;}
+    .col{padding:8px 7px;}
+    .col-title{font-size:.6rem; margin-bottom:5px;}
+    .row{padding:4px 0; gap:4px;}
+    .row .rlabel{font-size:.66rem; white-space:normal; line-height:1.15;}
+    .row.subrow .rlabel{font-size:.62rem;}
+    .row .rinput{min-height:28px; width:52px; font-size:.76rem; padding:3px 4px;}
+    .row .rauto{font-size:.7rem; padding:3px 5px; min-width:36px;}
+    .row .atb-dose{font-size:.68rem;}
+    .breakdown{font-size:.6rem;}
+    .add-field select{padding:6px; font-size:.68rem;}
+    .col-total{font-size:.7rem;}
+    .diuresis-rate{font-size:.6rem;}
+    .bh-chip{font-size:.72rem; padding:3px 9px;}
     button.btn{padding:10px 14px; font-size:.84rem;}
     .report-actions{flex-wrap:wrap;}
     .report-actions .btn{flex:1 1 auto;}
@@ -744,7 +774,27 @@
       <h1>Calculadora de balance hídrico</h1>
       <p class="sub">Cargá lo nuevo registrado en cada bloque de 6 hs — el acumulado, el PHP, el agua endógena y las pérdidas insensibles se calculan solos.</p>
     </div>
-    <button class="btn ghost" id="newCalcBtnTop" type="button">+ Nuevo cálculo</button>
+    <div class="page-head-actions">
+      <button class="btn ghost" id="infusionBtn" type="button">Velocidad de infusión</button>
+      <button class="btn ghost" id="newCalcBtnTop" type="button">+ Nuevo cálculo</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="infusionModal" style="display:none">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h2>Velocidad de infusión</h2>
+        <button type="button" class="modal-close" id="infusionCloseBtn" aria-label="Cerrar">×</button>
+      </div>
+      <table class="ref-table ref-table-split" id="refTable">
+        <thead><tr><th>Macrogotas/min</th><th>Volumen/24h</th><th class="ref-col2">Macrogotas/min</th><th>Volumen/24h</th></tr></thead>
+        <tbody>
+          <tr><td data-vol="500">7</td><td>500 ml</td><td class="ref-col2" data-vol="2000">28</td><td>2000 ml</td></tr>
+          <tr><td data-vol="1000">14</td><td>1000 ml</td><td class="ref-col2" data-vol="2500">35</td><td>2500 ml</td></tr>
+          <tr><td data-vol="1500">21</td><td>1500 ml</td><td class="ref-col2" data-vol="3000">42</td><td>3000 ml</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <div class="hero">
@@ -786,57 +836,31 @@
             <option value="negativo">BH (−) Negativo · &lt; −500 ml</option>
           </select>
         </div>
-      </div>
-    </div>
-
-    <div class="ref-card">
-      <h2>Velocidad de infusión</h2>
-      <table class="ref-table ref-table-split" id="refTable">
-        <thead><tr><th>Macrogotas/min</th><th>Volumen/24h</th><th class="ref-col2">Macrogotas/min</th><th>Volumen/24h</th></tr></thead>
-        <tbody>
-          <tr><td data-vol="500">7</td><td>500 ml</td><td class="ref-col2" data-vol="2000">28</td><td>2000 ml</td></tr>
-          <tr><td data-vol="1000">14</td><td>1000 ml</td><td class="ref-col2" data-vol="2500">35</td><td>2500 ml</td></tr>
-          <tr><td data-vol="1500">21</td><td>1500 ml</td><td class="ref-col2" data-vol="3000">42</td><td>3000 ml</td></tr>
-        </tbody>
-      </table>
+        </div>
     </div>
   </div>
 
   <div class="atb-card">
-    <h2>Antibióticos (ATB)</h2>
+    <h2>Hora real de inicio del plan</h2>
     <div class="field">
-      <label for="atbStartHour">Hora real de inicio del plan</label>
-      <select id="atbStartHour">
-        <option value="0" selected>00:00 hs</option>
-        <option value="1">01:00 hs</option>
-        <option value="2">02:00 hs</option>
-        <option value="3">03:00 hs</option>
-        <option value="4">04:00 hs</option>
-        <option value="5">05:00 hs</option>
-        <option value="6">06:00 hs</option>
-        <option value="7">07:00 hs</option>
-        <option value="8">08:00 hs</option>
-        <option value="9">09:00 hs</option>
-        <option value="10">10:00 hs</option>
-        <option value="11">11:00 hs</option>
-        <option value="12">12:00 hs</option>
-        <option value="13">13:00 hs</option>
-        <option value="14">14:00 hs</option>
-        <option value="15">15:00 hs</option>
-        <option value="16">16:00 hs</option>
-        <option value="17">17:00 hs</option>
-        <option value="18">18:00 hs</option>
-        <option value="19">19:00 hs</option>
-        <option value="20">20:00 hs</option>
-        <option value="21">21:00 hs</option>
-        <option value="22">22:00 hs</option>
-        <option value="23">23:00 hs</option>
-      </select>
+      <label for="atbStartHour">Arranca el cuadrante "6 hs" a las</label>
+      <select id="atbStartHour"></select>
     </div>
-    <div class="atb-hint">Es la hora del reloj a la que arranca tu cuadrante "6 hs" (por ejemplo, si tu primer bloque cargado va de 6 a 12, poné 06:00) — se usa solo para mostrar el horario de reloj de cada cuadrante.</div>
-    <div class="atb-list" id="atbList"></div>
-    <button type="button" class="btn small ghost atb-add-btn" id="addAtbBtn">+ Agregar antibiótico</button>
-    <div class="atb-hint">Cada antibiótico tiene su propia frecuencia, horario de administración y dilución (por defecto 100 ml, pero podés cambiarla si ese antibiótico se diluye en más). Por ejemplo, uno cada 6 hs y otro cada 8 o 12 hs, cada uno a su horario. Con esos datos la calculadora tilda sola los cuadrantes que corresponden a cada antibiótico; tildá o destildá cualquier casillero si el horario real difiere. Cuando coinciden dos o más en el mismo cuadrante, se suman los ml de dilución de cada uno.</div>
+    <div class="atb-hint">Es la hora del reloj a la que arranca tu primer cuadrante (6 hs) — por ejemplo, si tu turno empieza a las 06:30, elegí esa opción. Se usa para mostrar el horario de reloj de cada cuadrante y para calcular en qué cuadrante corresponde cada antibiótico según su frecuencia.</div>
+  </div>
+
+  <div class="atb-card" id="atbConfigCard">
+    <h2>Antibióticos (ATB)</h2>
+    <label class="atb-enable-label">
+      <input type="checkbox" id="atbEnabledCb">
+      El paciente recibe antibióticos
+    </label>
+    <div class="atb-disabled-hint" id="atbDisabledHint">Sin antibióticos indicados: el grupo ATB no se muestra en los cuadrantes ni se suma al balance. Tildá la opción de arriba si el paciente empieza a recibirlos.</div>
+    <div id="atbConfigBody">
+      <div class="atb-list" id="atbList"></div>
+      <button type="button" class="btn small ghost atb-add-btn" id="addAtbBtn">+ Agregar antibiótico</button>
+      <div class="atb-hint">Cada antibiótico tiene su propia frecuencia, horario de administración y dilución (por defecto 100 ml, pero podés cambiarla si ese antibiótico se diluye en más). Por ejemplo, uno cada 6 hs y otro cada 8 o 12 hs, cada uno a su horario. Con esos datos la calculadora tilda sola los cuadrantes que corresponden a cada antibiótico; tildá o destildá cualquier casillero si el horario real difiere. Cuando coinciden dos o más en el mismo cuadrante, se suman los ml de dilución de cada uno.</div>
+    </div>
   </div>
 
   <div class="atb-card" id="doseCard">
@@ -862,42 +886,6 @@
       </select>
     </div>
     <div class="atb-hint">Cada cuadrante tildado suma el ritmo elegido × 6 hs (aparecen como subítems de Vía oral, en cada cuadrante). Al elegir un ritmo se tildan los 4 cuadrantes; destildá el casillero puntual si en ese bloque no se administró (por ejemplo, todavía no había arrancado o se suspendió).</div>
-  </div>
-
-  <div class="baseline-card" id="baselineCard">
-    <h2>Continuar un balance ya iniciado</h2>
-    <label class="baseline-toggle"><input type="checkbox" id="baselineEnabled"> Me dieron un plan empezado (por ejemplo, para terminar de completar desde las 12 hs)</label>
-    <div class="baseline-fields" id="baselineFields" style="display:none">
-      <div class="field">
-        <label for="baselineHour">Empezar a completar desde</label>
-        <select id="baselineHour">
-          <option value="0">6 hs</option>
-          <option value="1" selected>12 hs</option>
-          <option value="2">18 hs</option>
-        </select>
-      </div>
-      <div class="baseline-readout" id="baselineReadout">BH previo: 0 ml</div>
-      <div class="atb-hint baseline-hint">El PHP, el agua endógena, las pérdidas insensibles y el ATB por horario se calculan solos para la hora elegida — no hace falta cargarlos. Cargá acá solamente lo que sí te hayan dado como dato manual (lo que tomó/hizo el paciente hasta ese momento), porque eso no se puede recalcular solo.</div>
-      <div class="baseline-manual" id="baselinePrevFields">
-        <div class="col">
-          <p class="col-title ing">Ingresos previos (manuales)</p>
-          <div class="row"><span class="rlabel">Vía oral (VO):</span><input type="number" class="rinput" data-prev-key="vo" value="0" min="0" step="any"></div>
-          <div class="row subrow"><span class="rlabel">↳ Alim. enteral:</span><input type="number" class="rinput" data-prev-key="enteral" value="0" min="0" step="any"></div>
-          <div class="row subrow"><span class="rlabel">↳ Agua libre:</span><input type="number" class="rinput" data-prev-key="aguaLibre" value="0" min="0" step="any"></div>
-          <div class="row"><span class="rlabel">Alim. parenteral:</span><input type="number" class="rinput" data-prev-key="alim" value="0" min="0" step="any"></div>
-          <div class="row"><span class="rlabel">Antibióticos (ATB):</span><input type="number" class="rinput" data-prev-key="atb" value="0" min="0" step="any"></div>
-          <div class="row"><span class="rlabel">Transfusiones:</span><input type="number" class="rinput" data-prev-key="transf" value="0" min="0" step="any"></div>
-          <div class="row"><span class="rlabel">Expansiones:</span><input type="number" class="rinput" data-prev-key="exp" value="0" min="0" step="any"></div>
-        </div>
-        <div class="col">
-          <p class="col-title egr">Egresos previos (manuales)</p>
-          <div class="row"><span class="rlabel">Diuresis (D):</span><input type="number" class="rinput" data-prev-key="diuresis" value="0" min="0" step="any"></div>
-          <div class="row"><span class="rlabel">Catarsis/Diarrea:</span><input type="number" class="rinput" data-prev-key="catarsis" value="0" min="0" step="any"></div>
-          <div class="row"><span class="rlabel">Vómitos:</span><input type="number" class="rinput" data-prev-key="vomitos" value="0" min="0" step="any"></div>
-          <div class="row"><span class="rlabel">Drenajes:</span><input type="number" class="rinput" data-prev-key="drenajes" value="0" min="0" step="any"></div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <main class="quarters" id="quarters"></main>
@@ -954,13 +942,17 @@
   const QCOLORS = ['#2F9E44','#1C7ED6','#C2410C','#152A52'];
 
   // Rangos horarios (reloj) de cada cuadrante, según la "hora real de inicio
-  // del plan" elegida (state.atbStartHour). Ej.: inicio 06:00 -> ['06:00-12:00hs', ...,
-  // '00:00-06:00hs']. El límite exacto de medianoche se muestra como "24:00"
-  // al final de un tramo y como "00:00" al empezar el siguiente.
+  // del plan" elegida (state.atbStartHour, que admite medias horas: 6.5 = 06:30).
+  // Ej.: inicio 06:00 -> ['06:00-12:00hs', ..., '00:00-06:00hs']. El límite
+  // exacto de medianoche se muestra como "24:00" al final de un tramo y como
+  // "00:00" al empezar el siguiente.
   function fmtClockHour(h, isEnd){
-    let m = ((h % 24) + 24) % 24;
-    if (m === 0 && isEnd) m = 24;
-    return String(m).padStart(2,'0') + ':00';
+    const totalMin = Math.round(h*60);
+    let m = ((totalMin % 1440) + 1440) % 1440;
+    if (m === 0 && isEnd) m = 1440;
+    const hh = Math.floor(m/60);
+    const mm = m % 60;
+    return String(hh).padStart(2,'0') + ':' + String(mm).padStart(2,'0');
   }
   function computeHourRanges(startHour){
     const start = ((Number(startHour)||0) % 24 + 24) % 24;
@@ -975,7 +967,9 @@
   // Ritmos de goteo disponibles para alim. enteral y agua libre (ml/h -> gotas/min)
   const DOSE_RATES = {21:7, 42:14, 63:21, 84:28};
 
-  // Frecuencias disponibles por antibiótico y horas de administración (00 a 23 hs)
+  // Frecuencias disponibles por antibiótico (siempre alineadas a 00 hs: cada 6
+  // hs -> 6/12/18/24, cada 8 hs -> 8/16/24, etc. — ya no se elige un horario
+  // propio por antibiótico)
   const ATB_FREQ_OPTIONS = [
     {value:'6',    label:'Cada 6 hs'},
     {value:'8',    label:'Cada 8 hs'},
@@ -983,16 +977,16 @@
     {value:'24',   label:'Cada 24 hs'},
     {value:'none', label:'No indicado'},
   ];
-  const ATB_HOUR_OPTIONS = Array.from({length:24}, (_,h)=>({
-    value:String(h), label:String(h).padStart(2,'0') + ':00 hs'
-  }));
+  // Hora real de inicio del plan, en pasos de media hora (00:00 a 23:30)
+  const PLAN_START_OPTIONS = Array.from({length:48}, (_,i)=>{
+    const h = Math.floor(i/2);
+    const m = (i%2) * 30;
+    const value = h + m/60;
+    return { value:String(value), label:String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+' hs' };
+  });
 
   const ING_FIELDS = [
-    {key:'voGroup',   label:'Vía oral (VO)',          type:'voGroup'},
-    {key:'voLiquido', label:'↳ Líquido',              type:'input', sub:true},
-    {key:'voSolido',  label:'↳ Sólido',               type:'input', sub:true},
-    {key:'enteral',   label:'↳ Alim. enteral',        type:'dose', rateKey:'enteralRate', sub:true},
-    {key:'aguaLibre', label:'↳ Agua libre',           type:'dose', rateKey:'aguaLibreRate', sub:true},
+    {key:'voGroup', label:'Vía oral (VO)',          type:'voGroup'},
     {key:'php',   label:'PHP',                  type:'auto'},
     {key:'alim',  label:'Alim. parenteral',     type:'input'},
     {key:'atb',   label:'Antibióticos (ATB)',   type:'atbGroup'},
@@ -1006,7 +1000,13 @@
   ];
   // Campos que no se muestran por defecto en cada cuadrante: aparecen solo
   // cuando se agregan desde el selector "+ Agregar" de ese cuadrante.
+  // Los que llevan groupKey:'vo' se agregan/ocultan desde el selector propio
+  // de Vía oral (debajo de su total), en vez del selector general de Ingresos.
   const OPTIONAL_FIELDS = [
+    {key:'voLiquido', label:'Líquido',        type:'input', side:'ing', groupKey:'vo'},
+    {key:'voSolido',  label:'Sólido',         type:'input', side:'ing', groupKey:'vo'},
+    {key:'enteral',   label:'Alim. enteral',  type:'dose', rateKey:'enteralRate', side:'ing', groupKey:'vo'},
+    {key:'aguaLibre', label:'Agua libre',     type:'dose', rateKey:'aguaLibreRate', side:'ing', groupKey:'vo'},
     {key:'transf',   label:'Transfusiones', type:'input', side:'ing'},
     {key:'drenajes', label:'Drenajes',      type:'input', side:'egr'},
     {key:'vomitos',  label:'Vómitos',       type:'input', side:'egr'},
@@ -1017,6 +1017,9 @@
     cama: '',
     peso: 60,
     phpPlan: 21,
+    // No todos los pacientes reciben antibióticos: por defecto el grupo ATB
+    // queda oculto/desactivado hasta que se tilde "Recibe antibióticos".
+    atbEnabled: false,
     // Uno o más antibióticos, cada uno con su propia frecuencia y horario de
     // administración; cada uno se diluye en la cantidad de ml que se indique
     // (por defecto 100, ver dilucion en cada entrada de atbList).
@@ -1032,7 +1035,7 @@
       diuresis:0, catarsis:0, vomitos:0, drenajes:0,
       atb:{}, // { [antibioticoId]: boolean } — tildado en este cuadrante
       confirmed:false,
-      opt:{ transf:false, drenajes:false, vomitos:false }
+      opt:{ voLiquido:false, voSolido:false, enteral:false, aguaLibre:false, transf:false, drenajes:false, vomitos:false }
     }))
   };
 
@@ -1091,6 +1094,10 @@
       ids.forEach((id,idx)=> nb.atb[id] = idx===0 ? legacy : false);
     }
     nb.opt = {
+      voLiquido: b.opt ? !!b.opt.voLiquido : nb.voLiquido !== 0,
+      voSolido: b.opt ? !!b.opt.voSolido : nb.voSolido !== 0,
+      enteral: b.opt ? !!b.opt.enteral : nb.enteral,
+      aguaLibre: b.opt ? !!b.opt.aguaLibre : nb.aguaLibre,
       transf: b.opt ? !!b.opt.transf : nb.transf !== 0,
       drenajes: b.opt ? !!b.opt.drenajes : nb.drenajes !== 0,
       vomitos: b.opt ? !!b.opt.vomitos : nb.vomitos !== 0,
@@ -1190,15 +1197,17 @@
     if (saved.atbStartHour !== undefined) state.atbStartHour = Number(saved.atbStartHour) || 0;
     const migratedAtbList = migrateAtbListFrom(saved);
     if (migratedAtbList) state.atbList = migratedAtbList;
+    if (typeof saved.atbEnabled === 'boolean'){
+      state.atbEnabled = saved.atbEnabled;
+    } else {
+      // registros guardados antes de esta opción: se infiere que sí recibía
+      // ATB si ya había algo cargado (antibiótico con nombre, o más de uno)
+      state.atbEnabled = state.atbList.some(a=>a.nombre && a.nombre.trim()) || state.atbList.length > 1;
+    }
     const VALID_RATES = [0,21,42,63,84];
     if (VALID_RATES.includes(Number(saved.enteralRate))) state.enteralRate = Number(saved.enteralRate);
     if (VALID_RATES.includes(Number(saved.aguaLibreRate))) state.aguaLibreRate = Number(saved.aguaLibreRate);
     if (saved.bhGoal) state.bhGoal = saved.bhGoal;
-    if (saved.baseline){
-      state.baseline.enabled = !!saved.baseline.enabled;
-      state.baseline.hourIndex = (saved.baseline.hourIndex!==undefined) ? Number(saved.baseline.hourIndex) : 1;
-      if (saved.baseline.prev) Object.assign(state.baseline.prev, saved.baseline.prev);
-    }
     if (Array.isArray(saved.blocks) && saved.blocks.length === 4){
       const atbIds = state.atbList.map(a=>a.id);
       state.blocks = saved.blocks.map(b=>normalizeBlock(b, atbIds));
@@ -1211,15 +1220,23 @@
   // cada "freq" horas a partir de "atbHour" (p. ej. freq=8, atbHour=10 -> 10,
   // 18, 02 hs), y que el cuadrante "6 hs" del plan arranca en turnoStart
   // (hora real del reloj, la del plan, no la del antibiótico).
+  // Calcula, para cada uno de los 4 cuadrantes, si le corresponde una dosis de
+  // este antibiótico — asumiendo que se administra a horas fijas del reloj,
+  // alineadas a las 00 hs, cada "freq" horas (p. ej. freq=8 -> 08, 16, 24 hs),
+  // dentro de la ventana real (turnoStart + 6*i, turnoStart + 6*(i+1)] de cada
+  // cuadrante. turnoStart admite medias horas (6.5 = 06:30).
   function computeAtbPattern(freq, atbHour, turnoStart){
     const n = Number(freq);
     if (freq === 'none' || !n) return [false,false,false,false];
     const base = ((Number(atbHour)||0) % n + n) % n;
     const start = ((Number(turnoStart)||0) % 24 + 24) % 24;
     return [0,1,2,3].map(i=>{
-      for (let e = 6*i + 1; e <= 6*(i+1); e++){
-        const h = (start + e) % 24;
-        if (h % n === base) return true;
+      const from = start + 6*i;
+      const to = start + 6*(i+1);
+      const firstHour = Math.floor(from) + 1;
+      for (let h = firstHour; h <= to; h++){
+        const hh = ((h % 24) + 24) % 24;
+        if (hh % n === base) return true;
       }
       return false;
     });
@@ -1267,10 +1284,10 @@
     row.className = 'row';
     const label = document.createElement('span');
     label.className = 'rlabel';
-    label.textContent = field.label + ':';
+    label.textContent = (field.groupKey ? '↳ ' : '') + field.label + ':';
     row.appendChild(label);
 
-    if (field.sub) row.classList.add('subrow');
+    if (field.sub || field.groupKey) row.classList.add('subrow');
 
     if (field.type === 'auto'){
       const auto = document.createElement('span');
@@ -1395,19 +1412,23 @@
   }
 
   // ---------- campos opcionales por cuadrante (Transfusiones/Drenajes/Vómitos) ----------
-  function buildAddControl(side){
+  function wrapRoleOf(field){
+    return field.groupKey ? (field.groupKey + 'Rows') : (field.side + 'Rows');
+  }
+  function buildAddControl(side, groupKey){
     const wrap = document.createElement('div');
     wrap.className = 'add-field';
     const select = document.createElement('select');
     select.dataset.role = 'addField';
     select.dataset.side = side;
+    select.dataset.group = groupKey || '';
     select.innerHTML = '<option value="">+ Agregar…</option>';
     wrap.appendChild(select);
     return wrap;
   }
 
   function ensureOptionalRow(panel, field){
-    const wrap = panel.querySelector(`[data-role="${field.side}Rows"]`);
+    const wrap = panel.querySelector(`[data-role="${wrapRoleOf(field)}"]`);
     if (!wrap || wrap.querySelector(`[data-opt-key="${field.key}"]`)) return;
     const row = buildRow(field, field.side);
     row.dataset.optKey = field.key;
@@ -1429,7 +1450,7 @@
     valueWrap.appendChild(removeBtn);
     row.appendChild(valueWrap);
     const bd = buildBreakdownRow(field);
-    if (field.side === 'egr'){
+    if (field.side === 'egr' && !field.groupKey){
       // se inserta antes de PI (auto), que siempre queda al final de egresos
       const autoRow = wrap.querySelector('[data-type="auto"]');
       wrap.insertBefore(row, autoRow);
@@ -1441,7 +1462,7 @@
   }
 
   function removeOptionalRowDom(panel, field){
-    const wrap = panel.querySelector(`[data-role="${field.side}Rows"]`);
+    const wrap = panel.querySelector(`[data-role="${wrapRoleOf(field)}"]`);
     if (!wrap) return;
     const row = wrap.querySelector(`[data-opt-key="${field.key}"]`);
     if (!row) return;
@@ -1450,12 +1471,12 @@
     if (bd && bd.classList.contains('breakdown') && bd.dataset.breakdownKey === field.key) bd.remove();
   }
 
-  function refreshAddSelect(panel, side){
-    const select = panel.querySelector(`select[data-role="addField"][data-side="${side}"]`);
+  function refreshAddSelect(panel, side, groupKey){
+    const select = panel.querySelector(`select[data-role="addField"][data-side="${side}"][data-group="${groupKey||''}"]`);
     if (!select) return;
     const qIndex = Number(panel.dataset.q);
     const block = state.blocks[qIndex];
-    const available = OPTIONAL_FIELDS.filter(f=> f.side===side && !block.opt[f.key]);
+    const available = OPTIONAL_FIELDS.filter(f=> f.side===side && (f.groupKey||'')===(groupKey||'') && !block.opt[f.key]);
     select.innerHTML = '<option value="">+ Agregar…</option>' + available.map(f=>`<option value="${f.key}">${f.label}</option>`).join('');
     select.style.display = available.length ? '' : 'none';
   }
@@ -1467,8 +1488,9 @@
       if (block.opt[f.key]) ensureOptionalRow(panel, f);
       else removeOptionalRowDom(panel, f);
     });
-    refreshAddSelect(panel, 'ing');
-    refreshAddSelect(panel, 'egr');
+    refreshAddSelect(panel, 'ing', null);
+    refreshAddSelect(panel, 'egr', null);
+    refreshAddSelect(panel, 'ing', 'vo');
   }
 
   function buildPanel(qIndex){
@@ -1520,9 +1542,15 @@
         bd.className = 'breakdown';
         bd.dataset.breakdownKey = 'vo';
         ingRowsWrap.appendChild(bd);
+        const voRowsWrap = document.createElement('div');
+        voRowsWrap.dataset.role = 'voRows';
+        ingRowsWrap.appendChild(voRowsWrap);
+        ingRowsWrap.appendChild(buildAddControl('ing', 'vo'));
         return;
       }
       if (f.type === 'atbGroup'){
+        const groupWrap = document.createElement('div');
+        groupWrap.dataset.role = 'atbGroupWrap';
         const totalRow = document.createElement('div');
         totalRow.className = 'row';
         totalRow.dataset.type = 'atbTotalRow';
@@ -1534,11 +1562,12 @@
         totalVal.className = 'rauto';
         totalVal.dataset.role = 'atbTotalValue';
         totalRow.appendChild(totalVal);
-        ingRowsWrap.appendChild(totalRow);
+        groupWrap.appendChild(totalRow);
         const subrowsWrap = document.createElement('div');
         subrowsWrap.dataset.role = 'atbSubrows';
-        ingRowsWrap.appendChild(subrowsWrap);
-        ingRowsWrap.appendChild(buildBreakdownRow(f));
+        groupWrap.appendChild(subrowsWrap);
+        groupWrap.appendChild(buildBreakdownRow(f));
+        ingRowsWrap.appendChild(groupWrap);
         return;
       }
       ingRowsWrap.appendChild(buildRow(f,'ing'));
@@ -1597,6 +1626,7 @@
   }
 
   function atbDeltaFor(i){
+    if (!state.atbEnabled) return 0;
     const block = state.blocks[i];
     let sum = 0;
     state.atbList.forEach(cfg=>{ if (block.atb[cfg.id]) sum += (Number(cfg.dilucion) || ATB_DOSE_DEFAULT); });
@@ -1762,12 +1792,14 @@
       if (v !== 0) parts.push({v, i});
     }
     if (parts.length === 0){ el.innerHTML = ''; return; }
-    el.innerHTML = parts.map((p,idx)=>{
+    const total = parts.reduce((sum,p)=> sum + p.v, 0);
+    const terms = parts.map((p,idx)=>{
       const num = p.prev
         ? `<span style="color:var(--ink-soft)">${fmt(p.v)} (previo)</span>`
         : `<span style="color:${QCOLORS[p.i]}">${fmt(p.v)}</span>`;
       return idx===0 ? num : `<span class="plus">+</span>${num}`;
     }).join('');
+    el.innerHTML = parts.length > 1 ? `${terms}<span class="plus">=</span>${fmt(total)}` : terms;
   }
 
   function recalcAll(){
@@ -1777,26 +1809,17 @@
       ? 'Vía intermitente: sin PHP continuo (0 ml)'
       : fmt(plan/4) + ' ml cada 6 hs';
 
-    // sync balance previo (baseline) UI
-    const baseline = state.baseline;
-    const baselineIdx = Number(baseline.hourIndex);
-    document.getElementById('baselineFields').style.display = baseline.enabled ? 'flex' : 'none';
-    if (baseline.enabled){
-      const bq0 = computeQuarter(baselineIdx);
-      document.getElementById('baselineReadout').textContent =
-        `BH previo a las ${bq0.hour}hs: ${signed(bq0.bh)} ml (Ingresos ${fmt(bq0.ingreso)} ml · Egresos ${fmt(bq0.egreso)} ml)`;
-    }
-    document.querySelectorAll('#baselinePrevFields [data-prev-key]').forEach(inp=>{
-      if (document.activeElement !== inp) inp.value = state.baseline.prev[inp.dataset.prevKey];
-    });
-
     let lastConfirmed = getLastConfirmed();
     const hourRanges = computeHourRanges(state.atbStartHour);
+
+    document.getElementById('atbConfigCard').classList.toggle('atb-disabled', !state.atbEnabled);
 
     for (let i=0;i<4;i++){
       const panel = quartersEl.children[i];
       syncOptionalRowsForPanel(panel);
       syncAtbSubrowsForPanel(panel);
+      const atbGroupWrapEl = panel.querySelector('[data-role="atbGroupWrap"]');
+      if (atbGroupWrapEl) atbGroupWrapEl.style.display = state.atbEnabled ? '' : 'none';
       const q = computeQuarter(i);
       const block = state.blocks[i];
       const hourLabel = panel.querySelector('[data-role="hourLabel"]');
@@ -1818,7 +1841,7 @@
           lockNote.innerHTML = `<strong>Dato recibido hasta las ${q.hour} hs.</strong> Ingresos ${fmt(q.ingreso)} ml · Egresos ${fmt(q.egreso)} ml · BH ${signed(q.bh)} ml. Este bloque no se edita: es el punto de partida cargado arriba.`;
         } else {
           foot.classList.add('hide-when-locked');
-          lockNote.innerHTML = `Incluido en el acumulado recibido hasta las ${HOURS[baselineIdx]} hs — sin detalle propio disponible.`;
+          lockNote.innerHTML = `Incluido en el acumulado recibido hasta las ${HOURS[Number(state.baseline.hourIndex)]} hs — sin detalle propio disponible.`;
         }
         // deja los inputs del bloque bloqueados sin poder editarse
         panel.querySelectorAll('input').forEach(inp=>{ if (inp.dataset.type==='delta' || inp.dataset.type==='atbCheckbox' || inp.dataset.type==='doseCheckbox') inp.disabled = true; });
@@ -1836,12 +1859,12 @@
           box.textContent = fmt(q.auto[key]) + ' ml';
         });
 
-        // grupo de VO: total del cuadrante + desglose líquido/sólido, siempre visible
+        // grupo de VO: solo el total del cuadrante (líquido + sólido)
         const voTotalValueEl = panel.querySelector('[data-role="voTotalValue"]');
         if (voTotalValueEl){
           const liq = Number(block.voLiquido)||0;
           const sol = Number(block.voSolido)||0;
-          voTotalValueEl.textContent = `${fmt(liq+sol)} ml (${fmt(liq)} líq + ${fmt(sol)} sól)`;
+          voTotalValueEl.textContent = `${fmt(liq+sol)} ml`;
         }
 
         // grupo de antibióticos: total del cuadrante + una subfila por cada uno
@@ -1894,7 +1917,7 @@
 
         // diuresis rate (desde el arranque real de este tramo: 0 hs, o la hora del acumulado recibido)
         const peso = Number(state.peso)||1;
-        const elapsed = baseline.enabled ? (q.hour - HOURS[baselineIdx]) : q.hour;
+        const elapsed = q.hour;
         const rate = elapsed > 0 ? (q.diuresis / (peso * elapsed)) : 0;
         const rateEl = panel.querySelector('[data-role="diuresisRate"]');
         const inRange = rate >= 1.5 && rate <= 3.5;
@@ -2000,21 +2023,64 @@
     state.phpPlan = Number(e.target.value);
     recalcAll();
   });
+  document.getElementById('atbStartHour').innerHTML = PLAN_START_OPTIONS.map(o=>`<option value="${o.value}">${o.label}</option>`).join('');
   document.getElementById('atbStartHour').addEventListener('change', e=>{
     state.atbStartHour = Number(e.target.value) || 0;
     applyAllAtbDefaults();
     recalcAll();
   });
 
+  document.getElementById('atbEnabledCb').addEventListener('change', e=>{
+    state.atbEnabled = e.target.checked;
+    recalcAll();
+  });
+
   // ---------- lista dinámica de antibióticos ----------
   const atbListEl = document.getElementById('atbList');
+
+  const atbExpanded = new Set(); // ids de ATB actualmente desplegados (los demás quedan como resumen compacto)
+
+  function atbFreqLabel(freq){
+    const opt = ATB_FREQ_OPTIONS.find(o=>o.value===freq);
+    return opt ? opt.label : freq;
+  }
 
   function renderAtbConfig(){
     atbListEl.innerHTML = '';
     state.atbList.forEach((cfg, idx)=>{
       const item = document.createElement('div');
-      item.className = 'atb-item';
+      item.className = 'atb-item' + (atbExpanded.has(cfg.id) ? ' open' : '');
       item.dataset.atbId = cfg.id;
+
+      const head = document.createElement('div');
+      head.className = 'atb-item-head';
+      head.dataset.role = 'atbItemHead';
+      const summary = document.createElement('span');
+      summary.className = 'atb-item-summary';
+      summary.dataset.role = 'atbItemSummary';
+      const nombreTxt = (cfg.nombre && cfg.nombre.trim()) ? cfg.nombre.trim() : ('ATB ' + (idx+1));
+      summary.textContent = `${nombreTxt} · ${atbFreqLabel(cfg.freq)} · ${fmt(Number(cfg.dilucion)||ATB_DOSE_DEFAULT)} ml`;
+      head.appendChild(summary);
+      const toggleBtn = document.createElement('button');
+      toggleBtn.type = 'button';
+      toggleBtn.className = 'atb-toggle';
+      toggleBtn.dataset.role = 'toggleAtb';
+      toggleBtn.title = 'Mostrar/ocultar';
+      toggleBtn.textContent = '▾';
+      head.appendChild(toggleBtn);
+      if (state.atbList.length > 1){
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'atb-item-remove';
+        removeBtn.dataset.role = 'removeAtb';
+        removeBtn.title = 'Quitar este antibiótico';
+        removeBtn.textContent = '×';
+        head.appendChild(removeBtn);
+      }
+      item.appendChild(head);
+
+      const bodyEl = document.createElement('div');
+      bodyEl.className = 'atb-item-body';
 
       const fieldNombre = document.createElement('div');
       fieldNombre.className = 'field field-atb-nombre';
@@ -2027,7 +2093,7 @@
       inpNombre.value = cfg.nombre || '';
       inpNombre.dataset.atbField = 'nombre';
       fieldNombre.appendChild(inpNombre);
-      item.appendChild(fieldNombre);
+      bodyEl.appendChild(fieldNombre);
 
       const fieldFreq = document.createElement('div');
       fieldFreq.className = 'field';
@@ -2038,18 +2104,7 @@
       selFreq.dataset.atbField = 'freq';
       selFreq.innerHTML = ATB_FREQ_OPTIONS.map(o=>`<option value="${o.value}"${o.value===cfg.freq?' selected':''}>${o.label}</option>`).join('');
       fieldFreq.appendChild(selFreq);
-      item.appendChild(fieldFreq);
-
-      const fieldHour = document.createElement('div');
-      fieldHour.className = 'field';
-      const labelHour = document.createElement('label');
-      labelHour.textContent = 'Horario de administración';
-      fieldHour.appendChild(labelHour);
-      const selHour = document.createElement('select');
-      selHour.dataset.atbField = 'startHour';
-      selHour.innerHTML = ATB_HOUR_OPTIONS.map(o=>`<option value="${o.value}"${Number(o.value)===Number(cfg.startHour)?' selected':''}>${o.label}</option>`).join('');
-      fieldHour.appendChild(selHour);
-      item.appendChild(fieldHour);
+      bodyEl.appendChild(fieldFreq);
 
       const fieldDilucion = document.createElement('div');
       fieldDilucion.className = 'field field-atb-dilucion';
@@ -2063,18 +2118,9 @@
       inpDilucion.value = Number(cfg.dilucion) || ATB_DOSE_DEFAULT;
       inpDilucion.dataset.atbField = 'dilucion';
       fieldDilucion.appendChild(inpDilucion);
-      item.appendChild(fieldDilucion);
+      bodyEl.appendChild(fieldDilucion);
 
-      if (state.atbList.length > 1){
-        const removeBtn = document.createElement('button');
-        removeBtn.type = 'button';
-        removeBtn.className = 'atb-item-remove';
-        removeBtn.dataset.role = 'removeAtb';
-        removeBtn.title = 'Quitar este antibiótico';
-        removeBtn.textContent = '×';
-        item.appendChild(removeBtn);
-      }
-
+      item.appendChild(bodyEl);
       atbListEl.appendChild(item);
     });
   }
@@ -2087,10 +2133,14 @@
     if (!cfg) return;
     if (t.dataset.atbField === 'nombre'){
       cfg.nombre = t.value;
+      const summary = item.querySelector('[data-role="atbItemSummary"]');
+      if (summary) summary.textContent = `${(cfg.nombre&&cfg.nombre.trim())||('ATB '+(state.atbList.indexOf(cfg)+1))} · ${atbFreqLabel(cfg.freq)} · ${fmt(Number(cfg.dilucion)||ATB_DOSE_DEFAULT)} ml`;
       recalcAll();
     } else if (t.dataset.atbField === 'dilucion'){
       const n = Number(t.value);
       if (n > 0) cfg.dilucion = n;
+      const summary = item.querySelector('[data-role="atbItemSummary"]');
+      if (summary) summary.textContent = `${(cfg.nombre&&cfg.nombre.trim())||('ATB '+(state.atbList.indexOf(cfg)+1))} · ${atbFreqLabel(cfg.freq)} · ${fmt(Number(cfg.dilucion)||ATB_DOSE_DEFAULT)} ml`;
       recalcAll();
     }
   });
@@ -2103,14 +2153,19 @@
     if (t.dataset.atbField === 'freq'){
       cfg.freq = t.value;
       applyAtbDefaultsForId(cfg.id);
-      recalcAll();
-    } else if (t.dataset.atbField === 'startHour'){
-      cfg.startHour = Number(t.value) || 0;
-      applyAtbDefaultsForId(cfg.id);
+      renderAtbConfig();
       recalcAll();
     }
   });
   atbListEl.addEventListener('click', e=>{
+    const toggleBtn = e.target.closest('[data-role="toggleAtb"]');
+    if (toggleBtn){
+      const item = toggleBtn.closest('.atb-item');
+      const id = item.dataset.atbId;
+      if (atbExpanded.has(id)) atbExpanded.delete(id); else atbExpanded.add(id);
+      renderAtbConfig();
+      return;
+    }
     const btn = e.target.closest('[data-role="removeAtb"]');
     if (!btn) return;
     if (state.atbList.length <= 1) return;
@@ -2119,6 +2174,7 @@
     if (!confirm('¿Quitar este antibiótico? Se borran sus casilleros tildados en los 4 cuadrantes.')) return;
     state.atbList = state.atbList.filter(a=>a.id !== id);
     state.blocks.forEach(b=>{ delete b.atb[id]; });
+    atbExpanded.delete(id);
     renderAtbConfig();
     recalcAll();
   });
@@ -2126,6 +2182,7 @@
     const id = newAtbId();
     state.atbList.push({ id, nombre:'', freq:'12', startHour:0, dilucion:ATB_DOSE_DEFAULT });
     applyAtbDefaultsForId(id);
+    atbExpanded.add(id);
     renderAtbConfig();
     recalcAll();
   });
@@ -2144,30 +2201,6 @@
     recalcAll();
   });
   attachClearZero(document.getElementById('peso'), ()=>state.peso);
-
-  // ---------- balance previo (baseline) ----------
-  document.getElementById('baselineEnabled').addEventListener('change', e=>{
-    state.baseline.enabled = e.target.checked;
-    recalcAll();
-  });
-  document.getElementById('baselineHour').addEventListener('change', e=>{
-    state.baseline.hourIndex = Number(e.target.value);
-    recalcAll();
-  });
-  const baselinePrevFieldsEl = document.getElementById('baselinePrevFields');
-  baselinePrevFieldsEl.addEventListener('input', e=>{
-    const t = e.target;
-    if (t.dataset.prevKey){
-      state.baseline.prev[t.dataset.prevKey] = Number(t.value)||0;
-      recalcAll();
-    }
-  });
-  baselinePrevFieldsEl.addEventListener('focusin', e=>{
-    if (e.target.matches('.rinput') && e.target.value === '0') e.target.value = '';
-  });
-  baselinePrevFieldsEl.addEventListener('focusout', e=>{
-    if (e.target.matches('.rinput')) recalcAll();
-  });
 
   quartersEl.addEventListener('input', e=>{
     const t = e.target;
@@ -2226,9 +2259,14 @@
     const panel = btn.closest('.panel');
     const q = Number(panel.dataset.q);
     const key = btn.dataset.key;
-    const current = Number(state.blocks[q][key]) || 0;
-    if (current !== 0 && !confirm(`¿Quitar este campo? El valor cargado (${fmt(current)} ml) se pone en 0.`)) return;
-    state.blocks[q][key] = 0;
+    const field = OPTIONAL_FIELDS.find(f=>f.key===key);
+    const isDose = field && field.type === 'dose';
+    const hasValue = isDose ? !!state.blocks[q][key] : (Number(state.blocks[q][key]) || 0) !== 0;
+    const msg = isDose
+      ? '¿Quitar este campo? Se destilda en este cuadrante.'
+      : `¿Quitar este campo? El valor cargado (${fmt(Number(state.blocks[q][key])||0)} ml) se pone en 0.`;
+    if (hasValue && !confirm(msg)) return;
+    state.blocks[q][key] = isDose ? false : 0;
     state.blocks[q].opt[key] = false;
     recalcAll();
   });
@@ -2258,6 +2296,7 @@
     state.cama = '';
     state.peso = 60;
     state.phpPlan = 21;
+    state.atbEnabled = false;
     state.atbList = [ { id:'atb1', nombre:'', freq:'12', startHour:0, dilucion:ATB_DOSE_DEFAULT } ];
     state.atbStartHour = 0;
     state.enteralRate = 0;
@@ -2269,7 +2308,7 @@
       enteral:false, aguaLibre:false,
       diuresis:0, catarsis:0, vomitos:0, drenajes:0,
       atb:{}, confirmed:false,
-      opt:{ transf:false, drenajes:false, vomitos:false }
+      opt:{ voLiquido:false, voSolido:false, enteral:false, aguaLibre:false, transf:false, drenajes:false, vomitos:false }
     }));
     applyAllAtbDefaults();
     syncFormFromState();
@@ -2278,6 +2317,11 @@
   }
   document.getElementById('resetBtn').addEventListener('click', startNewCalculation);
   document.getElementById('newCalcBtnTop').addEventListener('click', startNewCalculation);
+  const infusionModalEl = document.getElementById('infusionModal');
+  document.getElementById('infusionBtn').addEventListener('click', ()=>{ infusionModalEl.style.display = 'flex'; });
+  document.getElementById('infusionCloseBtn').addEventListener('click', ()=>{ infusionModalEl.style.display = 'none'; });
+  infusionModalEl.addEventListener('click', e=>{ if (e.target === infusionModalEl) infusionModalEl.style.display = 'none'; });
+  document.addEventListener('keydown', e=>{ if (e.key === 'Escape' && infusionModalEl.style.display !== 'none') infusionModalEl.style.display = 'none'; });
 
   // ---------- historial de registros guardados ----------
   const historialListEl = document.getElementById('historialList');
@@ -2349,8 +2393,13 @@
     } else if (btn.dataset.act === 'cargar'){
       if (!confirm('¿Cargar este registro? Se reemplazan los datos que estás cargando ahora (podés guardarlos antes si querés conservarlos).')) return;
       Object.assign(state, JSON.parse(JSON.stringify(rec.snapshot)));
+      state.baseline = { enabled:false, hourIndex:1, prev:{ vo:0, alim:0, transf:0, exp:0, atb:0, enteral:0, aguaLibre:0, diuresis:0, catarsis:0, vomitos:0, drenajes:0 } };
       const migratedAtbList = migrateAtbListFrom(state);
       if (migratedAtbList) state.atbList = migratedAtbList;
+      if (typeof rec.snapshot.atbEnabled !== 'boolean'){
+        // registros guardados antes de esta opción
+        state.atbEnabled = state.atbList.some(a=>a.nombre && a.nombre.trim()) || state.atbList.length > 1;
+      }
       if (Array.isArray(state.blocks)){
         const atbIds = state.atbList.map(a=>a.id);
         state.blocks = state.blocks.map(b=>normalizeBlock(b, atbIds));
@@ -2408,16 +2457,12 @@
     document.getElementById('cama').value = state.cama || '';
     document.getElementById('peso').value = state.peso;
     document.getElementById('phpPlan').value = state.phpPlan;
+    document.getElementById('atbEnabledCb').checked = !!state.atbEnabled;
     document.getElementById('atbStartHour').value = state.atbStartHour;
     renderAtbConfig();
     document.getElementById('enteralRate').value = state.enteralRate;
     document.getElementById('aguaLibreRate').value = state.aguaLibreRate;
     document.getElementById('bhGoal').value = state.bhGoal;
-    document.getElementById('baselineEnabled').checked = state.baseline.enabled;
-    document.getElementById('baselineHour').value = state.baseline.hourIndex;
-    document.querySelectorAll('#baselinePrevFields [data-prev-key]').forEach(inp=>{
-      inp.value = state.baseline.prev[inp.dataset.prevKey];
-    });
   }
 
   syncFormFromState();
