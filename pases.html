@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-   Versión: 25 (23/09/2026)
+   Versión: 26 (27/09/2026)
 -->
 <html lang="es-AR">
 <head>
@@ -164,8 +164,12 @@
   details.collapsible > summary{
     font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
     color:var(--accent-dark);border-bottom:1px solid var(--ink);width:100%;padding-bottom:5px;margin-bottom:0;
-    cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;user-select:none;
+    cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;user-select:text;-webkit-user-select:text;
   }
+  details.collapsible > summary .sum-title{user-select:text;-webkit-user-select:text;}
+  .copy-field-btn{margin-left:auto;border:1px solid var(--line-soft);background:#fff;border-radius:3px;padding:1px 8px;
+    font-size:11px;font-family:inherit;text-transform:none;letter-spacing:0;cursor:pointer;color:var(--accent-dark);user-select:none;}
+  .copy-field-btn:hover{background:var(--accent-dark);color:#fff;}
   details.collapsible > summary::-webkit-details-marker{display:none;}
   details.collapsible > summary::before{content:'▸';display:inline-block;transition:transform .12s;font-size:9px;}
   details.collapsible[open] > summary::before{transform:rotate(90deg);}
@@ -188,7 +192,8 @@
   .item-row .txt{flex:1;outline:none;padding:2px 3px;border-radius:2px;}
   .item-row .txt:focus{background:#fff;box-shadow:0 0 0 1px var(--accent);}
   .item-row.resuelto .txt{text-decoration:line-through;color:var(--muted);}
-  .item-row label.res{display:flex;align-items:center;gap:3px;font-size:10.5px;color:var(--muted);white-space:nowrap;}
+  .item-row label.res{display:flex;align-items:center;gap:3px;font-size:10.5px;color:var(--muted);white-space:nowrap;cursor:pointer;}
+  .item-row label.res input{width:17px;height:17px;margin:0;cursor:pointer;accent-color:var(--accent-dark);}
   .item-row .del{color:var(--danger);border:none;background:none;cursor:pointer;font-weight:700;font-size:14px;}
   .add-item-row{display:flex;gap:6px;}
   .add-item-row input{flex:1;}
@@ -745,7 +750,7 @@ const SISTEMAS = {
       {id:'ritmoregular',text:'ritmo regular',antagonistas:['arritmia']},
       {id:'r1r2',text:'R1 y R2 en 4 focos, normofonéticos',variants:['R1 y R2 en 4 focos, normofonéticos','R1-R2 normofonéticos en 4 focos'],antagonistas:['hipofoneticos']},
       {id:'silencios',text:'impresionan libres',variants:['impresionan libres','sin soplos evidentes'],antagonistas:['soplo']},
-      {id:'sinfallo',text:'sin signos de falla agudo de bomba',variants:['sin signos de falla agudo de bomba','sin signos de falla agudo de bomba'],antagonistas:['fallo']},
+      {id:'sinfallo',text:'sin signos de falla aguda de bomba',variants:['sin signos de falla aguda de bomba','sin signos de fallo agudo de bomba'],antagonistas:['fallo']},
       {id:'decubito',text:'tolera decúbito dorsal',antagonistas:['nodecubito']},
       {id:'pulsos',text:'pulsos periféricos presentes, con buena perfusión distal',variants:['pulsos periféricos presentes, con buena perfusión distal','pulsos periféricos conservados'],antagonistas:['pulsosdism']},
       {id:'iy',text:'IY 2/3 con colapso inspiratorio',antagonistas:['fallo']},
@@ -1085,7 +1090,18 @@ function plantillaLabelBuiltin(key){
   return (custom && custom.trim()) ? custom : (PLANTILLAS[key] ? PLANTILLAS[key].label : key);
 }
 function aplicarPlantilla(patient, key){
-  aplicarPlantillaObj(patient, PLANTILLAS[key]);
+  const ov = checklistConfig.plantillasBase && checklistConfig.plantillasBase[key];
+  const tpl = ov ? Object.assign({}, PLANTILLAS[key], ov) : PLANTILLAS[key];
+  const conSalidas = !!(ov && ov.salidas && typeof ov.salidas === 'object');
+  if(conSalidas){
+    patient.salidasPropias = JSON.parse(JSON.stringify(ov.salidas));
+    if(!tieneChecksPropios(patient)) patient.checksPropios = {};
+  }
+  aplicarPlantillaObj(patient, tpl);
+  if(conSalidas){
+    savePatientNow(patient);
+    renderEvolBuilder(patient);
+  }
 }
 function aplicarPlantillaCustom(patient, name){
   const tpl = checklistConfig.customPlantillas && checklistConfig.customPlantillas[name];
@@ -1136,7 +1152,7 @@ function captureCurrentAsPlantillaSet(){
   return set;
 }
 let patients = [];
-let checklistConfig = { custom:{}, edits:{}, hidden:{}, order:{}, info:{}, customPlantillas:{}, nombresPlantillas:{}, defaults:{}, salidas:{}, estadoOptions:null, camasVisibles:null };
+let checklistConfig = { custom:{}, edits:{}, hidden:{}, order:{}, info:{}, plantillasBase:{}, customPlantillas:{}, nombresPlantillas:{}, defaults:{}, salidas:{}, estadoOptions:null, camasVisibles:null };
 let selectedId = null;
 
 /* Ya no existe el botón "Agregar entrada de hoy a EVOL", que era lo único que guardaba la
@@ -1261,11 +1277,35 @@ function actualizarDiasTtoEnItems(items){
   });
   return cambiado;
 }
+
+/* ================= CULT como lista de ítems (igual que MI y ASOC) =================
+   Cada cultivo es {text, resuelto}. Tildado = ya resuelto (negativo final, rescatado,
+   no aplica...) y por eso NO se redacta en la historia clínica ni en los pases.
+   Las fichas viejas guardaban CULT como un texto suelto: se convierte solo al cargarlas. */
+function cultFromString(s){
+  const t = String(s==null?'':s).trim();
+  if(!t) return [];
+  const partes = (typeof PaseParser !== 'undefined' && PaseParser.splitCultText) ? PaseParser.splitCultText(t) : [t];
+  return partes.map(x=>({text:x, resuelto:false}));
+}
+function cultLista(p){
+  if(!p) return [];
+  if(Array.isArray(p.cult)) return p.cult;
+  return cultFromString(p.cult);
+}
+function normalizarFicha(p){
+  if(p && !Array.isArray(p.cult)) p.cult = cultFromString(p.cult);
+  return p;
+}
+function hoyLocalISO(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
 function newPatient(cama){
   const code = camaCode(cama);
   const fs = fsApi();
   const id = code || (fs ? fs.doc(fs.pacientesCol).id : ('local'+Date.now()));
-  return { id, cama:code, nombre:'', sexo:'', edad:'', dni:'', fi:'', mc:'', ant:'', mi:[], asoc:[], cult:'', ic:'', evol:'', evolCount:0, lastEstado:'', lastChecklist:null, manejo:[], datos:{}, hechos:{} };
+  return { id, cama:code, nombre:'', sexo:'', edad:'', dni:'', fi:'', mc:'', ant:'', mi:[], asoc:[], cult:[], ic:'', evol:'', evolCount:0, lastEstado:'', lastChecklist:null, manejo:[], datos:{}, hechos:{} };
 }
 /* Si cambia el número de cama de una ficha, el documento tiene que
    mudarse al id nuevo (y borrarse el viejo) para no dejar duplicados. */
@@ -1420,7 +1460,7 @@ function vaciarCarpeta(p){
   const camaTxt = p.cama ? `de la cama ${p.cama}` : '';
   if(!confirm(`¿Vaciar la carpeta ${camaTxt}? Se van a borrar todos los datos del paciente actual (nombre, EVOL, MI, ASOC, etc.). La carpeta queda con el mismo número de cama, lista para el próximo paciente.`)) return;
   const cama = p.cama;
-  p.nombre=''; p.sexo=''; p.edad=''; p.dni=''; p.fi=''; p.mc=''; p.ant=''; p.mi=[]; p.asoc=[]; p.cult=''; p.ic='';
+  p.nombre=''; p.sexo=''; p.edad=''; p.dni=''; p.fi=''; p.mc=''; p.ant=''; p.mi=[]; p.asoc=[]; p.cult=[]; p.ic='';
   p.evol=''; p.evolCount=0; p.lastEstado=''; p.lastChecklist=null;
   p.manejo=[]; p.datos={}; p.hechos={};
   delete p.plantillaSeleccionada;
@@ -1636,6 +1676,7 @@ function renderSidebar(){
 
 /* ================= Listas MI / ASOC (editables, activo-resuelto) ================= */
 function renderItemList(containerId, patient, field){
+  if(field==='cult' && !Array.isArray(patient.cult)) patient.cult = cultFromString(patient.cult);
   if((field==='mi' || field==='asoc') && actualizarDiasTtoEnItems(patient[field])){
     savePatientNow(patient);
   }
@@ -1645,9 +1686,9 @@ function renderItemList(containerId, patient, field){
     const row = document.createElement('div');
     row.className = 'item-row'+(item.resuelto?' resuelto':'');
     row.innerHTML = `
+      <label class="res" title="Tildado = ya realizado / resuelto (no se escribe en la historia clínica ni en los pases)"><input type="checkbox" ${item.resuelto?'checked':''}></label>
       <span class="txt" contenteditable="true" spellcheck="false">${escapeHtml(item.text)}</span>
-      <label class="res"><input type="checkbox" ${item.resuelto?'checked':''}> resuelto</label>
-      <button class="del">×</button>
+      <button class="del" title="Quitar ítem">×</button>
     `;
     const txtEl = row.querySelector('.txt');
     txtEl.addEventListener('blur',(e)=>{
@@ -1715,21 +1756,21 @@ function renderForm(){
     </fieldset>
 
     <details class="collapsible">
-      <summary>ANT — Antecedentes personales</summary>
+      <summary><span class="sum-title">ANT — Antecedentes personales</span><button type="button" class="copy-field-btn" data-copy="ant" title="Copiar ANT al portapapeles">📋 Copiar</button></summary>
       <div class="collapsible-body">
         <div class="field"><textarea data-f="ant"></textarea></div>
       </div>
     </details>
 
     <details class="collapsible">
-      <summary>MC (Motivo de Consulta)</summary>
+      <summary><span class="sum-title">MC (Motivo de Consulta)</span><button type="button" class="copy-field-btn" data-copy="mc" title="Copiar MC al portapapeles">📋 Copiar</button></summary>
       <div class="collapsible-body">
         <div class="field"><textarea data-f="mc"></textarea></div>
       </div>
     </details>
 
     <details class="collapsible">
-      <summary>MI — Motivo de internación (ítems, editables)</summary>
+      <summary><span class="sum-title">MI — Motivo de internación (checklist)</span><button type="button" class="copy-field-btn" data-copy="mi" title="Copiar los MI que siguen activos">📋 Copiar</button></summary>
       <div class="collapsible-body">
         <div class="item-list" id="miList"></div>
         <div class="add-item-row">
@@ -1740,7 +1781,7 @@ function renderForm(){
     </details>
 
     <details class="collapsible">
-      <summary>ASOC — Diagnósticos asociados (ítems, editables)</summary>
+      <summary><span class="sum-title">ASOC — Diagnósticos asociados (checklist)</span><button type="button" class="copy-field-btn" data-copy="asoc" title="Copiar los ASOC que siguen activos">📋 Copiar</button></summary>
       <div class="collapsible-body">
         <div class="item-list" id="asocList"></div>
         <div class="add-item-row">
@@ -1751,9 +1792,13 @@ function renderForm(){
     </details>
 
     <details class="collapsible">
-      <summary>CULT — Cultivos</summary>
+      <summary><span class="sum-title">CULT — Cultivos (checklist)</span><button type="button" class="copy-field-btn" data-copy="cult" title="Copiar los cultivos que siguen pendientes">📋 Copiar</button></summary>
       <div class="collapsible-body">
-        <div class="field"><textarea data-f="cult"></textarea></div>
+        <div class="item-list" id="cultList"></div>
+        <div class="add-item-row">
+          <input type="text" id="cultNuevo" placeholder="Nuevo cultivo (ej: HMC x2 773356 → pendiente)">
+          <button id="cultAddBtn">Agregar</button>
+        </div>
       </div>
     </details>
 
@@ -1787,6 +1832,7 @@ function renderForm(){
 
   renderItemList('miList', p, 'mi');
   renderItemList('asocList', p, 'asoc');
+  renderItemList('cultList', p, 'cult');
 
   fld('miAddBtn').addEventListener('click',()=>{
     const v = fld('miNuevo').value.trim();
@@ -1810,10 +1856,65 @@ function renderForm(){
   });
   fld('asocNuevo').addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ e.preventDefault(); fld('asocAddBtn').click(); } });
 
+  fld('cultAddBtn').addEventListener('click',()=>{
+    const v = fld('cultNuevo').value.trim();
+    if(!v) return;
+    if(!Array.isArray(p.cult)) p.cult = cultFromString(p.cult);
+    p.cult.push({text:v, resuelto:false});
+    fld('cultNuevo').value='';
+    renderItemList('cultList', p, 'cult');
+    renderPreview();
+    updateDraftPreview(p);
+  });
+  fld('cultNuevo').addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ e.preventDefault(); fld('cultAddBtn').click(); } });
+
   renderEvolBuilder(p, uiState);
 
   fld('vaciarPatientBtn').addEventListener('click', ()=> vaciarCarpeta(p));
 }
+
+
+/* ================= Copiar ANT / MC / MI / ASOC / CULT =================
+   Los títulos de estas secciones ahora se pueden resaltar con el mouse o el dedo (antes tenían
+   user-select:none), y cada uno tiene un botón «📋 Copiar» que deja «TÍTULO: contenido» en el
+   portapapeles, listo para pegar. En las listas se copian solo los ítems que siguen activos. */
+const COPIAR_CAMPOS = { ant:'ANT', mc:'MC', mi:'MI', asoc:'ASOC', cult:'CULT' };
+function textoParaCopiar(p, clave){
+  if(clave==='ant' || clave==='mc') return String(p[clave]||'').trim();
+  const lista = clave==='cult' ? cultLista(p) : (p[clave]||[]);
+  const sep = clave==='cult' ? '; ' : ' + ';
+  return lista.filter(i=>i && !i.resuelto && String(i.text||'').trim()).map(i=>String(i.text).trim().replace(/[.\s]+$/,'')).join(sep);
+}
+function copiarAlPortapapeles(texto){
+  if(navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(texto);
+  return new Promise((ok, mal)=>{
+    const ta = document.createElement('textarea');
+    ta.value = texto; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy') ? ok() : mal(); }catch(e){ mal(e); }
+    document.body.removeChild(ta);
+  });
+}
+document.addEventListener('click', (e)=>{
+  const btn = e.target.closest ? e.target.closest('.copy-field-btn') : null;
+  if(btn){
+    e.preventDefault(); e.stopPropagation();
+    const p = getSelected(); if(!p) return;
+    const clave = btn.dataset.copy, rot = COPIAR_CAMPOS[clave];
+    const txt = textoParaCopiar(p, clave);
+    const st = fld('status');
+    const avisar = (m)=>{ if(!st) return; st.textContent = m; setTimeout(()=>{ if(st.textContent===m) st.textContent=''; }, 2500); };
+    if(!txt){ avisar(rot + ' está vacío: no hay nada para copiar.'); return; }
+    copiarAlPortapapeles(rot + ': ' + txt).then(()=>avisar('Copiado: ' + rot + '.')).catch(()=>avisar('No se pudo copiar automáticamente: resaltá el texto y copialo a mano.'));
+    return;
+  }
+  // Si se está resaltando el título con el mouse, que el clic no pliegue/despliegue la sección.
+  const sum = e.target.closest ? e.target.closest('details.collapsible > summary') : null;
+  if(sum){
+    const sel = window.getSelection && window.getSelection();
+    if(sel && !sel.isCollapsed && String(sel).trim() && sum.contains(sel.anchorNode)) e.preventDefault();
+  }
+}, true);
 
 /* ================= EVOL: checklist builder ================= */
 function getMergedItems(key){
@@ -2195,7 +2296,7 @@ function renderEvolBuilder(p, stateOverride){
   fld('estadoAddOptBtn').addEventListener('click', agregarEstadoOption);
 
   fechaAutoSync = true;
-  fld('evolFecha').value = new Date().toISOString().slice(0,10);
+  fld('evolFecha').value = hoyLocalISO();
   fld('evolFecha').addEventListener('input', ()=>{ fechaAutoSync = false; updateDraftPreview(p); });
 
   // Si esta cama tiene una "Mi plantilla" guardada con su mismo número (ej. la cama
@@ -2411,6 +2512,7 @@ document.body.addEventListener('click', (e)=>{
       if(!confirm('¿Volver a los valores de fábrica lo que sale en cada texto para ESTE paciente? No toca los checks tildados, la plantilla general ni a otros pacientes.')) return;
       p.salidasPropias = {};
       savePatientNow(p);
+      autoGuardarPlantilla(p);
       renderEvolBuilder(p);
       avisoSalidasGuardadas();
       return;
@@ -2533,6 +2635,7 @@ function syncEstadoPaciente(p){
   p.lastEstado = sel.value;
   renderSidebar();
   renderPreview();
+  autoGuardarPlantilla(p);
 }
 
 /* Las variantes de redacción rotaban con cada entrada agregada a EVOL. Sin ese botón, rotan según
@@ -2584,7 +2687,7 @@ function itemPhrase(sys, kind, id, patient){
   const list = kind==='normal' ? merged.normal : merged.alteraciones;
   const item = list.find(i=>i.id===id);
   if(!item) return '';
-  let t = pickVariant(item, patient);
+  let t = frasePlana(pickVariant(item, patient));
   if(item.detail){
     const det = detailValFor(sys, kind, id);
     if(det) t += ` (${det})`;
@@ -2632,6 +2735,46 @@ function guardarChecksPropios(p){
   if(!tieneChecksPropios(p)) return;
   p.checksPropios = captureCurrentAsPlantillaSet();
   schedulePatientSave(p, 500);
+  autoGuardarPlantilla(p);
+}
+/* ================= Guardado automático de la plantilla elegida =================
+   Mientras el paciente tenga una plantilla elegida (de fábrica o de «Mis plantillas»), todo lo que se
+   cambia en el checklist (tildes, detalles, estado general y «Qué aparece en cada texto») se guarda
+   solo en ESA plantilla y en la ficha del paciente. No toca los predeterminados globales ni a ninguna
+   otra plantilla. Las de fábrica se guardan como una copia propia (checklistConfig.plantillasBase),
+   que pasa a ser la que se aplica la próxima vez. */
+let autoPlantillaTimer = null;
+function autoGuardarPlantilla(p){
+  if(!p || !p.plantillaSeleccionada || !fld('evolEstado')) return;
+  const raw = p.plantillaSeleccionada;
+  const tipo = raw.indexOf('builtin:')===0 ? 'builtin' : (raw.indexOf('custom:')===0 ? 'custom' : '');
+  if(!tipo) return;
+  const clave = raw.slice(tipo==='builtin' ? 'builtin:'.length : 'custom:'.length);
+  const datos = {
+    estado: fld('evolEstado').value,
+    set: captureCurrentAsPlantillaSet(),
+    salidas: JSON.parse(JSON.stringify(salidasVigentes() || {}))
+  };
+  if(tipo === 'custom'){
+    const tpl = checklistConfig.customPlantillas && checklistConfig.customPlantillas[clave];
+    if(!tpl) return;
+    Object.assign(tpl, datos);
+  } else {
+    if(!PLANTILLAS[clave]) return;
+    if(!checklistConfig.plantillasBase) checklistConfig.plantillasBase = {};
+    checklistConfig.plantillasBase[clave] = datos;
+  }
+  clearTimeout(autoPlantillaTimer);
+  autoPlantillaTimer = setTimeout(()=>{
+    saveCustomLocal();
+    const st = fld('status');
+    if(st){
+      const nombre = tipo === 'builtin' ? plantillaLabelBuiltin(clave) : clave;
+      const m = `Cambios guardados en la plantilla «${nombre}».`;
+      st.textContent = m;
+      setTimeout(()=>{ if(st.textContent === m) st.textContent = ''; }, 2500);
+    }
+  }, 700);
 }
 function salidasVigentes(){
   const p = getSelected();
@@ -2667,9 +2810,14 @@ function mergeProfundo(dst, src){
    que tocan cosas distintas no se pisan. */
 function guardarSalidasPatch(patch){
   const p = getSelected();
+  // Con una plantilla elegida, lo que se cambia acá es de ESA plantilla (y de la ficha), no de la general.
+  if(p && p.plantillaSeleccionada && !tieneSalidasPropias(p)){
+    p.salidasPropias = JSON.parse(JSON.stringify(checklistConfig.salidas || {}));
+  }
   if(tieneSalidasPropias(p)){
     mergeProfundo(p.salidasPropias, patch);
     schedulePatientSave(p, 400);
+    autoGuardarPlantilla(p);
     return;
   }
   if(!checklistConfig.salidas) checklistConfig.salidas = {};
@@ -2711,36 +2859,80 @@ function systemStartsPathological(key, salida){
     return chk && chk.checked && (!salida || itemIncluidoEn(salida, key, 'alt', aid));
   });
 }
-function collectSystemParts(key, patient, salida){
+/* ================= Orden clínico del examen físico =================
+   Antes se escribían primero TODAS las frases normales y después TODAS las alteraciones, así que un
+   cardiovascular con arritmia salía «R1 y R2…, silencios…, sin falla de bomba… , ritmo irregular».
+   Ahora cada sistema se redacta en el orden en que se examina, mezclando lo normal y lo patológico:
+     CV:  ritmo → ruidos → soplos → falla de bomba → yugulares → decúbito → pulsos/perfusión
+     Resp: mecánica → murmullo → ruidos agregados → tiraje → saturación / oxígeno
+     Abd:  consistencia → dolor → peritoneo → visceromegalias/ascitis → (otros hallazgos) → RHA
+     Miembros: edema → flogosis/flebitis → piel → perfusión → movilidad
+   Las frases que agregaste vos (sin lugar fijo) quedan en el medio, en el orden que les diste. */
+const ORDEN_EXAMEN = {
+  cv:{ pre:['ritmoregular','arritmia','r1r2','hipofoneticos','silencios','soplo','sinfallo','fallo','iy','rhyneg','rhypos'],
+       post:['decubito','nodecubito','pulsos','pulsosdism'] },
+  resp:{ pre:['mecanica','malamecanica','tiraje','mv','mvdism','sinagregados','crepitantes','sibilancias','roncus','sintiraje'],
+         post:['sat','o2sup'] },
+  dig:{ pre:['blando','depresible','distendido','indoloro','doloroso','sinreaccionperitoneal','defensa','sinvisceromegalia','visceromegalia','sinascitis','ascitis','masa'],
+        post:['rha','rhadism'] },
+  miembros:{ pre:['sinedema','edema','sinflogosis','flogosis','sinflebitis','flebitis','pielsp','lesionpiel','necrosis','palidez','cianosis'],
+             post:['perfusionok','perfusionmala','moviliza4','limitacionmov'] },
+  infecto:{ pre:['febril','afebril','ascensoleuco','descensoleuco','buenaevol','sinrespuesta'], post:[] }
+};
+function rangoExamen(key, id){
+  const o = ORDEN_EXAMEN[key];
+  if(!o) return 0;
+  let i = o.pre.indexOf(id); if(i !== -1) return i;
+  i = o.post.indexOf(id);    if(i !== -1) return 10000 + i;
+  return 5000;
+}
+/* Una frase en medio de una oración empieza en minúscula («tenso», «mala mecánica ventilatoria»),
+   salvo siglas y códigos («RHA (+)», «R1 y R2…», «IY 2/3…»). Si venía en Title Case
+   («Mala Mecánica Ventilatoria») se pasa toda a minúscula. */
+function frasePlana(t){
+  t = String(t==null?'':t).trim();
+  if(!t) return t;
+  const esTitle = w=>/^[A-ZÁÉÍÓÚÑ][a-záéíóúñü]+[.,;]?$/.test(w);
+  const largas = t.split(/\s+/).filter(w=>w.length>3);
+  if(largas.length >= 2 && largas.every(esTitle)){
+    return t.split(/\s+/).map(w=>esTitle(w) ? w.toLowerCase() : w).join(' ');
+  }
+  if(/^[A-ZÁÉÍÓÚÑ][a-záéíóúñü]/.test(t)) return t.charAt(0).toLowerCase() + t.slice(1);
+  return t;
+}
+/* Frases tildadas (e incluidas en esa salida) de un sistema, separadas en normales y alteraciones.
+   Si una alteración y su antagonista normal quedaron las dos tildadas (pasa cuando una plantilla las
+   deja marcadas a la vez, ej. «R1 y R2 normofonéticos» + «hipofonéticos»), se escribe solo la alteración. */
+function entradasMarcadas(key, patient, salida){
   const merged = getMergedItems(key);
   const exclude = EXCLUDE_FROM_JOIN[key] || [];
-  const normalParts = [];
-  merged.normal.forEach(item=>{
-    if(exclude.indexOf(item.id)!==-1) return;
-    const chk = document.querySelector(`[data-sys="${key}"][data-kind="normal"][data-id="${item.id}"]`);
-    if(chk && chk.checked && (!salida || itemIncluidoEn(salida, key, 'normal', item.id))){
-      let t = pickVariant(item, patient);
-      if(item.detail){
-        const det = detailValFor(key,'normal',item.id);
-        if(det) t += ` (${det})`;
-      }
-      normalParts.push(t);
+  const armar = (item, kind)=>{
+    if(exclude.indexOf(item.id) !== -1) return null;
+    const chk = document.querySelector(`[data-sys="${key}"][data-kind="${kind}"][data-id="${item.id}"]`);
+    if(!(chk && chk.checked && (!salida || itemIncluidoEn(salida, key, kind, item.id)))) return null;
+    let t = frasePlana(pickVariant(item, patient));
+    if(item.detail){
+      const det = detailValFor(key, kind, item.id);
+      if(det) t += ` (${det})`;
     }
-  });
-  const altParts = [];
-  merged.alteraciones.forEach(item=>{
-    if(exclude.indexOf(item.id)!==-1) return;
-    const chk = document.querySelector(`[data-sys="${key}"][data-kind="alt"][data-id="${item.id}"]`);
-    if(chk && chk.checked && (!salida || itemIncluidoEn(salida, key, 'alt', item.id))){
-      let t = pickVariant(item, patient);
-      if(item.detail){
-        const det = detailValFor(key,'alt',item.id);
-        if(det) t += ` (${det})`;
-      }
-      altParts.push(t);
-    }
-  });
-  return systemStartsPathological(key, salida) ? altParts.concat(normalParts) : normalParts.concat(altParts);
+    return { id:item.id, kind, text:t, antag:item.antagonistas || [] };
+  };
+  const alts = merged.alteraciones.map(i=>armar(i,'alt')).filter(Boolean);
+  const idsAlt = new Set(alts.map(x=>x.id));
+  const normales = merged.normal.map(i=>armar(i,'normal')).filter(Boolean)
+    .filter(n=>!n.antag.some(a=>idsAlt.has(a)));
+  return { normales, alts };
+}
+function ordenarEntradas(key, lista){
+  return lista.map((e,i)=>({e, i, r:rangoExamen(key, e.id)}))
+    .sort((x,y)=>(x.r-y.r) || (x.i-y.i)).map(x=>x.e);
+}
+function collectSystemEntries(key, patient, salida){
+  const { normales, alts } = entradasMarcadas(key, patient, salida);
+  return ordenarEntradas(key, normales.concat(alts));
+}
+function collectSystemParts(key, patient, salida){
+  return collectSystemEntries(key, patient, salida).map(e=>e.text);
 }
 function collectSystemPhrase(key, patient, salida){
   return collectSystemParts(key, patient, salida).join(', ');
@@ -2759,9 +2951,12 @@ function buildFlogosisFlebitisClause(patient, salida){
   return negParts.join(' y ');
 }
 function buildMiembrosClause(patient, salida){
-  const parts = collectSystemParts('miembros', patient, salida);
+  const entries = collectSystemEntries('miembros', patient, salida);
   const flogFleb = buildFlogosisFlebitisClause(patient, salida);
-  const merged = flogFleb ? [parts[0], flogFleb].concat(parts.slice(1)).filter(Boolean) : parts;
+  const parts = entries.map((e,i)=> i===0 ? e.text.replace(/^edema en miembros inferiores/i, 'inferiores con edema') : e.text);
+  // «sin flogosis ni flebitis» va justo después del edema (o primero si no hay dato de edema)
+  const nEdema = entries.filter(e=>e.id==='sinedema' || e.id==='edema').length;
+  const merged = flogFleb ? parts.slice(0,nEdema).concat([flogFleb], parts.slice(nEdema)) : parts;
   if(!merged.length) return '';
   return `Miembros ${merged.join(', ')}`;
 }
@@ -3080,8 +3275,23 @@ function buildExamBody(p, salida){
    traer "en tto con X (día Y de tto)" si viene actualizado desde el .md del pase de sala). */
 function dxSentence(p){
   const sexoTxt = p.sexo === 'M' ? 'masculino' : (p.sexo === 'F' ? 'femenina' : '');
-  const miResumen = activeMiSummary(p);
-  return `Paciente${sexoTxt?' '+sexoTxt:''}${p.edad?' de '+p.edad:''}${miResumen?', cursando internación '+miResumen:''}.`;
+  const limpio = t=>String(t||'').trim().replace(/[.\s]+$/,'');
+  const activos = (p.mi||[]).filter(i=>i && !i.resuelto && limpio(i.text));
+  const esSocial = i=>/^\s*social\b/i.test(i.text);
+  const clinicos = activos.filter(i=>!esSocial(i)).map(i=>limpio(i.text));
+  const primero = clinicos.length ? frasePlana(clinicos[0]) : '';
+  const sociales = activos.filter(esSocial).map(i=>{
+    const resto = limpio(i.text).replace(/^\s*social\s*[:\-–]?\s*/i, '');
+    return resto ? `Caso social (${resto}).` : 'Caso social.';
+  });
+  let s = `Paciente${sexoTxt?' '+sexoTxt:''}${p.edad?' de '+p.edad:''}`;
+  if(clinicos.length){
+    const unidos = [primero].concat(clinicos.slice(1)).join(' + ');
+    s += /^(por|en contexto|secundari)/i.test(unidos) ? `, cursando internación ${unidos}` : `, cursando internación por ${unidos}`;
+  }
+  s += '.';
+  if(sociales.length) s += ' ' + sociales.join(' ');
+  return s;
 }
 
 /* Arma cualquiera de los tres textos: fecha, [diagnóstico], [apertura neurológica] y el cuerpo.
@@ -3090,8 +3300,9 @@ function dxSentence(p){
    de la historia clínica, el pase largo y el pase corto — no solo en la
    tabla del archivero. */
 function cultivosSentence(p){
-  if(!p || !p.cult || !String(p.cult).trim()) return '';
-  return `Cultivos: ${String(p.cult).trim()}.`;
+  const activos = cultLista(p).filter(i=>i && !i.resuelto && String(i.text||'').trim());
+  if(!activos.length) return ''; // sin cultivos, o todos ya resueltos (tildados): no se escriben
+  return 'Cultivos: ' + activos.map(i=>String(i.text).trim().replace(/[.\s]+$/,'')).join('; ') + '.';
 }
 /* Interconsultas (IC): mismo criterio que Cultivos — si hay algo cargado, se
    menciona al final del cuerpo del examen, justo antes de la frase de cierre. */
@@ -3116,17 +3327,9 @@ function buildPaseCompletoText(p){ return buildSalidaText(p, 'completa'); }
    normal). Cualquier ítem normal que se incluya en la corta desde la plantilla entra agrupado por
    sistema en una sola oración; cada alteración sigue siendo una oración propia. */
 function shortSystemSentences(key, p, prefijoNormal){
-  const merged = getMergedItems(key);
-  const exclude = EXCLUDE_FROM_JOIN[key] || [];
-  const normales = [], alts = [];
-  merged.normal.forEach(item=>{
-    if(exclude.indexOf(item.id)!==-1) return;
-    if(isOn('corta', key, 'normal', item.id)) normales.push(itemPhrase(key,'normal',item.id,p));
-  });
-  merged.alteraciones.forEach(item=>{
-    if(exclude.indexOf(item.id)!==-1) return;
-    if(isOn('corta', key, 'alt', item.id)) alts.push(itemPhrase(key,'alt',item.id,p));
-  });
+  const { normales: en, alts: ea } = entradasMarcadas(key, p, 'corta');
+  const normales = ordenarEntradas(key, en).map(e=>e.text);
+  const alts = ordenarEntradas(key, ea).map(e=>e.text);
   const out = [];
   const normalSentence = normales.length ? [(prefijoNormal||'') + normales.join(', ')] : [];
   // Mismo criterio que en el pase largo: si este sistema arranca por lo
@@ -3186,13 +3389,13 @@ function shortAbdomenSentences(p){
     if(exclude.indexOf(item.id)!==-1) return false;
     return isChecked('dig','alt',item.id);
   });
-  const base = shortSystemSentences('dig', p, 'Abdomen ');
-  if(hayAlteracion) return base; // hay patología: se arma igual que antes, sin cambios.
-  // Sin alteraciones: si el abdomen normal está configurado para aparecer en el
-  // PASE corto, se resume como "Abdomen S/P" en vez de la descripción completa.
-  // Si no está configurado (caso de fábrica), queda vacío como antes, así el
-  // resumen genérico de "nada tildado" sigue funcionando igual que siempre.
-  return base.length ? ['Abdomen S/P'] : [];
+  const { normales, alts } = entradasMarcadas('dig', p, 'corta');
+  const todo = ordenarEntradas('dig', normales.concat(alts)).map(e=>e.text);
+  // Hay patología: una sola oración en orden clínico («Abdomen tenso, edema de pared, RHA (+)»).
+  if(hayAlteracion) return todo.length ? ['Abdomen ' + todo.join(', ')] : [];
+  // Sin alteraciones: si el abdomen normal está configurado para el PASE corto, se resume como
+  // «Abdomen S/P»; si no, queda vacío y sigue funcionando el resumen genérico de «nada tildado».
+  return todo.length ? ['Abdomen S/P'] : [];
 }
 function buildCuerpoCorto(p){
   const S = 'corta';
@@ -3300,6 +3503,8 @@ document.body.addEventListener('change', (e)=>{
   // Paciente con plantilla propia: el tilde (o el "incluir en esta evolución") se guarda en SU ficha.
   if(el && el.type === 'checkbox' && el.closest && el.closest('#evolBuilder') && el.dataset && !el.dataset.soOut){
     const pp = getSelected();
+    // Con una plantilla elegida, los tildes son de esa plantilla (no cambian los predeterminados de todos).
+    if(pp && pp.plantillaSeleccionada && !tieneChecksPropios(pp) && (el.dataset.sys || (el.id||'').indexOf('apply_') === 0)) pp.checksPropios = {};
     if(tieneChecksPropios(pp) && (el.dataset.sys || (el.id||'').indexOf('apply_') === 0)){
       guardarChecksPropios(pp);
       return;
@@ -3487,7 +3692,7 @@ setInterval(()=>{
   const input = fld('evolFecha');
   if(!input) return;
   if(fechaAutoSync){
-    const today = new Date().toISOString().slice(0,10);
+    const today = hoyLocalISO();
     if(input.value !== today) input.value = today;
   }
 }, 20000);
@@ -3506,7 +3711,7 @@ function rowsFor(p){
     ['MC', escapeHtml(p.mc)],
     ['MI', itemListHtml(p.mi)],
     ['ASOC', itemListHtml(p.asoc)],
-    ['CULT', escapeHtml(p.cult)],
+    ['CULT', itemListHtml(cultLista(p))],
     ['IC', escapeHtml(p.ic)],
     ['EVOL', escapeHtml(p.evol)]
   ];
@@ -3549,7 +3754,8 @@ function buildPlainText(list){
     if(p.mc) text += `MC: ${p.mc}\n`;
     text += `MI: ${p.mi.map(i=>(i.resuelto?'[RESUELTO] ':'')+i.text).join(' / ')}\n`;
     text += `ASOC: ${p.asoc.map(i=>(i.resuelto?'[RESUELTO] ':'')+i.text).join(' / ')}\n`;
-    if(p.cult) text += `CULT: ${p.cult}\n`;
+    const cl = cultLista(p);
+    if(cl.length) text += `CULT: ${cl.map(i=>(i.resuelto?'[RESUELTO] ':'')+i.text).join(' / ')}\n`;
     if(p.ic) text += `IC: ${p.ic}\n`;
     text += `EVOL:\n${p.evol||''}\n\n`;
   });
@@ -3598,7 +3804,7 @@ function applyRemoteSnapshot(remoteListRaw){
   const currentlyEditingId = activeInsideForm ? selectedId : null;
 
   const remoteById = {};
-  remoteList.forEach(r=>{ remoteById[r.id] = { id:r.id, ...r.data }; });
+  remoteList.forEach(r=>{ remoteById[r.id] = normalizarFicha({ id:r.id, ...r.data }); });
 
   let selectedPatientDataChanged = false;
   patients = patients.filter(p=>remoteById[p.id]);
@@ -3662,10 +3868,10 @@ function iniciarAppPrincipal(){
     if(snap.exists && snap.exists()){
       const data = snap.data();
       checklistConfig = (data && typeof data === 'object')
-        ? { custom: data.custom||{}, edits: data.edits||{}, hidden: data.hidden||{}, order: data.order||{}, customPlantillas: data.customPlantillas||{}, nombresPlantillas: data.nombresPlantillas||{}, defaults: data.defaults||{}, salidas: (data.salidas && typeof data.salidas === 'object') ? data.salidas : {}, estadoOptions: data.estadoOptions||null, camasVisibles: Array.isArray(data.camasVisibles) ? data.camasVisibles.map(String) : null }
-        : { custom:{}, edits:{}, hidden:{}, order:{}, customPlantillas:{}, nombresPlantillas:{}, defaults:{}, salidas:{}, estadoOptions:null, camasVisibles:null };
+        ? { custom: data.custom||{}, info: data.info||{}, plantillasBase: data.plantillasBase||{}, edits: data.edits||{}, hidden: data.hidden||{}, order: data.order||{}, customPlantillas: data.customPlantillas||{}, nombresPlantillas: data.nombresPlantillas||{}, defaults: data.defaults||{}, salidas: (data.salidas && typeof data.salidas === 'object') ? data.salidas : {}, estadoOptions: data.estadoOptions||null, camasVisibles: Array.isArray(data.camasVisibles) ? data.camasVisibles.map(String) : null }
+        : { custom:{}, info:{}, plantillasBase:{}, edits:{}, hidden:{}, order:{}, customPlantillas:{}, nombresPlantillas:{}, defaults:{}, salidas:{}, estadoOptions:null, camasVisibles:null };
     } else {
-      checklistConfig = { custom:{}, edits:{}, hidden:{}, order:{}, info:{}, customPlantillas:{}, nombresPlantillas:{}, defaults:{}, salidas:{}, estadoOptions:null, camasVisibles:null };
+      checklistConfig = { custom:{}, edits:{}, hidden:{}, order:{}, info:{}, plantillasBase:{}, customPlantillas:{}, nombresPlantillas:{}, defaults:{}, salidas:{}, estadoOptions:null, camasVisibles:null };
     }
     const activeInsideForm = document.activeElement && fld('formCol') && fld('formCol').contains(document.activeElement);
     if(getSelected() && !activeInsideForm) renderForm();
@@ -4099,7 +4305,7 @@ const PaseParser = (function(){
 
 /* Palabras que, al empezar o terminar un fragmento, indican que el corte por
    doble espacio fue un error de tipeo y hay que pegarlo con el vecino. */
-var CONNECT = new Set(['con','de','del','en','por','y','e','o','u','a','al','sin','para','x','hasta','desde','la','el','los','las','se']);
+var CONNECT = new Set(['con','de','del','en','por','y','e','o','u','a','al','sin','para','x','hasta','desde','la','el','los','las','se','secundaria','secundario','secundarias','secundarios','asociada','asociado']);
 var PARTICLES = new Set(['de','del','la','las','los','y','da','di','van','von']);
 
 function pad2(n){ return (n<10?'0':'')+n; }
@@ -4161,6 +4367,20 @@ function fragmentize(txt){
 }
 
 /* Celda MI / ASOC -> [{text, resuelto}]. Tachado = resuelto. */
+var MI_INICIO = /\s+(?=(?:SCA|NIH|Itu|ITU|Foco\s+respi|sepsis|Sepsis|Sme|TEC|TVP|Tvp|ACV|Hemorragia)\b)/;
+function cortarMi(txt){
+  var res = [], base = String(txt);
+  var ms = base.match(/^(social\s*[:\-\u2013]?\s*tercer\s+nivel)\s+(?=\S)/i);
+  if(ms){ res.push(ms[1].trim()); base = base.slice(ms[0].length); }
+  var partes = base.split(MI_INICIO);
+  partes.forEach(function(t){
+    t = t.trim(); if(!t) return;
+    var prev = res.length ? res[res.length-1] : '';
+    // solo se corta si lo anterior ya "cerró" (termina en ), fecha, punto o número) y no en un conector
+    if(prev && (ms || /[)\d.]$/.test(prev)) && (res.length>1 || !ms || true)) res.push(t); else if(prev) res[res.length-1] = prev+' '+t; else res.push(t);
+  });
+  return res;
+}
 function splitItems(raw, split){
   var parts = String(raw==null?'':raw).replace(/\*\*/g,'').split('~~');
   var items = [];
@@ -4168,9 +4388,34 @@ function splitItems(raw, split){
     var struck = (i%2===1);
     var txt = cleanInline(seg);
     var frags = split ? fragmentize(txt) : [txt.replace(/\s+/g,' ').trim()];
+    if(split === 'mi'){ var q = []; frags.forEach(function(f){ q = q.concat(cortarMi(f)); }); frags = q; }
     frags.filter(Boolean).forEach(function(f){ items.push({ text:f, resuelto:struck }); });
   });
   return items;
+}
+
+/* CULT: además del tachado (= resuelto) y del corte por doble espacio, el .md exportado de Google Docs
+   suele pegar los cultivos en una sola línea («HMC x2 773356 → NEGATIVO FINAL UC 773356 → klebsiella…»).
+   Se corta antes de cada «HMC x2», «UC 773356», «Uc:», «urocultivo:», etc. (no antes de «HMC negativos»),
+   y si el corte dejó una fecha suelta, se la pega con el cultivo que sigue. */
+var CULT_CORTE = /\s+(?=(?:hmc|hc|uc|uroc|urocultivos?|hemocultivos?|coprocultivo|esputo|hisopado|lcr|covi)\b\s*(?:x\s*\d|\d|:|→))/i;
+function splitCultText(txt){
+  var piezas = String(txt==null?'':txt).split(CULT_CORTE).map(function(x){ return x.trim(); }).filter(Boolean);
+  var out = [];
+  for(var i=0;i<piezas.length;i++){
+    var m = piezas[i].match(/^(.*\S)\s+(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?:?)$/);
+    if(m && i+1<piezas.length){ piezas[i] = m[1]; piezas[i+1] = m[2]+' '+piezas[i+1]; }
+    else if(/^\d{1,2}\/\d{1,2}(\/\d{2,4})?:?$/.test(piezas[i]) && i+1<piezas.length){ piezas[i+1] = piezas[i]+' '+piezas[i+1]; continue; }
+    out.push(piezas[i].trim());
+  }
+  return out.filter(Boolean);
+}
+function splitCultItems(raw){
+  var out = [];
+  splitItems(raw, false).forEach(function(it){
+    splitCultText(it.text).forEach(function(t){ out.push({ text:t, resuelto:it.resuelto }); });
+  });
+  return out;
 }
 
 function titleCase(s){
@@ -4285,8 +4530,8 @@ function parsePase(md, opts){
       cama: cm.cama, camaNum: cm.num, nombre: h.nombre, dni: h.dni, edad: h.edad, fn: h.fn, ic: h.ic,
       fi: '', fiAdivinada: false, sexo: '',
       ant: cleanBlock(raw.ant,false), mc: cleanBlock(raw.mc,false),
-      mi: splitItems(raw.mi, split), asoc: splitItems(raw.asoc, split),
-      cult: cleanBlock(raw.cult,false), evol: cleanBlock(raw.evol,true),
+      mi: splitItems(raw.mi, split ? 'mi' : false), asoc: splitItems(raw.asoc, split),
+      cult: splitCultItems(raw.cult), evol: cleanBlock(raw.evol,true),
       labo: cleanBlock(raw.labo,true), img: cleanBlock(raw.img,true),
       pend: pend.active, pendResuelto: pend.struck, plan: cleanBlock(raw.plan,false),
       warnings: pw
@@ -4316,7 +4561,7 @@ function parsePase(md, opts){
     else if(p.mi.every(function(i){ return i.resuelto; })) p.warnings.push('todo el MI está tachado (resuelto)');
 
     // Sexo: solo si el texto lo dice explícitamente ("paciente femenina/masculino")
-    var blob = [p.ant,p.mc,p.cult,p.evol,p.mi.map(function(i){return i.text;}).join(' ')].join(' ');
+    var blob = [p.ant,p.mc,p.cult.map(function(i){return i.text;}).join(' '),p.evol,p.mi.map(function(i){return i.text;}).join(' ')].join(' ');
     var sx = {}, mm, re = /\bpaciente\s+(femenina|masculino)\b/gi;
     while((mm = re.exec(blob))) sx[mm[1].toLowerCase()==='femenina' ? 'F' : 'M'] = true;
     if(Object.keys(sx).length===1) p.sexo = Object.keys(sx)[0];
@@ -4340,7 +4585,7 @@ function parsePase(md, opts){
   return { pacientes: pacientes, avisos: avisos };
 }
 
-  return { parsePase: parsePase, normCama: normCama };
+  return { parsePase: parsePase, normCama: normCama, splitCultText: splitCultText };
 })();
 
 /* ================= Unificación: un documento por cama =================
@@ -4368,7 +4613,7 @@ function textoNoVacio(v){
 }
 
 function fusionarEnFicha(target, origen, fusionarPendientesGuardia){
-  ['nombre','sexo','edad','dni','fi','mc','ant','cult','ic','evol','lastEstado'].forEach(k=>{
+  ['nombre','sexo','edad','dni','fi','mc','ant','ic','evol','lastEstado'].forEach(k=>{
     if(!textoNoVacio(target[k]) && textoNoVacio(origen[k])) target[k] = origen[k];
   });
   // guardias.html llamaba "paciente" al nombre y guardaba MI como texto plano
@@ -4379,6 +4624,7 @@ function fusionarEnFicha(target, origen, fusionarPendientesGuardia){
       else if(textoNoVacio(origen[k])) target[k] = miFromText(origen[k], null);
     }
   });
+  if(!textoNoVacio(target.cult) && textoNoVacio(origen.cult)) target.cult = Array.isArray(origen.cult) ? origen.cult : cultFromString(origen.cult);
   if(!target.evolCount && origen.evolCount) target.evolCount = origen.evolCount;
   if(!target.lastChecklist && origen.lastChecklist) target.lastChecklist = origen.lastChecklist;
   // manejo/datos/hechos son los "pendientes de guardia" que administra
@@ -4513,7 +4759,7 @@ const IMPORT_FIELDS = [
   {key:'ant',    label:'ANT'},
   {key:'mi',     label:'MI',   list:true},
   {key:'asoc',   label:'ASOC', list:true},
-  {key:'cult',   label:'Cultivos'}
+  {key:'cult',   label:'Cultivos', list:true}
 ];
 
 let importPlan = null;
@@ -4548,7 +4794,7 @@ function datosDelMd(np){
     ant:    np.ant || '',
     mi:     np.mi.map(i=>({text:i.text, resuelto:!!i.resuelto})),
     asoc:   np.asoc.map(i=>({text:i.text, resuelto:!!i.resuelto})),
-    cult:   np.cult || ''
+    cult:   (np.cult||[]).map(i=>({text:i.text, resuelto:!!i.resuelto}))
   };
 }
 
