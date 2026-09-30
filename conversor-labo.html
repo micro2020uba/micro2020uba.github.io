@@ -485,6 +485,9 @@ function fld(id){ return document.getElementById(id); }
     {code:'Ac Lac',      cat:'acidobase', kind:'std', l1:false, l2:true, aliases:[/\bacido l[aá]ctico\b/i]},
   ];
 
+  /* Códigos que NUNCA van al renglón LABORATORIO PARCIAL (aunque estén alterados). Siguen en el COMPLETO y en las explicaciones. */
+  const LABO_NEVER_PARCIAL = new Set(['RDW']);
+
   const LABO_CATS = [
     {id:'hemograma',    label:'Hemograma'},
     {id:'indices',      label:'Índices hematimétricos'},
@@ -525,18 +528,18 @@ function fld(id){ return document.getElementById(id); }
       ['HTO','Hombre 41-53 / Mujer 36-46 %'],
       ['PLAQ','150 - 400 10³/mm³'],
       ['Reticulocitos','0,5 - 2,5 %'],
-      ['ERS','Hombre <15 / Mujer <20 mm/h'],
+      ['ERS','Hombre <15 / Mujer <20 mm/h (aumenta con la edad: ≈ edad/2 en hombres; (edad+10)/2 en mujeres)'],
     ],
     indices: [
       ['VCM','80 - 100 fL'],
       ['HCM','27 - 33 pg'],
       ['CHCM','32 - 36 g/dL'],
-      ['RDW','11 - 15 %'],
+      ['RDW','11 - 15 % (no se incluye en LABORATORIO PARCIAL aunque esté alterado)'],
       ['VPM','7,5 - 11,5 fL'],
     ],
     coagulograma: [
       ['TP%','70 - 120 %'],
-      ['RIN','0,8 - 1,2 (sin anticoagulación)'],
+      ['RIN','0,8 - 1,2 (sin anticoagulación); objetivo con anticoagulantes orales 2,0 - 3,0 (2,5 - 3,5 en válvula mecánica mitral)'],
       ['KPTT','25 - 40 seg (según lab)'],
     ],
     quimica: [
@@ -544,6 +547,7 @@ function fld(id){ return document.getElementById(id); }
       ['GLUC','70 - 100 mg/dL (ayuno)'],
       ['HbA1c','< 5,7 % (5,7-6,4 % prediabetes; ≥6,5 % diabetes)'],
       ['UREA','15 - 45 mg/dL'],
+      ['Relación UREA/CR','20 - 40 (>50 orienta a causa prerrenal, hipercatabolismo o sangrado digestivo)'],
       ['CR','Hombre 0,7-1,3 / Mujer 0,6-1,1 mg/dL'],
       ['FG','> 90 mL/min/1,73m²'],
       ['LDH','140 - 280 U/L'],
@@ -605,11 +609,11 @@ function fld(id){ return document.getElementById(id); }
       ['Sat Transf','20 - 50 %'],
       ['TIBC','250 - 450 µg/dL'],
       ['UIBC','150 - 375 µg/dL'],
-      ['ferritina','Hombre 30-400 / Mujer 15-150 ng/mL'],
+      ['ferritina','Hombre 30-400 / Mujer 15-150 ng/mL (reactante de fase aguda: con inflamación puede ser normal/alta aun con déficit de hierro)'],
     ],
     vitaminas: [
-      ['Ac Fólico','3 - 17 ng/mL'],
-      ['vitamina B12','200 - 900 pg/mL'],
+      ['Ac Fólico','3 - 17 ng/mL (déficit < 3)'],
+      ['vitamina B12','200 - 900 pg/mL (déficit < 200; zona gris 200-300)'],
     ],
     oncologicos: [
       ['PSA','< 4 ng/mL (aumenta con la edad)'],
@@ -1652,8 +1656,20 @@ function fld(id){ return document.getElementById(id); }
     'N':    {alto:'neutrofilia; orienta a proceso infeccioso bacteriano o inflamatorio'},
     'L':    {alto:'linfocitosis; considerar etiología viral', bajo:'linfopenia'},
     'GR':   {bajo:'descenso de glóbulos rojos, acompaña a la anemia'},
-    'PLAQ': {bajo:'plaquetopenia; evaluar riesgo de sangrado, revisar fármacos y considerar frotis de sangre periférica', alto:'trombocitosis; evaluar causa reactiva vs. mieloproliferativa'},
-    'GLUC': {bajo:'hipoglucemia; controlar con HGT y corregir si es sintomática', alto:'hiperglucemia; controlar con HGT y valorar esquema de insulina correctora'},
+    'PLAQ': {bajo:'plaquetopenia; evaluar riesgo de sangrado, revisar fármacos y considerar frotis de sangre periférica', alto:(v,f,by)=> ((by['PCR']&&by['PCR'].dir==='alto')||(by['ERS']&&by['ERS'].dir==='alto')||(by['ferritina']&&by['ferritina'].dir==='alto'))
+      ? 'trombocitosis; en presencia de reactantes de fase aguda elevados (PCR/ERS/ferritina) es probable una trombocitosis reactiva (infección, inflamación, ferropenia); tratar la causa de base y controlar el recuento, sin indicación de citorreducción ni antiagregación por este dato aislado'
+      : 'trombocitosis; evaluar causa reactiva vs. mieloproliferativa (frotis de sangre periférica y, si es persistente, estudio de JAK2)'},
+    'HB':   {alto:'hemoglobina elevada; descartar hemoconcentración/deshidratación y policitemia secundaria (EPOC, hipoxemia crónica, tabaquismo, apnea del sueño); si persiste, valorar policitemia vera (JAK2, eritropoyetina)'},
+    'ERS':  {alto:(v)=>`ERS elevada; marcador inespecífico de inflamación que aumenta con la edad, la anemia y la hipoalbuminemia, por lo que no requiere conducta por sí sola: interpretarla junto con la PCR y la clínica${v!=null && v>100 ? '; con valores >100 mm/h descartar infección grave (osteomielitis, endocarditis), neoplasia, mieloma y arteritis de células gigantes (proteinograma, imágenes y, si hay cefalea o claudicación mandibular, corticoides y biopsia de arteria temporal)' : ''}`},
+    'RDW':  {alto:'RDW elevado (anisocitosis, población eritrocitaria heterogénea); en la anemia microcítica orienta a ferropenia (o déficit mixto si coexiste inflamación) y en la macrocítica a déficit de B12/folato; correlacionar con perfil férrico, B12 y ácido fólico. No modifica la conducta por sí solo'},
+    'VCM':  {bajo:'microcitosis; considerar ferropenia, anemia de trastornos crónicos o talasemia; solicitar perfil férrico y, si el hierro es normal, electroforesis de hemoglobina', alto:'macrocitosis; solicitar vitamina B12, ácido fólico, TSH y hepatograma, revisar alcohol y fármacos (metotrexato, hidroxiurea, antirretrovirales) y considerar síndrome mielodisplásico si persiste'},
+    'HCM':  {bajo:'hemoglobina corpuscular media baja (hipocromía); orienta a déficit de hierro o talasemia, correlacionar con VCM y perfil férrico', alto:'HCM elevada; acompaña a la macrocitosis, correlacionar con B12/ácido fólico'},
+    'CHCM': {bajo:'CHCM baja (hipocromía marcada); típica de ferropenia establecida, solicitar perfil férrico', alto:'CHCM elevada; sospechar esferocitosis o hemólisis (reticulocitos, LDH, bilirrubina indirecta, haptoglobina y Coombs) o artefacto de laboratorio (lipemia, aglutininas frías)'},
+    'VPM':  {alto:'VPM elevado (plaquetas jóvenes, mayor recambio); orienta a destrucción/consumo periférico (PTI, sepsis), correlacionar con el recuento plaquetario', bajo:'VPM bajo; sugiere hipoproducción medular (aplasia, quimioterapia, hiperesplenismo), correlacionar con el recuento plaquetario'},
+    'Reticulocitos': {alto:'reticulocitosis (respuesta medular); considerar hemólisis o sangrado agudo, o respuesta a tratamiento (hierro/B12/folato), correlacionar con LDH, bilirrubina indirecta y haptoglobina', bajo:'reticulocitopenia (anemia hiporregenerativa); considerar déficit de hierro/B12/folato, insuficiencia medular, enfermedad renal crónica o inflamación; calcular el índice reticulocitario corregido'},
+    'GLUC': {bajo:'hipoglucemia; controlar con HGT y corregir si es sintomática', alto:(v)=> (v!=null && v<126)
+      ? 'glucemia levemente por encima del rango (probable hiperglucemia de estrés o no en ayunas); sin indicación de insulina por sí sola, controlar HGT según esquema del servicio y repetir en ayunas / solicitar HbA1c si persiste'
+      : 'hiperglucemia; controlar con HGT y valorar esquema de insulina correctora'},
     'Na':   {bajo:'hiponatremia; evaluar volemia y osmolaridad plasmática antes de corregir (evitar corrección demasiado rápida)', alto:'hipernatremia; evaluar aporte de agua libre'},
     'K':    {bajo:'hipokalemia; controlar y valorar reposición de ClK (en casos moderados/severos, ej. 3 ampollas de ClK diluidas en 300 mL de SF a pasar en 3 horas —regla del 3— seguido de reposición en el plan de hidratación parenteral y/o Kaon vía oral)', alto:'hiperkalemia; solicitar ECG, considerar gluconato de calcio si hay cambios eléctricos y medidas para descender la kalemia'},
     'CL':   {bajo:'hipocloremia', alto:'hipercloremia; considerar acidosis metabólica hiperclorémica'},
@@ -1879,8 +1895,38 @@ function fld(id){ return document.getElementById(id); }
       if(ureaF) partes.push(`UREA ${ureaF.text}`);
       if(crF) partes.push(`CR ${crF.text}`);
       if(fgF) partes.push(`FG ${fgF.text}`);
-      sentences.push(`${laboRed(partes.join(', '))}: deterioro de la función renal; ajustar dosis de fármacos de eliminación renal y correlacionar con diuresis y estado de hidratación.`);
+      const ureaAlta = ureaF && ureaF.dir==='alto';
+      const crAlta = crF && crF.dir==='alto';
+      const crNormal = crF && !crF.dir;
+      if(ureaAlta && crNormal){
+        const u = laboToNumber(ureaF.text), c = laboToNumber(crF.text);
+        const ratio = (u!=null && c) ? Math.round(u/c) : null;
+        const anemiaAsoc = hbF && hbF.dir==='bajo';
+        sentences.push(`${laboRed(partes.join(', '))}: aumento aislado de urea con creatinina normal${ratio!=null?` (relación urea/creatinina ≈ ${ratio}; >50 orienta a causa prerrenal, hipercatabolismo o sangrado digestivo)`:''}; sin deterioro de la función renal establecido (el FG por CKD-EPI no es confiable en internados y adultos mayores). Valorar hipovolemia/deshidratación (balance, diuresis, aporte de líquidos e hidratación parenteral si corresponde), hipercatabolismo o corticoides, y descartar sangrado digestivo alto${anemiaAsoc?' (más aún con anemia asociada: examen físico/tacto rectal, seguimiento de hemoglobina y valorar endoscopía)':''}; reducir el aporte proteico si es excesivo, evitar nefrotóxicos y repetir urea/creatinina tras la corrección.`);
+      } else if(ureaAlta || crAlta || (fgF && fgF.dir==='bajo')){
+        sentences.push(`${laboRed(partes.join(', '))}: deterioro de la función renal; ajustar dosis de fármacos de eliminación renal, evitar nefrotóxicos (AINEs, contraste, aminoglucósidos), correlacionar con diuresis y estado de hidratación y solicitar sedimento/ionograma urinario y ecografía renal si no revierte.`);
+      } else {
+        sentences.push(`${laboRed(partes.join(', '))}: función renal por debajo del rango de referencia; ajustar dosis de fármacos de eliminación renal y correlacionar con diuresis y estado de hidratación.`);
+      }
       ['UREA','CR','FG'].forEach(c=>consumed.add(c));
+    }
+
+    const tpF = byCode['TP%'], rinF = byCode['RIN'], kpttF = byCode['KPTT'];
+    if((tpF && tpF.dir==='bajo') || (rinF && rinF.dir==='alto')){
+      const partes = [];
+      if(tpF) partes.push(`TP ${tpF.text}`);
+      if(rinF) partes.push(`RIN ${rinF.text}`);
+      const kpttAlto = kpttF && kpttF.dir==='alto';
+      if(kpttAlto) partes.push(`KPTT ${kpttF.text}`);
+      const rin = rinF ? laboToNumber(rinF.text) : null;
+      let acoag;
+      if(rin!=null && rin>=4.5) acoag = 'RIN supraterapéutico (≥4,5): suspender el antagonista de vitamina K y, si hay sangrado o RIN >10, administrar vitamina K (± concentrado de complejo protrombínico si el sangrado es grave)';
+      else if(rin!=null && rin>3) acoag = 'RIN por encima del rango terapéutico habitual (2-3): reducir o suspender transitoriamente la dosis y controlar en 24-48 hs, sin vitamina K salvo sangrado';
+      else if(rin!=null && rin>=2) acoag = 'RIN dentro del rango terapéutico habitual (2-3): continuar la dosis actual y controlar según esquema';
+      else acoag = 'RIN por debajo del rango terapéutico (2-3): valorar ajuste de dosis (y puente con heparina de bajo peso molecular si el riesgo trombótico es alto)';
+      sentences.push(`${laboRed(partes.join(', '))}: prolongación de la vía extrínseca (TP descendido / RIN elevado). Si recibe antagonistas de vitamina K (acenocumarol/warfarina): ${acoag}. Si NO está anticoagulado: descartar insuficiencia hepática, déficit de vitamina K (desnutrición, ayuno prolongado, colestasis, antibióticos) o consumo (CID); solicitar fibrinógeno, dímero D, plaquetas y factores V/VII, y administrar vitamina K (10 mg vía EV lenta o VO por 3 días) como prueba terapéutica; extremar precauciones ante procedimientos invasivos y evitar fármacos que potencien el sangrado.${kpttAlto?' El KPTT también prolongado sugiere déficit combinado de factores, heparina o inhibidor lúpico.':''}`);
+      consumed.add('TP%'); consumed.add('RIN');
+      if(kpttAlto) consumed.add('KPTT');
     }
 
     const feF = byCode['Fe'], transfF = byCode['transferrina'], satF = byCode['Sat Transf'],
@@ -1945,7 +1991,8 @@ function fld(id){ return document.getElementById(id); }
         if(kBlock){ sentences.push(kBlock); consumed.add('K'); return; }
       }
       if(!f || !f.dir) return;
-      const txt = LABO_EXPLAIN[code][f.dir];
+      let txt = LABO_EXPLAIN[code][f.dir];
+      if(typeof txt==='function') txt = txt(laboToNumber(f.text), f, byCode);
       if(!txt) return;
       sentences.push(`${laboRed(`${code} ${f.text}`)}: ${txt}.`);
       consumed.add(code);
@@ -2181,7 +2228,14 @@ function fld(id){ return document.getElementById(id); }
         }
       } else if(param.kind==='raw'){
         const r = laboExtractStd(flatMasked, param, sex);
-        if(r){ text = laboFmtNumber(r.value); abnormal = false; dir = null; ok = true; pos = r.pos; }
+        if(r){
+          text = laboFmtNumber(r.value); abnormal = false; dir = null; ok = true; pos = r.pos;
+          if(param.code==='RIN'){
+            /* Muchos informes no traen rango para el RIN: se usa 0,8-1,2 (sin anticoagulación) */
+            const rg = (r.range && r.range.high!=null && r.range.high<=10) ? r.range : {low:0.8, high:1.2};
+            if(r.value > rg.high){ abnormal = true; dir = 'alto'; }
+          }
+        }
       } else {
         const r = laboExtractStd(flatMasked, param, sex);
         if(r){ text = laboFmtNumber(r.value); abnormal = laboIsAbnormal(r.value, r.range); dir = laboDir(r.value, r.range); rng = r.range; ok = true; pos = r.pos; }
@@ -2231,7 +2285,7 @@ function fld(id){ return document.getElementById(id); }
 
     const byPos = (a,b)=> (a.pos ?? 0) - (b.pos ?? 0);
     const line2Items = found.filter(f=>f.l2).sort(byPos);
-    const line1Items = found.filter(f=>f.l1 || f.abnormal).concat(extras).sort(byPos);
+    const line1Items = found.filter(f=>f.l1 || (f.abnormal && !LABO_NEVER_PARCIAL.has(f.code))).concat(extras).sort(byPos);
 
     const liquidosBlocks = laboBuildLiquidosBlocks(flat);
     const textStudyResult = laboBuildTextStudyBlocks(flat);
@@ -2285,7 +2339,7 @@ function fld(id){ return document.getElementById(id); }
     }).map(g=>g.label);
 
     const line2Html = buildLine(line2Items);
-    let line1Html = buildLine(line1Items.filter(x=>x.l1 || x.abnormal));
+    let line1Html = buildLine(line1Items.filter(x=>x.l1 || (x.abnormal && !LABO_NEVER_PARCIAL.has(x.code))));
     const RAPID_CODES = ['Ag COVID','Influenza A','Influenza B','VSR'];
     const rapidNeg = found.filter(f=>RAPID_CODES.includes(f.code) && !f.abnormal).map(f=>f.code);
     const negSentences = [];
@@ -2369,7 +2423,7 @@ function fld(id){ return document.getElementById(id); }
     $output.innerHTML = out;
 
     const extrasCount = extras.length;
-    const catalogAlteradosFueraCore = found.filter(f=>!f.l1 && f.abnormal).length;
+    const catalogAlteradosFueraCore = found.filter(f=>!f.l1 && f.abnormal && !LABO_NEVER_PARCIAL.has(f.code)).length;
     const line1CoreCount = found.filter(f=>f.l1).length;
     const liqTxt = liquidosBlocks.length ? ` Líquidos de punción: ${liquidosBlocks.length} estudio(s).` : '';
     const uroTxt = textStudyBlocks.length ? ` Uroanálisis/urocultivo: ${textStudyBlocks.length} estudio(s).` : '';
