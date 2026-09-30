@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-   Versión: 26 (27/09/2026)
+   Versión: 29 (28/09/2026)
 -->
 <html lang="es-AR">
 <head>
@@ -167,9 +167,9 @@
     cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;user-select:text;-webkit-user-select:text;
   }
   details.collapsible > summary .sum-title{user-select:text;-webkit-user-select:text;}
-  .copy-field-btn{margin-left:auto;border:1px solid var(--line-soft);background:#fff;border-radius:3px;padding:1px 8px;
-    font-size:11px;font-family:inherit;text-transform:none;letter-spacing:0;cursor:pointer;color:var(--accent-dark);user-select:none;}
-  .copy-field-btn:hover{background:var(--accent-dark);color:#fff;}
+  /* Todo el texto del programa se puede resaltar y copiar (compu y celular). */
+  html, body, body *{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default;}
+  button, .btn{-webkit-user-select:none;user-select:none;}
   details.collapsible > summary::-webkit-details-marker{display:none;}
   details.collapsible > summary::before{content:'▸';display:inline-block;transition:transform .12s;font-size:9px;}
   details.collapsible[open] > summary::before{transform:rotate(90deg);}
@@ -195,13 +195,18 @@
   .item-row label.res{display:flex;align-items:center;gap:3px;font-size:10.5px;color:var(--muted);white-space:nowrap;cursor:pointer;}
   .item-row label.res input{width:17px;height:17px;margin:0;cursor:pointer;accent-color:var(--accent-dark);}
   .item-row .del{color:var(--danger);border:none;background:none;cursor:pointer;font-weight:700;font-size:14px;}
+  .item-row .mv{border:1px solid var(--line-soft);background:#fff;color:var(--accent-dark);border-radius:3px;cursor:pointer;
+    font-size:10px;line-height:1;padding:4px 6px;}
+  .item-row .mv:hover{background:var(--accent-dark);color:#fff;}
+  .item-row .mv-ph{display:inline-block;width:24px;}
+  .item-row.resuelto .mv{display:none;}
   .add-item-row{display:flex;gap:6px;}
   .add-item-row input{flex:1;}
   .add-item-row button{white-space:nowrap;padding:6px 10px;font-size:11.5px;font-weight:600;background:var(--accent-dark);color:#fff;border:none;cursor:pointer;border-radius:2px;}
 
   .sys-block{border:1px dashed var(--line-soft);border-left:4px solid var(--line-soft);padding:9px;margin-bottom:9px;background:#fdfcf9;}
   .sys-title{font-weight:700;font-size:12px;margin-bottom:0;color:var(--accent-dark);cursor:pointer;list-style:none;
-    display:flex;align-items:center;user-select:none;}
+    display:flex;align-items:center;user-select:text;-webkit-user-select:text;}
   .sys-title::-webkit-details-marker{display:none;}
   .sys-title::before{content:'▸';display:inline-block;margin-right:7px;font-size:10px;transition:transform .12s;}
   details.sys-block[open] > .sys-title::before{transform:rotate(90deg);}
@@ -1282,6 +1287,53 @@ function actualizarDiasTtoEnItems(items){
    Cada cultivo es {text, resuelto}. Tildado = ya resuelto (negativo final, rescatado,
    no aplica...) y por eso NO se redacta en la historia clínica ni en los pases.
    Las fichas viejas guardaban CULT como un texto suelto: se convierte solo al cargarlas. */
+/* ===== Orden de las listas MI / ASOC / CULT =====
+   Automático: lo pendiente arriba (y lo nuevo, primero de todo); lo tachado/resuelto, abajo.
+   Manual: en los ítems pendientes hay ▲ ▼ para acomodarlos a mano; ese orden se respeta
+   (el orden automático solo actúa al agregar, al tildar/destildar y al importar). */
+function activosPrimero(lista){
+  const l = Array.isArray(lista) ? lista : [];
+  return l.filter(i=>i && !i.resuelto).concat(l.filter(i=>i && i.resuelto));
+}
+function claveItem(t){ return String(t||'').toLowerCase().replace(/[^a-záéíóúñ]+/g,''); } // solo letras: ignora números (días de tto, fechas)
+/* Claves de una lista, sea un array de ítems o el texto guardado en la foto de la última importación
+   («a · ~~b~~ · c»). */
+function clavesDeLista(v){
+  const partes = Array.isArray(v) ? v.map(i=>i && i.text)
+    : String(v==null?'':v).split(' · ').map(s=>s.replace(/^~~|~~$/g,''));
+  return partes.map(claveItem).filter(Boolean);
+}
+function mismasClaves(a, b){
+  const x = clavesDeLista(a).sort(), y = clavesDeLista(b).sort();
+  return x.length === y.length && x.every((k,i)=>k===y[i]);
+}
+/* ¿El .md aporta algo que la ficha no tiene? = hay un ítem que no está, o uno que en el .md figura
+   resuelto y en la ficha sigue pendiente. El orden y los tildes hechos en la app no cuentan. */
+function listaImportCambia(prev, next){
+  const mapPrev = {};
+  (Array.isArray(prev)?prev:[]).forEach(i=>{ mapPrev[claveItem(i&&i.text)] = i; });
+  const kNext = clavesDeLista(next), kPrev = clavesDeLista(prev);
+  if(kNext.length !== kPrev.length || kNext.some(k=>!(k in mapPrev))) return true;
+  return (next||[]).some(i=>i.resuelto && mapPrev[claveItem(i.text)] && !mapPrev[claveItem(i.text)].resuelto);
+}
+/* Fusión al importar: lo nuevo va arriba; lo que ya estaba conserva el orden que tenía en la ficha
+   (incluido el manual) y sus tildes (si en el .md no viene tachado pero acá ya lo tildaste, sigue
+   tildado); lo resuelto va al final. */
+function ordenarListaImport(next, prev){
+  const prevMap = {}, idxPrev = {};
+  (Array.isArray(prev)?prev:[]).forEach((i,n)=>{ const k = claveItem(i && i.text); if(k && !(k in idxPrev)){ idxPrev[k] = n; prevMap[k] = i; } });
+  const items = (next||[]).map(i=>{
+    const k = claveItem(i.text), p = prevMap[k];
+    return { text:i.text, resuelto: !!(i.resuelto || (p && p.resuelto)), _k:k };
+  });
+  const activos = items.filter(i=>!i.resuelto);
+  const nuevos = activos.filter(i=>!(i._k in idxPrev));
+  const viejos = activos.filter(i=>(i._k in idxPrev))
+    .map((i,n)=>({i,n,r:idxPrev[i._k]})).sort((a,b)=>(a.r-b.r)||(a.n-b.n)).map(x=>x.i);
+  const resueltos = items.filter(i=>i.resuelto)
+    .map((i,n)=>({i,n,r:(i._k in idxPrev)?idxPrev[i._k]:-1})).sort((a,b)=>(a.r-b.r)||(a.n-b.n)).map(x=>x.i);
+  return nuevos.concat(viejos, resueltos).map(i=>({text:i.text, resuelto:i.resuelto}));
+}
 function cultFromString(s){
   const t = String(s==null?'':s).trim();
   if(!t) return [];
@@ -1682,14 +1734,29 @@ function renderItemList(containerId, patient, field){
   }
   const box = fld(containerId);
   box.innerHTML='';
-  patient[field].forEach(item=>{
+  patient[field] = activosPrimero(patient[field]); // lo resuelto siempre abajo
+  const nActivos = patient[field].filter(i=>!i.resuelto).length;
+  patient[field].forEach((item, idx)=>{
     const row = document.createElement('div');
     row.className = 'item-row'+(item.resuelto?' resuelto':'');
     row.innerHTML = `
       <label class="res" title="Tildado = ya realizado / resuelto (no se escribe en la historia clínica ni en los pases)"><input type="checkbox" ${item.resuelto?'checked':''}></label>
       <span class="txt" contenteditable="true" spellcheck="false">${escapeHtml(item.text)}</span>
+      ${item.resuelto ? '' : (idx>0 ? '<button class="mv up" title="Subir (más arriba)">▲</button>' : '<span class="mv-ph"></span>')}
+      ${item.resuelto ? '' : (idx<nActivos-1 ? '<button class="mv down" title="Bajar">▼</button>' : '<span class="mv-ph"></span>')}
       <button class="del" title="Quitar ítem">×</button>
     `;
+    const mover = (delta)=>{
+      const arr = patient[field], j = arr.indexOf(item), k = j + delta;
+      if(j<0 || k<0 || k>=nActivos) return;
+      arr.splice(j,1); arr.splice(k,0,item);
+      renderItemList(containerId, patient, field);
+      renderPreview();
+      updateDraftPreview(patient);
+    };
+    const bUp = row.querySelector('.mv.up'), bDn = row.querySelector('.mv.down');
+    if(bUp) bUp.addEventListener('click',()=>mover(-1));
+    if(bDn) bDn.addEventListener('click',()=>mover(1));
     const txtEl = row.querySelector('.txt');
     txtEl.addEventListener('blur',(e)=>{
       item.text = e.target.textContent.trim();
@@ -1699,6 +1766,9 @@ function renderItemList(containerId, patient, field){
     txtEl.addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ e.preventDefault(); e.target.blur(); } });
     row.querySelector('input[type=checkbox]').addEventListener('change',(e)=>{
       item.resuelto = e.target.checked;
+      // tildado -> baja al final; destildado -> vuelve arriba de todo
+      patient[field] = patient[field].filter(i=>i!==item);
+      if(item.resuelto) patient[field].push(item); else patient[field].unshift(item);
       renderPreview();
       renderItemList(containerId, patient, field);
       updateDraftPreview(patient);
@@ -1756,21 +1826,21 @@ function renderForm(){
     </fieldset>
 
     <details class="collapsible">
-      <summary><span class="sum-title">ANT — Antecedentes personales</span><button type="button" class="copy-field-btn" data-copy="ant" title="Copiar ANT al portapapeles">📋 Copiar</button></summary>
+      <summary>ANT — Antecedentes personales</summary>
       <div class="collapsible-body">
         <div class="field"><textarea data-f="ant"></textarea></div>
       </div>
     </details>
 
     <details class="collapsible">
-      <summary><span class="sum-title">MC (Motivo de Consulta)</span><button type="button" class="copy-field-btn" data-copy="mc" title="Copiar MC al portapapeles">📋 Copiar</button></summary>
+      <summary>MC (Motivo de Consulta)</summary>
       <div class="collapsible-body">
         <div class="field"><textarea data-f="mc"></textarea></div>
       </div>
     </details>
 
     <details class="collapsible">
-      <summary><span class="sum-title">MI — Motivo de internación (checklist)</span><button type="button" class="copy-field-btn" data-copy="mi" title="Copiar los MI que siguen activos">📋 Copiar</button></summary>
+      <summary>MI — Motivo de internación (checklist)</summary>
       <div class="collapsible-body">
         <div class="item-list" id="miList"></div>
         <div class="add-item-row">
@@ -1781,7 +1851,7 @@ function renderForm(){
     </details>
 
     <details class="collapsible">
-      <summary><span class="sum-title">ASOC — Diagnósticos asociados (checklist)</span><button type="button" class="copy-field-btn" data-copy="asoc" title="Copiar los ASOC que siguen activos">📋 Copiar</button></summary>
+      <summary>ASOC — Diagnósticos asociados (checklist)</summary>
       <div class="collapsible-body">
         <div class="item-list" id="asocList"></div>
         <div class="add-item-row">
@@ -1792,7 +1862,7 @@ function renderForm(){
     </details>
 
     <details class="collapsible">
-      <summary><span class="sum-title">CULT — Cultivos (checklist)</span><button type="button" class="copy-field-btn" data-copy="cult" title="Copiar los cultivos que siguen pendientes">📋 Copiar</button></summary>
+      <summary>CULT — Cultivos (checklist)</summary>
       <div class="collapsible-body">
         <div class="item-list" id="cultList"></div>
         <div class="add-item-row">
@@ -1837,7 +1907,7 @@ function renderForm(){
   fld('miAddBtn').addEventListener('click',()=>{
     const v = fld('miNuevo').value.trim();
     if(!v) return;
-    p.mi.push({text:v, resuelto:false});
+    p.mi.unshift({text:v, resuelto:false});
     fld('miNuevo').value='';
     renderItemList('miList', p, 'mi');
     renderPreview();
@@ -1848,7 +1918,7 @@ function renderForm(){
   fld('asocAddBtn').addEventListener('click',()=>{
     const v = fld('asocNuevo').value.trim();
     if(!v) return;
-    p.asoc.push({text:v, resuelto:false});
+    p.asoc.unshift({text:v, resuelto:false});
     fld('asocNuevo').value='';
     renderItemList('asocList', p, 'asoc');
     renderPreview();
@@ -1860,7 +1930,7 @@ function renderForm(){
     const v = fld('cultNuevo').value.trim();
     if(!v) return;
     if(!Array.isArray(p.cult)) p.cult = cultFromString(p.cult);
-    p.cult.push({text:v, resuelto:false});
+    p.cult.unshift({text:v, resuelto:false});
     fld('cultNuevo').value='';
     renderItemList('cultList', p, 'cult');
     renderPreview();
@@ -1874,46 +1944,22 @@ function renderForm(){
 }
 
 
-/* ================= Copiar ANT / MC / MI / ASOC / CULT =================
-   Los títulos de estas secciones ahora se pueden resaltar con el mouse o el dedo (antes tenían
-   user-select:none), y cada uno tiene un botón «📋 Copiar» que deja «TÍTULO: contenido» en el
-   portapapeles, listo para pegar. En las listas se copian solo los ítems que siguen activos. */
-const COPIAR_CAMPOS = { ant:'ANT', mc:'MC', mi:'MI', asoc:'ASOC', cult:'CULT' };
-function textoParaCopiar(p, clave){
-  if(clave==='ant' || clave==='mc') return String(p[clave]||'').trim();
-  const lista = clave==='cult' ? cultLista(p) : (p[clave]||[]);
-  const sep = clave==='cult' ? '; ' : ' + ';
-  return lista.filter(i=>i && !i.resuelto && String(i.text||'').trim()).map(i=>String(i.text).trim().replace(/[.\s]+$/,'')).join(sep);
-}
-function copiarAlPortapapeles(texto){
-  if(navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(texto);
-  return new Promise((ok, mal)=>{
-    const ta = document.createElement('textarea');
-    ta.value = texto; ta.style.position='fixed'; ta.style.opacity='0';
-    document.body.appendChild(ta); ta.select();
-    try{ document.execCommand('copy') ? ok() : mal(); }catch(e){ mal(e); }
-    document.body.removeChild(ta);
-  });
-}
+/* ================= Resaltar títulos sin plegarlos =================
+   Al hacer clic sobre el título de una sección se abre/cierra (como siempre). Pero si la persona está
+   resaltando texto (arrastrando el dedo/mouse, o doble clic sobre una palabra), ese clic NO pliega la
+   sección, así se puede seleccionar y copiar cualquier letra del programa. */
 document.addEventListener('click', (e)=>{
-  const btn = e.target.closest ? e.target.closest('.copy-field-btn') : null;
-  if(btn){
-    e.preventDefault(); e.stopPropagation();
-    const p = getSelected(); if(!p) return;
-    const clave = btn.dataset.copy, rot = COPIAR_CAMPOS[clave];
-    const txt = textoParaCopiar(p, clave);
-    const st = fld('status');
-    const avisar = (m)=>{ if(!st) return; st.textContent = m; setTimeout(()=>{ if(st.textContent===m) st.textContent=''; }, 2500); };
-    if(!txt){ avisar(rot + ' está vacío: no hay nada para copiar.'); return; }
-    copiarAlPortapapeles(rot + ': ' + txt).then(()=>avisar('Copiado: ' + rot + '.')).catch(()=>avisar('No se pudo copiar automáticamente: resaltá el texto y copialo a mano.'));
-    return;
-  }
-  // Si se está resaltando el título con el mouse, que el clic no pliegue/despliegue la sección.
-  const sum = e.target.closest ? e.target.closest('details.collapsible > summary') : null;
-  if(sum){
-    const sel = window.getSelection && window.getSelection();
-    if(sel && !sel.isCollapsed && String(sel).trim() && sum.contains(sel.anchorNode)) e.preventDefault();
-  }
+  const sum = e.target.closest ? e.target.closest('summary') : null;
+  if(!sum) return;
+  const sel = window.getSelection && window.getSelection();
+  if(sel && !sel.isCollapsed && String(sel).trim() && sum.contains(sel.anchorNode)) e.preventDefault();
+}, true);
+// Doble clic sobre una palabra del título: selecciona la palabra y deja la sección como estaba.
+document.addEventListener('dblclick', (e)=>{
+  const sum = e.target.closest ? e.target.closest('summary') : null;
+  if(!sum || !sum.parentElement || sum.parentElement.tagName !== 'DETAILS') return;
+  const sel = window.getSelection && window.getSelection();
+  if(sel && !sel.isCollapsed && String(sel).trim()) sum.parentElement.open = !sum.parentElement.open;
 }, true);
 
 /* ================= EVOL: checklist builder ================= */
@@ -4388,7 +4434,11 @@ function splitItems(raw, split){
     var struck = (i%2===1);
     var txt = cleanInline(seg);
     var frags = split ? fragmentize(txt) : [txt.replace(/\s+/g,' ').trim()];
-    if(split === 'mi'){ var q = []; frags.forEach(function(f){ q = q.concat(cortarMi(f)); }); frags = q; }
+    if(split === 'mi'){
+      var q = []; frags.forEach(function(f){ q = q.concat(cortarMi(f)); });
+      var q2 = []; q.forEach(function(f){ if(/^\(/.test(f) && q2.length) q2[q2.length-1] += ' ' + f; else q2.push(f); });
+      frags = q2;
+    }
     frags.filter(Boolean).forEach(function(f){ items.push({ text:f, resuelto:struck }); });
   });
   return items;
@@ -4867,9 +4917,9 @@ function analizarImport(parsed){
     const ref = (cur && cur.lastImport) || null;
     const campos = IMPORT_FIELDS.map(f=>{
       const prev = cur ? cur[f.key] : (f.list ? [] : '');
-      const changed = !mismoValor(f.key, prev, nuevo[f.key]);
+      const changed = f.list ? listaImportCambia(prev, nuevo[f.key]) : !mismoValor(f.key, prev, nuevo[f.key]);
       const vacioNuevo = !valorTexto(f.key, nuevo[f.key]).trim();
-      const manual = !!(ref && valorTexto(f.key, prev) !== (ref[f.key]||''));
+      const manual = !!(ref && (f.list ? !mismasClaves(prev, ref[f.key]) : valorTexto(f.key, prev) !== (ref[f.key]||'')));
       /* Un campo que en el .md viene vacío no pisa lo que ya había
          cargado (el pase puede tener la fila incompleta ese día). */
       const mostrar = changed && !(vacioNuevo && valorTexto(f.key, prev).trim());
@@ -5046,7 +5096,9 @@ function aplicarImport(plan){
     }
     undoEntries.push({ code: e.code, esNueva: esNueva, reset: !!e.reset, antes: JSON.parse(JSON.stringify(p)) });
     p.cama = e.code;
-    aAplicar.forEach(c=>{ p[c.key] = c.next; });
+    aAplicar.forEach(c=>{
+      p[c.key] = c.list ? ordenarListaImport(c.next, p[c.key]) : c.next;
+    });
     if(e.sexo && !p.sexo) p.sexo = e.sexo;
     if(e.reset){
       /* Paciente nuevo en la cama: lo de la persona anterior no sirve.
