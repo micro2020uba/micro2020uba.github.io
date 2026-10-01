@@ -223,6 +223,9 @@
   .sys-block-renal{border-left-color:#5bb0a8;}
   .sys-block-miembros{border-left-color:#8fa85b;}
   .sys-block-infecto{border-left-color:#b25b8a;}
+  .sys-block-cierre{border-left-color:#2f4f4f;}
+  .sys-block-cierre .antagInput, .sys-block-cierre .suggestSelect{display:none;}
+  .cierre-nota{font-size:10.5px;color:var(--muted);margin:2px 0 6px;}
   .chk-group{display:flex;flex-direction:column;gap:3px;margin-bottom:4px;}
   .chk-row{display:flex;align-items:center;gap:6px;font-size:11.5px;flex-wrap:wrap;}
   .chk-row-wrap{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:1px 0;border-bottom:1px dotted transparent;}
@@ -757,7 +760,7 @@ const SISTEMAS = {
     normal:[
       {id:'ritmoregular',text:'ritmo regular',antagonistas:['arritmia']},
       {id:'r1r2',text:'R1 y R2 en 4 focos, normofonéticos',variants:['R1 y R2 en 4 focos, normofonéticos','R1-R2 normofonéticos en 4 focos'],antagonistas:['hipofoneticos']},
-      {id:'silencios',text:'impresionan libres',variants:['impresionan libres','sin soplos evidentes'],antagonistas:['soplo']},
+      {id:'silencios',text:'silencios impresionan libres',variants:['silencios impresionan libres','sin soplos evidentes'],antagonistas:['soplo']},
       {id:'sinfallo',text:'sin signos de falla aguda de bomba',variants:['sin signos de falla aguda de bomba','sin signos de fallo agudo de bomba'],antagonistas:['fallo']},
       {id:'decubito',text:'tolera decúbito dorsal',antagonistas:['nodecubito']},
       {id:'pulsos',text:'pulsos periféricos presentes, con buena perfusión distal',variants:['pulsos periféricos presentes, con buena perfusión distal','pulsos periféricos conservados'],antagonistas:['pulsosdism']},
@@ -846,6 +849,25 @@ const SISTEMAS = {
       {id:'limitacionmov',text:'limitación funcional para la movilización',detail:true,detailLabel:'descripción',antagonistas:['moviliza4']}
     ]
   },
+  cierre: { label:'Cierre', soloFrases:true,
+    normal:[
+      {id:'cierrecontinua',text:'Continúa control evolutivo.'},
+      {id:'cierrehemo',text:'Hemodinámicamente estable.'},
+      {id:'cierremismoplan',text:'Continúa con el mismo plan terapéutico.'},
+      {id:'cierreatb',text:'Continúa con esquema antibiótico en curso.'},
+      {id:'cierrecultivos',text:'Pendiente rescate de cultivos.'},
+      {id:'cierreestudios',text:'Pendiente resultado de los estudios solicitados.'},
+      {id:'cierrelabo',text:'Se solicita laboratorio de control.'},
+      {id:'cierreic',text:'Pendiente evaluación por interconsultas.'},
+      {id:'cierrefamilia',text:'Se informa a familiares.'},
+      {id:'cierresocial',text:'Pendiente evaluación por Servicio Social.'},
+      {id:'cierredestino',text:'Pendiente definir destino al alta.'},
+      {id:'cierrevigilancia',text:'Se mantiene bajo vigilancia clínica estricta.'},
+      {id:'cierrereeval',text:'Se reevalúa evolución en las próximas horas.'},
+      {id:'cierreconfort',text:'Continúa con medidas de confort.'}
+    ],
+    alteraciones:[]
+  },
   infecto: { label:'Infectológico', opcional:true,
     normal:[
       {id:'buenaevol',text:'buena evolución del cuadro infeccioso',antagonistas:[]},
@@ -911,8 +933,8 @@ const EXCLUDE_FROM_JOIN = {
   miembros: ['sinflogosis', 'sinflebitis', 'flogosis', 'flebitis']
 };
 
-const SYS_ORDER = ['neuro','cv','resp','dig','renal','miembros','infecto'];
-const SYS_ICONS = { neuro:'🧠', cv:'❤️', resp:'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><g stroke="#2f6f8f" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"><path d="M10.2 8.5C7.5 8.8 4.8 13 3.8 17.2c-.6 2.6.6 4 2.8 4 2 0 3.6-1 3.6-3.2z" fill="#8ec9e6"/><path d="M13.8 8.5c2.7.3 5.4 4.5 6.4 8.7.6 2.6-.6 4-2.8 4-2 0-3.6-1-3.6-3.2z" fill="#8ec9e6"/><path d="M12 2.2v8.3M12 10.5l-2.6 2.2M12 10.5l2.6 2.2" fill="none"/></g></svg>', dig:'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><g stroke="#8a3a2b" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"><path d="M8.2 1.8h3.1v3.6c0 1.3 1 1.9 2.7 2.4 3.6 1 6.6 3.4 6.6 7.4 0 3.6-2.6 6.2-6 6.2-3 0-5.3-1.4-6.8-4C6.4 14.7 5.3 12.8 5.3 10.6c0-1.7 1.2-2.4 2.9-2.9z" fill="#f2a58e"/><path d="M13.5 20.2c1.7.1 3-.4 4-1.4" fill="none"/><path d="M11 11.5c1.8.2 3 1 3.6 2.4M10.2 14.8c1.5.1 2.6.6 3.3 1.5" fill="none" stroke="#c9604a"/></g></svg>', renal:'💧', miembros:'🦵', infecto:'🦠' };
+const SYS_ORDER = ['neuro','cv','resp','dig','renal','miembros','infecto','cierre'];
+const SYS_ICONS = { cierre:'🏁', neuro:'🧠', cv:'❤️', resp:'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><g stroke="#2f6f8f" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"><path d="M10.2 8.5C7.5 8.8 4.8 13 3.8 17.2c-.6 2.6.6 4 2.8 4 2 0 3.6-1 3.6-3.2z" fill="#8ec9e6"/><path d="M13.8 8.5c2.7.3 5.4 4.5 6.4 8.7.6 2.6-.6 4-2.8 4-2 0-3.6-1-3.6-3.2z" fill="#8ec9e6"/><path d="M12 2.2v8.3M12 10.5l-2.6 2.2M12 10.5l2.6 2.2" fill="none"/></g></svg>', dig:'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><g stroke="#8a3a2b" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"><path d="M8.2 1.8h3.1v3.6c0 1.3 1 1.9 2.7 2.4 3.6 1 6.6 3.4 6.6 7.4 0 3.6-2.6 6.2-6 6.2-3 0-5.3-1.4-6.8-4C6.4 14.7 5.3 12.8 5.3 10.6c0-1.7 1.2-2.4 2.9-2.9z" fill="#f2a58e"/><path d="M13.5 20.2c1.7.1 3-.4 4-1.4" fill="none"/><path d="M11 11.5c1.8.2 3 1 3.6 2.4M10.2 14.8c1.5.1 2.6.6 3.3 1.5" fill="none" stroke="#c9604a"/></g></svg>', renal:'💧', miembros:'🦵', infecto:'🦠' };
 
 const GLOSARIO = {
   neuro: [
@@ -1089,6 +1111,7 @@ function aplicarPlantillaObj(patient, tpl){
     syncEstadoPaciente(patient);
   }
   guardarChecksPropios(patient);
+  if(!tieneChecksPropios(patient)) guardarCierreSel(patient);
   updateDraftPreview(patient);
 }
 // Nombre a mostrar de una plantilla de fábrica: el que el usuario le haya puesto
@@ -1524,6 +1547,7 @@ function vaciarCarpeta(p){
   p.lastImport = null;
   delete p.salidasPropias;
   delete p.checksPropios;
+  delete p.cierreSel;
   p.cama = cama;
   savePatientNow(p, {includeGuardiaFields:true});
   lastRenderedPatientId = null;
@@ -2024,7 +2048,7 @@ function getMergedItems(key){
   return {
     normal: build(base.normal.concat(custom.normal||[]), 'normal'),
     alteraciones: build(base.alteraciones.concat(custom.alteraciones||[]), 'alteraciones'),
-    opcional: base.opcional, estudio: base.estudio, label: base.label
+    opcional: base.opcional, estudio: base.estudio, soloFrases: base.soloFrases, label: base.label
   };
 }
 
@@ -2049,6 +2073,7 @@ function setDefaultChecked(key, kind, id, value){
    ya tiene un valor guardado. Las demás alteraciones (los hallazgos de un paciente puntual) solo
    valen para el paciente que se está cargando, para no contagiar a los demás. */
 function defaultEsGlobal(key, kind, id){
+  if(key === 'cierre') return false; // las frases de cierre son de cada paciente / plantilla, no de todos
   if(kind === 'normal') return true;
   const cfg = checklistConfig.defaults && checklistConfig.defaults[key];
   const map = cfg && cfg.alt;
@@ -2072,7 +2097,14 @@ function actualizarDefaultDesdeCheck(key, kind, id, checked){
   guardarDefaultGlobal(key, kind, id, checked ? (typeof prev === 'string' ? prev : true) : false);
   return true;
 }
+function cierreIdsSel(p){ return Array.isArray(p && p.cierreSel) ? p.cierreSel : []; }
+function guardarCierreSel(p){
+  if(!p) return;
+  p.cierreSel = Array.from(document.querySelectorAll('#evolBuilder [data-sys="cierre"][data-kind="normal"]:checked')).map(c=>c.dataset.id);
+  schedulePatientSave(p, 500);
+}
 function lastChecked(p, key, kind, id, fallback){
+  if(key === 'cierre' && !tieneChecksPropios(p)) return cierreIdsSel(p).indexOf(id) !== -1;
   if(tieneChecksPropios(p)){
     const m = p.checksPropios[key] && p.checksPropios[key][kind==='normal' ? 'normal' : 'alt'];
     return !!(m && m[id]);
@@ -2249,7 +2281,7 @@ function renderEvolBuilder(p, stateOverride){
         ${sys.opcional ? `<label class="opt-toggle" onclick="event.stopPropagation()"><input type="checkbox" id="apply_${key}" ${applyChecked?'checked':''}> incluir en esta evolución</label>` : ''}
       </summary>
       <div class="sys-block-body">
-      <div class="chk-subtitle">Normal</div>
+      ${sys.soloFrases ? '<div class="cierre-nota">Tildá las frases con las que querés cerrar este pase. Cada paciente (y cada plantilla) guarda las suyas. Si no tildás ninguna, se usa la frase de cierre del Estado general.</div>' : '<div class="chk-subtitle">Normal</div>'}
       <div class="chk-group">`;
     sys.normal.forEach((item, idx)=>{
       const checked = lastChecked(p, key, 'normal', item.id, true);
@@ -2270,12 +2302,13 @@ function renderEvolBuilder(p, stateOverride){
     });
     html += `</div>
       <div class="add-custom-row">
-        <input type="text" class="customInput" placeholder="+ agregar opción normal">
+        <input type="text" class="customInput" placeholder="${sys.soloFrases ? '+ agregar frase de cierre' : '+ agregar opción normal'}">
         <input type="text" class="antagInput" placeholder="antagónimo (opcional)" title="La frase patológica opuesta — ej. si acá pusiste &quot;normofonético&quot;, el antagónimo sería &quot;hipofonético&quot;. Quedan enlazadas: tildar una destilda a la otra.">
         <button type="button" class="addCustomBtn" data-sys="${key}" data-kind="normal">Agregar</button>
         <select class="suggestSelect" data-sys="${key}" data-kind="normal"></select>
       </div>
-      <div class="chk-subtitle">Alteraciones</div><div class="chk-group">`;
+      ${sys.soloFrases ? '' : '<div class="chk-subtitle">Alteraciones</div><div class="chk-group">'}`;
+    if(sys.soloFrases){ html += `</div></details>`; return; }
     sys.alteraciones.forEach((item, idx)=>{
       const checked = lastChecked(p, key, 'alt', item.id, false);
       const detailVal = item.detail ? lastDetail(p, key, 'alt', item.id) : '';
@@ -2583,6 +2616,7 @@ document.body.addEventListener('click', (e)=>{
     if(!confirm('¿Borrar la plantilla propia de este paciente y volver a usar la plantilla general?')) return;
     delete p.salidasPropias;
     delete p.checksPropios;
+    delete p.cierreSel;
     delete p.plantillaSeleccionada;
     savePatientNow(p);
     renderEvolBuilder(p);
@@ -2797,7 +2831,7 @@ const BLOQUES_SALIDA = [
   {id:'csv', label:'Signos vitales (CSV)', def:{hc:true, corta:true, completa:true}},
   {id:'estudio', label:'Informe del estudio complementario (cardio)', def:{hc:true, corta:false, completa:true}},
   {id:'labimg', label:'LAB: , IMG: (en negrita)', soloHC:true, def:{hc:true, corta:false, completa:false}},
-  {id:'cierre', label:'Frase de cierre según Estado general', def:{hc:true, corta:true, completa:true}}
+  {id:'cierre', label:'Frases de cierre (las tildadas en «Cierre»; si no hay ninguna, la del Estado general)', def:{hc:true, corta:true, completa:true}}
 ];
 /* De Neurológico solo se escriben estas alteraciones (el resto de la apertura es fija según el Estado general). */
 const NEURO_IDS_EN_TEXTO = ['desorientado','excitacion','noobedece','confuso','focomotor'];
@@ -2868,6 +2902,7 @@ function itemIncluidoEn(salida, key, kind, id){
   const s = salidasVigentes();
   const m = s && s.items && s.items[key] && s.items[key][kind] && s.items[key][kind][id];
   if(m && typeof m[salida] === 'boolean') return m[salida];
+  if(key === 'cierre') return true;
   return salida === 'corta' ? kind === 'alt' : true;
 }
 function bloqueOn(salida, id){
@@ -2943,6 +2978,165 @@ function systemStartsPathological(key, salida){
     return chk && chk.checked && (!salida || itemIncluidoEn(salida, key, 'alt', aid));
   });
 }
+/* ================= Redacción médica: orden, concordancia y limpieza =================
+   Capa que ordena y pule lo que arman las plantillas, para que HISTORIA CLÍNICA y PASE lean
+   como una evolución escrita por un médico: cada sistema en el orden en que se examina (aunque
+   la frase sea una que agregaste vos y no tenga lugar fijo), sin repetir ni contradecirse,
+   con concordancia de género y sin signos de puntuación sueltos. */
+
+/* Posición clínica de una frase según su contenido (sirve para las frases agregadas a mano, que
+   no tienen un lugar fijo en ORDEN_EXAMEN). Escala comparable con los índices de ORDEN_EXAMEN.pre;
+   lo que va al final del examen devuelve 10000+. */
+const ORDEN_POR_TEXTO = {
+  cv:[
+    [/\b(ritmo|arritmia|fibrilaci|extras[ií]stole)/i, 0.5],
+    [/\bR1\b|R1-R2|fon[eé]tic|ruidos card/i, 2.5],
+    [/silencio|soplo/i, 4.5],
+    [/falla|fallo|bomba|congesti|bajo gasto|tercer ruido|3er ruido/i, 6.5],
+    [/\bIY\b|yugular|hepatoyugular|\bRHY\b/i, 8.5],
+    [/dec[uú]bito/i, 10000],
+    [/pulso|perfusi|llenado|extremidades/i, 10002]
+  ],
+  resp:[
+    [/mec[aá]nica|\bBMV\b|tiraje|m[uú]sculos accesorios|polipne|taquipne|frecuencia respiratoria/i, 1],
+    [/murmullo|entrada de aire|\bBEAB\b|\bMV\b/i, 3.5],
+    [/agregados|crepit|sibilan|roncus|rales|estertor/i, 5.5],
+    [/satura|ox[ií]gen|\bO2\b|O₂|desatur|hipox/i, 10000]
+  ],
+  dig:[
+    [/blando|depresible|distendid|globoso|tenso/i, 0.5],
+    [/dolor|indoloro/i, 4],
+    [/peritone|defensa/i, 6],
+    [/visceromegal|ascitis|masa|hepatomegal|esplenomegal|onda asc/i, 8],
+    [/\bRHA\b|ruidos hidroa[eé]reos|gases|deposicion|catarsis/i, 10000]
+  ],
+  miembros:[
+    [/edema/i, 0.5],
+    [/flogosis|flebitis/i, 2.5],
+    [/piel|cut[aá]nea|lesi[oó]n|[uú]lcera|necrosis|escara|palidez|cianosis|petequia|equimosis|hematoma/i, 4.5],
+    [/perfusi|llenado|pulsos/i, 10000],
+    [/moviliza|movilidad|limitaci[oó]n/i, 10001]
+  ]
+};
+function rangoPorTexto(key, texto){
+  const reglas = ORDEN_POR_TEXTO[key];
+  if(!reglas) return null;
+  for(const [re, r] of reglas) if(re.test(texto)) return r;
+  return null;
+}
+
+/* Pares [frase normal, hallazgo patológico que la contradice] para frases sin antagonista
+   configurado (las agregadas a mano). Si el hallazgo está tildado, la frase normal no se escribe. */
+const CONTRADICCIONES = {
+  cv:[
+    [/^ritmo regular/i, /ritmo irregular|arritmia|fibrilaci/i],
+    [/normofon[eé]tic/i, /hipofon[eé]tic|apagad/i],
+    [/silencios.*libres|sin soplos/i, /soplo/i],
+    [/^sin signos de fall[ao]|^IY\b.*colapso/i, /^(con )?signos de fall[ao]|congesti|^IY\b.*(ingurgit|aument)/i],
+    [/^tolera dec/i, /^no tolera dec/i],
+    [/pulsos.*(presentes|conservados)/i, /pulsos.*(disminuid|ausent)/i],
+    [/hepatoyugular negativo/i, /hepatoyugular positivo/i]
+  ],
+  resp:[
+    [/^(buena )?mec[aá]nica ventilatoria|^BMV/i, /mala mec[aá]nica|^tiraje|m[uú]sculos accesorios/i],
+    [/sin ruidos agregados/i, /crepit|sibilan|roncus|rales|estertor/i],
+    [/^sin tiraje/i, /^(con )?tiraje/i],
+    [/murmullo vesicular conservado|buena entrada de aire/i, /murmullo vesicular (disminuido|abolido)/i]
+  ],
+  dig:[
+    [/^blando/i, /defensa/i],
+    [/^depresible/i, /distendid|globoso|tenso/i],
+    [/^indoloro/i, /^doloroso|^dolor/i],
+    [/^RHA \(\+\)/i, /^RHA (disminuidos|\(-\))/i],
+    [/sin ascitis/i, /ascitis/i],
+    [/sin visceromegalias/i, /visceromegalia|hepatomegalia|esplenomegalia/i]
+  ],
+  miembros:[
+    [/^sin edemas?/i, /^edema/i],
+    [/^moviliza 4 miembros/i, /limitaci[oó]n funcional/i],
+    [/perfusi[oó]n distal conservada/i, /perfusi[oó]n distal disminuida/i]
+  ]
+};
+function normClave(t){ return String(t||'').toLowerCase().replace(/\s+/g,' ').replace(/[.,;\s]+$/,'').trim(); }
+
+/* Limpia las entradas marcadas de un sistema: sin repetidas (si una frase está como normal y como
+   alteración, queda la alteración), sin frases normales que contradigan una alteración, y con
+   «silencios» completo cuando la frase quedó como «impresionan libres». */
+function depurarEntradas(key, normales, alts){
+  const arreglar = e=>{
+    if(/^impresionan libres/i.test(e.text)) e = Object.assign({}, e, {text:'silencios ' + e.text});
+    return e;
+  };
+  alts = alts.map(arreglar); normales = normales.map(arreglar);
+  const vistos = new Set();
+  const altsU = alts.filter(e=>{ const k = normClave(e.text); if(vistos.has(k)) return false; vistos.add(k); return true; });
+  let normU = normales.filter(e=>{ const k = normClave(e.text); if(vistos.has(k)) return false; vistos.add(k); return true; });
+  const pares = CONTRADICCIONES[key] || [];
+  if(pares.length && altsU.length){
+    normU = normU.filter(n=> !pares.some(([reN, reA])=> reN.test(n.text) && altsU.some(a=>reA.test(a.text))));
+  }
+  return { normales: normU, alts: altsU };
+}
+
+/* Une «hipofonéticos» / «normofonéticos» suelto con el «R1 y R2 en 4 focos» que lo precede:
+   queda «R1 y R2 en 4 focos hipofonéticos» y no dos frases separadas. */
+function unirFoneticos(lista){
+  const out = [];
+  lista.forEach(e=>{
+    const prev = out[out.length-1];
+    if(prev && /^(normo|hipo|hiper)?fon[eé]ticos?$/i.test(e.text.trim()) && /^R1\b|^R1-R2/i.test(prev.text) && !/fon[eé]tic/i.test(prev.text)){
+      out[out.length-1] = Object.assign({}, prev, {text: prev.text + ' ' + e.text.trim(), kind: (prev.kind==='alt'||e.kind==='alt') ? 'alt' : prev.kind});
+    } else out.push(e);
+  });
+  return out;
+}
+
+/* Concordancia de género de los adjetivos que describen al paciente (no al abdomen, etc.). */
+function generoPac(t, p){
+  if(!t || !p || p.sexo !== 'F') return t;
+  return t.replace(/\b(desorientad|confus|somnolient|orientad|reactiv|obnubilad|agitad|estuporos|excitad)o(s?)\b/gi, (m, raiz, s)=> raiz + 'a' + s);
+}
+
+/* El MI se muestra tal como se cargó; al redactar el texto se corrigen las faltas típicas de
+   tipeo rápido (sin tildes, corchetes, «fi 22/9») sin tocar lo que está guardado en la ficha. */
+function limpiarMI(t){
+  t = String(t||'');
+  t = t.replace(/\[\s*/g,'(').replace(/\s*\]/g,')');
+  t = t.replace(/\(\s+/g,'(').replace(/\s+\)/g,')');
+  t = t.replace(/\b([Ss])indrome\b/g, (m,c)=>c+'índrome');
+  t = t.replace(/\b([Dd])ia(s?)\b/g, (m,c,s)=>c+'ía'+s);
+  t = t.replace(/\(\s*fi\s*:?\s*(\d)/gi, '(FI: $1');
+  t = t.replace(/\(\s*Día\b/g,'(día');
+  t = t.replace(/\bTto\b/g,'tto');
+  t = t.replace(/\s{2,}/g,' ').trim();
+  return t;
+}
+function unirListaMI(lista){
+  if(lista.length <= 1) return lista[0] || '';
+  if(lista.length === 2) return lista[0] + ' y ' + lista[1];
+  return lista.slice(0,-1).join('; ') + ' y ' + lista[lista.length-1];
+}
+
+/* «Abdomen blando, depresible…»: si el primer hallazgo no es un adjetivo («RHA (+)», «masa
+   palpable», «signos de ascitis») se intercala «con» para que la oración tenga sentido. */
+function abdomenTexto(partes){
+  if(!partes.length) return '';
+  const primero = partes[0];
+  const conCon = /^(RHA|masa|signos|visceromegalia|ascitis|hepatomegalia|esplenomegalia|onda|ruidos|edema|hernia|cicatriz|eventraci)/i.test(primero);
+  return 'Abdomen ' + (conCon ? 'con ' : '') + partes.join(', ');
+}
+
+/* Texto final: sin espacios dobles ni puntos pegados. No toca « , » dentro de «LAB: , IMG:»
+   ni de «TA: , FC: ,» (esos huecos son para completar a mano). */
+function pulirTexto(t){
+  return String(t||'')
+    .replace(/[ \t]{2,}/g,' ')
+    .replace(/([A-Za-z0-9áéíóúñÁÉÍÓÚÑ)%°])\s+\./g,'$1.')
+    .replace(/\.{2,}/g,'.')
+    .replace(/\.\s*\.(?=\s|$)/g,'.')
+    .trim();
+}
+
 /* ================= Orden clínico del examen físico =================
    Antes se escribían primero TODAS las frases normales y después TODAS las alteraciones, así que un
    cardiovascular con arritmia salía «R1 y R2…, silencios…, sin falla de bomba… , ritmo irregular».
@@ -2963,12 +3157,13 @@ const ORDEN_EXAMEN = {
              post:['perfusionok','perfusionmala','moviliza4','limitacionmov'] },
   infecto:{ pre:['febril','afebril','ascensoleuco','descensoleuco','buenaevol','sinrespuesta'], post:[] }
 };
-function rangoExamen(key, id){
+function rangoExamen(key, id, texto){
   const o = ORDEN_EXAMEN[key];
   if(!o) return 0;
   let i = o.pre.indexOf(id); if(i !== -1) return i;
   i = o.post.indexOf(id);    if(i !== -1) return 10000 + i;
-  return 5000;
+  const rt = texto ? rangoPorTexto(key, texto) : null; // frases agregadas a mano: se ubican por su contenido
+  return rt !== null ? rt : 5000;
 }
 /* Una frase en medio de una oración empieza en minúscula («tenso», «mala mecánica ventilatoria»),
    salvo siglas y códigos («RHA (+)», «R1 y R2…», «IY 2/3…»). Si venía en Title Case
@@ -3005,11 +3200,12 @@ function entradasMarcadas(key, patient, salida){
   const idsAlt = new Set(alts.map(x=>x.id));
   const normales = merged.normal.map(i=>armar(i,'normal')).filter(Boolean)
     .filter(n=>!n.antag.some(a=>idsAlt.has(a)));
-  return { normales, alts };
+  return depurarEntradas(key, normales, alts);
 }
 function ordenarEntradas(key, lista){
-  return lista.map((e,i)=>({e, i, r:rangoExamen(key, e.id)}))
+  const ord = lista.map((e,i)=>({e, i, r:rangoExamen(key, e.id, e.text)}))
     .sort((x,y)=>(x.r-y.r) || (x.i-y.i)).map(x=>x.e);
+  return key === 'cv' ? unirFoneticos(ord) : ord;
 }
 function collectSystemEntries(key, patient, salida){
   const { normales, alts } = entradasMarcadas(key, patient, salida);
@@ -3049,7 +3245,7 @@ function buildCatarsisDiuresisClause(patient, salida){
   const diuPos = isOn(salida,'renal','normal','diuresispos');
   const ml = detailValFor('renal','normal','diuresispos');
   if(catPos && diuPos){
-    return `catarsis y diuresis conservados${ml?` (diuresis ${ml} ml en bolsa colectora)`:''}`;
+    return `catarsis y diuresis conservadas${ml?` (diuresis ${ml} ml en bolsa colectora)`:''}`;
   }
   const parts = [];
   if(catPos) parts.push('catarsis conservada');
@@ -3063,7 +3259,15 @@ function buildCatarsisDiuresisClause(patient, salida){
 function buildCsvLine(){
   const ta = val('evolTA'), fc = val('evolFC'), sat = val('evolSat'), t = val('evolT');
   const fio2 = val('evolFio2') || '21';
-  return `CSV: TA: ${ta}, FC: ${fc}, SatO2: ${sat}% (${fio2}%), T°: ${t}°C.`;
+  // Sin ningún dato cargado se deja la plantilla con los huecos para completar a mano; si hay
+  // datos, solo se escriben los que están (nada de «FC: , T°: °C» colgando).
+  if(!ta && !fc && !sat && !t) return `CSV: TA: , FC: , SatO2: % (${fio2}%), T°: °C.`;
+  const partes = [];
+  if(ta) partes.push(`TA: ${ta}`);
+  if(fc) partes.push(`FC: ${fc}`);
+  if(sat) partes.push(`SatO2: ${sat}%` + ` (FiO2 ${fio2}%)`);
+  if(t) partes.push(`T°: ${t}°C`);
+  return `CSV: ${partes.join(', ')}.`;
 }
 
 /* ================= VSC — checklist de frases según los valores cargados =================
@@ -3134,9 +3338,29 @@ function activeMiSummary(p){
   if(!p || !p.mi || !p.mi.length) return '';
   return p.mi.filter(i=>!i.resuelto).map(i=>i.text).join(' + ');
 }
-function closingEstadoSentence(estado){
+/* Cierre del texto: las frases tildadas en el bloque «Cierre» (en el orden de la lista). Si no
+   hay ninguna tildada se usa, como siempre, la frase de cierre del Estado general. */
+function cierreFrases(salida){
+  const lista = getMergedItems('cierre').normal;
+  const tildadas = lista.filter(i=>isChecked('cierre','normal',i.id));
+  if(!tildadas.length) return null; // sin elección: corresponde el cierre por Estado general
+  const vistas = new Set();
+  return tildadas.filter(i=>itemIncluidoEn(salida,'cierre','normal',i.id))
+    .map(i=>String(i.text||'').trim())
+    .filter(t=>t && !vistas.has(normClave(t)) && vistas.add(normClave(t)))
+    .map(t=>capitalize(t).replace(/[.\s]*$/,'.'));
+}
+function cierreTexto(salida, estado, aperturaIncluida){
+  const f = cierreFrases(salida);
+  if(f === null) return closingEstadoSentence(estado, aperturaIncluida);
+  return f.join(' ');
+}
+function closingEstadoSentence(estado, aperturaIncluida){
   const found = getEstadoOptions().find(o=>o.value===estado);
-  return found ? found.closing : 'Continúa control evolutivo.';
+  let c = found ? found.closing : 'Continúa control evolutivo.';
+  // Si el texto ya abrió con «Paciente en regular estado general…», el cierre no lo repite.
+  if(aperturaIncluida) c = c.replace(/^\s*Paciente en [^.]*(estado|condiciones) general(es)?\.\s*/i, '');
+  return c.trim();
 }
 
 function guardarEstadoOptions(opts){
@@ -3298,15 +3522,19 @@ function baseNeuroAdjetivos(estado){
   return { consciencia:'somnoliento', reactividad:'poco reactiv' };
 }
 function buildOpeningExamSentence(p, estado, salida){
-  const genero = p.sexo === 'F' ? 'a' : 'o';
   const base = baseNeuroAdjetivos(estado);
   const otrasAlt = ['desorientado','excitacion','noobedece','confuso']
     .filter(id=>isOn(salida,'neuro','alt',id))
-    .map(id=>itemPhrase('neuro','alt',id,p));
+    .map(id=>generoPac(itemPhrase('neuro','alt',id,p), p));
   const focoAlt = isOn(salida,'neuro','alt','focomotor') ? itemPhrase('neuro','alt','focomotor',p) : 'sin signo de foco motor agudo';
-  let s = `Paciente en ${estadoCortoTexto(estado)}, ${base.consciencia}, ${base.reactividad}${genero}`;
-  if(otrasAlt.length) s += ', ' + otrasAlt.join(', ');
-  s += `, ${focoAlt}${trendPhraseFor('neuro',p)}.`;
+  // Estado general, conciencia y reactividad concuerdan con el sexo del paciente.
+  const cons = generoPac(base.consciencia, p);
+  const reac = base.reactividad + (p.sexo === 'F' ? 'a' : 'o');
+  // Si la historia clínica ya presentó al paciente («Paciente masculino de 88 años…»), no se
+  // repite «Paciente»: se pasa al examen con «Al examen físico, …».
+  const inicio = bloqueOn(salida,'dx') ? 'Al examen físico, paciente' : 'Paciente';
+  const hallazgos = [cons, reac].concat(otrasAlt);
+  let s = `${inicio} en ${estadoCortoTexto(estado)}, ${hallazgos.join(', ')} y ${focoAlt}${trendPhraseFor('neuro',p)}.`;
   return s;
 }
 
@@ -3320,7 +3548,8 @@ function buildExamBody(p, salida){
   const estado = fld('evolEstado').value;
   const cv = collectSystemPhrase('cv', p, salida);
   const resp = collectSystemPhrase('resp', p, salida);
-  const dig = collectSystemPhrase('dig', p, salida);
+  const digPartes = collectSystemParts('dig', p, salida);
+  const dig = abdomenTexto(digPartes);
   const miembrosClause = buildMiembrosClause(p, salida);
   const infectoAplica = fld('apply_infecto') && fld('apply_infecto').checked;
   const infecto = infectoAplica ? collectSystemPhrase('infecto', p, salida) : '';
@@ -3329,11 +3558,11 @@ function buildExamBody(p, salida){
 
   let out = bloqueOn(salida,'csv') ? buildCsvLine() + ' ' : '';
   out += buildVscObservacionesSentence(p);
-  if(cv) out += `${capitalize(cv)}${trendPhraseFor('cv',p)}. `;
+  if(cv) out += `A nivel cardiovascular, ${cv}${trendPhraseFor('cv',p)}. `;
   if(bloqueOn(salida,'estudio') && estudioTipo && estudioInforme) out += `Se recibe informe de ${estudioTipo}: ${estudioInforme}. `;
-  if(resp) out += `A nivel pulmonar, ${resp}${trendPhraseFor('resp',p)}. `;
+  if(resp) out += `A nivel respiratorio, ${resp}${trendPhraseFor('resp',p)}. `;
 
-  const digSentence = dig ? `Abdomen ${dig}${trendPhraseFor('dig',p)}.` : '';
+  const digSentence = dig ? `${dig}${trendPhraseFor('dig',p)}.` : '';
   const catDiu = buildCatarsisDiuresisClause(p, salida);
   const catDiuSentence = catDiu ? `${capitalize(catDiu)}${trendPhraseFor('renal',p)}.` : '';
   if(digSentence || catDiuSentence) out += `${digSentence}${digSentence&&catDiuSentence?' ':''}${catDiuSentence} `;
@@ -3349,7 +3578,7 @@ function buildExamBody(p, salida){
   if(cult) out += cult + ' ';
   const ic = interconsultasSentence(p);
   if(ic) out += ic + ' ';
-  if(bloqueOn(salida,'cierre')) out += closingEstadoSentence(estado);
+  if(bloqueOn(salida,'cierre')) out += cierreTexto(salida, estado, bloqueOn(salida,'apertura'));
   out += noChangeClause(p, estado);
   out += estadoTrendPhrase(p.lastEstado, estado);
   return out.trim();
@@ -3359,19 +3588,21 @@ function buildExamBody(p, salida){
    traer "en tto con X (día Y de tto)" si viene actualizado desde el .md del pase de sala). */
 function dxSentence(p){
   const sexoTxt = p.sexo === 'M' ? 'masculino' : (p.sexo === 'F' ? 'femenina' : '');
-  const limpio = t=>String(t||'').trim().replace(/[.\s]+$/,'');
+  const limpio = t=>limpiarMI(t).replace(/[.\s]+$/,'');
   const activos = (p.mi||[]).filter(i=>i && !i.resuelto && limpio(i.text));
   const esSocial = i=>/^\s*social\b/i.test(i.text);
   const clinicos = activos.filter(i=>!esSocial(i)).map(i=>limpio(i.text));
-  const primero = clinicos.length ? frasePlana(clinicos[0]) : '';
   const sociales = activos.filter(esSocial).map(i=>{
     const resto = limpio(i.text).replace(/^\s*social\s*[:\-–]?\s*/i, '');
     return resto ? `Caso social (${resto}).` : 'Caso social.';
   });
-  let s = `Paciente${sexoTxt?' '+sexoTxt:''}${p.edad?' de '+p.edad:''}`;
+  // «88» → «88 años»; «88 años» queda igual.
+  let edad = String(p.edad||'').trim();
+  if(/^\d+$/.test(edad)) edad += ' años';
+  let s = `Paciente${sexoTxt?' '+sexoTxt:''}${edad?' de '+edad:''}`;
   if(clinicos.length){
-    const unidos = [primero].concat(clinicos.slice(1)).join(' + ');
-    s += /^(por|en contexto|secundari)/i.test(unidos) ? `, cursando internación ${unidos}` : `, cursando internación por ${unidos}`;
+    const unidos = unirListaMI(clinicos.map((t,i)=> i===0 ? frasePlana(t) : frasePlana(t)));
+    s += /^(por|en contexto|secundari|con )/i.test(unidos) ? `, cursando internación ${unidos}` : `, cursando internación por ${unidos}`;
   }
   s += '.';
   if(sociales.length) s += ' ' + sociales.join(' ');
@@ -3401,7 +3632,7 @@ function buildSalidaText(p, salida){
   if(bloqueOn(salida,'dx')) partes.push(dxSentence(p));
   if(bloqueOn(salida,'apertura')) partes.push(buildOpeningExamSentence(p, estado, salida));
   partes.push(salida === 'corta' ? buildCuerpoCorto(p) : buildExamBody(p, salida));
-  return partes.filter(Boolean).join(' ').trim();
+  return pulirTexto(partes.filter(Boolean).join(' '));
 }
 function buildHistoriaClinicaText(p){ return buildSalidaText(p, 'hc'); }
 function buildPaseCompletoText(p){ return buildSalidaText(p, 'completa'); }
@@ -3412,8 +3643,9 @@ function buildPaseCompletoText(p){ return buildSalidaText(p, 'completa'); }
    sistema en una sola oración; cada alteración sigue siendo una oración propia. */
 function shortSystemSentences(key, p, prefijoNormal){
   const { normales: en, alts: ea } = entradasMarcadas(key, p, 'corta');
-  const normales = ordenarEntradas(key, en).map(e=>e.text);
-  const alts = ordenarEntradas(key, ea).map(e=>e.text);
+  const mezcla = ordenarEntradas(key, en.concat(ea));
+  const normales = mezcla.filter(e=>e.kind==='normal').map(e=>e.text);
+  const alts = mezcla.filter(e=>e.kind==='alt').map(e=>e.text);
   const out = [];
   const normalSentence = normales.length ? [(prefijoNormal||'') + normales.join(', ')] : [];
   // Mismo criterio que en el pase largo: si este sistema arranca por lo
@@ -3427,7 +3659,7 @@ function shortCatDiuSentences(p){
   const diuPos = isOn(S,'renal','normal','diuresispos');
   const ml = detailValFor('renal','normal','diuresispos');
   const out = [];
-  if(catPos && diuPos) out.push(`catarsis y diuresis conservados${ml?` (diuresis ${ml} ml en bolsa colectora)`:''}`);
+  if(catPos && diuPos) out.push(`catarsis y diuresis conservadas${ml?` (diuresis ${ml} ml en bolsa colectora)`:''}`);
   else {
     if(catPos) out.push('catarsis conservada');
     if(diuPos) out.push(`diuresis conservada${ml?` (${ml} ml en bolsa colectora)`:''}`);
@@ -3476,7 +3708,7 @@ function shortAbdomenSentences(p){
   const { normales, alts } = entradasMarcadas('dig', p, 'corta');
   const todo = ordenarEntradas('dig', normales.concat(alts)).map(e=>e.text);
   // Hay patología: una sola oración en orden clínico («Abdomen tenso, edema de pared, RHA (+)»).
-  if(hayAlteracion) return todo.length ? ['Abdomen ' + todo.join(', ')] : [];
+  if(hayAlteracion) return todo.length ? [abdomenTexto(todo)] : [];
   // Sin alteraciones: si el abdomen normal está configurado para el PASE corto, se resume como
   // «Abdomen S/P»; si no, queda vacío y sigue funcionando el resumen genérico de «nada tildado».
   return todo.length ? ['Abdomen S/P'] : [];
@@ -3509,7 +3741,7 @@ function buildCuerpoCorto(p){
   if(cult) out += cult + ' ';
   const ic = interconsultasSentence(p);
   if(ic) out += ic + ' ';
-  if(bloqueOn(S,'cierre')) out += closingEstadoSentence(estado);
+  if(bloqueOn(S,'cierre')) out += cierreTexto(S, estado, bloqueOn(S,'apertura'));
   return out.trim();
 }
 function buildEvolTextShort(p){ return buildSalidaText(p, 'corta'); }
@@ -3593,6 +3825,7 @@ document.body.addEventListener('change', (e)=>{
       guardarChecksPropios(pp);
       return;
     }
+    if(pp && el.dataset.sys === 'cierre'){ guardarCierreSel(pp); return; }
   }
   if(!el || el.type !== 'checkbox' || !el.dataset || !el.dataset.sys || !el.dataset.kind || !el.dataset.id) return;
   if(!el.closest || !el.closest('#evolBuilder')) return;
