@@ -153,27 +153,61 @@
   }
   .add-manejo-btn:hover{background:var(--accent-dark);color:#fff;}
 
+  /* ===== Panel de MANEJO (ventana emergente "+ Agregar") =====
+     Estructura: encabezado fijo (cama + paciente + cerrar) / lista con scroll
+     propio / pie fijo (nueva opción + Listo). Sólo la lista se desplaza. */
   .manejo-pop{
-    display:none;position:fixed;z-index:1000;min-width:220px;max-width:280px;max-height:min(60vh,420px);
-    overflow-y:auto;background:#ffffff;border:2px solid var(--ink);border-radius:4px;box-shadow:3px 5px 0 rgba(0,0,0,.15);padding:10px;
+    display:none;position:fixed;z-index:1000;width:min(320px,calc(100vw - 16px));max-height:min(72vh,480px);
+    flex-direction:column;background:#fff;border:1px solid var(--line-soft);border-top:3px solid var(--accent-dark);
+    border-radius:8px;box-shadow:0 14px 34px rgba(0,0,0,.24),0 2px 6px rgba(0,0,0,.12);overflow:hidden;
   }
-  .manejo-pop.open{display:block;}
-  /* Barra "fantasma" (altura 0) que se queda pegada arriba del área con scroll
-     del popover, para que el botón de cerrar la acompañe siempre visible en
-     vez de desplazarse junto con las opciones. */
-  .manejo-pop .pop-close-bar{position:sticky;top:0;height:0;z-index:2;}
-  .manejo-pop .opt{display:flex;align-items:center;gap:7px;padding:4px 2px;font-size:12px;border-radius:2px;}
+  .manejo-pop.open{display:flex;animation:popIn .14s ease-out;}
+  @keyframes popIn{from{opacity:0;transform:translateY(-4px) scale(.98);}to{opacity:1;transform:none;}}
+  .manejo-pop .pop-head{display:flex;align-items:center;gap:10px;padding:10px 10px 9px 14px;background:var(--field-bg);border-bottom:1px solid var(--line-soft);flex-shrink:0;}
+  .manejo-pop .pop-head-info{flex:1;min-width:0;}
+  .manejo-pop .pop-title{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+  .manejo-pop .pop-patient{font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
+  .manejo-pop .pop-patient .pop-bed{font-family:'IBM Plex Mono',monospace;color:var(--accent-dark);}
+  .manejo-pop .pop-patient .pop-name{font-weight:500;color:var(--muted);}
+  .manejo-pop .pop-count{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:700;color:#fff;background:var(--accent-dark);border-radius:10px;padding:2px 8px;white-space:nowrap;flex-shrink:0;}
+  .manejo-pop .pop-count.zero{background:#e7e6e0;color:var(--muted);}
+  .manejo-pop .close-pop{
+    width:30px;height:30px;padding:0;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;
+    background:#fff;color:var(--muted);border:1px solid var(--line-soft);border-radius:50%;cursor:pointer;
+    transition:background .12s,color .12s,border-color .12s,transform .12s;
+  }
+  .manejo-pop .close-pop svg{width:12px;height:12px;display:block;}
+  .manejo-pop .close-pop:hover{background:var(--danger);border-color:var(--danger);color:#fff;}
+  .manejo-pop .close-pop:active{transform:scale(.92);}
+  .manejo-pop .close-pop:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  .manejo-pop .pop-options{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding:6px 8px;}
+  .manejo-pop .opt{display:flex;align-items:center;gap:9px;padding:0 4px 0 8px;font-size:12.5px;border-radius:5px;margin-bottom:1px;}
   .manejo-pop .opt:hover{background:var(--field-bg);}
-  .manejo-pop .opt input{margin:0;}
-  .manejo-pop .opt label{flex:1;cursor:pointer;}
-  .manejo-pop .opt .opt-del{background:none;border:none;color:#8a3324;font-weight:700;font-size:12px;cursor:pointer;padding:0 4px;line-height:1;border-radius:50%;}
-  .manejo-pop .opt .opt-del:hover{color:#fff;background:#8a3324;}
-  .manejo-pop .sep{border-top:1px dashed var(--line-soft);margin:7px 0;}
-  .manejo-pop .add-row{display:flex;gap:5px;}
-  .manejo-pop .add-row input{flex:1;font-size:11.5px;padding:5px 6px;border:1px solid var(--line-soft);border-radius:2px;font-family:inherit;}
-  .manejo-pop .add-row button{font-size:11px;padding:5px 7px;background:var(--ink);color:var(--paper);border:none;border-radius:2px;font-weight:700;}
-  .manejo-pop .close-pop{position:absolute;top:5px;right:7px;background:#ffffff;color:var(--muted);font-size:15px;cursor:pointer;line-height:1;border:none;border-radius:50%;width:20px;height:20px;}
-  .manejo-pop .close-pop:hover{color:var(--danger);}
+  .manejo-pop .opt.on{background:#eef4f2;}
+  .manejo-pop .opt.on label{font-weight:600;color:var(--accent-dark);}
+  .manejo-pop .opt input{margin:0;width:16px;height:16px;accent-color:var(--accent-dark);cursor:pointer;flex-shrink:0;}
+  .manejo-pop .opt label{flex:1;cursor:pointer;padding:8px 0;min-width:0;overflow-wrap:anywhere;}
+  .manejo-pop .opt .opt-del{background:none;border:none;color:#a6a296;font-size:11px;cursor:pointer;padding:0;width:22px;height:22px;line-height:1;border-radius:50%;flex-shrink:0;}
+  .manejo-pop .opt .opt-del:hover{color:#fff;background:var(--danger);}
+  .manejo-pop .pop-foot{flex-shrink:0;padding:10px;border-top:1px solid var(--line-soft);background:var(--field-bg);display:flex;flex-direction:column;gap:8px;}
+  .manejo-pop .add-row{display:flex;gap:6px;}
+  .manejo-pop .add-row input{flex:1;min-width:0;font-size:12px;padding:7px 9px;border:1px solid var(--line-soft);border-radius:5px;font-family:inherit;background:#fff;}
+  .manejo-pop .add-row input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(47,93,90,.18);}
+  .manejo-pop .add-row button{font-size:11.5px;padding:7px 11px;background:#fff;color:var(--accent-dark);border:1px solid var(--accent-dark);border-radius:5px;font-weight:700;}
+  .manejo-pop .add-row button:hover{background:var(--accent-dark);color:#fff;}
+  .manejo-pop .done-btn{width:100%;padding:9px;font-size:12.5px;font-weight:700;background:var(--accent-dark);color:#fff;border:none;border-radius:5px;}
+  .manejo-pop .done-btn:hover{opacity:.9;}
+
+  /* Fila del paciente al que se le están agregando ítems */
+  tbody tr.pop-active td{background:#eef4f2;}
+  tbody tr.pop-active td:first-child{box-shadow:inset 4px 0 0 var(--accent);}
+
+  /* Números de cama clickeables en el resumen (saltan a la fila de esa cama) */
+  a.bed-link{color:inherit;font-weight:700;text-decoration:none;border-bottom:1px dotted currentColor;cursor:pointer;padding:0 1px;border-radius:2px;}
+  a.bed-link:hover{background:#e8dcb5;border-bottom-style:solid;}
+  a.bed-link:focus-visible{outline:2px solid var(--accent);outline-offset:1px;}
+  @keyframes rowFlash{0%,65%{background:#ffe9a8;}100%{background:transparent;}}
+  tbody tr.flash td{animation:rowFlash 2.2s ease-out;}
 
   /* ===== DATOS: una línea por ítem de manejo seleccionado ===== */
   .dato-line{margin-bottom:6px;}
@@ -241,6 +275,7 @@
     main{padding:0;max-width:none;}
     .table-wrap{border:1px solid #000;box-shadow:none;}
     .summary-box{border:1px solid #000;box-shadow:none;page-break-inside:avoid;margin-top:14px;}
+    a.bed-link{border-bottom:none;}
     .chip.done .chip-label{text-decoration:line-through;}
     tbody tr{page-break-inside:avoid;}
   }
@@ -323,11 +358,22 @@
 <!-- Popover único de MANEJO: se reutiliza para todas las camas, insertado fuera
      de la tabla para no heredar problemas de recorte (overflow) ni de orden de
      apilamiento (z-index) propios de las celdas de una tabla. -->
-<div class="manejo-pop" id="manejoPop">
-  <div class="pop-close-bar"><button type="button" class="close-pop" id="popCloseBtn">×</button></div>
+<div class="manejo-pop" id="manejoPop" role="dialog" aria-label="Agregar pendientes">
+  <div class="pop-head">
+    <div class="pop-head-info">
+      <div class="pop-title">Agregar pendientes</div>
+      <div class="pop-patient" id="popPatient"></div>
+    </div>
+    <span class="pop-count zero" id="popCount">0</span>
+    <button type="button" class="close-pop" id="popCloseBtn" aria-label="Cerrar" title="Cerrar (Esc)">
+      <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2 2l8 8M10 2l-8 8"/></svg>
+    </button>
+  </div>
   <div class="pop-options" id="popOptions"></div>
-  <div class="sep"></div>
-  <div class="add-row"><input type="text" placeholder="Nueva opción…" id="popNewItem"><button type="button" id="popAddBtn">Sumar</button></div>
+  <div class="pop-foot">
+    <div class="add-row"><input type="text" placeholder="Nueva opción…" id="popNewItem"><button type="button" id="popAddBtn">Sumar</button></div>
+    <button type="button" class="done-btn" id="popDoneBtn">Listo</button>
+  </div>
 </div>
 
 <footer>guardias.html — los datos se guardan solos en este dispositivo, y en la nube cuando hay conexión</footer>
@@ -900,6 +946,7 @@ onAuthStateChanged(auth, (user)=>{
 
     tbody.innerHTML = html;
     attachRowEvents();
+    afterTableRender();
   }
 
   function esc(s){
@@ -1103,23 +1150,48 @@ onAuthStateChanged(auth, (user)=>{
   const popAddBtn = document.getElementById('popAddBtn');
   const popCloseBtn = document.getElementById('popCloseBtn');
 
+  const popPatientEl = document.getElementById('popPatient');
+  const popCountEl = document.getElementById('popCount');
+  const popDoneBtn = document.getElementById('popDoneBtn');
+  let popFollowPending = false; // true tras tildar/destildar: al re-renderizar, acompañar a la fila
+
+  function rowFor(bed){
+    return document.querySelector('#tbody tr[data-bed="'+bed+'"]');
+  }
+  function headerHeight(){
+    const h = document.querySelector('header');
+    return h ? h.offsetHeight : 0;
+  }
+
   function renderPopoverOptions(){
     const bed = popoverBed;
     if(!bed) return;
     const c = state.camas[bed];
     const items = masterItems();
     popOptionsEl.innerHTML = items.map((name, idx)=>{
-      const checked = c.manejo.includes(name) ? 'checked' : '';
+      const on = c.manejo.includes(name);
       const id = 'popopt-'+idx;
       // Sólo las opciones personalizadas (agregadas por el usuario, no las
       // fijas de FIXED_ITEMS) se pueden eliminar de la lista.
       const isCustom = idx >= FIXED_ITEMS.length;
       const delBtn = isCustom
-        ? '<button type="button" class="opt-del" data-del-item="'+esc(name)+'" title="Eliminar esta opción de la lista">✕</button>'
+        ? '<button type="button" class="opt-del" data-del-item="'+esc(name)+'" title="Eliminar esta opción de la lista" aria-label="Eliminar opción">✕</button>'
         : '';
-      return '<div class="opt"><input type="checkbox" id="'+id+'" data-item="'+esc(name)+'" '+checked+'>'+
+      return '<div class="opt'+(on?' on':'')+'"><input type="checkbox" id="'+id+'" data-item="'+esc(name)+'" '+(on?'checked':'')+'>'+
              '<label for="'+id+'">'+esc(name)+'</label>'+delBtn+'</div>';
     }).join('');
+    const n = c.manejo.length;
+    popCountEl.textContent = n + (n === 1 ? ' pendiente' : ' pendientes');
+    popCountEl.classList.toggle('zero', n === 0);
+    const nombre = (c.paciente||'').trim();
+    popPatientEl.innerHTML = '<span class="pop-bed">Cama '+esc(bed)+'</span>'+(nombre ? ' <span class="pop-name">· '+esc(nombre)+'</span>' : '');
+  }
+
+  function markActiveRow(){
+    document.querySelectorAll('#tbody tr.pop-active').forEach(r => r.classList.remove('pop-active'));
+    if(!popoverBed) return;
+    const tr = rowFor(popoverBed);
+    if(tr) tr.classList.add('pop-active');
   }
 
   function openManejoPopover(bed, btn){
@@ -1127,37 +1199,79 @@ onAuthStateChanged(auth, (user)=>{
     renderPopoverOptions();
     popNewItemInput.value = '';
     manejoPopEl.classList.add('open');
-    positionManejoPopover(btn);
+    markActiveRow();
+    positionManejoPopover();
   }
 
   function closeManejoPopover(){
     manejoPopEl.classList.remove('open');
     popoverBed = null;
+    popFollowPending = false;
+    markActiveRow();
   }
 
-  // Ubica el popover con position:fixed en base al botón "+ Agregar" que lo
-  // abrió, y lo acomoda para que siempre quede completo dentro de la ventana
-  // visible (arriba o abajo del botón, y sin salirse por los costados).
-  function positionManejoPopover(btn){
-    const rect = btn.getBoundingClientRect();
+  // El panel queda "anclado" a la fila del paciente: se reubica junto al botón
+  // "+ Agregar" de esa fila cada vez que se hace scroll, se cambia el tamaño
+  // de la ventana o la tabla se vuelve a dibujar (por ejemplo cuando la cama
+  // sube a la lista de pendientes). Siempre se mantiene dentro de la pantalla
+  // y por debajo del encabezado fijo.
+  function positionManejoPopover(){
+    if(!popoverBed || !manejoPopEl.classList.contains('open')) return;
+    const tr = rowFor(popoverBed);
+    if(!tr) return;
+    const anchor = tr.querySelector('.add-manejo-btn') || tr;
+    const rect = anchor.getBoundingClientRect();
     const margin = 8;
-    const popRect = manejoPopEl.getBoundingClientRect();
+    const topLimit = headerHeight() + margin;
+    const pw = manejoPopEl.offsetWidth;
+    const ph = manejoPopEl.offsetHeight;
 
-    let top = rect.bottom + 4;
-    if(top + popRect.height > window.innerHeight - margin){
-      const topAbove = rect.top - popRect.height - 4;
-      top = topAbove >= margin ? topAbove : Math.max(margin, window.innerHeight - popRect.height - margin);
+    let top = rect.bottom + 6;
+    if(top + ph > window.innerHeight - margin){
+      const above = rect.top - ph - 6;
+      top = above >= topLimit ? above : window.innerHeight - ph - margin;
     }
+    top = Math.max(topLimit, Math.min(top, window.innerHeight - ph - margin));
 
     let left = rect.left;
-    if(left + popRect.width > window.innerWidth - margin){
-      left = window.innerWidth - popRect.width - margin;
-    }
-    if(left < margin) left = margin;
+    left = Math.min(left, window.innerWidth - pw - margin);
+    left = Math.max(margin, left);
 
     manejoPopEl.style.top = top + 'px';
     manejoPopEl.style.left = left + 'px';
   }
+
+  // Si la fila quedó fuera de la vista (porque subió/bajó de lista), la trae a
+  // la pantalla con un desplazamiento suave; el panel la acompaña solo.
+  function ensureActiveRowVisible(){
+    const tr = popoverBed && rowFor(popoverBed);
+    if(!tr) return;
+    const r = tr.getBoundingClientRect();
+    const hdr = headerHeight();
+    if(r.top < hdr + 8 || r.top > window.innerHeight * 0.55){
+      const target = window.scrollY + r.top - Math.max(hdr + 16, window.innerHeight * 0.22);
+      window.scrollTo({top: Math.max(0, target), behavior: 'smooth'});
+    }
+  }
+
+  // Se llama al final de cada renderTable()
+  function afterTableRender(){
+    if(!popoverBed) return;
+    markActiveRow();
+    if(popFollowPending){ popFollowPending = false; ensureActiveRowVisible(); }
+    positionManejoPopover();
+  }
+
+  let popRaf = 0;
+  function schedulePosition(){
+    if(popRaf) return;
+    popRaf = requestAnimationFrame(function(){ popRaf = 0; positionManejoPopover(); });
+  }
+  window.addEventListener('scroll', schedulePosition, {passive:true});
+  window.addEventListener('resize', schedulePosition);
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && popoverBed) closeManejoPopover();
+  });
 
   // Tildar/destildar un ítem de manejo desde el popover
   popOptionsEl.addEventListener('change', function(e){
@@ -1176,7 +1290,9 @@ onAuthStateChanged(auth, (user)=>{
     lastLocalEdit[bed] = Date.now();
     saveLocal();
     scheduleFsSaveCama(bed);
-    render(); // el popover no forma parte de la tabla, así que se mantiene abierto
+    popFollowPending = true;
+    renderPopoverOptions();
+    render(); // el panel no forma parte de la tabla: se mantiene abierto y sigue a la fila
   });
 
   // Eliminar una opción personalizada de la lista maestra (no toca los
@@ -1209,6 +1325,7 @@ onAuthStateChanged(auth, (user)=>{
     lastLocalEdit[bed] = Date.now();
     saveLocal();
     popNewItemInput.value = '';
+    popFollowPending = true;
     renderPopoverOptions();
     render();
   }
@@ -1217,14 +1334,39 @@ onAuthStateChanged(auth, (user)=>{
     if(e.key === 'Enter'){ e.preventDefault(); addCustomFromPopover(); }
   });
   popCloseBtn.addEventListener('click', function(e){ e.stopPropagation(); closeManejoPopover(); });
+  popDoneBtn.addEventListener('click', function(e){ e.stopPropagation(); closeManejoPopover(); });
 
-  // El popover ahora se cierra ÚNICAMENTE con el botón "x" (popCloseBtn).
+  // El panel se cierra con la "X", con "Listo" o con la tecla Esc. Hacer scroll
+  // (de la página o de la lista) ya no lo cierra: el panel acompaña a la fila.
+  // [Nota histórica] El popover se cerraba ÚNICAMENTE con el botón "x" (popCloseBtn).
   // Antes también se cerraba al hacer click afuera y al hacer scroll/resize,
   // pero como el popover es position:fixed y tiene overflow-y:auto (para
   // poder desplazarse por la lista de opciones), desplazarse dentro de él
   // con el dedo disparaba un evento "scroll" en fase de captura sobre
   // window y lo cerraba por error. Se quitó esa lógica para que scrollear
   // la lista, o tocar fuera de ella, no lo cierre más.
+
+  // Número de cama del resumen: link que lleva a la fila de esa cama en la tabla
+  function bedLinkHtml(b, style){
+    return '<a href="#" class="bed-link" data-goto-bed="'+b+'" title="Ir a la cama '+b+'"'+(style ? ' style="'+style+'"' : '')+'>'+b+'</a>';
+  }
+
+  function goToBed(bed){
+    const tr = rowFor(bed);
+    if(!tr) return;
+    const top = tr.getBoundingClientRect().top + window.scrollY - headerHeight() - 12;
+    window.scrollTo({top: Math.max(0, top), behavior: 'smooth'});
+    tr.classList.remove('flash');
+    void tr.offsetWidth; // reinicia la animación si se vuelve a tocar la misma cama
+    tr.classList.add('flash');
+    setTimeout(function(){ tr.classList.remove('flash'); }, 2300);
+  }
+  document.getElementById('summaryBox').addEventListener('click', function(e){
+    const a = e.target.closest('a.bed-link');
+    if(!a) return;
+    e.preventDefault();
+    goToBed(a.dataset.gotoBed);
+  });
 
   function renderSummary(){
     const box = document.getElementById('summaryList');
@@ -1244,7 +1386,7 @@ onAuthStateChanged(auth, (user)=>{
         let style = '';
         if(color) style += 'color:'+color+';font-weight:700;';
         if(done) style += 'text-decoration:line-through;opacity:.55;';
-        return style ? '<b style="'+style+'">'+b+'</b>' : b;
+        return bedLinkHtml(b, style);
       }).join(', ');
       html += '<div class="summary-item"><span class="name">'+esc(name)+':</span> <span class="beds">'+bedsHtml+'</span></div>';
     });
@@ -1266,7 +1408,7 @@ onAuthStateChanged(auth, (user)=>{
     }
     const html = beds.map(b=>{
       const color = colorMap[b];
-      const bedLabel = color ? '<b style="color:'+color+';">'+b+'</b>' : '<b>'+b+'</b>';
+      const bedLabel = bedLinkHtml(b, color ? 'color:'+color+';' : '');
       const itemsHtml = state.camas[b].manejo.map(name=>{
         const done = !!state.camas[b].hechos[name];
         return done ? '<span style="text-decoration:line-through;opacity:.55;">'+esc(name)+'</span>' : esc(name);
