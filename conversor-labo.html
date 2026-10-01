@@ -118,6 +118,32 @@
   .pedido-grid.has-sel .pf-here{display:inline-block;}
   .pedido-grid.has-sel .pf-here.hide{display:none;}
   .pf-movebar select{font-size:11.5px;border:1px solid var(--line-soft);background:#fff;border-radius:2px;padding:2px 4px;max-width:100%;}
+
+  /* Calcio corregido: ventana emergente */
+  .ca-overlay[hidden]{display:none !important;}
+  .ca-overlay{position:fixed;inset:0;background:rgba(35,48,44,.55);display:flex;align-items:center;justify-content:center;z-index:9999;padding:14px;}
+  .ca-dialog{position:relative;background:#fff;border:2px solid var(--ink);border-radius:4px;box-shadow:0 10px 30px rgba(0,0,0,.3);width:100%;max-width:420px;padding:16px 18px 14px;font-family:'IBM Plex Sans',Arial,sans-serif;color:var(--ink);}
+  .ca-dialog h4{margin:0 0 8px;font-size:14px;}
+  .ca-dialog p{margin:0 0 10px;font-size:12.5px;line-height:1.45;}
+  .ca-dialog label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin:8px 0 3px;}
+  .ca-dialog input[type=text]{width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;padding:7px 9px;border:1px solid var(--ink);border-radius:2px;background:var(--field-bg);}
+  .ca-dialog input[type=text]:focus{outline:2px solid var(--accent-dark);outline-offset:0;}
+  .ca-formula{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);margin-top:9px;}
+  .ca-msg{min-height:22px;margin-top:8px;font-size:13px;font-weight:700;font-family:'IBM Plex Mono',monospace;}
+  .ca-msg.err{color:#b00020;font-weight:600;font-size:11.5px;}
+  .ca-msg.alt{color:var(--danger);}
+  .ca-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px;}
+  .ca-actions button,.ca-confirm button{font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:12px;padding:8px 14px;border-radius:2px;cursor:pointer;border:1px solid var(--ink);background:transparent;color:var(--ink);}
+  .ca-actions button:hover:not(:disabled),.ca-confirm button:hover{background:var(--ink);color:var(--paper);}
+  .ca-actions .ca-ok{background:var(--accent-dark);border-color:var(--accent-dark);color:#fff;}
+  .ca-actions .ca-ok:disabled{opacity:.4;cursor:not-allowed;}
+  .ca-confirm[hidden]{display:none !important;}
+  .ca-confirm{position:absolute;inset:0;background:#fff;border-radius:3px;padding:18px;display:flex;flex-direction:column;justify-content:center;gap:12px;}
+  .ca-confirm p{margin:0;font-size:13px;line-height:1.5;}
+  .ca-confirm .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;}
+  .ca-confirm .ca-yes{border-color:#b00020;color:#b00020;}
+  .ca-confirm .ca-yes:hover{background:#b00020;color:#fff;}
+  #laboCaBtn[hidden]{display:none !important;}
 </style>
 </head>
 <body>
@@ -159,6 +185,7 @@
         </div>
         <div class="out-footer">
           <button type="button" class="btn-secondary" id="laboCopiarBtn">Copiar con formato</button>
+          <button type="button" class="btn-secondary" id="laboCaBtn" hidden title="Calcular el calcio corregido con la albúmina del paciente">Calcular calcio corregido con albúmina</button>
           <span id="laboStatus"></span>
         </div>
         <p class="note">El texto se convierte solo, apenas pegás o editás algo (no hace falta ningún botón). Tanto "Copiar con formato" como una selección manual (Ctrl+C) copian en negro puro y rojo puro, sin ningún fondo de color, para pegar directo en Google Docs sin manchas amarillentas. El texto de arriba también es editable antes de copiarlo. Arriba va el renglón completo (todos los parámetros habilitados); abajo, separado por una línea en blanco, va el renglón resumen (listado core + hallazgos alterados fuera de lista).</p>
@@ -217,6 +244,30 @@
       <p class="note">Rangos orientativos para adultos, tomados de bibliografía general. Cada laboratorio valida su propio rango según el método y el equipo que usa: el que manda siempre es el que figura en el informe (por eso el programa calcula "alterado/normal" con el rango que trae cada laboratorio, no con esta tabla).</p>
       <div class="refrange-grid" id="laboRefRangeGrid"></div>
     </details>
+  </div>
+</div>
+
+<div id="caModal" class="ca-overlay" hidden>
+  <div class="ca-dialog" role="dialog" aria-modal="true" aria-labelledby="caModalTitle">
+    <h4 id="caModalTitle">Calcio corregido por albúmina</h4>
+    <p>Si deseas calcular el Calcio corregido por favor ingresar el valor de albúmina del paciente.</p>
+    <label for="caModalCa">Calcemia del paciente (mg/dL), obtenida del laboratorio</label>
+    <input type="text" id="caModalCa" inputmode="decimal" autocomplete="off">
+    <label for="caModalAlb">Albúmina del paciente (g/dL)</label>
+    <input type="text" id="caModalAlb" inputmode="decimal" autocomplete="off" placeholder="Ej.: 2,7">
+    <div class="ca-msg" id="caModalMsg" aria-live="polite"></div>
+    <div class="ca-formula">Calcio corregido = Calcemia + 0,8 × (4 − Albúmina)</div>
+    <div class="ca-actions">
+      <button type="button" id="caModalCancel">Cancelar</button>
+      <button type="button" class="ca-ok" id="caModalOk" disabled>Aceptar</button>
+    </div>
+    <div class="ca-confirm" id="caConfirm" hidden>
+      <p><b>¿Seguro que no querés calcular el calcio corregido?</b><br>Podés volver a abrir esta ventana con el botón «Calcular calcio corregido con albúmina», debajo del resultado.</p>
+      <div class="row">
+        <button type="button" id="caConfirmNo">No, volver al cálculo</button>
+        <button type="button" class="ca-yes" id="caConfirmYes">Sí, no calcular</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -559,9 +610,11 @@ function fld(id){ return document.getElementById(id); }
     ],
     ionograma: [
       ['Na','136 - 145 mEq/L'],
-      ['K','3,5 - 5,1 mEq/L'],
+      ['K','3,5 - 5,1 mEq/L (hipokalemia leve 3-3,5 · moderada 2,5-3 · severa <2,5)'],
       ['CL','98 - 107 mEq/L'],
+      ['CL corregido por Na','Cl × 140 / Na: 98 - 107 (si es normal, la hipercloremia es proporcional a la hipernatremia y no indica acidosis hiperclorémica)'],
       ['Ca','8,5 - 10,5 mg/dL'],
+      ['Calcio corregido','Ca + 0,8 × (4 − Albúmina) = 8,5 - 10,5 mg/dL (se informa al final de LABORATORIO COMPLETO y PARCIAL cuando la calcemia está alterada)'],
       ['Ca ion','4,6 - 5,3 mg/dL (1,15 - 1,32 mmol/L)'],
       ['P','2,5 - 4,5 mg/dL'],
       ['Mg','1,7 - 2,2 mg/dL'],
@@ -1661,18 +1714,40 @@ function fld(id){ return document.getElementById(id); }
       : 'trombocitosis; evaluar causa reactiva vs. mieloproliferativa (frotis de sangre periférica y, si es persistente, estudio de JAK2)'},
     'HB':   {alto:'hemoglobina elevada; descartar hemoconcentración/deshidratación y policitemia secundaria (EPOC, hipoxemia crónica, tabaquismo, apnea del sueño); si persiste, valorar policitemia vera (JAK2, eritropoyetina)'},
     'ERS':  {alto:(v)=>`ERS elevada; marcador inespecífico de inflamación que aumenta con la edad, la anemia y la hipoalbuminemia, por lo que no requiere conducta por sí sola: interpretarla junto con la PCR y la clínica${v!=null && v>100 ? '; con valores >100 mm/h descartar infección grave (osteomielitis, endocarditis), neoplasia, mieloma y arteritis de células gigantes (proteinograma, imágenes y, si hay cefalea o claudicación mandibular, corticoides y biopsia de arteria temporal)' : ''}`},
-    'RDW':  {alto:'RDW elevado (anisocitosis, población eritrocitaria heterogénea); en la anemia microcítica orienta a ferropenia (o déficit mixto si coexiste inflamación) y en la macrocítica a déficit de B12/folato; correlacionar con perfil férrico, B12 y ácido fólico. No modifica la conducta por sí solo'},
+    'RDW':  {alto:(v,f,by)=> (by['VCM']&&by['VCM'].dir==='bajo')
+      ? 'RDW elevado (anisocitosis) con microcitosis: orienta a ferropenia (o déficit mixto si coexiste inflamación); correlacionar con perfil férrico'
+      : (by['VCM']&&by['VCM'].dir==='alto')
+        ? 'RDW elevado (anisocitosis) con macrocitosis: orienta a déficit de B12/folato; solicitar ambos'
+        : 'RDW elevado (anisocitosis) con VCM normal: sugiere población eritrocitaria mixta (déficit de hierro en evolución, déficit combinado de hierro y B12/folato, inflamación crónica o respuesta medular reciente); correlacionar con perfil férrico, B12, ácido fólico y reticulocitos. No modifica la conducta por sí solo'},
     'VCM':  {bajo:'microcitosis; considerar ferropenia, anemia de trastornos crónicos o talasemia; solicitar perfil férrico y, si el hierro es normal, electroforesis de hemoglobina', alto:'macrocitosis; solicitar vitamina B12, ácido fólico, TSH y hepatograma, revisar alcohol y fármacos (metotrexato, hidroxiurea, antirretrovirales) y considerar síndrome mielodisplásico si persiste'},
     'HCM':  {bajo:'hemoglobina corpuscular media baja (hipocromía); orienta a déficit de hierro o talasemia, correlacionar con VCM y perfil férrico', alto:'HCM elevada; acompaña a la macrocitosis, correlacionar con B12/ácido fólico'},
     'CHCM': {bajo:'CHCM baja (hipocromía marcada); típica de ferropenia establecida, solicitar perfil férrico', alto:'CHCM elevada; sospechar esferocitosis o hemólisis (reticulocitos, LDH, bilirrubina indirecta, haptoglobina y Coombs) o artefacto de laboratorio (lipemia, aglutininas frías)'},
-    'VPM':  {alto:'VPM elevado (plaquetas jóvenes, mayor recambio); orienta a destrucción/consumo periférico (PTI, sepsis), correlacionar con el recuento plaquetario', bajo:'VPM bajo; sugiere hipoproducción medular (aplasia, quimioterapia, hiperesplenismo), correlacionar con el recuento plaquetario'},
+    'VPM':  {alto:(v,f,by)=> (by['PLAQ']&&by['PLAQ'].dir==='bajo')
+      ? 'VPM elevado con plaquetopenia: plaquetas jóvenes por mayor recambio, orienta a destrucción/consumo periférico (PTI, sepsis, CID); evaluar riesgo de sangrado y frotis de sangre periférica'
+      : 'VPM levemente elevado con recuento plaquetario no disminuido: hallazgo inespecífico (plaquetas jóvenes por mayor recambio, inflamación o recuperación de una trombocitosis reactiva); sin conducta por sí solo, controlar la evolución del recuento',
+      bajo:'VPM bajo; sugiere hipoproducción medular (aplasia, quimioterapia, hiperesplenismo), correlacionar con el recuento plaquetario'},
     'Reticulocitos': {alto:'reticulocitosis (respuesta medular); considerar hemólisis o sangrado agudo, o respuesta a tratamiento (hierro/B12/folato), correlacionar con LDH, bilirrubina indirecta y haptoglobina', bajo:'reticulocitopenia (anemia hiporregenerativa); considerar déficit de hierro/B12/folato, insuficiencia medular, enfermedad renal crónica o inflamación; calcular el índice reticulocitario corregido'},
     'GLUC': {bajo:'hipoglucemia; controlar con HGT y corregir si es sintomática', alto:(v)=> (v!=null && v<126)
       ? 'glucemia levemente por encima del rango (probable hiperglucemia de estrés o no en ayunas); sin indicación de insulina por sí sola, controlar HGT según esquema del servicio y repetir en ayunas / solicitar HbA1c si persiste'
       : 'hiperglucemia; controlar con HGT y valorar esquema de insulina correctora'},
-    'Na':   {bajo:'hiponatremia; evaluar volemia y osmolaridad plasmática antes de corregir (evitar corrección demasiado rápida)', alto:'hipernatremia; evaluar aporte de agua libre'},
+    'Na':   {bajo:'hiponatremia; evaluar volemia y osmolaridad plasmática antes de corregir (evitar corrección demasiado rápida)', alto:(v,f,by)=>{
+      const n = v;
+      const grado = n==null ? '' : (n<150 ? ' leve (145-149 mEq/L)' : (n<160 ? ' moderada (150-159 mEq/L)' : ' severa (≥160 mEq/L)'));
+      const fact = n==null ? null : 0.5*(n/140-1);
+      const def = fact!=null ? `; déficit de agua libre ≈ 0,5 × peso (kg) × (Na/140 − 1) ≈ ${fact.toFixed(3).replace('.',',')} L por kg de peso (ej. 60 kg ≈ ${(60*fact).toFixed(1).replace('.',',')} L)` : '';
+      const hipoK = by['K'] && by['K'].dir==='bajo' ? '; la hipokalemia asociada también debe corregirse (ajustar el K en las soluciones)' : '';
+      return `hipernatremia${grado}: indica déficit de agua libre (deshidratación hipertónica) en la mayoría de los casos. Evaluar volemia, balance hídrico, fiebre, diuresis y fármacos (diuréticos); si la diuresis es abundante, solicitar osmolaridad urinaria y descartar diabetes insípida o diuresis osmótica (hiperglucemia, urea). Conducta: reponer agua libre, preferentemente por vía oral/SNG, o dextrosa 5% EV; si hay inestabilidad hemodinámica, reponer primero volumen con cristaloides${def}. Corregir no más de 10-12 mEq/L en 24 hs (≈0,5 mEq/L/h) para evitar edema cerebral, con ionograma de control cada 6-12 hs${hipoK}`;
+    }},
     'K':    {bajo:'hipokalemia; controlar y valorar reposición de ClK (en casos moderados/severos, ej. 3 ampollas de ClK diluidas en 300 mL de SF a pasar en 3 horas —regla del 3— seguido de reposición en el plan de hidratación parenteral y/o Kaon vía oral)', alto:'hiperkalemia; solicitar ECG, considerar gluconato de calcio si hay cambios eléctricos y medidas para descender la kalemia'},
-    'CL':   {bajo:'hipocloremia', alto:'hipercloremia; considerar acidosis metabólica hiperclorémica'},
+    'CL':   {bajo:'hipocloremia; considerar vómitos, aspiración nasogástrica, diuréticos de asa/tiazidas o alcalosis metabólica hipoclorémica (evaluar con gasometría); reponer con solución fisiológica si hay depleción de volumen', alto:(v,f,by)=>{
+      const na = by['Na'] ? laboToNumber(by['Na'].text) : null;
+      if(v!=null && na && by['Na'].dir==='alto'){
+        const cc = v*140/na;
+        if(cc<=109) return `hipercloremia proporcional a la hipernatremia (cloro corregido por sodio ≈ ${cc.toFixed(1).replace('.',',')} mEq/L, normal): refleja déficit de agua libre/deshidratación hipertónica o aporte de soluciones con cloruro, y no sugiere por sí sola acidosis metabólica hiperclorémica; se corrige reponiendo agua libre. Si requiere volumen, preferir cristaloides balanceados (Ringer lactato) antes que solución fisiológica, y confirmar con gasometría (bicarbonato) ante la duda`;
+        return `hipercloremia mayor a la esperada para el sodio (cloro corregido ≈ ${cc.toFixed(1).replace('.',',')} mEq/L): sospechar acidosis metabólica hiperclorémica; solicitar gasometría con bicarbonato y anión gap, revisar aporte de solución fisiológica, diarrea y acidosis tubular, y preferir cristaloides balanceados`;
+      }
+      return 'hipercloremia; considerar acidosis metabólica hiperclorémica (solicitar gasometría con bicarbonato y anión gap, revisar aporte de solución fisiológica, diarrea y acidosis tubular)';
+    }},
     'Ca':   {bajo:'hipocalcemia; correlacionar con calcio iónico y albúmina, valorar reposición', alto:'hipercalcemia; evaluar causa e hidratación'},
     'P':    {bajo:'hipofosfatemia', alto:'hiperfosfatemia'},
     'Mg':   {bajo:'hipomagnesemia', alto:'hipermagnesemia'},
@@ -1874,19 +1949,24 @@ function fld(id){ return document.getElementById(id); }
     const hbF = byCode['HB'], htoF = byCode['HTO'];
     if((hbF && hbF.dir==='bajo') || (htoF && htoF.dir==='bajo')){
       const vcmF = byCode['VCM'], hcmF = byCode['HCM'];
-      const vcm = vcmF ? laboToNumber(vcmF.text) : null;
-      const hcm = hcmF ? laboToNumber(hcmF.text) : null;
-      const tipo = laboAnemiaTipo(vcm, hcm);
+      const chcmF = byCode['CHCM'], rdwF = byCode['RDW'];
+      const tam = !vcmF ? '' : (vcmF.dir==='bajo' ? 'microcítica' : (vcmF.dir==='alto' ? 'macrocítica' : 'normocítica'));
+      const hipo = (hcmF && hcmF.dir==='bajo') || (chcmF && chcmF.dir==='bajo');
+      const col = (hcmF||chcmF) ? (hipo ? 'hipocrómica' : 'normocrómica') : '';
+      const tipo = [tam, col].filter(Boolean).join(' ');
+      const rdwAlto = rdwF && rdwF.dir==='alto';
       const partes = [];
       if(hbF) partes.push(`HB ${hbF.text}`);
       if(htoF) partes.push(`HTO ${htoF.text}`);
-      if(vcmF) partes.push(`VCM ${vcmF.text}`);
-      if(hcmF) partes.push(`HCM ${hcmF.text}`);
+      if(vcmF && vcmF.dir) partes.push(`VCM ${vcmF.text}`);
+      if(hcmF && hcmF.dir) partes.push(`HCM ${hcmF.text}`);
       let extra = '';
-      if(/microc[ií]tica/.test(tipo) && /hipocr[oó]mica/.test(tipo)) extra = ' Se sugiere solicitar perfil férrico para descartar ferropenia.';
-      else if(/macroc[ií]tica/.test(tipo)) extra = ' Se sugiere solicitar vitamina B12, ácido fólico y perfil tiroideo.';
-      sentences.push(`${laboRed(partes.join(', '))}: anemia${tipo?(' '+tipo):''}.${extra}`);
+      if(tam==='microcítica') extra = ' Se sugiere solicitar perfil férrico (hierro, transferrina, saturación, ferritina) para descartar ferropenia; si la ferritina es normal/alta con inflamación, considerar anemia de trastornos crónicos o talasemia.';
+      else if(tam==='macrocítica') extra = ' Se sugiere solicitar vitamina B12, ácido fólico, TSH, hepatograma y reticulocitos, y revisar alcohol y fármacos.';
+      else extra = ' Se sugiere solicitar reticulocitos y perfil férrico, evaluar función renal, inflamación crónica (PCR/ERS) y pérdidas sanguíneas (sangrado digestivo: examen físico y tacto rectal); considerar transfusión sólo si hay inestabilidad hemodinámica, síntomas de isquemia o Hb <7 g/dL (<8 si enfermedad cardiovascular).';
+      sentences.push(`${laboRed(partes.join(', '))}: anemia${tipo?(' '+tipo):''}${rdwAlto?' con RDW elevado (anisocitosis: población eritrocitaria heterogénea, sugiere etiología mixta o en evolución)':''}.${extra}`);
       ['HB','HTO','VCM','HCM'].forEach(c=>consumed.add(c));
+      if(rdwAlto) consumed.add('RDW');
     }
 
     const ureaF = byCode['UREA'], crF = byCode['CR'], fgF = byCode['FG'];
@@ -1965,22 +2045,35 @@ function fld(id){ return document.getElementById(id); }
       ['Fe','transferrina','Sat Transf','TIBC','UIBC','ferritina'].forEach(c=>consumed.add(c));
     }
 
-    const caF = byCode['Ca'], albF = byCode['ALB'];
-    if(caF && albF){
-      const ca = laboToNumber(caF.text), alb = laboToNumber(albF.text);
-      if(ca!=null && alb!=null && alb < 4){
-        const corr = Math.round((ca + 0.8*(4-alb))*10)/10;
-        const rango = caF.range || {low:8.5, high:10.5};
-        const corrDir = laboDir(corr, rango);
-        if(caF.dir || corrDir){
-          let interp;
-          if(!corrDir) interp = caF.dir ? 'calcio corregido normal: la alteración de la calcemia total se explica por la hipoalbuminemia (pseudo-alteración), sin necesidad de reposición; si hay dudas, medir calcio iónico' : 'normal';
-          else if(corrDir==='bajo') interp = 'hipocalcemia verdadera; correlacionar con calcio iónico, PTH, 25-OH vitamina D, magnesio y fósforo, y valorar reposición';
-          else interp = 'hipercalcemia verdadera; evaluar causa (PTH, neoplasia, vitamina D) e hidratación';
-          sentences.push(`${laboRed(`Ca ${caF.text}`)} (ALB ${albF.text} g/dL): calcio corregido por albúmina [Ca + 0,8 × (4 − ALB)] ≈ ${laboFmtNumber(corr)} mg/dL; ${interp}.`);
-          consumed.add('Ca');
-        }
+    const caF = byCode['Ca'];
+    if(ctx.caCorr && caF){
+      const cc = ctx.caCorr;
+      const rango = cc.range || {low:8.5, high:10.5};
+      const corr = cc.corr;
+      const corrDir = laboDir(corr, rango);
+      const mdir = caF.dir;
+      const ionF = byCode['Ca ion'];
+      const ionTxt = ionF ? ` (calcio iónico informado: ${ionF.text} mmol/L${ionF.dir?', alterado':', normal'})` : '';
+      let interp;
+      if(!corrDir){
+        interp = `calcio corregido normal: la alteración de la calcemia total se explica por la concentración de albúmina (pseudo-alteración), por lo que no requiere reposición ni tratamiento específico del calcio; si persisten dudas, medir calcio iónico${ionTxt}`;
+      } else if(corrDir==='bajo'){
+        interp = `hipocalcemia verdadera (persiste tras corregir por albúmina): confirmar con calcio iónico${ionTxt} y solicitar magnesemia, fosfatemia, PTH y 25-OH vitamina D; realizar ECG (intervalo QT). Si es leve y asintomática: calcio oral 1-2 g/día de calcio elemental con vitamina D, corrigiendo el magnesio. Si es sintomática (parestesias, tetania, convulsiones, QT prolongado) o el calcio corregido es <7,5 mg/dL: gluconato de calcio 1-2 g (10-20 mL al 10%) EV en 10-20 min con monitoreo cardíaco, seguido de infusión continua si persiste`;
+      } else {
+        const grado = corr>=14 ? 'grave (≥14 mg/dL)' : (corr>=12 ? 'moderada (12-13,9 mg/dL)' : 'leve (<12 mg/dL)');
+        const oculta = mdir==='bajo' || !mdir ? ' (enmascarada por la hipoalbuminemia: la calcemia total no la mostraba)' : '';
+        interp = `hipercalcemia verdadera ${grado}${oculta}: hidratación con solución fisiológica (ajustada a la función cardíaca y renal, diuresis objetivo 100-150 mL/h), suspender calcio, vitamina D, tiazidas y litio; solicitar PTH, PTHrP, 25-OH vitamina D, fosfatemia, función renal y ECG. PTH elevada o normal-alta orienta a hiperparatiroidismo primario; PTH suprimida orienta a neoplasia (PTHrP, proteinograma por mieloma), exceso de vitamina D o enfermedad granulomatosa${corr>=14 ? '. Por ser grave o sintomática, agregar calcitonina y un bifosfonato EV (ácido zoledrónico 4 mg) tras hidratar, según la función renal' : ''}${ionTxt}`;
       }
+      const etiqueta = caF.dir ? laboRed(`Ca ${caF.text}`) : `Ca ${caF.text}`;
+      const corrAbn = laboIsAbnormal(corr, rango);
+      const corrTag = corrAbn ? laboRed(`CALCIO CORREGIDO ${laboFmtNumber(corr)}`) : `<b>CALCIO CORREGIDO ${laboFmtNumber(corr)}</b>`;
+      const origen = cc.source==='manual' ? 'albúmina ingresada manualmente' : 'albúmina del laboratorio';
+      const albLow = cc.alb < 4;
+      const concepto = albLow
+        ? `casi la mitad del calcio circula unido a la albúmina, por lo que una albúmina menor a 4 g/dL (${laboFmtNumber(cc.alb)} g/dL) disminuye la calcemia total sin modificar el calcio libre (activo); la fórmula [Ca + 0,8 × (4 − ALB)] estima cuánto sería la calcemia con albúmina normal`
+        : `con albúmina normal o elevada (${laboFmtNumber(cc.alb)} g/dL) la corrección aporta poco: el valor corregido coincide con la calcemia medida o es menor (una albúmina alta por hemoconcentración puede sobrestimar la calcemia); ante la duda, medir calcio iónico`;
+      sentences.push(`${etiqueta} → ${corrTag} mg/dL (${origen}): ${concepto}. En este caso, ${interp}.`);
+      consumed.add('Ca');
     }
 
     Object.keys(LABO_EXPLAIN).forEach(code=>{
@@ -2008,6 +2101,11 @@ function fld(id){ return document.getElementById(id); }
         consumed.add(f.code);
       }
     });
+
+    if(ctx.discrep){
+      const cods = ctx.discrep.codes.map(c=>byCode[c] ? (byCode[c].dir ? laboRed(c) : c) : c).join(', ');
+      sentences.push(`<b>Nota del laboratorio</b>: informa discrepancia de ${cods} con la muestra previa${ctx.discrep.hora?` de las ${ctx.discrep.hora} hs`:''}, y que la nueva muestra coincide con los antecedentes del paciente. Se toma como válida la última determinación (posible error preanalítico o de identificación en la anterior); si el valor no se corresponde con la clínica, repetir la muestra.`);
+    }
 
     return sentences;
   }
@@ -2122,11 +2220,111 @@ function fld(id){ return document.getElementById(id); }
     return html;
   }
 
+  /* =====================================================================
+     CALCIO CORREGIDO POR ALBÚMINA
+     Ca corregido (mg/dL) = Ca + 0,8 × (4 − Albúmina [g/dL])
+     · Albúmina en el laboratorio → cálculo directo.
+     · Sin albúmina y calcemia alterada → ventana emergente para cargarla a mano.
+  ===================================================================== */
+  const caState = {sig:null, ca:null, caLab:null, alb:null, range:null, shownSig:null, possible:false};
+  function laboCaParse(v){
+    if(v==null) return null;
+    const t = String(v).trim().replace(',', '.');
+    if(t==='') return null;
+    const n = parseFloat(t);
+    return isFinite(n) ? n : null;
+  }
+  function laboCaCalc(ca, alb){ return Math.round((ca + 0.8*(4-alb))*10)/10; }
+  function laboCaFmtComa(n){ return String(n).replace('.', ','); }
+  function laboCaOpen(){
+    fld('caModalCa').value = caState.ca!=null ? laboCaFmtComa(caState.ca) : '';
+    fld('caModalAlb').value = caState.alb!=null ? laboCaFmtComa(caState.alb) : '';
+    fld('caConfirm').hidden = true;
+    fld('caModal').hidden = false;
+    laboCaRefreshMsg();
+    setTimeout(()=>{ try{ fld('caModalAlb').focus(); }catch(e){} }, 0);
+  }
+  function laboCaClose(){
+    fld('caModal').hidden = true;
+    fld('caConfirm').hidden = true;
+  }
+  function laboCaRefreshMsg(){
+    const msg = fld('caModalMsg'), ok = fld('caModalOk');
+    const caTxt = fld('caModalCa').value, albTxt = fld('caModalAlb').value;
+    const ca = laboCaParse(caTxt), alb = laboCaParse(albTxt);
+    const okCa = ca!=null && ca>=4 && ca<=20;
+    const okAlb = alb!=null && alb>=0.5 && alb<=8;
+    msg.className = 'ca-msg';
+    if(okCa && okAlb){
+      const corr = laboCaCalc(ca, alb);
+      const rg = caState.range || {low:8.5, high:10.5};
+      msg.textContent = `Calcio corregido: ${laboCaFmtComa(corr)} mg/dL`;
+      if(laboIsAbnormal(corr, rg)) msg.classList.add('alt');
+      ok.disabled = false;
+    } else {
+      ok.disabled = true;
+      if(albTxt.trim()!=='' && !okAlb){ msg.textContent = 'Ingresá una albúmina entre 0,5 y 8 g/dL.'; msg.classList.add('err'); }
+      else if(caTxt.trim()!=='' && !okCa){ msg.textContent = 'Ingresá una calcemia entre 4 y 20 mg/dL.'; msg.classList.add('err'); }
+      else msg.textContent = '';
+    }
+  }
+  function laboCaOnInput(){
+    const ca = laboCaParse(fld('caModalCa').value), alb = laboCaParse(fld('caModalAlb').value);
+    const okCa = ca!=null && ca>=4 && ca<=20;
+    const okAlb = alb!=null && alb>=0.5 && alb<=8;
+    if(okCa && okAlb){ caState.ca = ca; caState.alb = alb; } else { caState.alb = null; }
+    laboCaRefreshMsg();
+    laboProcesar();
+  }
+  function laboCaReset(){
+    caState.possible = false; caState.sig = null; caState.alb = null; caState.shownSig = null;
+    laboCaClose();
+    fld('laboCaBtn').hidden = true;
+  }
+  function laboCaSync(info){
+    const btn = fld('laboCaBtn');
+    if(!info){
+      caState.possible = false; caState.sig = null; caState.alb = null; caState.shownSig = null;
+      laboCaClose(); btn.hidden = true; return;
+    }
+    caState.possible = true;
+    caState.range = info.range;
+    if(caState.sig !== info.sig){
+      caState.sig = info.sig; caState.alb = null; caState.ca = info.ca; caState.caLab = info.ca; caState.shownSig = null;
+    }
+    btn.hidden = false;
+    if(caState.shownSig !== info.sig){ caState.shownSig = info.sig; laboCaOpen(); }
+  }
+  /* Cancelar → doble confirmación */
+  function laboCaAskCancel(){ fld('caConfirm').hidden = false; }
+  fld('caModalCa').addEventListener('input', laboCaOnInput);
+  fld('caModalAlb').addEventListener('input', laboCaOnInput);
+  fld('caModalCancel').addEventListener('click', laboCaAskCancel);
+  fld('caConfirmNo').addEventListener('click', ()=>{ fld('caConfirm').hidden = true; try{ fld('caModalAlb').focus(); }catch(e){} });
+  fld('caConfirmYes').addEventListener('click', ()=>{
+    caState.alb = null;
+    laboCaClose();
+    laboProcesar();
+  });
+  fld('caModalOk').addEventListener('click', ()=>{ if(caState.alb!=null) laboCaClose(); });
+  fld('laboCaBtn').addEventListener('click', laboCaOpen);
+  fld('caModal').addEventListener('mousedown', (e)=>{
+    if(e.target === fld('caModal')){ if(caState.alb!=null) laboCaClose(); else laboCaAskCancel(); }
+  });
+  document.addEventListener('keydown', (e)=>{
+    if(e.key==='Escape' && !fld('caModal').hidden){
+      if(!fld('caConfirm').hidden) fld('caConfirm').hidden = true;
+      else if(caState.alb!=null) laboCaClose();
+      else laboCaAskCancel();
+    }
+  });
+
   function laboProcesar(){
     let raw = $input.value;
     if(!raw.trim()){
       $output.innerHTML = '';
       $status.textContent = 'Pegá primero el texto del laboratorio.';
+      laboCaReset();
       return;
     }
 
@@ -2146,6 +2344,33 @@ function fld(id){ return document.getElementById(id); }
       return out.join('\n');
     }
     raw = laboStripNumericDump(raw);
+
+    /* Comentarios libres del laboratorio intercalados entre el valor y el rango
+       (p. ej. "se observa discrepancia con el valor correspondiente a la muestra de las 8 hrs...").
+       Se quitan para no cortar la lectura del rango de referencia, y se guarda a qué
+       determinación pertenecen para dejar una nota en la explicación. */
+    const discrepCodes = [];
+    let discrepHora = null;
+    raw = raw.replace(/\bse\s+observa\s+discrepancia[^\t\r\n]*/gi, (m, off, whole)=>{
+      const h = m.match(/muestra\s+de\s+las?\s+(\d{1,2}(?::\d{2})?)\s*h/i);
+      if(h && !discrepHora) discrepHora = h[1];
+      const prev = whole.slice(Math.max(0, off-160), off).replace(/[\t\r\n]+/g,' ');
+      let best = null, bestEnd = -1;
+      LABO_MASTER.forEach(p=>{
+        if(!p.aliases || p.cat==='acidobase') return;
+        p.aliases.forEach(rx=>{
+          const re = new RegExp(rx.source, rx.flags.replace('g','')+'g');
+          let mm;
+          while((mm = re.exec(prev)) !== null){
+            const end = mm.index + mm[0].length;
+            if(end >= bestEnd){ bestEnd = end; best = p.code; }
+            if(re.lastIndex === mm.index) re.lastIndex++;
+          }
+        });
+      });
+      if(best && !discrepCodes.includes(best)) discrepCodes.push(best);
+      return ' ';
+    });
 
     let pendingList = '';
     const pendMatch = raw.match(/an[aá]lisis\s+pendientes\s*:\s*([^\n]+)/i);
@@ -2318,10 +2543,11 @@ function fld(id){ return document.getElementById(id); }
     function buildLine(items){
       if(items.length===0) return '';
       const parts = items.map(r=>{
-        const txt = `${laboCodeLabel(r.code)}: ${r.text}`;
+        const esCaCorr = r.code==='Calcio corregido';
+        const txt = esCaCorr ? `CALCIO CORREGIDO: ${r.text}` : `${laboCodeLabel(r.code)}: ${r.text}`;
         return r.abnormal
           ? `<span style="color:#FF0000;font-weight:700;">${txt}</span>`
-          : txt;
+          : (esCaCorr ? `<b>${txt}</b>` : txt);
       });
       return prefix + parts.join(', ') + '.';
     }
@@ -2338,8 +2564,31 @@ function fld(id){ return document.getElementById(id); }
       return tested.length>0 && tested.every(f=>!f.abnormal);
     }).map(g=>g.label);
 
-    const line2Html = buildLine(line2Items);
-    let line1Html = buildLine(line1Items.filter(x=>x.l1 || (x.abnormal && !LABO_NEVER_PARCIAL.has(x.code))));
+    /* ---- Calcio corregido por albúmina ---- */
+    const caF0 = found.find(f=>f.code==='Ca'), albF0 = found.find(f=>f.code==='ALB');
+    const caLab = caF0 ? laboToNumber(caF0.text) : null;
+    const albLab = albF0 ? laboToNumber(albF0.text) : null;
+    const caRange = (caF0 && caF0.range) || {low:8.5, high:10.5};
+    let caCorr = null;
+    if(caLab!=null && albLab!=null){
+      const corrLab = laboCaCalc(caLab, albLab);
+      if(caF0.abnormal || (albLab<4 && laboIsAbnormal(corrLab, caRange))){
+        caCorr = {ca:caLab, alb:albLab, corr:corrLab, range:caRange, source:'lab'};
+      }
+      laboCaSync(null);
+    } else if(caLab!=null && caF0.abnormal){
+      const head = (raw.match(/Orden\s*(\d+)/i)||[])[1] || raw.trim().slice(0,100);
+      laboCaSync({sig:`${caLab}|${head}`, ca:caLab, range:caRange});
+      if(caState.alb!=null && caState.ca!=null){
+        caCorr = {ca:caState.ca, alb:caState.alb, corr:laboCaCalc(caState.ca, caState.alb), range:caRange, source:'manual'};
+      }
+    } else {
+      laboCaSync(null);
+    }
+    const caCorrItem = caCorr ? [{code:'Calcio corregido', text:laboFmtNumber(caCorr.corr), abnormal:laboIsAbnormal(caCorr.corr, caCorr.range)}] : [];
+
+    const line2Html = buildLine(line2Items.concat(caCorrItem));
+    let line1Html = buildLine(line1Items.filter(x=>x.l1 || (x.abnormal && !LABO_NEVER_PARCIAL.has(x.code))).concat(caCorrItem));
     const RAPID_CODES = ['Ag COVID','Influenza A','Influenza B','VSR'];
     const rapidNeg = found.filter(f=>RAPID_CODES.includes(f.code) && !f.abnormal).map(f=>f.code);
     const negSentences = [];
@@ -2414,7 +2663,7 @@ function fld(id){ return document.getElementById(id); }
       $gcResultado.innerHTML = laboBuildGasResultHtml(gasV, {showMixedValues:false});
     }
 
-    const explicaciones = laboBuildExplicaciones(found, {venoso: esVenoso, orina24: orina24Result ? orina24Result.items : null});
+    const explicaciones = laboBuildExplicaciones(found, {venoso: esVenoso, orina24: orina24Result ? orina24Result.items : null, caCorr: caCorr, discrep: discrepCodes.length ? {codes: discrepCodes, hora: discrepHora} : null});
     if(explicaciones.length){
       if(out) out += '<br><br>';
       out += `<span style="${LABO_FONT}"><b>Explicación de alteraciones</b>: ${explicaciones.join(' ').replace(/<br>\s+/g, '<br>')}</span>`;
@@ -2430,7 +2679,10 @@ function fld(id){ return document.getElementById(id); }
     const gasaTxt = gasaBlock ? ' GASA calculado.' : (ascAlb!=null ? ' Falta el laboratorio plasmático para calcular el GASA.' : '');
     const abgTxt = abgInterp ? ` Se detectó y analizó el estado ácido-base${esVenoso ? ' (muestra venosa)' : ''} (ver sección 4 para ajustar a mano).` : '';
     const pendTxt = pendingList ? ` Ojo: esta orden tiene estudios aún pendientes de resultado (${pendingList}), no incluidos en la conversión.` : '';
-    $status.textContent = `Listo. Renglón completo: ${line2Items.length} dato(s). Renglón resumen: ${line1CoreCount} del listado + ${catalogAlteradosFueraCore} alterado(s) adicionales del catálogo + ${extrasCount} adicional(es) alterado(s) fuera de catálogo.${liqTxt}${uroTxt}${gasaTxt}${abgTxt}${pendTxt}`;
+    const caTxtStatus = caCorr
+      ? ` Calcio corregido ${laboFmtNumber(caCorr.corr)} mg/dL (albúmina ${caCorr.source==='lab'?'del laboratorio':'ingresada manualmente'}).`
+      : (caState.possible ? ' Calcemia alterada y sin albúmina: podés calcular el calcio corregido con el botón «Calcular calcio corregido con albúmina».' : '');
+    $status.textContent = `Listo.${caTxtStatus} Renglón completo: ${line2Items.length} dato(s). Renglón resumen: ${line1CoreCount} del listado + ${catalogAlteradosFueraCore} alterado(s) adicionales del catálogo + ${extrasCount} adicional(es) alterado(s) fuera de catálogo.${liqTxt}${uroTxt}${gasaTxt}${abgTxt}${pendTxt}`;
   }
 
   const SECTION_STOPWORDS = [
@@ -2448,6 +2700,7 @@ function fld(id){ return document.getElementById(id); }
     $gasaWrap.classList.remove('show');
     $output.innerHTML = '';
     $status.textContent = '';
+    laboCaReset();
     $input.focus();
   });
   $output.addEventListener('copy', (e)=>{
