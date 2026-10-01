@@ -212,6 +212,9 @@
   details.sys-block[open] > .sys-title::before{transform:rotate(90deg);}
   .sys-block-body{padding-top:9px;}
   .sys-title .sys-icon{font-size:16px;margin-right:7px;vertical-align:-2px;}
+  svg.ico{width:1.15em;height:1.15em;vertical-align:-0.2em;display:inline-block;}
+  .sys-title .sys-icon svg.ico{width:19px;height:19px;vertical-align:-4px;}
+  .peek-banner{background:#fff7e0;border:1px dashed #c9a24a;color:#6b5314;font-size:12px;padding:7px 10px;margin:0 0 12px;border-radius:3px;}
   .sys-title .opt-toggle{font-weight:400;font-size:10.5px;color:var(--muted);margin-left:8px;}
   .sys-block-neuro{border-left-color:#7c6fd6;}
   .sys-block-cv{border-left-color:#d6647c;}
@@ -909,7 +912,7 @@ const EXCLUDE_FROM_JOIN = {
 };
 
 const SYS_ORDER = ['neuro','cv','resp','dig','renal','miembros','infecto'];
-const SYS_ICONS = { neuro:'🧠', cv:'❤️', resp:'🫁', dig:'🍽️', renal:'💧', miembros:'🦵', infecto:'🦠' };
+const SYS_ICONS = { neuro:'🧠', cv:'❤️', resp:'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><g stroke="#2f6f8f" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"><path d="M10.2 8.5C7.5 8.8 4.8 13 3.8 17.2c-.6 2.6.6 4 2.8 4 2 0 3.6-1 3.6-3.2z" fill="#8ec9e6"/><path d="M13.8 8.5c2.7.3 5.4 4.5 6.4 8.7.6 2.6-.6 4-2.8 4-2 0-3.6-1-3.6-3.2z" fill="#8ec9e6"/><path d="M12 2.2v8.3M12 10.5l-2.6 2.2M12 10.5l2.6 2.2" fill="none"/></g></svg>', dig:'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><g stroke="#8a3a2b" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"><path d="M8.2 1.8h3.1v3.6c0 1.3 1 1.9 2.7 2.4 3.6 1 6.6 3.4 6.6 7.4 0 3.6-2.6 6.2-6 6.2-3 0-5.3-1.4-6.8-4C6.4 14.7 5.3 12.8 5.3 10.6c0-1.7 1.2-2.4 2.9-2.9z" fill="#f2a58e"/><path d="M13.5 20.2c1.7.1 3-.4 4-1.4" fill="none"/><path d="M11 11.5c1.8.2 3 1 3.6 2.4M10.2 14.8c1.5.1 2.6.6 3.3 1.5" fill="none" stroke="#c9604a"/></g></svg>', renal:'💧', miembros:'🦵', infecto:'🦠' };
 
 const GLOSARIO = {
   neuro: [
@@ -1167,7 +1170,9 @@ let selectedId = null;
 const USAR_EVALUACION_PREVIA = false;
 /* Sistema del checklist que está abierto (acordeón). Arranca en Neurológico al abrir una ficha
    y después se queda en el que el usuario esté tocando, aunque se vuelva a dibujar el formulario. */
-let evolOpenKey = 'neuro';
+let evolOpenKey = '';   // todos los sistemas arrancan cerrados
+let secOpen = {};       // secciones ANT/MC/MI/ASOC/CULT/IC abiertas (se conserva entre redibujados)
+let peekId = null;      // paciente abierto solo para consultar desde el buscador (no está en la lista)
 /* Id de la ficha que está dibujada ahora: sirve para saber si un redibujado es de la MISMA ficha
    (se conservan checks, signos vitales y sistema abierto) o si se cambió de paciente (arranca limpio). */
 let lastRenderedPatientId = null;
@@ -1566,11 +1571,16 @@ function getCamasVisibles(){
     ? checklistConfig.camasVisibles.map(String)
     : ['101','109','120','127'];
 }
-function patientVisible(p){
+function enMiLista(p){
   if(!p.cama || !p.cama.trim()) return true; // carpetas nuevas sin cama asignada: siempre visibles
-  if(p.id === selectedId) return true; // la que se está editando, aunque no esté en la lista
   const n = bedNumberOfPatient(p);
   return isNaN(n) ? true : getCamasVisibles().includes(String(n));
+}
+function patientVisible(p){
+  if(enMiLista(p)) return true;
+  // La que se está editando sigue visible aunque no esté en la lista, EXCEPTO si se abrió
+  // desde el buscador solo para consultarla (peekId): esa no se suma a "mis pacientes".
+  return p.id === selectedId && p.id !== peekId;
 }
 function renderCamasVisiblesBar(){
   const chipsWrap = fld('camasVisiblesChips');
@@ -1713,20 +1723,22 @@ function renderSidebar(){
     // Buscando por cama/nombre: si ese paciente todavía no está entre las
     // "Camas mostradas", se agrega un botón "＋" para sumarlo a la vista sin
     // tener que abrir el combobox de camas aparte.
-    const nCama = bedNumberOfPatient(p);
-    const puedeAgregar = !!f && p.cama && !isNaN(nCama) && !getCamasVisibles().includes(String(nCama));
-    chip.innerHTML = (puedeAgregar ? `<button type="button" class="addvis" title="Agregar a Camas mostradas">＋ agregar</button>` : '')
-      + `<span class="name">${escapeHtml(label)}</span><button class="del" title="Eliminar">×</button>`;
-    chip.querySelector('.name').addEventListener('click',()=>{selectedId=p.id;lastRenderedPatientId=null;renderAll();scrollFormToTop();});
+    // Buscar y hacer clic solo abre la ficha para consultarla; para sumar una cama a "mis
+    // pacientes" se usa el combobox "+ Cama".
+    chip.innerHTML = `<span class="name">${escapeHtml(label)}</span><button class="del" title="Eliminar">×</button>`;
+    chip.querySelector('.name').addEventListener('click',()=>{
+      selectedId=p.id;
+      peekId = enMiLista(p) ? null : p.id;
+      lastRenderedPatientId=null;renderAll();scrollFormToTop();
+    });
     chip.querySelector('.del').addEventListener('click',(e)=>{e.stopPropagation();removePatient(p.id);});
-    const addBtn = chip.querySelector('.addvis');
-    if(addBtn) addBtn.addEventListener('click',(e)=>{ e.stopPropagation(); addCamaVisible(String(nCama)); });
     list.appendChild(chip);
   });
   renderCamasVisiblesBar();
 }
 
 /* ================= Listas MI / ASOC (editables, activo-resuelto) ================= */
+const CE_PLAIN_OK = (()=>{ try{ const d=document.createElement('div'); d.contentEditable='plaintext-only'; return d.contentEditable==='plaintext-only'; }catch(_){ return false; } })();
 function renderItemList(containerId, patient, field){
   if(field==='cult' && !Array.isArray(patient.cult)) patient.cult = cultFromString(patient.cult);
   if((field==='mi' || field==='asoc') && actualizarDiasTtoEnItems(patient[field])){
@@ -1758,8 +1770,22 @@ function renderItemList(containerId, patient, field){
     if(bUp) bUp.addEventListener('click',()=>mover(-1));
     if(bDn) bDn.addEventListener('click',()=>mover(1));
     const txtEl = row.querySelector('.txt');
-    txtEl.addEventListener('blur',(e)=>{
-      item.text = e.target.textContent.trim();
+    // Texto plano siempre (si se pega desde Word/web no se cuela formato ni saltos de línea).
+    if(CE_PLAIN_OK) txtEl.setAttribute('contenteditable','plaintext-only');
+    else txtEl.addEventListener('paste',(e)=>{
+      e.preventDefault();
+      const t = ((e.clipboardData||window.clipboardData).getData('text')||'').replace(/\s*\n+\s*/g,' ');
+      document.execCommand('insertText', false, t);
+    });
+    // Se guarda en el modelo MIENTRAS se escribe (no recién al salir del campo): así un
+    // redibujado o una actualización de otro dispositivo no puede pisar lo tipeado.
+    txtEl.addEventListener('input',()=>{
+      item.text = txtEl.textContent.replace(/\s*\n+\s*/g,' ');
+      renderPreview();
+      updateDraftPreview(patient);
+    });
+    txtEl.addEventListener('blur',()=>{
+      item.text = txtEl.textContent.replace(/\s*\n+\s*/g,' ').trim();
       renderPreview();
       updateDraftPreview(patient);
     });
@@ -1796,10 +1822,12 @@ function renderForm(){
   // otro dispositivo), se conserva lo que el usuario tenía en pantalla. Si es otra ficha, arranca limpio.
   const mismaFicha = (lastRenderedPatientId === p.id);
   const uiState = mismaFicha ? captureEvolUiState() : null;
-  if(!mismaFicha) evolOpenKey = 'neuro';
+  if(!mismaFicha){ evolOpenKey = ''; secOpen = {}; }
   lastRenderedPatientId = p.id;
 
+  const esPeek = (peekId === p.id && !enMiLista(p));
   col.innerHTML = `
+    ${esPeek ? '<div class="peek-banner">👁 Estás viendo esta cama solo para consultar: <b>no está en tu lista de pacientes</b>. Para sumarla usá <b>+ Cama</b>.</div>' : ''}
     <div class="patient-actions">
       <button type="button" class="secondary small danger" id="vaciarPatientBtn">Vaciar carpeta (alta)</button>
     </div>
@@ -1825,21 +1853,21 @@ function renderForm(){
       </div>
     </fieldset>
 
-    <details class="collapsible">
+    <details class="collapsible" data-sec="ant">
       <summary>ANT — Antecedentes personales</summary>
       <div class="collapsible-body">
         <div class="field"><textarea data-f="ant"></textarea></div>
       </div>
     </details>
 
-    <details class="collapsible">
+    <details class="collapsible" data-sec="mc">
       <summary>MC (Motivo de Consulta)</summary>
       <div class="collapsible-body">
         <div class="field"><textarea data-f="mc"></textarea></div>
       </div>
     </details>
 
-    <details class="collapsible">
+    <details class="collapsible" data-sec="mi">
       <summary>MI — Motivo de internación (checklist)</summary>
       <div class="collapsible-body">
         <div class="item-list" id="miList"></div>
@@ -1850,7 +1878,7 @@ function renderForm(){
       </div>
     </details>
 
-    <details class="collapsible">
+    <details class="collapsible" data-sec="asoc">
       <summary>ASOC — Diagnósticos asociados (checklist)</summary>
       <div class="collapsible-body">
         <div class="item-list" id="asocList"></div>
@@ -1861,7 +1889,7 @@ function renderForm(){
       </div>
     </details>
 
-    <details class="collapsible">
+    <details class="collapsible" data-sec="cult">
       <summary>CULT — Cultivos (checklist)</summary>
       <div class="collapsible-body">
         <div class="item-list" id="cultList"></div>
@@ -1872,7 +1900,7 @@ function renderForm(){
       </div>
     </details>
 
-    <details class="collapsible">
+    <details class="collapsible" data-sec="ic">
       <summary>IC — Interconsultas</summary>
       <div class="collapsible-body">
         <div class="field"><textarea data-f="ic" placeholder="Ej.: Interconsulta con Cardiología por..."></textarea></div>
@@ -1898,6 +1926,11 @@ function renderForm(){
     if(el.dataset.f === 'cama'){
       el.addEventListener('blur',()=>{ relocatePatientToCama(p); });
     }
+  });
+
+  col.querySelectorAll('details.collapsible[data-sec]').forEach(det=>{
+    if(secOpen[det.dataset.sec]) det.open = true;
+    det.addEventListener('toggle', ()=>{ secOpen[det.dataset.sec] = det.open; });
   });
 
   renderItemList('miList', p, 'mi');
@@ -1951,15 +1984,20 @@ function renderForm(){
 document.addEventListener('click', (e)=>{
   const sum = e.target.closest ? e.target.closest('summary') : null;
   if(!sum) return;
+  if(e.target.closest('label, input, button, a')) return;
+  const det = sum.parentElement;
+  if(!det || det.tagName !== 'DETAILS') return;
+  // 2º/3er clic (doble o triple clic para seleccionar palabra/línea): no debe plegar nada;
+  // se deja la sección exactamente como estaba antes del primer clic.
+  if(e.detail >= 2){
+    e.preventDefault();
+    if(typeof sum._abiertoAntes === 'boolean') det.open = sum._abiertoAntes;
+    return;
+  }
+  // Si se arrastró para resaltar texto, ese clic tampoco pliega.
   const sel = window.getSelection && window.getSelection();
-  if(sel && !sel.isCollapsed && String(sel).trim() && sum.contains(sel.anchorNode)) e.preventDefault();
-}, true);
-// Doble clic sobre una palabra del título: selecciona la palabra y deja la sección como estaba.
-document.addEventListener('dblclick', (e)=>{
-  const sum = e.target.closest ? e.target.closest('summary') : null;
-  if(!sum || !sum.parentElement || sum.parentElement.tagName !== 'DETAILS') return;
-  const sel = window.getSelection && window.getSelection();
-  if(sel && !sel.isCollapsed && String(sel).trim()) sum.parentElement.open = !sum.parentElement.open;
+  if(sel && !sel.isCollapsed && String(sel).trim() && sum.contains(sel.anchorNode)){ e.preventDefault(); return; }
+  sum._abiertoAntes = det.open;
 }, true);
 
 /* ================= EVOL: checklist builder ================= */
@@ -3836,17 +3874,28 @@ fld('patientSearch').addEventListener('focus', ()=>{ closeCamaAddDropdown(); });
    se evita pisar esa ficha con datos que lleguen de otro dispositivo justo en ese
    instante (se van a acomodar solos apenas saques el foco de ahí). */
 let firstSnapshotHandled = false;
+/* ¿La persona está usando el formulario? (cursor en un campo, o texto resaltado para copiar).
+   Mientras sea así no se redibuja ni se pisa la ficha con datos que lleguen de la nube. */
+function formBusy(){
+  const fc = fld('formCol');
+  if(!fc) return false;
+  if(document.activeElement && fc.contains(document.activeElement)) return true;
+  const sel = window.getSelection && window.getSelection();
+  return !!(sel && !sel.isCollapsed && String(sel).trim() && sel.anchorNode && fc.contains(sel.anchorNode));
+}
 function applyRemoteSnapshot(remoteListRaw){
   /* Los documentos con id puramente numérico (pacientes/101) son los que
      escribía la versión vieja de guardias.html. No se muestran como
      carpetas: la unificación los funde en pacientes/C101 y los borra. */
   const remoteList = [];
+  const remotePending = {};  // docs con escritura local todavía sin confirmar: la copia local manda
   legacyNumericDocs = [];
   remoteListRaw.forEach(r=>{
+    if(r.pend){ remotePending[r.id] = true; }
     if(/^\d+$/.test(r.id)) legacyNumericDocs.push(r);
     else remoteList.push(r);
   });
-  const activeInsideForm = document.activeElement && fld('formCol') && fld('formCol').contains(document.activeElement);
+  const activeInsideForm = formBusy();
   const currentlyEditingId = activeInsideForm ? selectedId : null;
 
   const remoteById = {};
@@ -3859,7 +3908,7 @@ function applyRemoteSnapshot(remoteListRaw){
     if(idx===-1){
       patients.push(remoteById[id]);
       if(id===selectedId) selectedPatientDataChanged = true;
-    } else if(id !== currentlyEditingId){
+    } else if(id !== currentlyEditingId && !pendingSavePatients[id] && !(remotePending && remotePending[id])){
       // Evitamos repintar el formulario cuando lo que llegó es el eco de nuestro propio
       // guardado (datos idénticos): así no se pierden los signos vitales u otros campos
       // transitorios de la evolución que el usuario está tipeando y todavía no guardó.
@@ -3901,7 +3950,7 @@ function iniciarAppPrincipal(){
     return;
   }
   fs.onSnapshot(fs.pacientesCol, (snapshot)=>{
-    const remoteList = snapshot.docs.map(d=>({id:d.id, data:d.data()}));
+    const remoteList = snapshot.docs.map(d=>({id:d.id, data:d.data(), pend: !!(d.metadata && d.metadata.hasPendingWrites)}));
     applyRemoteSnapshot(remoteList);
     if(!firstSnapshotHandled){
       firstSnapshotHandled = true;
@@ -3919,8 +3968,7 @@ function iniciarAppPrincipal(){
     } else {
       checklistConfig = { custom:{}, edits:{}, hidden:{}, order:{}, info:{}, plantillasBase:{}, customPlantillas:{}, nombresPlantillas:{}, defaults:{}, salidas:{}, estadoOptions:null, camasVisibles:null };
     }
-    const activeInsideForm = document.activeElement && fld('formCol') && fld('formCol').contains(document.activeElement);
-    if(getSelected() && !activeInsideForm) renderForm();
+    if(getSelected() && !formBusy()) renderForm();
     renderSidebar();
   }, ()=>{});
   /* En config/patientRoster ya no vive el listado de pacientes (eso ahora
