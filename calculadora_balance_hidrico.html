@@ -240,6 +240,9 @@
     padding:1px 3px 4px;
     border-bottom:1px solid var(--border);
   }
+  .modal-box table.ref-table{font-size:.85rem;}
+  .modal-box table.ref-table th{font-size:.62rem; padding:2px 8px 6px;}
+  .modal-box table.ref-table td{padding:5px 8px;}
   table.ref-table td{
     padding:2px 3px;
     font-family:'IBM Plex Mono', monospace;
@@ -352,7 +355,7 @@
   }
   .atb-item:not(.open) .atb-item-body{display:none;}
   .atb-item .field{min-width:130px; margin-bottom:0;}
-  .atb-item .field-atb-nombre input{width:150px;}
+  .atb-item .field-atb-nombre input{width:150px; max-width:100%;}
   .atb-item .field-atb-dilucion input{width:80px;}
   .atb-item-remove{
     flex:0 0 auto;
@@ -417,7 +420,7 @@
     gap:10px;
     flex-wrap:wrap;
   }
-  .hist-item-title{font-size:.84rem; font-weight:700;}
+  .hist-item-title{font-size:.84rem; font-weight:700; min-width:0; overflow-wrap:anywhere;}
   .hist-item-sub{font-size:.72rem; color:var(--ink-soft); font-family:'IBM Plex Mono', monospace;}
   .hist-item-actions{display:flex; gap:6px;}
   button.btn.small{padding:5px 10px; font-size:.72rem;}
@@ -472,9 +475,9 @@
   .panel-head .confirm input{accent-color:#fff; cursor:pointer;}
   .panel-body{
     display:grid;
-    grid-template-columns:1fr 1fr;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
   }
-  .col{padding:12px 14px;}
+  .col{padding:12px 14px; min-width:0;}
   .col + .col{border-left:1px solid var(--border);}
   .col-title{
     font-size:.68rem;
@@ -495,7 +498,8 @@
     border-bottom:1px dashed var(--border);
   }
   .row:last-of-type{border-bottom:none;}
-  .row .rlabel{font-size:.78rem; color:var(--ink); flex:0 0 auto; white-space:nowrap;}
+  .row{min-width:0;}
+  .row .rlabel{font-size:.78rem; color:var(--ink); flex:0 1 auto; min-width:0; white-space:normal; overflow-wrap:anywhere;}
   .row.subrow{padding-left:14px;}
   .row.subrow .rlabel{font-size:.72rem; color:var(--ink-soft);}
   .row .rinput{
@@ -518,7 +522,21 @@
     padding:4px 8px;
     min-width:52px;
     text-align:right;
+    flex:0 0 auto;
+    white-space:nowrap;
   }
+  /* Total de antibióticos: incluye el detalle "(Nombre 100 + ...)", así que
+     puede ser largo: la caja se achica y el texto baja de renglón. */
+  .row .rauto[data-role="atbTotalValue"]{
+    flex:0 1 auto;
+    min-width:0;
+    max-width:100%;
+    white-space:normal;
+    overflow-wrap:anywhere;
+    word-break:break-word;
+    line-height:1.25;
+  }
+  .row .atb-inline{min-width:0; flex:0 0 auto;}
   .row .atb-inline{display:flex; align-items:center; gap:6px;}
   .row .atb-inline input[type=checkbox]{accent-color:var(--atb); width:15px; height:15px; cursor:pointer;}
   .row .atb-dose{font-family:'IBM Plex Mono', monospace; font-size:.78rem; color:var(--atb); font-weight:700;}
@@ -529,6 +547,7 @@
     text-align:right;
     margin-top:1px;
     letter-spacing:.01em;
+    overflow-wrap:anywhere;
   }
   .breakdown .plus{color:var(--ink-soft); margin:0 1px;}
 
@@ -749,7 +768,7 @@
     .col{padding:8px 7px;}
     .col-title{font-size:.6rem; margin-bottom:5px;}
     .row{padding:4px 0; gap:4px;}
-    .row .rlabel{font-size:.66rem; white-space:normal; line-height:1.15;}
+    .row .rlabel{font-size:.66rem; line-height:1.15;}
     .row.subrow .rlabel{font-size:.62rem;}
     .row .rinput{min-height:28px; width:52px; font-size:.76rem; padding:3px 4px;}
     .row .rauto{font-size:.7rem; padding:3px 5px; min-width:36px;}
@@ -786,12 +805,15 @@
         <h2>Velocidad de infusión</h2>
         <button type="button" class="modal-close" id="infusionCloseBtn" aria-label="Cerrar">×</button>
       </div>
-      <table class="ref-table ref-table-split" id="refTable">
-        <thead><tr><th>Macrogotas/min</th><th>Volumen/24h</th><th class="ref-col2">Macrogotas/min</th><th>Volumen/24h</th></tr></thead>
+      <table class="ref-table" id="refTable">
+        <thead><tr><th>Macrogotas/min</th><th>Volumen/24h</th></tr></thead>
         <tbody>
-          <tr><td data-vol="500">7</td><td>500 ml</td><td class="ref-col2" data-vol="2000">28</td><td>2000 ml</td></tr>
-          <tr><td data-vol="1000">14</td><td>1000 ml</td><td class="ref-col2" data-vol="2500">35</td><td>2500 ml</td></tr>
-          <tr><td data-vol="1500">21</td><td>1500 ml</td><td class="ref-col2" data-vol="3000">42</td><td>3000 ml</td></tr>
+          <tr><td data-vol="500">7</td><td>500 ml</td></tr>
+          <tr><td data-vol="1000">14</td><td>1000 ml</td></tr>
+          <tr><td data-vol="1500">21</td><td>1500 ml</td></tr>
+          <tr><td data-vol="2000">28</td><td>2000 ml</td></tr>
+          <tr><td data-vol="2500">35</td><td>2500 ml</td></tr>
+          <tr><td data-vol="3000">42</td><td>3000 ml</td></tr>
         </tbody>
       </table>
     </div>
