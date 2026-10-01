@@ -324,6 +324,7 @@
     gap:8px;
     padding:8px 10px;
     cursor:pointer;
+    user-select:none;
   }
   .atb-item-summary{
     flex:1 1 auto;
@@ -2180,9 +2181,11 @@
     }
   });
   atbListEl.addEventListener('click', e=>{
-    const toggleBtn = e.target.closest('[data-role="toggleAtb"]');
-    if (toggleBtn){
-      const item = toggleBtn.closest('.atb-item');
+    // Toda la franja del encabezado (texto, espacio vacío y flechita) abre/cierra;
+    // solo la "×" de quitar queda excluida.
+    const headEl = e.target.closest('.atb-item-head');
+    if (headEl && !e.target.closest('[data-role="removeAtb"]')){
+      const item = headEl.closest('.atb-item');
       const id = item.dataset.atbId;
       if (atbExpanded.has(id)) atbExpanded.delete(id); else atbExpanded.add(id);
       renderAtbConfig();
