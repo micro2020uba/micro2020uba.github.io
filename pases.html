@@ -340,7 +340,7 @@
   .header-labo-btn:hover{opacity:.85;}
   .header-labo-btn svg{width:15px;height:15px;fill:#fff;flex-shrink:0;}
 
-  /* ===== Modal contenedor del transformador de LABO (conversor-labo.html embebido) ===== */
+  /* ===== Modales genéricos (los usan Glosario e Importar pase) ===== */
   .labo-standalone-overlay{
     display:none;position:fixed;inset:0;background:rgba(28,35,33,.6);
     z-index:1200;align-items:flex-start;justify-content:center;padding:clamp(10px,3vh,40px) 14px;overflow:auto;
@@ -389,63 +389,8 @@
   .glosario-term dd{margin:2px 0 0;font-size:12px;line-height:1.5;}
   .glosario-term .ejemplo{font-style:italic;color:var(--muted);display:block;margin-top:3px;}
 
-  /* ===== Modal "Listado de pacientes" (cama / DNI / nombre / edad / MI, del pase de sala) ===== */
+  /* ===== Contenido scrolleable de los modales (lo usa "Importar pase") ===== */
   .pat-list-content{flex:1;overflow:auto;padding:16px 20px;background:var(--paper);}
-  .pat-list-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
-  .pat-list-toolbar input{flex:1;min-width:180px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;
-    padding:8px 10px;border:1px solid var(--line-soft);border-radius:2px;background:var(--panel);color:var(--ink);}
-  .pat-list-note{font-size:11px;color:var(--muted);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
-
-  /* --- Barra de "Mis pacientes" (prioridad de orden) --- */
-  .pat-priority-bar{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:12px;padding:8px 10px;
-    background:var(--panel);border:1px solid var(--line-soft);border-radius:3px;}
-  .pat-priority-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);
-    font-weight:700;margin-right:2px;white-space:nowrap;}
-  .pat-priority-chip{display:inline-flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;
-    font-size:11.5px;font-weight:700;color:var(--accent-dark);background:#eef4f2;border:1px solid var(--accent);
-    border-radius:12px;padding:3px 6px 3px 10px;}
-  .pat-priority-chip button{background:none;border:none;color:var(--accent-dark);font-size:13px;cursor:pointer;
-    line-height:1;padding:0 2px;}
-  .pat-priority-chip button:hover{color:var(--danger);}
-  .pat-priority-empty{font-size:11px;color:var(--muted);font-style:italic;}
-  .pat-priority-add{display:flex;align-items:center;gap:5px;margin-left:auto;}
-  .pat-priority-add input{width:70px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;
-    padding:4px 6px;border:1px solid var(--line-soft);border-radius:2px;background:var(--field-bg);color:var(--ink);}
-  .pat-priority-add button{font-size:11px;font-weight:600;border:1px solid var(--ink);background:var(--panel);
-    color:var(--ink);border-radius:2px;padding:4px 8px;cursor:pointer;}
-  .pat-priority-add button:hover{background:var(--ink);color:var(--paper);}
-
-  table.pat-list-table{width:100%;border-collapse:collapse;font-size:12.5px;table-layout:fixed;}
-  table.pat-list-table col.col-cama{width:15%;}
-  table.pat-list-table col.col-dni{width:20%;}
-  table.pat-list-table col.col-nombre{width:26%;}
-  table.pat-list-table col.col-edad{width:10%;}
-  table.pat-list-table col.col-mi{width:23%;}
-  table.pat-list-table col.col-del{width:6%;}
-  table.pat-list-table th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.03em;
-    color:var(--muted);border-bottom:2px solid var(--ink);padding:6px 8px;position:sticky;top:0;background:var(--paper);}
-  table.pat-list-table td{padding:6px 8px;border-bottom:1px solid var(--line-soft);vertical-align:top;}
-  table.pat-list-table tr:hover td{background:var(--panel);}
-  table.pat-list-table tr.priority-row td.cama-cell{position:relative;}
-  table.pat-list-table tr.priority-row td.cama-cell::before{content:'★';color:var(--accent-dark);font-size:10px;
-    position:absolute;left:0;top:9px;}
-  table.pat-list-table tr.priority-row td.cama-cell .pat-row-input{padding-left:12px;}
-  table.pat-list-table td.del-cell{width:28px;text-align:center;}
-  .pat-list-empty{padding:20px 4px;color:var(--muted);font-size:12.5px;}
-  .pat-row-input{width:100%;font-family:'IBM Plex Mono',monospace;font-size:12.5px;
-    padding:5px 6px;border:1px solid transparent;border-radius:2px;background:transparent;color:var(--ink);
-    white-space:normal;word-break:break-word;}
-  .pat-row-input.mi-input{font-family:'IBM Plex Sans',sans-serif;resize:vertical;min-height:20px;
-    line-height:1.35;overflow:hidden;}
-  .pat-row-input:hover{border-color:var(--line-soft);}
-  .pat-row-input:focus{outline:none;border-color:var(--accent-dark);background:var(--panel);}
-  .pat-row-input.cama-input{font-weight:700;color:var(--accent-dark);}
-  .pat-row-del-btn{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;line-height:1;padding:2px 4px;}
-  .pat-row-del-btn:hover{color:var(--danger);}
-  .pat-list-savestatus{font-size:11px;color:var(--muted);margin-left:8px;white-space:nowrap;}
-  .pat-list-import-btn{font-size:11px;font-weight:600;border:1px solid var(--accent-dark);background:var(--panel);
-    color:var(--accent-dark);border-radius:2px;padding:6px 10px;cursor:pointer;white-space:nowrap;}
-  .pat-list-import-btn:hover{background:var(--accent-dark);color:#fff;}
 
   /* ===== Modal "Importar pase (.md)" ===== */
   .imp-drop{display:block;border:2px dashed var(--line-soft);border-radius:4px;padding:16px;text-align:center;
@@ -475,6 +420,16 @@
   .imp-tag-nuevo{background:#fbe9e7;color:var(--danger);border:1px solid var(--danger);}
   .imp-aviso{font-size:12.5px;margin:6px 0;padding:6px 8px;background:#fbe9e7;border-left:3px solid var(--danger);}
   .imp-reset{font-size:11.5px;color:var(--muted);margin-bottom:6px;}
+  .imp-g-mov h3{color:var(--accent-dark);}
+  .imp-cambios{background:var(--panel);border:1px solid var(--line-soft);border-left:3px solid var(--ink);padding:8px 12px;margin:0 0 14px;font-size:12.5px;line-height:1.5;}
+  .imp-cambios h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;margin:0 0 4px;color:var(--muted);}
+  .imp-cambios ul{margin:0;padding-left:18px;}
+  .imp-cambios li{margin:2px 0;}
+  .imp-out-row label{cursor:pointer;font-size:11.5px;color:var(--muted);margin-left:8px;}
+  .imp-tag-mov{background:#e6f0ee;color:var(--accent-dark);border:1px solid var(--accent-dark);}
+  .imp-mov{font-size:12.5px;margin:6px 0;padding:6px 8px;background:#eef4f2;border-left:3px solid var(--accent-dark);line-height:1.45;}
+  .imp-mov-opt{display:block;margin-top:5px;font-size:11.5px;color:var(--muted);cursor:pointer;}
+  .imp-mov-opt input{vertical-align:middle;margin-right:4px;}
   .imp-sin{font-size:11.5px;color:var(--muted);}
   .imp-warn{font-size:11px;color:var(--muted);margin-top:6px;}
   table.imp-diff{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:4px;table-layout:fixed;}
@@ -494,27 +449,6 @@
   .imp-footer{display:flex;align-items:center;gap:10px;padding:10px 16px;border-top:2px solid var(--ink);
     background:var(--panel);flex-shrink:0;flex-wrap:wrap;}
   .imp-foot-note{font-size:11px;color:var(--muted);flex:1;min-width:160px;}
-
-  /* --- Debajo de ~680px: cada fila pasa a verse como una tarjeta apilada
-     (cama/DNI/nombre no cabían enteros en una tabla de 5-6 columnas en un
-     celular). Cada celda muestra su etiqueta arriba del valor. --- */
-  @media (max-width:680px){
-    table.pat-list-table thead{display:none;}
-    table.pat-list-table, table.pat-list-table tbody, table.pat-list-table tr, table.pat-list-table td{
-      display:block;width:100%;
-    }
-    table.pat-list-table tr{border:1px solid var(--line-soft);border-radius:4px;margin-bottom:10px;
-      padding:8px 34px 4px 10px;position:relative;background:var(--panel);}
-    table.pat-list-table tr.priority-row{border-color:var(--accent);border-width:2px;}
-    table.pat-list-table td{border-bottom:none;padding:5px 0;}
-    table.pat-list-table td::before{content:attr(data-label);display:block;font-size:10px;
-      text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;margin-bottom:2px;}
-    table.pat-list-table tr.priority-row td.cama-cell::before{content:'★ CAMA';position:static;left:auto;top:auto;font-size:10px;}
-    table.pat-list-table tr.priority-row td.cama-cell{position:static;}
-    table.pat-list-table td.cama-cell .pat-row-input{padding-left:6px;}
-    table.pat-list-table td.del-cell{position:absolute;top:6px;right:4px;width:auto;padding:0;}
-    table.pat-list-table td.del-cell::before{content:none;}
-  }
 
   /* ===== Login (Firebase Auth) ===== */
   body:not(.auth-in) header, body:not(.auth-in) main, body:not(.auth-in) footer, body:not(.auth-in) #printSingleTarget{
@@ -573,19 +507,6 @@
   </div>
 </div>
 
-<div class="labo-standalone-overlay" id="laboStandaloneOverlay">
-  <div class="labo-standalone-modal">
-    <div class="labo-standalone-header">
-      <span>
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18 2H8a2 2 0 0 0-2 2v.5A1.5 1.5 0 0 0 4.5 6H4v13.5A2.5 2.5 0 0 0 6.5 22h5.79c-.85-1-1.29-2.28-1.29-3.5a5.5 5.5 0 0 1 3-4.9V9a1 1 0 0 1 1-1h.5a.5.5 0 0 0 0-1H14a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h.5a.5.5 0 0 0 0-1H9.5a.5.5 0 0 0 0 1H10a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-.5a.5.5 0 0 0 0 1H10a1 1 0 0 1 1 1v.09A5.49 5.49 0 0 1 15.5 9V6.5A1.5 1.5 0 0 0 14 5V4a2 2 0 0 0 2-2h2Z"/><path d="M17 12a3.5 3.5 0 0 0-1 6.85V21a2 2 0 0 0 4 0v-2.15A3.5 3.5 0 0 0 17 12Zm-1 3.5a1 1 0 1 1 2 0v3a1 1 0 0 1-2 0Z"/></svg>
-        LABORATORIO — Transformador de resultados
-      </span>
-      <button type="button" class="labo-standalone-close" id="laboStandaloneCloseBtn" title="Cerrar">×</button>
-    </div>
-    <iframe id="laboStandaloneFrame" title="Transformador de laboratorio" src=""></iframe>
-  </div>
-</div>
-
 <div class="labo-standalone-overlay" id="glosarioOverlay">
   <div class="labo-standalone-modal">
     <div class="labo-standalone-header">
@@ -593,32 +514,6 @@
       <button type="button" class="labo-standalone-close" id="glosarioCloseBtn" title="Cerrar">×</button>
     </div>
     <div class="glosario-content" id="glosarioContent"></div>
-  </div>
-</div>
-
-<div class="labo-standalone-overlay" id="listadoPacientesOverlay">
-  <div class="labo-standalone-modal">
-    <div class="labo-standalone-header">
-      <span>🛏️ Listado de pacientes — Pase de sala</span>
-      <button type="button" class="labo-standalone-close" id="listadoPacientesCloseBtn" title="Cerrar">×</button>
-    </div>
-    <div class="pat-list-content" id="listadoPacientesContent">
-      <div class="pat-priority-bar" id="patPriorityBar">
-        <span class="pat-priority-label">★ Mis pacientes:</span>
-        <div id="patPriorityChips" style="display:contents;"></div>
-        <div class="pat-priority-add">
-          <input type="text" id="patPriorityInput" placeholder="cama" inputmode="numeric">
-          <button type="button" id="patPriorityAddBtn">+ Agregar</button>
-        </div>
-      </div>
-      <div class="pat-list-toolbar">
-        <input type="text" id="patListSearch" placeholder="Buscar por cama, DNI o nombre...">
-        <button type="button" class="pat-list-import-btn" id="patListImportMiBtn" title="Completa el motivo de internación de las camas 101-140 buscando por DNI en el último listado de internados cargado">⇩ Importar MI (101-140)</button>
-        <button type="button" class="secondary small" id="patListAddBtn">+ Agregar paciente</button>
-      </div>
-      <div class="pat-list-note" id="patListNote"></div>
-      <div id="patListTableWrap"></div>
-    </div>
   </div>
 </div>
 
@@ -685,15 +580,8 @@
   </div>
   <div class="header-actions">
     <a href="index.html" class="back-home-btn" title="Volver al panel principal">← Inicio</a>
-    <button type="button" class="header-labo-btn" id="openLaboStandaloneBtn">
-      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18 2H8a2 2 0 0 0-2 2v.5A1.5 1.5 0 0 0 4.5 6H4v13.5A2.5 2.5 0 0 0 6.5 22h5.79c-.85-1-1.29-2.28-1.29-3.5a5.5 5.5 0 0 1 3-4.9V9a1 1 0 0 1 1-1h.5a.5.5 0 0 0 0-1H14a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h.5a.5.5 0 0 0 0-1H9.5a.5.5 0 0 0 0 1H10a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-.5a.5.5 0 0 0 0 1H10a1 1 0 0 1 1 1v.09A5.49 5.49 0 0 1 15.5 9V6.5A1.5 1.5 0 0 0 14 5V4a2 2 0 0 0 2-2h2Z"/><path d="M17 12a3.5 3.5 0 0 0-1 6.85V21a2 2 0 0 0 4 0v-2.15A3.5 3.5 0 0 0 17 12Zm-1 3.5a1 1 0 1 1 2 0v3a1 1 0 0 1-2 0Z"/></svg>
-      <span class="labo-btn-label">Transformador de LABO</span>
-    </button>
     <button type="button" class="header-labo-btn" id="openGlosarioBtn">
       📖 <span class="labo-btn-label">Glosario</span>
-    </button>
-    <button type="button" class="header-labo-btn" id="openListadoPacientesBtn">
-      🛏️ <span class="labo-btn-label">Listado de pacientes</span>
     </button>
     <button type="button" class="header-labo-btn" id="openImportPaseBtn">
       📄 <span class="labo-btn-label">Importar pase (.md)</span>
@@ -1511,7 +1399,7 @@ function addPatient(){
   renderAll();
 }
 function removePatient(id){
-  if(!confirm('¿Eliminar esta carpeta de paciente? Se borra de la base compartida (archivero, listado y guardias). Esta acción no se puede deshacer.')) return;
+  if(!confirm('¿Eliminar esta carpeta de paciente? Se borra de la base compartida (archivero y guardias). Esta acción no se puede deshacer.')) return;
   patients = patients.filter(p=>p.id!==id);
   if(selectedId===id) selectedId = firstPatientId();
   deletePatientRemote(id);
@@ -4161,17 +4049,6 @@ function applyRemoteSnapshot(remoteListRaw){
   renderPreview();
   if(!activeInsideForm && selectedPatientDataChanged) renderForm();
 
-  /* El listado de pacientes es una vista de estos mismos datos: si está
-     abierto y no se está tipeando adentro, se repinta. */
-  const listOverlay = document.getElementById('listadoPacientesOverlay');
-  if(listOverlay && listOverlay.classList.contains('open')){
-    const tecleando = document.activeElement && document.activeElement.closest &&
-                      document.activeElement.closest('#patListTableWrap');
-    if(!tecleando){
-      const si = document.getElementById('patListSearch');
-      renderPatientRosterTable(si ? si.value : '');
-    }
-  }
 }
 
 function iniciarAppPrincipal(){
@@ -4220,60 +4097,12 @@ function iniciarAppPrincipal(){
     }
     intentarUnificacion();
     rosterLoaded = true;
-    const overlay = document.getElementById('listadoPacientesOverlay');
-    const searchInput = document.getElementById('patListSearch');
-    if(overlay && overlay.classList.contains('open')){
-      renderPriorityBar();
-      renderPatientRosterTable(searchInput ? searchInput.value : '');
-    }
   }, ()=>{});
 }
 window.iniciarAppPrincipal = iniciarAppPrincipal;
 </script>
 
 <script>
-/* ================= Botón interno "Transformador de LABO" =================
-   El transformador vive en conversor-labo.html (mismo directorio que este
-   archivo). Acá solo se abre/cierra el modal y se carga ese archivo en un
-   iframe la primera vez que se necesita, así cualquier cambio futuro se
-   hace únicamente en conversor-labo.html sin tocar pases.html.
-
-   *** IMPORTANTE — CACHÉ DEL NAVEGADOR ***
-   Cada vez que subas una modificación nueva a conversor-labo.html, cambiá el
-   valor de LABO_VERSION de acá abajo (por ejemplo a la fecha del día, o
-   sumale 1). Eso agrega un "?v=..." distinto a la URL del iframe, y como el
-   navegador lo trata como una URL nueva, va a descargar la versión fresca en
-   vez de servir una copia vieja guardada en caché. Si no cambiás este valor,
-   algunos dispositivos podrían seguir viendo la versión anterior por un
-   tiempo aunque el archivo en GitHub ya esté actualizado. */
-  const LABO_VERSION = '2026-09-02-1';
-(function(){
-  const overlay = document.getElementById('laboStandaloneOverlay');
-  const frame = document.getElementById('laboStandaloneFrame');
-  const openBtn = document.getElementById('openLaboStandaloneBtn');
-  const closeBtn = document.getElementById('laboStandaloneCloseBtn');
-
-  function openLaboStandalone(){
-    if(!frame.dataset.loaded){
-      frame.src = 'conversor-labo.html?v=' + encodeURIComponent(LABO_VERSION);
-      frame.dataset.loaded = '1';
-    }
-    overlay.classList.add('open');
-  }
-  function closeLaboStandalone(){
-    overlay.classList.remove('open');
-  }
-
-  openBtn.addEventListener('click', openLaboStandalone);
-  closeBtn.addEventListener('click', closeLaboStandalone);
-  overlay.addEventListener('click', (e)=>{
-    if(e.target === overlay) closeLaboStandalone();
-  });
-  document.addEventListener('keydown', (e)=>{
-    if(e.key === 'Escape' && overlay.classList.contains('open')) closeLaboStandalone();
-  });
-})();
-
 (function(){
   const overlay = document.getElementById('glosarioOverlay');
   const openBtn = document.getElementById('openGlosarioBtn');
@@ -4295,331 +4124,29 @@ window.iniciarAppPrincipal = iniciarAppPrincipal;
   });
 })();
 
-/* ================= Listado de pacientes (cama / DNI / nombre / edad / MI) =================
-   Es una vista de la MISMA base que el archivero: un documento por cama
-   en Firestore (pacientes/C101, pacientes/C103, ...). No tiene datos ni
-   semilla propios. En config/patientRoster ya solo quedan las camas
-   marcadas como "mis pacientes" (priorityBeds). */
-/* El listado ya no tiene datos propios ni semilla: es una vista de los
-   mismos documentos por cama (pacientes/C101...) que usa el archivero.
-   Editar una fila edita la ficha del paciente, y el cambio se ve en el
-   archivero y en guardias.html. */
-let patientRoster = [];
-function rebuildRoster(){
-  patientRoster = sortedPatients().map(p=>({
-    id: p.id,
-    cama: p.cama || '',
-    dni: p.dni || '',
-    nombre: p.nombre || '',
-    edad: p.edad || '',
-    mi: miToText(p.mi)
-  }));
-}
+/* ================= "Mis pacientes" (camas prioritarias) =================
+   El listado de pacientes se eliminó de esta pantalla: cada ficha se abre
+   desde el archivero. Solo se conserva el dato de camas prioritarias
+   (config/patientRoster -> priorityBeds, números de cama sin la "C"), que
+   el importador del .md mantiene al día cuando un paciente cambia de cama. */
 let rosterLoaded = false;
-let rosterMigrated = false;
 let rosterSavePending = false;
 let rosterSaveTimer = null;
-
-/* "Mis pacientes": camas a las que se les da prioridad de orden (van
-   siempre primero, en orden creciente). Se guarda junto con el listado en
-   el mismo doc de Firestore (campo "priorityBeds", array de strings solo
-   con el número de cama, sin la "C"), así que es editable y persiste. La
-   semilla de acá abajo solo se usa una vez, si el doc todavía no existe. */
 let priorityBeds = ['101','109','111','120','123','126','127','129'];
-
-/* Motivos de internación (MI) leídos del último "Listado de pacientes
-   internados" (12hs) subido, restringido a las camas C101–C140 como pidió
-   el usuario. Se usan solo para el botón "Importar MI": buscan por DNI
-   (no por número de cama, porque el número de cama de un paciente puede
-   cambiar entre un listado y otro) y completan el campo MI de los
-   pacientes del listado que todavía no lo tengan cargado. No pisan un MI
-   ya escrito a mano. Actualizar este objeto a mano cada vez que se quiera
-   reimportar desde un listado más nuevo. */
-const MI_IMPORT_BY_DNI = {
-  "4989656": "DIABETES MELLITUS TIPO 2",
-  "46342309": "RETRASO MADURATIVO CON BR",
-  "95409850": "DETERIORO COGNITIVO",
-  "4579456": "NAC",
-  "10488725": "TRAUMATISMO FACIAL",
-  "34956317": "HDA",
-  "4395327": "TEC SIN PERDIDA",
-  "92186251": "EPOC + HIV",
-  "10424858": "DHA",
-  "22574575": "HEMORRAGIA DIGESTIVA ALTA",
-  "38028096": "INFECCION DEL TRACTO URIN",
-  "4448459": "INFECCION DEL SITO QUIRUR",
-  "10692608": "ACV",
-  "10930311": "INFECCION URINARIA",
-  "93283272": "FIEBREZOL",
-  "4168449": "SINDROME CONFUSIONAL",
-  "92912877": "UROSEPSIS",
-  "93385970": "BRONCOASPIRACION",
-  "94027445": "SME CONFUSIONAL - ACV EVO",
-  "3537387": "ANCIANA FRAGIL + TEC",
-  "4253321": "SME CONFUSIONAL",
-  "4571515": "TEC CON PERDIDA DE CONCIE",
-  "96166476": "INFECCION EN EL TRACTO UR",
-  "14181501": "INFECCION URINARIA BAJA",
-  "2957241": "PARESIA FACIAL",
-  "5306560": "DISNEA",
-  "3674639": "BRONCONEUMONIA BILATERAL",
-  "18393032": "EPOC",
-  "18323560": "ANEMIA CRONICA",
-  "14009171": "ULCERA DE MIEMBRO INFERIO",
-  "7837819": "HEMATURIA",
-  "93709203": "SINDROME CONFUSIONAL",
-  "20519147": "ALCOHOLISMO"
-};
-
-function rosterGenId(){ return 'row_' + Date.now() + '_' + Math.random().toString(36).slice(2,8); }
-
-function setRosterSaveStatus(text){
-  const el = fld('patListSaveStatus');
-  if(el) el.textContent = text;
-}
-
-/* Extrae el número de cama de un string tipo "C120" o "120" para poder
-   ordenar y comparar contra priorityBeds. Devuelve NaN si no hay número. */
-function bedNumberOf(cama){
-  const m = String(cama||'').match(/\d+/);
-  return m ? parseInt(m[0], 10) : NaN;
-}
-
-function isPriorityBed(cama){
-  const n = bedNumberOf(cama);
-  return !isNaN(n) && priorityBeds.includes(String(n));
-}
 
 function scheduleRosterSave(){
   rosterSavePending = true;
-  setRosterSaveStatus('Guardando…');
   if(rosterSaveTimer) clearTimeout(rosterSaveTimer);
   rosterSaveTimer = setTimeout(()=>{
     const fs = fsApi();
     if(!fs){ rosterSavePending = false; return; }
     fs.setDoc(fs.rosterDocRef, {priorityBeds: priorityBeds, unificacionV2: true}).then(()=>{
       rosterSavePending = false;
-      setRosterSaveStatus('Guardado ✓');
     }).catch(()=>{
       rosterSavePending = false;
-      setRosterSaveStatus('No se pudo guardar');
     });
   }, 600);
 }
-
-function renderPriorityBar(){
-  const chipsWrap = fld('patPriorityChips');
-  if(!chipsWrap) return;
-  const sorted = priorityBeds.slice().sort((a,b)=>parseInt(a,10)-parseInt(b,10));
-  chipsWrap.innerHTML = sorted.length
-    ? sorted.map(b=>`<span class="pat-priority-chip">C${escapeHtml(b)}<button type="button" data-bed="${escapeHtml(b)}" title="Quitar prioridad">×</button></span>`).join('')
-    : `<span class="pat-priority-empty">Ninguna cama marcada todavía.</span>`;
-  chipsWrap.querySelectorAll('button[data-bed]').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      priorityBeds = priorityBeds.filter(b=>b!==btn.dataset.bed);
-      scheduleRosterSave();
-      renderPriorityBar();
-      renderPatientRosterTable(fld('patListSearch') ? fld('patListSearch').value : '');
-    });
-  });
-}
-
-function addPriorityBedFromInput(){
-  const input = fld('patPriorityInput');
-  if(!input) return;
-  const n = bedNumberOf(input.value);
-  if(isNaN(n)){ input.focus(); return; }
-  const bedStr = String(n);
-  if(!priorityBeds.includes(bedStr)) priorityBeds.push(bedStr);
-  input.value = '';
-  scheduleRosterSave();
-  renderPriorityBar();
-  renderPatientRosterTable(fld('patListSearch') ? fld('patListSearch').value : '');
-}
-
-/* Botón "Importar MI (101-140)": recorre el listado y, para cada paciente
-   cuyo DNI aparece en MI_IMPORT_BY_DNI, completa el campo MI si todavía
-   está vacío (nunca pisa uno ya cargado a mano). Busca por DNI y no por
-   cama, porque el número de cama de un paciente puede haber cambiado
-   entre un listado impreso y el siguiente. */
-function importMotivosInternacion(){
-  let updated = 0;
-  patients.forEach(p=>{
-    const dni = String(p.dni||'').replace(/\D/g,'').replace(/^0+/, '');
-    if(!dni || miToText(p.mi).trim()) return;
-    const mi = MI_IMPORT_BY_DNI[dni];
-    if(mi){ p.mi = miFromText(mi, p.mi); savePatientNow(p); updated++; }
-  });
-  if(updated){
-    renderAll();
-    renderPatientRosterTable(fld('patListSearch') ? fld('patListSearch').value : '');
-  }
-  alert(updated
-    ? `Se completó el motivo de internación de ${updated} paciente(s) según el último listado cargado (camas 101-140).`
-    : 'No se encontró ningún paciente sin MI cuyo DNI coincida con el listado cargado (camas 101-140). Si ya tenían MI cargado, no se pisa.');
-}
-
-function renderPatientRosterTable(filterText){
-  const wrap = fld('patListTableWrap');
-  const note = fld('patListNote');
-  if(!wrap) return;
-  rebuildRoster();
-  const q = (filterText||'').trim().toLowerCase();
-  const rows = patientRoster.filter(p=>{
-    if(!q) return true;
-    return (p.cama||'').toLowerCase().includes(q) || (p.dni||'').includes(q) || (p.nombre||'').toLowerCase().includes(q);
-  });
-  /* Orden: primero "mis pacientes" (priorityBeds) de menor a mayor número
-     de cama, después el resto también de menor a mayor. Las camas sin
-     número reconocible quedan al final de su grupo. */
-  rows.sort((a,b)=>{
-    const pa = isPriorityBed(a.cama) ? 0 : 1;
-    const pb = isPriorityBed(b.cama) ? 0 : 1;
-    if(pa !== pb) return pa - pb;
-    const na = bedNumberOf(a.cama), nb = bedNumberOf(b.cama);
-    const va = isNaN(na) ? Infinity : na;
-    const vb = isNaN(nb) ? Infinity : nb;
-    if(va !== vb) return va - vb;
-    return (a.cama||'').localeCompare(b.cama||'');
-  });
-  if(note){
-    note.innerHTML = `<span>${rows.length} de ${patientRoster.length} camas — es la misma ficha del archivero: lo que edites acá se ve también en el archivero y en la planilla de guardias.</span><span class="pat-list-savestatus" id="patListSaveStatus"></span>`;
-  }
-  if(!rows.length){
-    wrap.innerHTML = `<div class="pat-list-empty">${patientRoster.length ? 'No se encontraron pacientes con ese criterio.' : 'Todavía no hay pacientes cargados. Importá el pase (.md) o usá "+ Agregar paciente".'}</div>`;
-    return;
-  }
-  wrap.innerHTML = `<table class="pat-list-table">
-    <colgroup>
-      <col class="col-cama"><col class="col-dni"><col class="col-nombre"><col class="col-edad"><col class="col-mi"><col class="col-del">
-    </colgroup>
-    <thead><tr><th>Cama</th><th>DNI</th><th>Nombre</th><th>Edad</th><th>MI</th><th></th></tr></thead>
-    <tbody>${rows.map(p=>`
-      <tr data-id="${escapeHtml(p.id)}" class="${isPriorityBed(p.cama) ? 'priority-row' : ''}">
-        <td class="cama-cell" data-label="Cama"><input class="pat-row-input cama-input" data-field="cama" value="${escapeHtml(p.cama||'')}" placeholder="C101"></td>
-        <td class="dni-cell" data-label="DNI"><input class="pat-row-input" data-field="dni" value="${escapeHtml(p.dni||'')}" placeholder="DNI"></td>
-        <td data-label="Nombre"><input class="pat-row-input" data-field="nombre" value="${escapeHtml(p.nombre||'')}" placeholder="Nombre y apellido"></td>
-        <td data-label="Edad"><input class="pat-row-input" data-field="edad" value="${escapeHtml(p.edad||'')}" placeholder="Edad" style="max-width:60px;"></td>
-        <td data-label="MI"><textarea class="pat-row-input mi-input" data-field="mi" rows="1" placeholder="Motivo de internación">${escapeHtml(p.mi||'')}</textarea></td>
-        <td class="del-cell" data-label=""><button type="button" class="pat-row-del-btn" title="Eliminar paciente">×</button></td>
-      </tr>`).join('')}
-    </tbody>
-  </table>`;
-
-  /* Los <textarea> de MI se autoajustan a su contenido (una o más líneas)
-     en vez de scrollear, tanto al renderizar como mientras se escribe. */
-  function autoGrow(ta){ ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight) + 'px'; }
-  wrap.querySelectorAll('textarea.mi-input').forEach(autoGrow);
-
-  wrap.querySelectorAll('tr[data-id] [data-field]').forEach(inp=>{
-    inp.addEventListener('input', ()=>{
-      const tr = inp.closest('tr');
-      const id = tr.dataset.id;
-      const field = inp.dataset.field;
-      const patient = patients.find(p=>p.id===id);
-      if(patient){
-        if(field === 'mi'){
-          /* En el listado el MI es una línea sola: se reemplaza el texto
-             activo y se conservan los ítems ya tachados (resueltos). */
-          patient.mi = miFromText(inp.value, patient.mi);
-          autoGrow(inp);
-        } else {
-          patient[field] = inp.value;
-        }
-        setRosterSaveStatus('Guardando…');
-        schedulePatientSave(patient);
-        setTimeout(()=>setRosterSaveStatus('Guardado ✓'), 900);
-        renderSidebar();
-        renderPreview();
-        if(field === 'cama'){
-          tr.classList.toggle('priority-row', isPriorityBed(inp.value));
-          const camaCell = tr.querySelector('td.cama-cell');
-          if(camaCell) camaCell.setAttribute('data-label', isPriorityBed(inp.value) ? '★ Cama' : 'Cama');
-        }
-      }
-    });
-    if(inp.dataset.field === 'cama'){
-      inp.addEventListener('blur', ()=>{
-        const patient = patients.find(p=>p.id===inp.closest('tr').dataset.id);
-        if(patient){
-          relocatePatientToCama(patient);
-          renderPatientRosterTable(fld('patListSearch') ? fld('patListSearch').value : '');
-        }
-      });
-    }
-  });
-  wrap.querySelectorAll('tr[data-id] .pat-row-del-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const tr = btn.closest('tr');
-      const id = tr.dataset.id;
-      const patient = patients.find(p=>p.id===id);
-      if(!patient) return;
-      if(!confirm(`¿Eliminar la carpeta de ${patient.nombre || 'este paciente'} (${patient.cama || 'sin cama'})? Se borra también del archivero y de la planilla de guardias.`)) return;
-      patients = patients.filter(p=>p.id!==id);
-      if(selectedId===id) selectedId = firstPatientId();
-      deletePatientRemote(id);
-      renderAll();
-      renderPatientRosterTable(fld('patListSearch') ? fld('patListSearch').value : '');
-    });
-  });
-}
-
-function addRosterPatient(){
-  addPatient();
-  const searchInput = fld('patListSearch');
-  if(searchInput) searchInput.value = '';
-  renderPatientRosterTable('');
-  const wrap = fld('patListTableWrap');
-  if(wrap){
-    const lastInput = wrap.querySelector('tbody tr:last-child input[data-field="cama"]');
-    if(lastInput) lastInput.focus();
-  }
-}
-
-(function(){
-  const overlay = document.getElementById('listadoPacientesOverlay');
-  const openBtn = document.getElementById('openListadoPacientesBtn');
-  const closeBtn = document.getElementById('listadoPacientesCloseBtn');
-  const searchInput = document.getElementById('patListSearch');
-  const addBtn = document.getElementById('patListAddBtn');
-  const importMiBtn = document.getElementById('patListImportMiBtn');
-  const priorityAddBtn = document.getElementById('patPriorityAddBtn');
-  const priorityInput = document.getElementById('patPriorityInput');
-  function openListadoPacientes(){
-    renderPriorityBar();
-    renderPatientRosterTable(searchInput ? searchInput.value : '');
-    overlay.classList.add('open');
-    if(searchInput) searchInput.focus();
-  }
-  function closeListadoPacientes(){
-    overlay.classList.remove('open');
-  }
-  openBtn.addEventListener('click', openListadoPacientes);
-  closeBtn.addEventListener('click', closeListadoPacientes);
-  overlay.addEventListener('click', (e)=>{
-    if(e.target === overlay) closeListadoPacientes();
-  });
-  document.addEventListener('keydown', (e)=>{
-    if(e.key === 'Escape' && overlay.classList.contains('open')) closeListadoPacientes();
-  });
-  if(searchInput){
-    searchInput.addEventListener('input', ()=> renderPatientRosterTable(searchInput.value));
-  }
-  if(addBtn){
-    addBtn.addEventListener('click', addRosterPatient);
-  }
-  if(importMiBtn){
-    importMiBtn.addEventListener('click', importMotivosInternacion);
-  }
-  if(priorityAddBtn){
-    priorityAddBtn.addEventListener('click', addPriorityBedFromInput);
-  }
-  if(priorityInput){
-    priorityInput.addEventListener('keydown', (e)=>{
-      if(e.key === 'Enter'){ e.preventDefault(); addPriorityBedFromInput(); }
-    });
-  }
-})();
 </script>
 
 <script>
@@ -5094,6 +4621,8 @@ const IMPORT_FIELDS = [
 ];
 
 let importPlan = null;
+let importParsed = null;      // lectura del .md vigente (para reanalizar sin volver a leer el archivo)
+let importOverrides = {};     // camas cuyo "traslado" descartó el usuario: { 'C123': true }
 
 function impEsc(s){ return escapeHtml(String(s==null?'':s)); }
 function soloDigitos(s){ return String(s==null?'':s).replace(/\D/g,''); }
@@ -5164,36 +4693,165 @@ function mismaPersonaPorNombre(a, b){
   return wa.some(w=>w.length>=3 && setB.has(w));
 }
 
-function analizarImport(parsed){
+/* ================= Reconocer al paciente aunque haya cambiado de cama =================
+   Antes el pase se leía cama por cama: si el paciente de C132 aparecía en C123,
+   C123 se tomaba como ingreso nuevo y C132 como "ausente". Ahora, antes de
+   comparar, se empareja cada paciente del .md con una ficha de la base:
+     0) por DNI (identificador único, en cualquier cama);
+     1) por cama (misma cama y no es otra persona, con el criterio de siempre);
+     2) por nombre ESTRICTO (2+ palabras de 3+ letras en común, edad compatible
+        y sin DNI que lo contradiga), solo si el candidato es único. Este
+        criterio es más exigente a propósito: mover una ficha entera a otra cama
+        por error es peor que pedir que se confirme.
+   Lo que sale emparejado a una cama distinta es un "traslado". */
+function dniNorm(v){ return soloDigitos(v).replace(/^0+/, ''); }
+function edadNum(v){ const m = String(v==null?'':v).match(/\d+/); return m ? parseInt(m[0],10) : null; }
+function edadCompatible(a, b){
+  const x = edadNum(a), y = edadNum(b);
+  if(x==null || y==null) return true;
+  return Math.abs(x - y) <= 1;
+}
+function mismaPersonaPorNombreEstricto(a, b){
+  const wa = palabrasNombre(a).filter(w=>w.length>=3);
+  const wb = new Set(palabrasNombre(b).filter(w=>w.length>=3));
+  if(!wa.length || !wb.size) return false;
+  return new Set(wa.filter(w=>wb.has(w))).size >= 2;
+}
+function tienePacienteFicha(p){
+  return !!(p && (soloDigitos(p.dni) || (p.nombre||'').trim()));
+}
+/* ¿El paciente del .md NO es el que figura en esa ficha? (mismo criterio de siempre
+   para una misma cama: si los dos DNI están cargados manda el DNI; si falta alguno,
+   se compara el nombre). */
+function esReemplazoEnCama(cur, nuevo){
+  if(!tienePacienteFicha(cur)) return false;
+  const dv = soloDigitos(cur.dni), dn = soloDigitos(nuevo.dni);
+  const ambos = !!dv && !!dn;
+  const dniDistinto = ambos && dv !== dn;
+  const nombreDistinto = !ambos ? (mismaPersonaPorNombre(cur.nombre, nuevo.nombre) === false) : false;
+  return dniDistinto || nombreDistinto;
+}
+function emparejarPacientes(items, noTrasladar){
+  const asignado = new Map();   // código de cama del .md -> { p: ficha de la base, via }
+  const usados = new Set();     // ids de fichas ya asignadas a alguien del .md
+  const base = patients.filter(p=>camaCode(p.cama) && tienePacienteFicha(p));
+  const bloqueado = (it, p)=> camaCode(p.cama) !== it.code && !!(noTrasladar && noTrasladar[it.code]);
+
+  // 0) Por DNI
+  items.forEach(it=>{
+    const d = dniNorm(it.nuevo.dni);
+    if(!d) return;
+    const cands = base.filter(p=>!usados.has(p.id) && dniNorm(p.dni) === d && !bloqueado(it, p));
+    if(!cands.length) return;
+    const p = cands.find(x=>camaCode(x.cama) === it.code) || cands[0];
+    asignado.set(it.code, { p:p, via:'dni' });
+    usados.add(p.id);
+  });
+  // 1) Misma cama
+  items.forEach(it=>{
+    if(asignado.has(it.code)) return;
+    const cur = base.find(p=>!usados.has(p.id) && camaCode(p.cama) === it.code);
+    if(cur && !esReemplazoEnCama(cur, it.nuevo)){
+      asignado.set(it.code, { p:cur, via:'cama' });
+      usados.add(cur.id);
+    }
+  });
+  // 2) Nombre estricto en otra cama
+  items.forEach(it=>{
+    if(asignado.has(it.code)) return;
+    if(!(it.nuevo.nombre||'').trim()) return;
+    if(noTrasladar && noTrasladar[it.code]) return;
+    const dn = dniNorm(it.nuevo.dni);
+    const cands = base.filter(p=>{
+      if(usados.has(p.id) || camaCode(p.cama) === it.code) return false;
+      if(dn && dniNorm(p.dni)) return false;   // los dos con DNI y distintos: no es la misma persona
+      return mismaPersonaPorNombreEstricto(p.nombre, it.nuevo.nombre) && edadCompatible(p.edad, it.nuevo.edad);
+    });
+    if(cands.length === 1){
+      asignado.set(it.code, { p:cands[0], via:'nombre' });
+      usados.add(cands[0].id);
+    }
+  });
+  return asignado;
+}
+
+function avisoTraslado(nombre, desde, hacia){
+  return (nombre ? nombre + ': ' : '') + 'pasó de la cama ' + desde + ' a la ' + hacia + '.';
+}
+
+/* Un .md puede traer la misma cama dos veces (por ejemplo al mover una tabla de
+   lugar y dejar la copia). Hay una sola ficha por cama, así que antes de comparar
+   se depura: si es la misma persona repetida se descarta la copia; si son personas
+   distintas se conserva la que ya está en la base (por DNI) o, si ninguna, la
+   primera, y las demás se informan como NO importadas para corregir el .md. */
+function depurarCamasRepetidas(items){
   const porCama = {};
+  items.forEach(it=>{ (porCama[it.code] = porCama[it.code] || []).push(it); });
+  const repetidos = [], conflictos = [], descartar = new Set();
+  Object.keys(porCama).forEach(code=>{
+    const grupo = porCama[code];
+    if(grupo.length < 2) return;
+    const unicos = [];
+    grupo.forEach(it=>{
+      const dn = dniNorm(it.nuevo.dni);
+      const igual = unicos.find(u=>{
+        const du = dniNorm(u.nuevo.dni);
+        if(dn && du) return dn === du;
+        return mismaPersonaPorNombreEstricto(u.nuevo.nombre, it.nuevo.nombre) || mismaPersonaPorNombre(u.nuevo.nombre, it.nuevo.nombre) === true;
+      });
+      if(igual){
+        descartar.add(it);
+        if(valorTexto('mi', it.nuevo.mi).length > valorTexto('mi', igual.nuevo.mi).length) igual.nuevo = it.nuevo; // se queda la copia más completa
+        if(!repetidos.some(r=>r.code===code && r.nombre===(igual.nuevo.nombre||''))) repetidos.push({ code:code, nombre: igual.nuevo.nombre||'' });
+      } else unicos.push(it);
+    });
+    if(unicos.length > 1){
+      const enBase = u=>{ const d = dniNorm(u.nuevo.dni); return !!d && patients.some(x=>dniNorm(x.dni)===d); };
+      const enEsaCama = u=>{ const d = dniNorm(u.nuevo.dni); return !!d && patients.some(x=>camaCode(x.cama)===code && dniNorm(x.dni)===d); };
+      const ordenados = unicos.slice().sort((a,b)=>((enEsaCama(b)?2:0)+(enBase(b)?1:0)) - ((enEsaCama(a)?2:0)+(enBase(a)?1:0)));
+      const keeper = ordenados[0];
+      ordenados.slice(1).forEach(u=>{
+        descartar.add(u);
+        conflictos.push({ code:code, nombre:u.nuevo.nombre||'sin nombre', dni:u.nuevo.dni||'', conserva:keeper.nuevo.nombre||'sin nombre' });
+      });
+    }
+  });
+  return { items: items.filter(it=>!descartar.has(it)), repetidos: repetidos, conflictos: conflictos };
+}
+
+function analizarImport(parsed, noTrasladar){
+  const dep = depurarCamasRepetidas(parsed.pacientes.map(np=>({ np:np, code:np.cama, nuevo:datosDelMd(np) })));
+  const items = dep.items;
+  const asignado = emparejarPacientes(items, noTrasladar || {});
+
+  const reclamados = new Set();
+  const camasVaciadas = new Set();     // camas que dejó un paciente que ahora figura en otra
+  asignado.forEach((a, code)=>{
+    reclamados.add(a.p.id);
+    const o = camaCode(a.p.cama);
+    if(o && o !== code) camasVaciadas.add(o);
+  });
+  // Ocupante de cada cama que NO fue reconocido en ningún lugar del .md
+  const libres = {};
   patients.forEach(p=>{
     const c = camaCode(p.cama);
-    if(c && !porCama[c]) porCama[c] = p;
+    if(c && !reclamados.has(p.id) && !libres[c]) libres[c] = p;
   });
 
   const entradas = [];
   const vistas = {};
 
-  parsed.pacientes.forEach(np=>{
-    const code = np.cama;
+  items.forEach(it=>{
+    const code = it.code, np = it.np, nuevo = it.nuevo;
     vistas[code] = true;
-    const cur = porCama[code] || null;
-    const nuevo = datosDelMd(np);
-    const teniaPaciente = !!(cur && (soloDigitos(cur.dni) || (cur.nombre||'').trim()));
-    const dniViejo = soloDigitos(cur && cur.dni);
-    const dniNuevo = soloDigitos(nuevo.dni);
-    /* La cama es fija, el paciente no: si el DNI viejo y el nuevo están
-       los dos cargados, manda el DNI (identificador único). Si falta uno
-       de los dos (pasa seguido: hay fichas sin DNI cargado), no podemos
-       guiarnos por DNI solo — ahí se compara el nombre para no dejar
-       pasar un ingreso nuevo como si fuera una actualización de datos
-       del paciente anterior. */
-    const dniDistinto = !!dniViejo && !!dniNuevo && dniViejo !== dniNuevo;
-    const dniAmbosCargados = !!dniViejo && !!dniNuevo;
-    const nombreDistinto = !dniAmbosCargados
-      ? (mismaPersonaPorNombre(cur && cur.nombre, nuevo.nombre) === false)
-      : false;
-    const reemplazo = teniaPaciente && (dniDistinto || nombreDistinto);
+    const asig = asignado.get(code) || null;
+    const origen = asig ? asig.p : null;
+    const origenCode = origen ? camaCode(origen.cama) : '';
+    const traslado = !!(origen && origenCode !== code);
+    const ocupante = libres[code] || null;               // ficha sin reconocer que está en esa cama
+    const cur = origen || ocupante;                      // contra la que se comparan los campos
+    const teniaPaciente = tienePacienteFicha(cur);
+    const reemplazo = !origen && !!ocupante && teniaPaciente;
 
     const ref = (cur && cur.lastImport) || null;
     const campos = IMPORT_FIELDS.map(f=>{
@@ -5201,8 +4859,7 @@ function analizarImport(parsed){
       const changed = f.list ? listaImportCambia(prev, nuevo[f.key]) : !mismoValor(f.key, prev, nuevo[f.key]);
       const vacioNuevo = !valorTexto(f.key, nuevo[f.key]).trim();
       const manual = !!(ref && (f.list ? !mismasClaves(prev, ref[f.key]) : valorTexto(f.key, prev) !== (ref[f.key]||'')));
-      /* Un campo que en el .md viene vacío no pisa lo que ya había
-         cargado (el pase puede tener la fila incompleta ese día). */
+      /* Un campo que en el .md viene vacío no pisa lo que ya había cargado. */
       const mostrar = changed && !(vacioNuevo && valorTexto(f.key, prev).trim());
       return {
         key: f.key, label: f.label, list: !!f.list,
@@ -5213,57 +4870,81 @@ function analizarImport(parsed){
         vacioNuevo: vacioNuevo,
         manual: manual,
         mostrar: mostrar,
-        /* Si el campo fue editado a mano en el programa desde la última
-           importación, ese cambio manual manda: se muestra el diferente
-           igual (para poder elegir), pero el checkbox arranca destildado
-           para no pisarlo sin querer. */
+        /* Lo editado a mano después de la última importación manda: se muestra
+           la diferencia pero la casilla arranca destildada. */
         aplicar: mostrar && !manual
       };
     });
 
     const cambios = campos.filter(c=>c.mostrar);
     let accion;
-    if(reemplazo) accion = 'reemplazo';
-    else if(!cur) accion = 'ficha-nueva';
+    if(traslado) accion = 'traslado';
+    else if(reemplazo) accion = 'reemplazo';
+    else if(!cur) accion = camasVaciadas.has(code) ? 'ingreso' : 'ficha-nueva';
     else if(!teniaPaciente) accion = 'ingreso';
     else if(cambios.length) accion = 'actualizacion';
     else accion = 'sin-cambios';
+
+    let aviso = '';
+    if(traslado) aviso = avisoTraslado(nuevo.nombre || origen.nombre || '', origenCode, code);
+    else if(accion==='reemplazo' || accion==='ingreso' || accion==='ficha-nueva') aviso = avisoNuevoIngreso(code, nuevo, np.sexo || '');
 
     entradas.push({
       code: code,
       accion: accion,
       reset: reemplazo,
+      vaciada: camasVaciadas.has(code),
       sexo: np.sexo || (cur && cur.sexo) || '',
       campos: campos,
-      aviso: (accion==='reemplazo' || accion==='ingreso' || accion==='ficha-nueva')
-        ? avisoNuevoIngreso(code, nuevo, np.sexo || '')
-        : '',
-      dniViejo: dniViejo,
+      aviso: aviso,
+      dniViejo: soloDigitos(cur && cur.dni),
       nombreViejo: (cur && cur.nombre) || '',
+      nombreNuevo: nuevo.nombre || '',
+      origenId: traslado ? origen.id : null,
+      origenCode: traslado ? origenCode : '',
+      via: asig ? asig.via : '',
+      desplazado: (traslado && ocupante && tienePacienteFicha(ocupante)) ? { nombre: ocupante.nombre || 'sin nombre', dni: ocupante.dni || '' } : null,
       avisosParser: (np.warnings || []).slice()
     });
   });
 
-  /* Camas que están en la base pero no vinieron en este .md: no se tocan
-     ni se borran, solo se avisan (puede ser un alta, un óbito o que la
-     tabla de esa cama no haya entrado en el documento). */
+  /* Camas de la base que no vinieron en este .md (y cuyo paciente tampoco
+     apareció en otra cama): no se tocan ni se borran, solo se avisan. */
   const ausentes = patients
     .filter(p=>{
       const c = camaCode(p.cama);
-      return c && !vistas[c] && (soloDigitos(p.dni) || (p.nombre||'').trim());
+      return c && !reclamados.has(p.id) && !vistas[c] && tienePacienteFicha(p);
     })
-    .map(p=>({ code: camaCode(p.cama), nombre: p.nombre || 'sin nombre', dni: p.dni || '' }))
+    .map(p=>({ id: p.id, code: camaCode(p.cama), nombre: p.nombre || 'sin nombre', dni: p.dni || '', vaciar: true }))
     .sort((a,b)=>parseInt(a.code.slice(1),10) - parseInt(b.code.slice(1),10));
 
   entradas.sort((a,b)=>parseInt(a.code.slice(1),10) - parseInt(b.code.slice(1),10));
-  return { entradas: entradas, ausentes: ausentes, avisos: parsed.avisos || [] };
+  return { entradas: entradas, ausentes: ausentes, avisos: parsed.avisos || [], repetidos: dep.repetidos, conflictos: dep.conflictos };
+}
+
+/* Reanaliza el .md ya leído (cuando el usuario descarta o restaura un traslado)
+   conservando las casillas de campos que ya había tocado. */
+function reanalizarImport(){
+  if(!importParsed) return;
+  const prevSel = {};
+  if(importPlan) importPlan.entradas.forEach(e=>e.campos.forEach(c=>{ prevSel[e.code+'|'+c.key] = c.aplicar; }));
+  const prevAus = {};
+  if(importPlan) importPlan.ausentes.forEach(a=>{ prevAus[a.id] = a.vaciar; });
+  importPlan = analizarImport(importParsed, importOverrides);
+  importPlan.ausentes.forEach(a=>{ if(a.id in prevAus) a.vaciar = prevAus[a.id]; });
+  importPlan.entradas.forEach(e=>e.campos.forEach(c=>{
+    const k = e.code+'|'+c.key;
+    if(c.mostrar && (k in prevSel)) c.aplicar = prevSel[k];
+  }));
+  renderImportReport(importPlan);
 }
 
 function renderImportReport(plan){
   const host = fld('impReport');
   if(!host) return;
   const grupos = [
-    {k:'reemplazo',     t:'Camas con paciente nuevo (mismo número de cama, DNI distinto)', cls:'imp-g-nuevo'},
+    {k:'traslado',      t:'Pacientes que cambiaron de cama (la ficha se mueve con su evolución y pendientes)', cls:'imp-g-mov'},
+    {k:'reemplazo',     t:'Camas con paciente nuevo (el paciente anterior de esa cama no apareció en otra)', cls:'imp-g-nuevo'},
     {k:'ingreso',       t:'Camas que estaban vacías y ahora tienen paciente',              cls:'imp-g-nuevo'},
     {k:'ficha-nueva',   t:'Camas que todavía no existían en la base',                      cls:'imp-g-nuevo'},
     {k:'actualizacion', t:'Pacientes que ya estaban: datos que cambian',                   cls:'imp-g-upd'},
@@ -5271,9 +4952,36 @@ function renderImportReport(plan){
   ];
 
   const totalCambios = plan.entradas.filter(e=>e.accion!=='sin-cambios').length;
+  const totalTraslados = plan.entradas.filter(e=>e.accion==='traslado').length;
   let html = '<div class="imp-resumen"><b>' + plan.entradas.length + '</b> camas leídas del archivo · <b>' +
-             totalCambios + '</b> con cambios · <b>' + plan.ausentes.length +
-             '</b> camas de la base que no figuran en este pase.</div>';
+             totalCambios + '</b> con cambios · ' +
+             (totalTraslados ? '<b>' + totalTraslados + '</b> con cambio de cama · ' : '') +
+             '<b>' + plan.ausentes.length + '</b> camas de la base que no figuran en este pase.</div>';
+
+  /* Resumen de cambios: compara este .md con lo cargado antes y lo explica en lenguaje llano. */
+  const li = [];
+  plan.entradas.filter(e=>e.accion==='traslado').forEach(e=>{
+    li.push('<b>'+impEsc(e.nombreNuevo||e.nombreViejo||'Paciente')+'</b> cambió de cama: '+impEsc(e.origenCode)+' → '+impEsc(e.code)+
+      (e.desplazado ? '. El paciente que estaba en '+impEsc(e.code)+' ('+impEsc(e.desplazado.nombre)+') ya no figura (posible alta u óbito) y sale del sistema.' : '.'));
+  });
+  plan.entradas.filter(e=>e.accion==='reemplazo').forEach(e=>{
+    li.push('<b>'+impEsc(e.code)+'</b>: ingresa '+impEsc(e.nombreNuevo||'paciente nuevo')+'. El paciente anterior ('+impEsc(e.nombreViejo||'sin nombre')+') ya no figura (posible alta u óbito) y sale del sistema.');
+  });
+  plan.entradas.filter(e=>e.accion==='ingreso'||e.accion==='ficha-nueva').forEach(e=>{
+    li.push('<b>'+impEsc(e.code)+'</b>: ingreso de '+impEsc(e.nombreNuevo||'paciente nuevo')+(e.vaciada?' (cama que dejó otro paciente al cambiar de cama)':'')+'.');
+  });
+  plan.ausentes.forEach(a=>{
+    li.push('<b>'+impEsc(a.code)+'</b>: '+impEsc(a.nombre)+' ya no figura en el pase (posible alta u óbito).');
+  });
+  (plan.conflictos||[]).forEach(c=>{
+    li.push('⚠ <b>'+impEsc(c.code)+'</b> está repetida en el archivo: se importa '+impEsc(c.conserva)+' y <b>no</b> '+impEsc(c.nombre)+'.');
+  });
+  (plan.repetidos||[]).forEach(r=>{
+    li.push('<b>'+impEsc(r.code)+'</b>: la tabla de '+impEsc(r.nombre)+' está repetida en el archivo; se usa una sola vez.');
+  });
+  const nAct = plan.entradas.filter(e=>e.accion==='actualizacion').length;
+  if(nAct) li.push(nAct+' paciente(s) con datos actualizados (detalle más abajo).');
+  if(li.length) html += '<div class="imp-cambios"><h3>Cambios respecto de la última carga</h3><ul>'+li.map(x=>'<li>'+x+'</li>').join('')+'</ul></div>';
 
   grupos.forEach(g=>{
     const lista = plan.entradas.filter(e=>e.accion===g.k);
@@ -5285,14 +4993,27 @@ function renderImportReport(plan){
       lista.forEach(e=>{
         html += '<div class="imp-cama" data-cama="'+impEsc(e.code)+'">';
         html += '<div class="imp-cama-head"><b>'+impEsc(e.code)+'</b>';
-        if(e.accion==='reemplazo' || e.accion==='ingreso' || e.accion==='ficha-nueva'){
+        if(e.accion==='traslado'){
+          html += '<span class="imp-tag imp-tag-mov">cambió de cama</span>';
+        } else if(e.accion==='reemplazo' || e.accion==='ingreso' || e.accion==='ficha-nueva'){
           html += '<span class="imp-tag imp-tag-nuevo">paciente nuevo</span>';
         }
         html += '</div>';
-        if(e.aviso) html += '<div class="imp-aviso">'+impEsc(e.aviso)+'</div>';
+        if(e.accion==='traslado'){
+          html += '<div class="imp-mov"><b>'+impEsc(e.nombreNuevo || e.nombreViejo || 'Paciente')+'</b> pasó de la cama <b>'+impEsc(e.origenCode)+
+                  '</b> a la <b>'+impEsc(e.code)+'</b> ('+(e.via==='dni' ? 'reconocido por DNI' : 'reconocido por nombre y edad, sin DNI que lo confirme: verificá que sea la misma persona')+
+                  '). Conserva su evolución, checklist y pendientes de guardia; en el archivero y en “Camas mostradas” el número se corrige.'+
+                  '<label class="imp-mov-opt"><input type="checkbox" class="imp-mov-chk" data-cama="'+impEsc(e.code)+'" checked> Es el mismo paciente (destildá si es otra persona)</label></div>';
+          if(e.desplazado){
+            html += '<div class="imp-reset">El paciente que estaba en '+impEsc(e.code)+' ('+impEsc(e.desplazado.nombre)+
+                    (e.desplazado.dni ? ' · DNI '+impEsc(e.desplazado.dni) : '')+') ya no figura en este pase (posible alta u óbito): sale del sistema.</div>';
+          }
+        } else if(e.aviso){
+          html += '<div class="imp-aviso">'+impEsc(e.aviso)+'</div>';
+        }
         if(e.accion==='reemplazo'){
-          html += '<div class="imp-reset">Se reemplazan los datos de la cama (antes: '+impEsc(e.nombreViejo)+
-                  (e.dniViejo ? ' · DNI '+impEsc(e.dniViejo) : '')+') y se reinician evolución, checklist y pendientes de guardia.</div>';
+          html += '<div class="imp-reset">El paciente anterior ('+impEsc(e.nombreViejo)+
+                  (e.dniViejo ? ' · DNI '+impEsc(e.dniViejo) : '')+') ya no figura en el pase (posible alta u óbito): sale del sistema y se reinician evolución, checklist y pendientes de guardia.</div>';
         }
         const cambios = e.campos.filter(c=>c.mostrar);
         if(cambios.length){
@@ -5318,10 +5039,30 @@ function renderImportReport(plan){
     html += '</div>';
   });
 
+  const descartados = Object.keys(importOverrides).filter(k=>importOverrides[k]);
+  if(descartados.length){
+    html += '<div class="imp-group imp-g-out"><h3>Traslados descartados ('+descartados.length+')</h3>'+
+            '<div class="imp-out-note">Marcaste que no era el mismo paciente: esas camas se tratan como paciente nuevo.</div>'+
+            descartados.map(c=>'<div class="imp-out-row"><b>'+impEsc(c)+'</b> <button type="button" class="secondary small imp-mov-restore" data-cama="'+impEsc(c)+'">Volver a evaluar</button></div>').join('')+
+            '</div>';
+  }
+
+  if((plan.conflictos||[]).length){
+    html += '<div class="imp-group imp-g-nuevo"><h3>⚠ Cama repetida en el archivo: paciente NO importado ('+plan.conflictos.length+')</h3>'+
+            '<div class="imp-out-note">La misma cama figura con personas distintas. Hay una sola ficha por cama: se conservó una y la otra no se importa. Corregí el .md (número de cama, o quitá la tabla de quien falleció o se fue de alta) y volvé a cargarlo.</div>'+
+            plan.conflictos.map(c=>'<div class="imp-out-row"><b>'+impEsc(c.code)+'</b>: se importa '+impEsc(c.conserva)+' · <b>no se importa</b> '+impEsc(c.nombre)+(c.dni?' · DNI '+impEsc(c.dni):'')+'</div>').join('')+
+            '</div>';
+  }
+  if((plan.repetidos||[]).length){
+    html += '<div class="imp-group imp-g-out"><h3>Tablas repetidas en el archivo ('+plan.repetidos.length+')</h3>'+
+            '<div class="imp-out-note">Es el mismo paciente en la misma cama más de una vez: se usa una sola.</div>'+
+            plan.repetidos.map(r=>'<div class="imp-out-row"><b>'+impEsc(r.code)+'</b> '+impEsc(r.nombre)+'</div>').join('')+'</div>';
+  }
+
   if(plan.ausentes.length){
-    html += '<div class="imp-group imp-g-out"><h3>En la base pero no en este pase ('+plan.ausentes.length+')</h3>'+
-            '<div class="imp-out-note">No se borran ni se modifican. Si son altas u óbitos, vaciá la carpeta desde el archivero.</div>'+
-            plan.ausentes.map(a=>'<div class="imp-out-row"><b>'+impEsc(a.code)+'</b> '+impEsc(a.nombre)+(a.dni?' · DNI '+impEsc(a.dni):'')+'</div>').join('')+
+    html += '<div class="imp-group imp-g-nuevo"><h3>Ya no figuran en este pase: posible alta u óbito ('+plan.ausentes.length+')</h3>'+
+            '<div class="imp-out-note">Con la casilla tildada se vacía la carpeta (la cama queda libre con su número). Destildá las que quieras conservar, por ejemplo si la tabla faltó por error en el .md. Se puede deshacer.</div>'+
+            plan.ausentes.map(a=>'<div class="imp-out-row"><input type="checkbox" class="imp-aus-chk" data-id="'+impEsc(a.id)+'" '+(a.vaciar?'checked':'')+'> <b>'+impEsc(a.code)+'</b> '+impEsc(a.nombre)+(a.dni?' · DNI '+impEsc(a.dni):'')+'<label>sacar del sistema</label></div>').join('')+
             '</div>';
   }
 
@@ -5333,7 +5074,7 @@ function renderImportReport(plan){
 
   host.innerHTML = html;
 
-  host.querySelectorAll('input[type="checkbox"][data-cama]').forEach(chk=>{
+  host.querySelectorAll('input[type="checkbox"][data-key]').forEach(chk=>{
     chk.addEventListener('change', ()=>{
       const e = plan.entradas.find(x=>x.code===chk.dataset.cama);
       if(!e) return;
@@ -5341,31 +5082,117 @@ function renderImportReport(plan){
       if(c) c.aplicar = chk.checked;
     });
   });
+  host.querySelectorAll('input.imp-mov-chk').forEach(chk=>{
+    chk.addEventListener('change', ()=>{
+      importOverrides[chk.dataset.cama] = !chk.checked;
+      reanalizarImport();
+    });
+  });
+  host.querySelectorAll('button.imp-mov-restore').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      delete importOverrides[btn.dataset.cama];
+      reanalizarImport();
+    });
+  });
 
-  const applyBtn = fld('impApplyBtn');
-  if(applyBtn) applyBtn.disabled = (totalCambios === 0);
-  const note = fld('impFootNote');
-  if(note) note.textContent = totalCambios
-    ? 'Revisá el informe. Nada se guarda hasta que aprietes “Aplicar cambios”.'
-    : 'No hay nada para aplicar: la base ya coincide con este pase.';
+  const refrescarAplicar = ()=>{
+    const hay = totalCambios > 0 || plan.ausentes.some(a=>a.vaciar);
+    const ab = fld('impApplyBtn');
+    if(ab) ab.disabled = !hay;
+    const nt = fld('impFootNote');
+    if(nt) nt.textContent = hay
+      ? 'Revisá el informe. Nada se guarda hasta que aprietes “Aplicar cambios”.'
+      : 'No hay nada para aplicar: la base ya coincide con este pase.';
+  };
+  host.querySelectorAll('input.imp-aus-chk').forEach(chk=>{
+    chk.addEventListener('change', ()=>{
+      const a = plan.ausentes.find(x=>x.id===chk.dataset.id);
+      if(a) a.vaciar = chk.checked;
+      refrescarAplicar();
+    });
+  });
+  refrescarAplicar();
 }
 
-/* Última importación aplicada: se guarda una foto de cada ficha tocada
-   ANTES del cambio, por si hay que deshacerla (por ej. si se aceptó por
-   error un cambio que no era el que se quería). Un solo nivel de deshacer:
-   alcanza para el caso de "me equivoqué al aceptar los cambios recién". */
+/* Escritura completa de una ficha (sin merge): se usa cuando el documento de esa
+   cama cambia de dueño. Con merge podrían quedar campos sueltos del paciente
+   anterior (plantilla elegida, pendientes de guardia, etc.). */
+function escribirFichaCompleta(p){
+  const fs = fsApi();
+  if(!fs || !p || !p.id) return;
+  clearTimeout(saveTimers[p.id]);
+  delete pendingSavePatients[p.id];
+  fs.setDoc(fs.doc(fs.db,'pacientes',p.id), patientDataForSave(p, {includeGuardiaFields:true})).catch(()=>{
+    fld('status').textContent = 'No se pudo guardar en la nube — revisá tu conexión.';
+  });
+}
+function numeroDeCama(code){ return String(parseInt(String(code).replace(/\D/g,''), 10)); }
+function mismoConjunto(a, b){
+  const x = new Set(a.map(String)), y = new Set(b.map(String));
+  return x.size === y.size && [...x].every(v=>y.has(v));
+}
+/* "Camas mostradas" y "mis pacientes" son listas de números de cama. Cuando un
+   paciente que estaba en la lista cambia de cama, el número se corrige (la lista
+   sigue a la persona, no a la cama). Se resuelve de una sola vez para soportar
+   cruces (C123 <-> C132). */
+function seguirCamas(lista, movs){
+  const set = new Set(lista.map(String));
+  const quitar = [], poner = [];
+  movs.forEach(m=>{
+    if(set.has(m.oldNum)){ quitar.push(m.oldNum); poner.push(m.newNum); }
+  });
+  quitar.forEach(n=>set.delete(n));
+  poner.forEach(n=>set.add(n));
+  return Array.from(set);
+}
+
+/* Última importación aplicada: se guarda una foto de cada ficha tocada ANTES del
+   cambio, por si hay que deshacerla. Un solo nivel de deshacer. */
 let lastImportUndo = null;
 function aplicarImport(plan){
-  let camas = 0, nuevos = 0;
+  let camas = 0, nuevos = 0, traslados = 0;
   const avisos = [];
-  const undoEntries = [];
+
+  /* 0) Foto previa de todo lo que se va a tocar */
+  const antes = {};
+  const completa = new Set();    // ids que se restauran con escritura completa
+  const conGuardia = new Set();  // ids que se restauran incluyendo pendientes de guardia
+  const tocar = id=>{
+    if(id==null || (id in antes)) return;
+    const x = patients.find(p=>p.id===id);
+    antes[id] = x ? JSON.parse(JSON.stringify(x)) : null;
+  };
   plan.entradas.forEach(e=>{
     if(e.accion === 'sin-cambios') return;
+    tocar(e.code);
+    patients.filter(x=>camaCode(x.cama)===e.code).forEach(x=>tocar(x.id));
+    if(e.accion === 'traslado'){ tocar(e.origenId); completa.add(e.code); completa.add(e.origenId); }
+    if(e.vaciada) completa.add(e.code);
+    if(e.reset) conGuardia.add(e.code);
+  });
+
+  const aVaciar = (plan.ausentes||[]).filter(a=>a.vaciar && patients.some(p=>p.id===a.id));
+  aVaciar.forEach(a=>{ tocar(a.id); completa.add(a.id); });
+
+  /* 1) Los pacientes que cambian de cama se sacan primero de la lista, así una
+        cama que quedó libre (o un cruce C123 <-> C132) no pisa a nadie. */
+  const movers = [];
+  plan.entradas.forEach(e=>{
+    if(e.accion !== 'traslado') return;
+    const idx = patients.findIndex(x=>x.id===e.origenId);
+    if(idx === -1) return;
+    movers.push({ e:e, p:patients.splice(idx,1)[0], viejoId:e.origenId });
+  });
+  const selMov = movers.find(m=>m.viejoId===selectedId);
+  const peekMov = movers.find(m=>m.viejoId===peekId);
+
+  /* 2) Camas sin traslado: igual que siempre */
+  plan.entradas.forEach(e=>{
+    if(e.accion === 'sin-cambios' || e.accion === 'traslado') return;
     const aAplicar = e.campos.filter(c=>c.aplicar);
     if(!aAplicar.length && !e.reset) return;
 
     let p = patients.find(x=>x.id===e.code) || patients.find(x=>camaCode(x.cama)===e.code);
-    const esNueva = !p;
     if(!p){
       p = newPatient(e.code);
       patients.push(p);
@@ -5375,48 +5202,128 @@ function aplicarImport(plan){
       deletePatientRemote(viejo);
       if(selectedId === viejo) selectedId = e.code;
     }
-    undoEntries.push({ code: e.code, esNueva: esNueva, reset: !!e.reset, antes: JSON.parse(JSON.stringify(p)) });
     p.cama = e.code;
     aAplicar.forEach(c=>{
       p[c.key] = c.list ? ordenarListaImport(c.next, p[c.key]) : c.next;
     });
     if(e.sexo && !p.sexo) p.sexo = e.sexo;
     if(e.reset){
-      /* Paciente nuevo en la cama: lo de la persona anterior no sirve.
-         Es lo mismo que hace "Vaciar carpeta", más los pendientes de
-         guardia (manejo / datos / hechos) que usa guardias.html. */
+      /* Paciente nuevo en la cama: lo de la persona anterior no sirve. */
       p.evol = ''; p.evolCount = 0; p.lastEstado = ''; p.lastChecklist = null;
       p.manejo = []; p.datos = {}; p.hechos = {};
       nuevos++;
     }
     p.lastImport = snapshotImport(p);
     p.lastImportAt = Date.now();
-    savePatientNow(p, e.reset ? {includeGuardiaFields:true} : undefined);
+    if(e.vaciada) escribirFichaCompleta(p);   // el documento era de otro paciente que se mudó
+    else savePatientNow(p, e.reset ? {includeGuardiaFields:true} : undefined);
     camas++;
     if(e.aviso) avisos.push(e.aviso);
   });
-  if(undoEntries.length) lastImportUndo = { at: Date.now(), entries: undoEntries };
+
+  /* 3) Traslados: la ficha entera (evolución, checklist, pendientes de guardia)
+        viaja con el paciente a su cama nueva */
+  const movs = [];
+  movers.forEach(m=>{
+    const e = m.e, p = m.p, code = e.code;
+    // Ficha que había en la cama de destino y que no figura en el pase: se pisa
+    patients.filter(x=>x!==p && (x.id===code || camaCode(x.cama)===code)).forEach(x=>{
+      patients = patients.filter(y=>y!==x);
+      if(x.id !== code) deletePatientRemote(x.id);
+    });
+    p.id = code;
+    p.cama = code;
+    e.campos.filter(c=>c.aplicar).forEach(c=>{
+      p[c.key] = c.list ? ordenarListaImport(c.next, p[c.key]) : c.next;
+    });
+    if(e.sexo && !p.sexo) p.sexo = e.sexo;
+    p.lastImport = snapshotImport(p);
+    p.lastImportAt = Date.now();
+    patients.push(p);
+    escribirFichaCompleta(p);
+    movs.push({ oldNum: numeroDeCama(e.origenCode), newNum: numeroDeCama(code) });
+    traslados++; camas++;
+    if(e.aviso) avisos.push(e.aviso);
+  });
+  // Las camas de origen que no quedaron ocupadas por otra ficha se borran de la base
+  movers.forEach(m=>{
+    if(!patients.some(x=>x.id===m.viejoId)) deletePatientRemote(m.viejoId);
+  });
+  if(selMov) selectedId = selMov.e.code;
+  if(peekMov) peekId = peekMov.e.code;
+
+  /* 3b) Altas / óbitos: el paciente ya no figura en el pase. Se vacía la ficha
+         (igual que "Vaciar carpeta") y la cama queda libre con su número. */
+  let altas = 0;
+  aVaciar.forEach(a=>{
+    const p = patients.find(x=>x.id===a.id);
+    if(!p) return;
+    p.nombre=''; p.sexo=''; p.edad=''; p.dni=''; p.fi=''; p.mc=''; p.ant=''; p.mi=[]; p.asoc=[]; p.cult=[]; p.ic='';
+    p.evol=''; p.evolCount=0; p.lastEstado=''; p.lastChecklist=null;
+    p.manejo=[]; p.datos={}; p.hechos={};
+    delete p.plantillaSeleccionada; delete p.salidasPropias; delete p.checksPropios; delete p.cierreSel;
+    p.lastImport = null;
+    escribirFichaCompleta(p);
+    altas++;
+  });
+
+  /* 4) "Camas mostradas" y "mis pacientes" siguen a la persona */
+  let camasCambio = false, camasAntes = null, prioCambio = false, prioAntes = null;
+  if(movs.length){
+    const v0 = getCamasVisibles();
+    const v1 = seguirCamas(v0, movs);
+    if(!mismoConjunto(v0, v1)){
+      camasAntes = checklistConfig.camasVisibles ? checklistConfig.camasVisibles.slice() : null;
+      checklistConfig.camasVisibles = v1;
+      saveCustomLocal();
+      camasCambio = true;
+    }
+    const p0 = priorityBeds.slice();
+    const p1 = seguirCamas(p0, movs);
+    if(!mismoConjunto(p0, p1)){
+      prioAntes = p0;
+      priorityBeds = p1;
+      scheduleRosterSave();
+      prioCambio = true;
+    }
+  }
+
+  if(Object.keys(antes).length){
+    lastImportUndo = {
+      at: Date.now(), antes: antes,
+      completa: Array.from(completa), conGuardia: Array.from(conGuardia),
+      camasCambio: camasCambio, camasAntes: camasAntes,
+      prioCambio: prioCambio, prioAntes: prioAntes
+    };
+  }
+  lastRenderedPatientId = null;
+  if(!patients.find(p=>p.id===selectedId)) selectedId = firstPatientId();
   renderAll();
-  return { camas: camas, nuevos: nuevos, avisos: avisos };
+  return { camas: camas, nuevos: nuevos, traslados: traslados, altas: altas, avisos: avisos };
 }
 
-/* Restaura cada ficha tocada por la última importación aplicada a como
-   estaba justo antes. Las fichas que se crearon recién (no existían antes
-   de esa importación) se vuelven a borrar. */
+/* Restaura cada ficha tocada por la última importación aplicada a como estaba
+   justo antes (incluye deshacer los cambios de cama y las listas de camas). */
 function deshacerImport(){
-  if(!lastImportUndo || !lastImportUndo.entries.length) return false;
-  lastImportUndo.entries.forEach(u=>{
-    if(u.esNueva){
-      patients = patients.filter(x=>x.id!==u.code);
-      deletePatientRemote(u.code);
-      if(selectedId===u.code) selectedId = firstPatientId();
+  const u = lastImportUndo;
+  if(!u || !u.antes) return false;
+  Object.keys(u.antes).forEach(id=>{
+    const prev = u.antes[id];
+    if(prev === null){
+      patients = patients.filter(x=>x.id!==id);
+      deletePatientRemote(id);
     } else {
-      const idx = patients.findIndex(x=>x.id===u.code);
-      if(idx!==-1) patients[idx] = u.antes; else patients.push(u.antes);
-      savePatientNow(u.antes, u.reset ? {includeGuardiaFields:true} : undefined);
+      const idx = patients.findIndex(x=>x.id===id);
+      if(idx !== -1) patients[idx] = prev; else patients.push(prev);
+      if(u.completa.indexOf(id) !== -1) escribirFichaCompleta(prev);
+      else savePatientNow(prev, u.conGuardia.indexOf(id) !== -1 ? {includeGuardiaFields:true} : undefined);
     }
   });
+  if(u.camasCambio){ checklistConfig.camasVisibles = u.camasAntes; saveCustomLocal(); }
+  if(u.prioCambio){ priorityBeds = u.prioAntes; scheduleRosterSave(); }
   lastImportUndo = null;
+  lastRenderedPatientId = null;
+  if(!patients.find(p=>p.id===selectedId)) selectedId = firstPatientId();
   renderAll();
   return true;
 }
@@ -5455,6 +5362,8 @@ function deshacerImport(){
   }
   function resetModal(){
     importPlan = null;
+    importParsed = null;
+    importOverrides = {};
     document.getElementById('impReport').innerHTML = '';
     document.getElementById('impName').textContent = 'ningún archivo elegido';
     applyBtn.disabled = true;
@@ -5484,7 +5393,9 @@ function deshacerImport(){
           applyBtn.disabled = true;
           return;
         }
-        importPlan = analizarImport(parsed);
+        importParsed = parsed;
+        importOverrides = {};
+        importPlan = analizarImport(parsed, importOverrides);
         setImpStatus('Archivo leído: ' + parsed.pacientes.length + ' camas.');
         renderImportReport(importPlan);
       }catch(err){
@@ -5565,15 +5476,18 @@ function deshacerImport(){
 
   applyBtn.addEventListener('click', ()=>{
     if(!importPlan) return;
-    if(!confirm('¿Aplicar los cambios marcados a la base compartida? Esto actualiza el archivero, el listado de pacientes y la planilla de guardias.')) return;
+    if(!confirm('¿Aplicar los cambios marcados a la base compartida? Esto actualiza el archivero y la planilla de guardias.')) return;
     applyBtn.disabled = true;
     const res = aplicarImport(importPlan);
     let msg = 'Listo: se actualizaron ' + res.camas + ' camas.';
+    if(res.traslados) msg += ' ' + res.traslados + ' paciente(s) cambiaron de cama (la ficha se movió con su evolución y pendientes).';
+    if(res.altas) msg += ' ' + res.altas + ' paciente(s) que ya no figuraban en el pase (posible alta u óbito) se sacaron del sistema.';
     if(res.nuevos) msg += ' ' + res.nuevos + ' cama(s) con paciente nuevo (se reiniciaron evolución y pendientes).';
     setImpStatus(msg);
     fld('status').textContent = msg;
     setTimeout(()=>{ fld('status').textContent = ''; }, 6000);
     importPlan = null;
+    importParsed = null;
     document.getElementById('impReport').innerHTML =
       '<div class="imp-done"><b>' + impEsc(msg) + '</b>' +
       (res.avisos.length ? '<ul>' + res.avisos.map(a=>'<li>'+impEsc(a)+'</li>').join('') + '</ul>' : '') +
