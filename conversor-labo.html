@@ -1738,7 +1738,7 @@ function fld(id){ return document.getElementById(id); }
       const hipoK = by['K'] && by['K'].dir==='bajo' ? '; la hipokalemia asociada también debe corregirse (ajustar el K en las soluciones)' : '';
       return `hipernatremia${grado}: indica déficit de agua libre (deshidratación hipertónica) en la mayoría de los casos. Evaluar volemia, balance hídrico, fiebre, diuresis y fármacos (diuréticos); si la diuresis es abundante, solicitar osmolaridad urinaria y descartar diabetes insípida o diuresis osmótica (hiperglucemia, urea). Conducta: reponer agua libre, preferentemente por vía oral/SNG, o dextrosa 5% EV; si hay inestabilidad hemodinámica, reponer primero volumen con cristaloides${def}. Corregir no más de 10-12 mEq/L en 24 hs (≈0,5 mEq/L/h) para evitar edema cerebral, con ionograma de control cada 6-12 hs${hipoK}`;
     }},
-    'K':    {bajo:'hipokalemia; controlar y valorar reposición de ClK (en casos moderados/severos, ej. 3 ampollas de ClK diluidas en 300 mL de SF a pasar en 3 horas —regla del 3— seguido de reposición en el plan de hidratación parenteral y/o Kaon vía oral)', alto:'hiperkalemia; solicitar ECG, considerar gluconato de calcio si hay cambios eléctricos y medidas para descender la kalemia'},
+    'K':    {bajo:'hipokalemia; controlar y valorar reposición (leve: Kaon vía oral; moderada/severa: ClK + SO4Mg, con cargas de 3 ampollas de ClK en 300 mL de SF a pasar en 3 horas o 4 ampollas en 400 mL a pasar en 4 horas)', alto:'hiperkalemia; solicitar ECG, considerar gluconato de calcio si hay cambios eléctricos y medidas para descender la kalemia'},
     'CL':   {bajo:'hipocloremia; considerar vómitos, aspiración nasogástrica, diuréticos de asa/tiazidas o alcalosis metabólica hipoclorémica (evaluar con gasometría); reponer con solución fisiológica si hay depleción de volumen', alto:(v,f,by)=>{
       const na = by['Na'] ? laboToNumber(by['Na'].text) : null;
       if(v!=null && na && by['Na'].dir==='alto'){
@@ -1822,9 +1822,13 @@ function fld(id){ return document.getElementById(id); }
     return [size, color].filter(Boolean).join(' ');
   }
   /* ---------------------------------------------------------------------
-     POTASIO — clasificación y conducta (basado en la clase "Diskalemias")
-     Hipokalemia: leve 3-3,5 · moderada 2,5-3 · severa <2,5 (mEq/L)
-     Hiperkalemia: >5,5; gravedad según ECG (5,5-6,5 · 6,5-8 · >8)
+     POTASIO — clasificación y conducta
+     Hipokalemia (<3,5 mEq/L): leve 3,0–3,4 · moderada 2,5–2,9 · severa/crítica <2,5
+       (especialmente con síntomas o alteraciones ECG).
+     Hiperkalemia (>5,0 mEq/L), según nivel y ECG:
+       leve 5,0–5,9 sin cambios ECG · moderada 5,0–5,9 con cambios ECG o 6,0–6,4 sin cambios ·
+       grave ≥6,5 con o sin cambios ECG, o 6,0–6,4 con alteraciones ECG significativas.
+     Tratamiento hipokalemia: leve → Kaon VO; moderada/severa → ClK + SO4Mg + cargas de ClK.
      Usa, si están en el mismo laboratorio: Mg, HCO3, glucemia, CR/UREA/FG, CPK
      y K urinario de 24 hs.
   --------------------------------------------------------------------- */
@@ -1833,7 +1837,7 @@ function fld(id){ return document.getElementById(id); }
     const K = laboToNumber(f.text);
     if(K==null) return null;
     let dir = f.dir;
-    if(!dir){ if(K<3.5) dir = 'bajo'; else if(K>5.5) dir = 'alto'; }
+    if(!dir){ if(K<3.5) dir = 'bajo'; else if(K>5.0) dir = 'alto'; }
     if(!dir) return null;
 
     const num = c => (byCode[c] ? laboToNumber(byCode[c].text) : null);
@@ -1859,8 +1863,16 @@ function fld(id){ return document.getElementById(id); }
     const out = [];
 
     if(dir==='bajo'){
-      const grado = K>=3 ? 'leve (3–3,5 mEq/L)' : (K>=2.5 ? 'moderada (2,5–3 mEq/L)' : 'severa (<2,5 mEq/L)');
-      out.push(`<br>${laboRed(`K ${f.text}`)}: <b>hipokalemia ${grado}</b>.`);
+      if(K>=3.5){
+        out.push(`<br>${laboRed(`K ${f.text}`)}: potasio levemente por debajo del rango del laboratorio pero ≥3,5 mEq/L (no cumple el criterio de hipokalemia, que es K <3,5 mEq/L).`);
+        out.push(bullet('<b>Conducta</b>: repetir la kalemia, revisar causas (diuréticos, diarrea, vómitos, baja ingesta) y valorar suplementación oral si hay factores de riesgo.'));
+        out.push('<br>');
+        return out.join('');
+      }
+      const nivel = K>=3 ? 'LEVE' : (K>=2.5 ? 'MODERADA' : 'SEVERA');
+      const rango = K>=3 ? '3,0–3,4 mEq/L' : (K>=2.5 ? '2,5–2,9 mEq/L' : '<2,5 mEq/L, crítica');
+      out.push(`<br>${laboRed(`K ${f.text}`)}: <b>HIPOKALEMIA ${nivel}</b> (${rango}).`);
+      out.push(bullet('<b>Clasificación</b>: hipokalemia = potasio sérico <3,5 mEq/L. Leve 3,0–3,4 mEq/L · moderada 2,5–2,9 mEq/L · severa o crítica <2,5 mEq/L, especialmente si hay síntomas (debilidad muscular, parálisis, rabdomiólisis) o alteraciones en el ECG; ante síntomas o cambios ECG con un K más alto, tratar como severa.'));
 
       let ecg;
       if(K<2.5) ecg = 'a este nivel se esperan descenso marcado del ST, onda T negativa y onda U muy prominente, con riesgo de arritmias (extrasístoles, taquicardia ventricular, torsades de pointes)';
@@ -1869,7 +1881,7 @@ function fld(id){ return document.getElementById(id); }
       out.push(bullet(`<b>ECG obligatorio</b> en todo paciente con hipokalemia: ${ecg}.`));
 
       const ori = [];
-      if(mgDir==='bajo') ori.push(`hipomagnesemia (Mg ${byCode['Mg'].text}): perpetúa la hipokalemia (aumenta la pérdida urinaria de K), por eso se repone Mg en simultáneo`);
+      if(mgDir==='bajo') ori.push(`hipomagnesemia (Mg ${byCode['Mg'].text}): perpetúa la hipokalemia (aumenta la pérdida urinaria de K) y genera resistencia a la reposición, por eso se repone Mg en simultáneo`);
       else if(mg==null) ori.push('solicitar magnesemia (la hipomagnesemia es frecuente y perpetúa la hipokalemia)');
       if(alcalosisMet) ori.push(`alcalosis metabólica (HCO3 ${fmt(hco3)}): orienta a vómitos, diuréticos o hiperaldosteronismo`);
       if(acidosisMet) ori.push(`acidosis metabólica (HCO3 ${fmt(hco3)}): orienta a pérdida de HCO3 (diarrea), acidosis tubular renal o cetoacidosis`);
@@ -1878,34 +1890,47 @@ function fld(id){ return document.getElementById(id); }
       else ori.push('solicitar K urinario de 24 hs (<20 mEq: pérdida extrarrenal, redistribución o baja ingesta; >20 mEq: pérdida renal)');
       out.push(bullet(`<b>Orientación etiológica</b>: ${ori.join('; ')}.`));
 
+      const cargas = '3 ampollas de ClK (45 mEq) en 300 mL de SF a pasar en 3 hs, o 4 ampollas de ClK (60 mEq) en 400 mL de SF a pasar en 4 hs';
       let trat;
       if(K>=3){
-        trat = 'reposición VO 40–100 mEq/día: Kaon (gluconato de potasio, jarabe) 10 mL c/8 hs y/o ClK en cápsulas (Control K, 15 mEq); si tiene PHP, agregar 30 mEq/L de ClK (2 ampollas de 15 mEq)';
+        trat = 'reposición por vía oral con Kaon (gluconato de potasio, jarabe, 1,34 mEq/mL): 10 mL c/8 hs (≈40 mEq/día); tratar la causa y controlar la kalemia';
       } else if(K>=2.5){
-        trat = 'lo mismo que en la leve + carga EV de K: 3 ampollas de ClK en 300 mL de SF a pasar en 3 hs; agregar 1 ampolla de sulfato de Mg en el PHP y 1 en la carga. Si hay cambios en el ECG, tratar como hipokalemia severa';
+        trat = `reposición EV con ClK + sulfato de Mg: plan de hidratación parenteral (PHP) con 1 ampolla o más de ClK + SO4Mg y, de ser necesario, carga de ClK (${cargas}) + mantenimiento en el PHP. Si hay síntomas o cambios en el ECG, tratar como hipokalemia severa`;
       } else {
-        trat = 'PHP con 45 mEq/L de ClK (3 ampollas de 15 mEq) + carga EV por vía central: 2 cargas de 60 mEq de ClK en 200 mL de SF a pasar en 2 hs, con 1 hora de intervalo entre cada carga; agregar sulfato de Mg (1 ampolla en el PHP y 1 en la carga); con monitoreo cardíaco';
+        trat = `reposición EV con ClK + sulfato de Mg, por vía central y con monitoreo cardíaco continuo: PHP con ClK 45 mEq/L (3 ampollas de 15 mEq) y 1 ampolla de SO4Mg, más carga de ClK: ${cargas} (agregar 1 ampolla de SO4Mg a la carga). Si hay arritmia o cambios ECG con riesgo vital: 2 cargas de 60 mEq de ClK en 200 mL de SF a pasar en 2 hs, con 1 hora de intervalo entre cada una`;
       }
       out.push(bullet(`<b>Tratamiento</b>: ${trat}.`));
-      let prec = '<b>NO administrar K EV en bolo</b> (riesgo de arritmias fatales); no pasar las cargas en dextrosa (Dx), ya que puede reducir aún más la kalemia; controlar la kalemia luego de la reposición.';
-      if(renalAlt) prec += ` Con función renal alterada (${renalTxt}) reponer con cautela y controles más frecuentes.`;
+      if(K<3){
+        out.push(bullet('<b>Límites de seguridad del K EV</b>: vía periférica, concentración máx. 10 mEq/100 mL y velocidad máx. 10 mEq/h; vía central, concentración 20–40 mEq/100 mL y velocidad máx. 40 mEq/h; dosis máxima 200 mEq/día. Las cargas indicadas (≈15 mEq/h y 15 mEq/100 mL) superan el límite periférico: administrarlas por vía central o, si es por vía periférica, con monitoreo ECG, vena gruesa y vigilancia de flebitis/extravasación (necrosis).'));
+      }
+      let prec = '<b>NO administrar K EV en bolo</b> (riesgo de arritmias fatales); no pasar las cargas en dextrosa (Dx), ya que puede reducir aún más la kalemia; controlar la kalemia al finalizar la reposición y repetir hasta lograr K ≥4 mEq/L (≥4,5 en cardiopatía, arritmias o digoxina).';
+      if(K<3) prec += ' Corregir el Mg antes o en simultáneo: sin eso la hipokalemia no se corrige.';
+      if(renalAlt) prec += ` Con función renal alterada (${renalTxt}) reponer con cautela, a dosis menores y con controles más frecuentes.`;
       out.push(bullet(prec));
+      out.push(bullet('<b>Otras medidas a revisar</b>: suspender o ajustar diuréticos que pierden K (si requiere diurético, considerar ahorradores de K), tratar vómitos/diarrea, ver interacción con digoxina (la hipokalemia potencia su toxicidad) y mantener el aporte oral cuando sea posible.'));
     } else {
-      let titulo;
-      if(K<=5.5) titulo = 'potasio levemente elevado</b> (por encima del rango del laboratorio, pero ≤5,5 mEq/L, por debajo del umbral de hiperkalemia)';
-      else if(K<=6.5) titulo = 'hiperkalemia leve</b> (5,5–6,5 mEq/L)';
-      else if(K<=8) titulo = 'hiperkalemia moderada</b> (6,5–8 mEq/L)';
-      else titulo = 'hiperkalemia severa</b> (>8 mEq/L)';
-      out.push(`<br>${laboRed(`K ${f.text}`)}: <b>${titulo}.`);
+      if(K<=5.0){
+        out.push(`<br>${laboRed(`K ${f.text}`)}: potasio levemente por encima del rango del laboratorio pero ≤5,0 mEq/L (no cumple el criterio de hiperkalemia, que es K >5,0 mEq/L).`);
+        out.push(bullet('<b>Conducta</b>: repetir la kalemia, descartar muestra hemolizada y revisar fármacos hiperkalemiantes e ingesta de potasio.'));
+        out.push('<br>');
+        return out.join('');
+      }
+      const tipo = K>=6.5 ? 'GRAVE' : (K>=6 ? 'MODERADA' : 'LEVE');
+      let rango, escala;
+      if(K>=6.5){ rango = '≥6,5 mEq/L, con o sin cambios en el ECG'; escala = ''; }
+      else if(K>=6){ rango = '6,0–6,4 mEq/L sin cambios en el ECG'; escala = ' Pasa a <b>GRAVE</b> si el ECG muestra alteraciones significativas.'; }
+      else { rango = '5,0–5,9 mEq/L sin cambios en el ECG'; escala = ' Pasa a <b>MODERADA</b> si el ECG muestra cambios.'; }
+      out.push(`<br>${laboRed(`K ${f.text}`)}: <b>HIPERKALEMIA ${tipo}</b> (${rango}).${escala}`);
+      out.push(bullet('<b>Clasificación</b>: hiperkalemia = potasio sérico >5,0 mEq/L (5,0–5,5 según criterios del laboratorio); la gravedad se define por el nivel y los cambios en el ECG. Leve: 5,0–5,9 mEq/L sin cambios ECG · moderada: 5,0–5,9 mEq/L con cambios ECG, o 6,0–6,4 mEq/L sin cambios · grave: ≥6,5 mEq/L con o sin cambios ECG, o 6,0–6,4 mEq/L con alteraciones ECG significativas.'));
 
-      out.push(bullet('<b>Descartar pseudohiperkalemia</b> (muestra hemolizada, contracción muscular del miembro durante la extracción): repetir la muestra si no hay causa clínica ni cambios en el ECG.'));
+      out.push(bullet('<b>Descartar pseudohiperkalemia</b> (muestra hemolizada, contracción muscular del miembro durante la extracción, leucocitosis/trombocitosis marcadas): repetir la muestra si no hay causa clínica ni cambios en el ECG.'));
 
       let ecg;
-      if(K<=5.5) ecg = 'realizarlo sobre todo si hay insuficiencia renal, fármacos hiperkalemiantes o síntomas';
-      else if(K<=6.5) ecg = 'a este nivel se esperan onda T picuda ("en tienda de campaña") y QT corto';
+      if(K<6) ecg = 'realizarlo sobre todo si hay insuficiencia renal, fármacos hiperkalemiantes o síntomas; si muestra cambios, la hiperkalemia pasa a moderada';
+      else if(K<6.5) ecg = 'a este nivel pueden aparecer onda T picuda (\"en tienda de campaña\") y QT corto; si hay alteraciones significativas, se considera grave';
       else if(K<=8) ecg = 'a este nivel se esperan aplanamiento de la onda P, PR prolongado, QRS ancho, T picudas y posibles bloqueos AV';
       else ecg = 'a este nivel se esperan fusión QRS-T, QRS ancho, patrón sinusoidal y riesgo de asistolia';
-      out.push(bullet(`<b>ECG inmediato</b>: la gravedad se define por los cambios del ECG y no siempre correlaciona con el valor de K; ${ecg}.`));
+      out.push(bullet(`<b>ECG ${K>=6 ? 'inmediato y monitoreo cardíaco' : 'de control'}</b>: la gravedad se define por los cambios del ECG y no siempre correlaciona con el valor de K; ${ecg}.`));
 
       const cau = [];
       if(renalAlt) cau.push(`deterioro de la función renal (${renalTxt}): IRA/ERC como causa o agravante (la caída del FG por sí sola no suele producir hiperkalemia, buscar además fármacos o acidosis)`);
@@ -1916,8 +1941,8 @@ function fld(id){ return document.getElementById(id); }
       cau.push('revisar y suspender fármacos hiperkalemiantes (IECA/ARA II, espironolactona, eplerenona, trimetoprim, heparina, β-bloqueantes, AINEs, digoxina)');
       out.push(bullet(`<b>Causas a investigar</b>: ${cau.join('; ')}.`));
 
-      if(K<=5.5){
-        out.push(bullet('<b>Conducta</b>: suspender fármacos hiperkalemiantes, revisar la ingesta de potasio y repetir la kalemia; si el ECG es normal no suelen requerirse medidas de urgencia.'));
+      if(K<6){
+        out.push(bullet('<b>Conducta</b>: suspender fármacos hiperkalemiantes, restringir el potasio de la dieta y repetir la kalemia; si el ECG es normal no suelen requerirse medidas de urgencia; si persiste, considerar furosemida (si la función renal lo permite) o un quelante de K. <b>Si el ECG tiene cambios</b> (moderada), indicar gluconato de calcio EV y tratar con los pasos siguientes.'));
       } else {
         const bic = acidosisMet
           ? `bicarbonato de sodio EV (hay acidosis metabólica, HCO3 ${fmt(hco3)})`
@@ -1925,14 +1950,15 @@ function fld(id){ return document.getElementById(id); }
         const hd = K>8
           ? 'hemodiálisis de urgencia: es el tratamiento más eficaz y rápido en la hiperkalemia grave'
           : 'hemodiálisis: tratamiento más eficaz y rápido, indicada en hiperkalemia grave o con insuficiencia renal que no responde';
-        if(K<=6.5){
-          out.push(bullet('<b>Conducta</b>: suspender fármacos hiperkalemiantes. Con ECG normal: favorecer la eliminación (furosemida EV si la función renal lo permite; resinas de intercambio catiónico) y controlar la kalemia. <b>Si hay cambios en el ECG</b>, tratar como hiperkalemia moderada/severa (pasos siguientes).'));
+        if(K<6.5){
+          out.push(bullet('<b>Conducta</b>: suspender fármacos hiperkalemiantes y monitorear. Con ECG normal: favorecer la eliminación (furosemida EV si la función renal lo permite; quelantes de K), valorar insulina-glucosa y controlar la kalemia. <b>Si el ECG tiene alteraciones significativas</b>, tratar como hiperkalemia grave (pasos siguientes).'));
         } else {
-          out.push(bullet('<b>Tratamiento</b> (con K >6,5 o cambios en el ECG, sin esperar la repetición):'));
+          out.push(bullet('<b>Tratamiento</b> (con K ≥6,5 o cambios en el ECG, sin esperar la repetición):'));
         }
-        out.push(sub(`1) <b>Estabilizar la membrana</b>: gluconato de calcio EV 10 mL al 10% lento en 2–5 min (efecto en 1–3 min, dura 30–60 min; no reduce el potasio pero previene arritmias).`));
-        out.push(sub(`2) <b>Redistribución al intracelular</b>: salbutamol nebulizado (40 gotas en 3 mL de SF c/4 hs) o EV; solución polarizante: 10 U de insulina corriente en 500 mL de dextrosa 10% a pasar en 1 h (efecto a los 30 min, dura ~6 hs; controlar HGT pre-intra-post); ${bic}.`));
-        out.push(sub(`3) <b>Eliminación del K</b>: furosemida EV si la función renal lo permite; resinas de intercambio catiónico (patiromer, Kayexalato: menos usado hoy); ${hd}.`));
+        out.push(sub(`1) <b>Estabilizar la membrana</b>: gluconato de calcio 10%: 10 mL EV lento en 5 min (las guías ERC 2021/UK Kidney Association indican 30 mL en 5–10 min, o 10 mL de cloruro de calcio 10%); repetir si persisten los cambios en el ECG a los 5 min. Efecto en 1–3 min, dura 30–60 min; no reduce el potasio pero previene arritmias.`));
+        out.push(sub(`2) <b>Redistribución al intracelular</b>: solución polarizante: 10 U de insulina corriente en 500 mL de dextrosa 10% a pasar en 1 h (alternativa de las guías: 10 U en 25 g de glucosa en 15 min; efecto a los 30 min, dura ~6 hs; controlar HGT pre-intra-post y durante ~6 hs por riesgo de hipoglucemia); salbutamol nebulizado 10–20 mg (ej. 40 gotas en 3 mL de SF; adyuvante, no usar como único tratamiento); ${bic}.`));
+        out.push(sub(`3) <b>Eliminación del K</b>: furosemida EV si la función renal lo permite; quelantes de K (ciclosilicato de zirconio sódico 10 g VO c/8 hs hasta 72 hs o patiromer 8,4 g/día VO; las resinas de calcio/Kayexalato ya no se recomiendan de rutina); ${hd}.`));
+        out.push(sub('4) <b>Seguimiento</b>: monitoreo cardíaco continuo y kalemia seriada (el efecto de la insulina y el salbutamol es transitorio: puede haber rebote); repetir el ECG tras el calcio.'));
       }
     }
     out.push('<br>');
