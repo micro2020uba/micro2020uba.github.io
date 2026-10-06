@@ -1223,32 +1223,83 @@ function mismasClaves(a, b){
   const x = clavesDeLista(a).sort(), y = clavesDeLista(b).sort();
   return x.length === y.length && x.every((k,i)=>k===y[i]);
 }
-/* ¿El .md aporta algo que la ficha no tiene? = hay un ítem que no está, o uno que en el .md figura
-   resuelto y en la ficha sigue pendiente. El orden y los tildes hechos en la app no cuentan. */
-function listaImportCambia(prev, next){
-  const mapPrev = {};
-  (Array.isArray(prev)?prev:[]).forEach(i=>{ mapPrev[claveItem(i&&i.text)] = i; });
-  const kNext = clavesDeLista(next), kPrev = clavesDeLista(prev);
-  if(kNext.length !== kPrev.length || kNext.some(k=>!(k in mapPrev))) return true;
-  return (next||[]).some(i=>i.resuelto && mapPrev[claveItem(i.text)] && !mapPrev[claveItem(i.text)].resuelto);
+/* ===== Fusión de listas (MI / ASOC / CULT) que RESPETA TU REDACCIÓN =====
+   Si reescribiste un ítem (o juntaste varios del .md en uno), el .md sigue trayendo los ítems
+   originales. Un ítem del .md se considera «ya cubierto» por uno tuyo cuando casi todas sus
+   palabras clínicas aparecen en tu redacción (se ignoran números, fechas y conectores, así que
+   el día de tratamiento que se recalcula solo no molesta). En ese caso se conserva TU texto y
+   TU tilde de resuelto; el ítem del .md no se vuelve a agregar. */
+const MI_STOP = new Set(['con','del','por','para','que','sin','los','las','una','uno','como','sus','muy','mas','más','ese','esa','esta','este']);
+function tokensItem(t){
+  return String(t||'').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z\s]+/g,' ').split(/\s+/)
+    .filter(w=>w.length>=3 && !MI_STOP.has(w));
 }
-/* Fusión al importar: lo nuevo va arriba; lo que ya estaba conserva el orden que tenía en la ficha
-   (incluido el manual) y sus tildes (si en el .md no viene tachado pero acá ya lo tildaste, sigue
-   tildado); lo resuelto va al final. */
-function ordenarListaImport(next, prev){
-  const prevMap = {}, idxPrev = {};
-  (Array.isArray(prev)?prev:[]).forEach((i,n)=>{ const k = claveItem(i && i.text); if(k && !(k in idxPrev)){ idxPrev[k] = n; prevMap[k] = i; } });
-  const items = (next||[]).map(i=>{
-    const k = claveItem(i.text), p = prevMap[k];
-    return { text:i.text, resuelto: !!(i.resuelto || (p && p.resuelto)), _k:k };
+function cubreItem(user, md){            // ¿el ítem tuyo cubre al del .md?
+  if(!user || !md) return false;
+  const ku = claveItem(user.text), km = claveItem(md.text);
+  if(!km) return true;
+  if(ku === km || ku.indexOf(km) !== -1) return true;
+  const tm = tokensItem(md.text);
+  if(!tm.length) return false;
+  const tu = new Set(tokensItem(user.text));
+  const hit = tm.filter(w=>tu.has(w)).length;
+  return hit / tm.length >= 0.7;
+}
+/* Empareja cada ítem del .md con el ítem tuyo que lo cubre (o -1). */
+function emparejarLista(prev, next){
+  const P = (Array.isArray(prev)?prev:[]).filter(i=>i && String(i.text||'').trim());
+  const N = (Array.isArray(next)?next:[]);
+  const par = N.map(n=>{
+    let best = -1;
+    P.forEach((u,idx)=>{ if(best===-1 && cubreItem(u,n)) best = idx; });   // el primero que lo cubre (respeta tu orden)
+    return best;
   });
-  const activos = items.filter(i=>!i.resuelto);
-  const nuevos = activos.filter(i=>!(i._k in idxPrev));
-  const viejos = activos.filter(i=>(i._k in idxPrev))
-    .map((i,n)=>({i,n,r:idxPrev[i._k]})).sort((a,b)=>(a.r-b.r)||(a.n-b.n)).map(x=>x.i);
-  const resueltos = items.filter(i=>i.resuelto)
-    .map((i,n)=>({i,n,r:(i._k in idxPrev)?idxPrev[i._k]:-1})).sort((a,b)=>(a.r-b.r)||(a.n-b.n)).map(x=>x.i);
-  return nuevos.concat(viejos, resueltos).map(i=>({text:i.text, resuelto:i.resuelto}));
+  return { P, N, par };
+}
+/* ¿El .md aporta algo que la ficha no tiene? = hay un ítem que ninguno de los tuyos cubre, o uno que
+   en el .md figura resuelto y en la ficha sigue pendiente. El orden, tus redacciones y los tildes hechos
+   en la app no cuentan. */
+function listaImportCambia(prev, next){
+  const { P, N, par } = emparejarLista(prev, next);
+  if(!N.length) return false;
+  if(par.some(ix=>ix===-1)) return true;
+  // resuelto en el .md pero pendiente en la ficha: solo cuenta si TODO lo que ese ítem tuyo cubre viene tachado
+  return P.some((u,idx)=>{
+    if(u.resuelto) return false;
+    const cubiertos = N.filter((n,k)=>par[k]===idx);
+    return cubiertos.length && cubiertos.every(n=>n.resuelto);
+  });
+}
+/* Fusión al importar:
+   · ítems tuyos que cubren algo del .md: se quedan tal cual (tu redacción, tu orden, tu tilde);
+     si TODO lo que cubren viene tachado en el .md, se tildan como resueltos;
+   · ítems del .md que ninguno de los tuyos cubre: entran arriba como nuevos;
+   · ítems tuyos que el .md nunca trajo (los escribiste vos): se conservan;
+   · ítems que sí venían de la importación anterior y ya no figuran en el .md: se sacan;
+   · lo resuelto va al final. */
+function ordenarListaImport(next, prev, snapPrev){
+  const { P, N, par } = emparejarLista(prev, next);
+  const kSnap = new Set(clavesDeLista(snapPrev == null ? '' : snapPrev));
+  const cubiertoPor = P.map(()=>[]);
+  par.forEach((ix,k)=>{ if(ix!==-1) cubiertoPor[ix].push(N[k]); });
+  const nuevos = N.filter((n,k)=>par[k]===-1).map(n=>({text:n.text, resuelto:!!n.resuelto}));
+  const mios = [];
+  P.forEach((u,idx)=>{
+    const cub = cubiertoPor[idx];
+    if(!cub.length){
+      const vinoDelMd = kSnap.has(claveItem(u.text));
+      if(vinoDelMd) return;                        // estaba en el .md anterior y ahora ya no
+      mios.push({text:u.text, resuelto:!!u.resuelto});   // lo escribiste vos
+      return;
+    }
+    const todoTachado = cub.every(n=>n.resuelto);
+    mios.push({text:u.text, resuelto: !!(u.resuelto || todoTachado)});
+  });
+  const act = mios.filter(i=>!i.resuelto), res = mios.filter(i=>i.resuelto);
+  const nAct = nuevos.filter(i=>!i.resuelto), nRes = nuevos.filter(i=>i.resuelto);
+  return nAct.concat(act, res, nRes);
 }
 function cultFromString(s){
   const t = String(s==null?'':s).trim();
@@ -1921,10 +1972,18 @@ function getMergedItems(key){
   const editsForSys = (cfg.edits && cfg.edits[key]) || {};
   const orderForSys = (cfg.order && cfg.order[key]) || {};
 
+  /* Ítems y redacciones PROPIOS del paciente abierto (p.itemsPropios): se suman a los generales sin tocarlos. */
+  const selP = (typeof getSelected === 'function') ? getSelected() : null;
+  const propios = (selP && selP.itemsPropios) || {};
+  const propEdits = (propios.edits && propios.edits[key]) || {};
+  const propLista = (propios.items && propios.items[key]) || {};
+
   function build(list, orderKey){
+    list = list.concat(orderKey === 'normal' ? (propLista.normal||[]) : (propLista.alteraciones||[]));
     let items = list
       .filter(i => hiddenIds.indexOf(i.id) === -1)
-      .map(i => editsForSys[i.id] ? Object.assign({}, i, { text: editsForSys[i.id], variants: null }) : i);
+      .map(i => editsForSys[i.id] ? Object.assign({}, i, { text: editsForSys[i.id], variants: null }) : i)
+      .map(i => propEdits[i.id] ? Object.assign({}, i, { text: propEdits[i.id], variants: null }) : i);
     const ord = orderForSys[orderKey];
     if(ord && ord.length){
       const pos = id => { const idx = ord.indexOf(id); return idx===-1 ? 9999 : idx; };
@@ -2240,6 +2299,7 @@ function renderEvolBuilder(p, stateOverride){
   html += salidasPanelHtml();
 
   html += `
+    <div class="field"><button type="button" class="secondary small" id="btnExportPlantilla" title="Baja un archivo liviano con lo tildado, lo que va en cada texto y los tres textos armados">⬇ Descargar plantilla de este paciente (.json)</button> <button type="button" class="secondary small" id="btnImportPlantilla" title="Sube una plantilla .json (la que bajaste, corregida) y la aplica a ESTE paciente">⬆ Subir plantilla corregida (.json)</button><input type="file" id="fileImportPlantilla" accept=".json,application/json" style="display:none"></div>
     <div class="field"><label>HISTORIA CLÍNICA (se arma sola con el checklist)</label>
       <div id="evolDraftHistoria" class="draft-rich"></div>
     </div>
@@ -2252,6 +2312,12 @@ function renderEvolBuilder(p, stateOverride){
   `;
 
   box.innerHTML = html;
+  { const bx = fld('btnExportPlantilla'); if(bx) bx.addEventListener('click', exportarPlantillaPaciente); }
+  { const bi = fld('btnImportPlantilla'), fi = fld('fileImportPlantilla');
+    if(bi && fi){
+      bi.addEventListener('click', ()=>{ fi.value = ''; fi.click(); });
+      fi.addEventListener('change', ()=>{ const f = fi.files && fi.files[0]; if(f) importarPlantillaPaciente(f); });
+    } }
 
   renderVscOptions(p);
   ['evolTA','evolFC','evolSat','evolT'].forEach(id=>{
@@ -2996,6 +3062,7 @@ function limpiarMI(t){
   t = t.replace(/\(\s*fi\s*:?\s*(\d)/gi, '(FI: $1');
   t = t.replace(/\(\s*Día\b/g,'(día');
   t = t.replace(/\bTto\b/g,'tto');
+  t = t.replace(/\b([Ss])olcial\b/g,'$1ocial');
   t = t.replace(/\s{2,}/g,' ').trim();
   return t;
 }
@@ -3126,7 +3193,15 @@ function buildMiembrosClause(patient, salida){
   const nEdema = entries.filter(e=>e.id==='sinedema' || e.id==='edema').length;
   const merged = flogFleb ? parts.slice(0,nEdema).concat([flogFleb], parts.slice(nEdema)) : parts;
   if(!merged.length) return '';
-  return `Miembros ${merged.join(', ')}`;
+  return prefijoMiembros(merged);
+}
+/* «Miembros sin edemas, …» sí; pero «Miembros integridad cutánea conservada» no: si lo primero no es un
+   adjetivo/complemento («sin…», «con…», «inferiores…») la oración arranca directo con el hallazgo. */
+function prefijoMiembros(lista){
+  if(!lista.length) return '';
+  const unidos = lista.join(', ');
+  return /^(integridad|piel|tegumentos|moviliza|pulsos|perfusi|escara|[uú]lcera|lesi[oó]n|herida|curaci)/i.test(lista[0])
+    ? capitalize(unidos) : `Miembros ${unidos}`;
 }
 function buildCatarsisDiuresisClause(patient, salida){
   const catPos = isOn(salida,'dig','normal','catarsispos');
@@ -3436,8 +3511,10 @@ function buildExamBody(p, salida){
   const estado = fld('evolEstado').value;
   const cv = collectSystemPhrase('cv', p, salida);
   const resp = collectSystemPhrase('resp', p, salida);
-  const digPartes = collectSystemParts('dig', p, salida);
-  const dig = abdomenTexto(digPartes);
+  const digEntradas = collectSystemEntries('dig', p, salida);
+  const rhaEntrada = digEntradas.find(e=>e.id==='rha');
+  const digPartes = digEntradas.filter(e=>e!==rhaEntrada).map(e=>e.text);
+  const dig = digPartes.length ? abdomenTexto(digPartes) : '';
   const miembrosClause = buildMiembrosClause(p, salida);
   const infectoAplica = fld('apply_infecto') && fld('apply_infecto').checked;
   const infecto = infectoAplica ? collectSystemPhrase('infecto', p, salida) : '';
@@ -3446,11 +3523,16 @@ function buildExamBody(p, salida){
 
   let out = bloqueOn(salida,'csv') ? buildCsvLine() + ' ' : '';
   out += buildVscObservacionesSentence(p);
-  if(cv) out += `A nivel cardiovascular, ${cv}${trendPhraseFor('cv',p)}. `;
+  if(cv) out += `${capitalize(cv)}${trendPhraseFor('cv',p)}. `;
   if(bloqueOn(salida,'estudio') && estudioTipo && estudioInforme) out += `Se recibe informe de ${estudioTipo}: ${estudioInforme}. `;
-  if(resp) out += `A nivel respiratorio, ${resp}${trendPhraseFor('resp',p)}. `;
+  if(resp) out += `${capitalize(resp)}${trendPhraseFor('resp',p)}. `;
 
-  const digSentence = dig ? `${dig}${trendPhraseFor('dig',p)}.` : '';
+  /* RHA (+) va como oración propia: «Abdomen blando, depresible, indoloro. RHA (+).» */
+  const trendDig = trendPhraseFor('dig',p);
+  const digSentence = [
+    dig ? `${dig}${trendDig}.` : '',
+    rhaEntrada ? `${capitalize(rhaEntrada.text)}${dig ? '' : trendDig}.` : ''
+  ].filter(Boolean).join(' ');
   const catDiu = buildCatarsisDiuresisClause(p, salida);
   const catDiuSentence = catDiu ? `${capitalize(catDiu)}${trendPhraseFor('renal',p)}.` : '';
   if(digSentence || catDiuSentence) out += `${digSentence}${digSentence&&catDiuSentence?' ':''}${catDiuSentence} `;
@@ -3489,8 +3571,26 @@ function dxSentence(p){
   if(/^\d+$/.test(edad)) edad += ' años';
   let s = `Paciente${sexoTxt?' '+sexoTxt:''}${edad?' de '+edad:''}`;
   if(clinicos.length){
-    const unidos = unirListaMI(clinicos.map((t,i)=> i===0 ? frasePlana(t) : frasePlana(t)));
-    s += /^(por|en contexto|secundari|con )/i.test(unidos) ? `, cursando internación ${unidos}` : `, cursando internación por ${unidos}`;
+    /* Artículos y concordancia: «Tercer nivel» suelto → «a la espera de tercer nivel»; si tu propia redacción
+       ya arranca con «Paciente …» no se repite «Paciente… cursando internación por paciente…». */
+    let items = clinicos.map(t=>frasePlana(t));
+    const soloTercer = t=>/^(?:caso\s+)?(?:social\s*[:\-–]?\s*)?tercer\s+nivel\.?$/i.test(t);
+    items = items.map(t=> soloTercer(t) ? 'a la espera de tercer nivel' : t);
+    const prop = items.findIndex(t=>/^paciente\s+\S/i.test(t));
+    if(prop === 0){
+      let resto = items[0].replace(/^paciente\s+/i,'').replace(/^(\S+)\s+(cursando|internad[oa]|con|en|que)\b/i, '$1, $2');
+      if(/^(cursando|internad)/i.test(resto) === false && !/,/.test(resto.split(' ')[0]) && /^(social|solcial)$/i.test(resto.split(/\s+/)[0])) resto = resto.replace(/^(\S+)\s+/, '$1, ');
+      const otros = items.slice(1);
+      s += `, ${resto.replace(/\btercer nivel\b/i,'tercer nivel')}`;
+      if(otros.length) s += `, por ${unirListaMI(otros)}`;
+    } else {
+      const espera = items.filter(t=>/^a la espera de/i.test(t));
+      const dx = items.filter(t=>!/^a la espera de/i.test(t));
+      if(espera.length && dx.length){ items = dx; }
+      const unidos = unirListaMI(items);
+      s += /^(por|en contexto|secundari|con |a la espera)/i.test(unidos) ? `, cursando internación ${unidos}` : `, cursando internación por ${unidos}`;
+      if(espera.length && dx.length) s += ', ' + espera[0];
+    }
   }
   s += '.';
   if(sociales.length) s += ' ' + sociales.join(' ');
@@ -3578,7 +3678,7 @@ function shortMiembrosSentences(p){
   if(isOn(S,'miembros','alt','flogosis')) alts.push(itemPhrase('miembros','alt','flogosis',p));
   if(isOn(S,'miembros','alt','flebitis')) alts.push(itemPhrase('miembros','alt','flebitis',p));
   const out = [];
-  if(normales.length) out.push('Miembros ' + normales.join(', '));
+  if(normales.length) out.push(prefijoMiembros(normales));
   return out.concat(alts);
 }
 /* Abdomen en el PASE corto: si el examen es normal (ninguna alteración digestiva
@@ -3621,6 +3721,13 @@ function buildCuerpoCorto(p){
   );
   if(hallazgos.length){
     out += hallazgos.map(capitalize).join('. ') + '. ';
+    /* Si en el checklist hay hallazgos normales tildados que la corta no muestra, se aclara que el resto no cambia. */
+    const ocultos = SYS_ORDER.some(key=>{
+      if(key==='neuro' || key==='cierre') return false;
+      const excl = EXCLUDE_FROM_JOIN[key] || [];
+      return getMergedItems(key).normal.some(i=>excl.indexOf(i.id)===-1 && isChecked(key,'normal',i.id) && !itemIncluidoEn(S,key,'normal',i.id));
+    });
+    if(ocultos) out += 'Sin otros cambios en el examen físico. ';
   } else {
     out += 'BMV, BEAB. R1 y R2 en 4 focos, sin falla aguda de bomba. Abdomen S/P. Resto del examen físico sin cambios. Diuresis y catarsis conservadas. ';
   }
@@ -3633,6 +3740,207 @@ function buildCuerpoCorto(p){
   return out.trim();
 }
 function buildEvolTextShort(p){ return buildSalidaText(p, 'corta'); }
+/* Descarga liviana de la plantilla del paciente: qué está tildado en cada sistema, en cuáles de los
+   tres textos (HC / Corta / Completa) entra cada ítem, qué bloques están activos y los tres textos
+   tal como se arman. Sirve para revisar la redacción sin depender de capturas. */
+/* ================= Plantilla del paciente en .json (descargar / subir) =================
+   DESCARGAR: baja todo lo del paciente para revisarlo: datos de la ficha (ANT, MC, MI, ASOC, CULT, IC),
+   cada ítem de cada sistema (texto, origen, ★, tildado, en qué textos entra), la matriz de bloques y los tres
+   textos armados.
+   SUBIR: aplica a ESTE paciente lo que el archivo traiga:
+     · ficha: ant, mc, ic, mi, asoc, cult (solo las claves presentes en «paciente»);
+     · ítems existentes con «texto» distinto → redacción nueva;
+     · ítems que no existen → se crean;
+     · tildes, detalle, en qué textos entra cada ítem, bloques y estado general.
+   Cada ítem nuevo o cambiado de redacción lleva «aplicarA»: «paciente» (por defecto) = solo este paciente;
+   «todos» = ítem/redacción general (se pide confirmación). «porDefecto» (★) solo se aplica con «todos». */
+function _idLimpio(x){ return String(x==null?'':x).toLowerCase().replace(/[^a-z0-9_]+/g,'_').replace(/^_+|_+$/g,'').slice(0,40); }
+function _itemsDeSistema(p, key){
+  const base = SISTEMAS[key] || {normal:[],alteraciones:[]};
+  const cfg = checklistConfig || {};
+  const cus = (cfg.custom && cfg.custom[key]) || {};
+  const ids = {fab:new Set(), glob:new Set(), pac:new Set()};
+  (base.normal||[]).concat(base.alteraciones||[]).forEach(i=>ids.fab.add(i.id));
+  (cus.normal||[]).concat(cus.alteraciones||[]).forEach(i=>ids.glob.add(i.id));
+  const pl = (p.itemsPropios && p.itemsPropios.items && p.itemsPropios.items[key]) || {};
+  (pl.normal||[]).concat(pl.alteraciones||[]).forEach(i=>ids.pac.add(i.id));
+  return ids;
+}
+function exportarPlantillaPaciente(){
+  try{
+    const p = getSelected(); if(!p) return;
+    const estado = fld('evolEstado') ? fld('evolEstado').value : '';
+    const sistemas = {};
+    SYS_ORDER.forEach(key=>{
+      const m = getMergedItems(key);
+      const ids = _itemsDeSistema(p, key);
+      const fila = (kind, item)=>{
+        const o = { id:item.id, texto:item.text,
+                    origen: ids.pac.has(item.id) ? 'paciente' : (ids.glob.has(item.id) ? 'general-agregado' : 'fabrica'),
+                    porDefecto: !!getDefaultChecked(key,kind,item.id),
+                    tildado: isChecked(key,kind,item.id),
+                    en: SALIDAS.filter(sa=>itemIncluidoEn(sa.id,key,kind,item.id)).map(sa=>sa.corto).join('+') };
+        if(item.detail){ const d = detailValFor(key,kind,item.id); if(d) o.detalle = d; }
+        return o;
+      };
+      sistemas[key] = { normales: m.normal.map(i=>fila('normal',i)), alteraciones: m.alteraciones.map(i=>fila('alt',i)) };
+    });
+    const lista = l=>(Array.isArray(l)?l:[]).map(i=>({texto:i.text, resuelto:!!i.resuelto}));
+    const evol = String(p.evol||'');
+    const out = {
+      _ayuda: 'Para cambiar algo: editá «texto», «tildado», «en» (HC+Corta+Completa) o agregá ítems nuevos en «normales»/«alteraciones» (sin id existente). Cada ítem nuevo o con texto cambiado: «aplicarA»: «paciente» (por defecto) o «todos». «porDefecto» (★) solo vale con «todos». «paciente» admite ant, mc, ic, mi, asoc, cult.',
+      exportado: hoyLocalISO(), cama: p.cama, estado: estado,
+      paciente: { nombre:p.nombre||'', sexo:p.sexo||'', edad:p.edad||'', dni:p.dni||'', fi:p.fi||'',
+                  ant:p.ant||'', mc:p.mc||'', ic:p.ic||'', mi:lista(p.mi), asoc:lista(p.asoc), cult:lista(cultLista(p)),
+                  evolucionReciente: evol.length>2500 ? '…'+evol.slice(-2500) : evol },
+      plantillaPropia: !!tieneSalidasPropias(p),
+      bloques: BLOQUES_SALIDA.map(b=>({ id:b.id, en: SALIDAS.filter(sa=>bloqueOn(sa.id,b.id)).map(sa=>sa.corto).join('+') })),
+      sistemas: sistemas,
+      textos: { hc: buildHistoriaClinicaText(p), corta: buildEvolTextShort(p), completa: buildPaseCompletoText(p) }
+    };
+    const blob = new Blob([JSON.stringify(out,null,1)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'plantilla_' + (p.cama||'paciente') + '_' + hoyLocalISO() + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+  }catch(e){ alert('No se pudo armar la descarga: ' + e.message); }
+}
+function importarPlantillaPaciente(file){
+  const rd = new FileReader();
+  rd.onload = ()=>{
+    try{
+      const d = JSON.parse(String(rd.result||''));
+      if(!d || typeof d !== 'object' || !d.sistemas) throw new Error('el archivo no es una plantilla de pase (falta «sistemas»).');
+      const p = getSelected(); if(!p) throw new Error('no hay un paciente seleccionado.');
+      if(d.cama && camaCode(d.cama) && camaCode(d.cama) !== camaCode(p.cama)){
+        if(!confirm('La plantilla es de la cama ' + d.cama + ' y estás en ' + (p.cama||'otra cama') + '. ¿Aplicarla igual a este paciente?')) return;
+      }
+      const todos = x=>String(x && x.aplicarA || 'paciente').toLowerCase() === 'todos';
+      const LISTAS = [['normal','normales'],['alt','alteraciones']];
+
+      /* --- Plan: qué ítems se crean / cambian de redacción --- */
+      const plan = { nuevosG:[], nuevosP:[], textoG:[], textoP:[] };
+      Object.keys(d.sistemas).forEach(key=>{
+        if(SYS_ORDER.indexOf(key) === -1) return;
+        const merged = getMergedItems(key);
+        LISTAS.forEach(([kind, prop])=>{
+          const base = kind==='normal' ? merged.normal : merged.alteraciones;
+          ((d.sistemas[key] && d.sistemas[key][prop]) || []).forEach(it=>{
+            if(!it || !it.id) return;
+            const ref = base.find(x=>x.id===it.id);
+            const txt = String(it.texto||'').trim();
+            if(!ref){ if(txt) (todos(it)?plan.nuevosG:plan.nuevosP).push({key,kind,it}); }
+            else if(txt && txt !== String(ref.text||'').trim()) (todos(it)?plan.textoG:plan.textoP).push({key,kind,it,ref});
+          });
+        });
+      });
+      const hayGlobal = plan.nuevosG.length || plan.textoG.length;
+      if(hayGlobal && !confirm('Esta plantilla modifica ítems GENERALES (los ven todos los pacientes): ' + plan.nuevosG.length + ' ítems nuevos y ' + plan.textoG.length + ' redacciones cambiadas. ¿Aplicar?')) return;
+
+      /* --- Ficha del paciente (solo las claves presentes) --- */
+      const pac = d.paciente || {};
+      const aItems = l=>(Array.isArray(l)?l:[]).filter(i=>i && String(i.texto||'').trim()).map(i=>({text:String(i.texto).trim(), resuelto:!!i.resuelto}));
+      ['ant','mc','ic'].forEach(k=>{ if(typeof pac[k] === 'string') p[k] = pac[k]; });
+      if(Array.isArray(pac.mi)) p.mi = aItems(pac.mi);
+      if(Array.isArray(pac.asoc)) p.asoc = aItems(pac.asoc);
+      if(Array.isArray(pac.cult)) p.cult = aItems(pac.cult);
+
+      /* --- Ítems nuevos y redacciones --- */
+      const idMap = {};
+      let n = 0;
+      const sello = Date.now();
+      if(!p.itemsPropios) p.itemsPropios = { items:{}, edits:{} };
+      if(!p.itemsPropios.items) p.itemsPropios.items = {};
+      if(!p.itemsPropios.edits) p.itemsPropios.edits = {};
+      if(!checklistConfig.custom) checklistConfig.custom = {};
+      if(!checklistConfig.edits) checklistConfig.edits = {};
+      const crear = (x, global)=>{
+        const nuevoId = (global ? 'custom_' : 'pac_') + sello + '_' + (n++);
+        const lk = x.kind==='normal' ? 'normal' : 'alteraciones';
+        const item = { id:nuevoId, text:String(x.it.texto).trim(), antagonistas:[] };
+        if(global){
+          if(!checklistConfig.custom[x.key]) checklistConfig.custom[x.key] = {normal:[], alteraciones:[]};
+          if(!checklistConfig.custom[x.key][lk]) checklistConfig.custom[x.key][lk] = [];
+          checklistConfig.custom[x.key][lk].push(item);
+          if(typeof x.it.porDefecto === 'boolean') setDefaultChecked(x.key, x.kind, nuevoId, x.it.porDefecto);
+        } else {
+          if(!p.itemsPropios.items[x.key]) p.itemsPropios.items[x.key] = {normal:[], alteraciones:[]};
+          if(!p.itemsPropios.items[x.key][lk]) p.itemsPropios.items[x.key][lk] = [];
+          p.itemsPropios.items[x.key][lk].push(item);
+        }
+        idMap[x.key+'|'+x.kind+'|'+x.it.id] = nuevoId;
+      };
+      plan.nuevosG.forEach(x=>crear(x,true));
+      plan.nuevosP.forEach(x=>crear(x,false));
+      plan.textoG.forEach(x=>{
+        if(!checklistConfig.edits[x.key]) checklistConfig.edits[x.key] = {};
+        checklistConfig.edits[x.key][x.it.id] = String(x.it.texto).trim();
+        if(typeof x.it.porDefecto === 'boolean') setDefaultChecked(x.key, x.kind, x.it.id, x.it.porDefecto);
+      });
+      plan.textoP.forEach(x=>{
+        // si el ítem es uno propio del paciente se edita en su lista; si no, queda como redacción propia
+        const pl = p.itemsPropios.items[x.key];
+        const lista = pl ? (pl.normal||[]).concat(pl.alteraciones||[]) : [];
+        const propio = lista.find(i=>i.id===x.it.id);
+        if(propio) propio.text = String(x.it.texto).trim();
+        else { if(!p.itemsPropios.edits[x.key]) p.itemsPropios.edits[x.key] = {}; p.itemsPropios.edits[x.key][x.it.id] = String(x.it.texto).trim(); }
+      });
+      if(hayGlobal) saveCustomLocal();
+      const huboItems = plan.nuevosG.length || plan.nuevosP.length || plan.textoG.length || plan.textoP.length;
+      if(huboItems || Array.isArray(pac.mi) || Array.isArray(pac.asoc) || Array.isArray(pac.cult)) renderEvolBuilder(p);
+
+      /* --- Tildes, detalle, matriz y bloques --- */
+      const flagsDe = en=>{
+        const on = new Set(String(en||'').split('+').map(x=>x.trim().toLowerCase()).filter(Boolean));
+        const o = {}; SALIDAS.forEach(sa=>{ o[sa.id] = on.has(sa.corto.toLowerCase()); }); return o;
+      };
+      const patch = { items:{}, bloques:{} };
+      const noEncontrados = [];
+      let tildes = 0;
+      Object.keys(d.sistemas).forEach(key=>{
+        if(SYS_ORDER.indexOf(key) === -1) return;
+        LISTAS.forEach(([kind, prop])=>{
+          ((d.sistemas[key] && d.sistemas[key][prop]) || []).forEach(it=>{
+            if(!it || !it.id) return;
+            const realId = idMap[key+'|'+kind+'|'+it.id] || it.id;
+            const chk = document.querySelector(`[data-sys="${key}"][data-kind="${kind}"][data-id="${realId}"]`);
+            if(!chk){ noEncontrados.push(key+'/'+it.id); return; }
+            chk.checked = !!it.tildado; if(it.tildado) tildes++;
+            const det = document.querySelector(`[data-detail-for="${realId}"][data-sys="${key}"][data-kind="${kind}"]`);
+            if(det) det.value = it.tildado ? (it.detalle || '') : '';
+            if(typeof it.en === 'string'){
+              if(!patch.items[key]) patch.items[key] = {};
+              if(!patch.items[key][kind]) patch.items[key][kind] = {};
+              patch.items[key][kind][realId] = flagsDe(it.en);
+            }
+          });
+        });
+      });
+      (d.bloques||[]).forEach(b=>{
+        if(b && b.id && BLOQUES_SALIDA.some(x=>x.id===b.id) && typeof b.en === 'string') patch.bloques[b.id] = flagsDe(b.en);
+      });
+      if(!tieneSalidasPropias(p)) p.salidasPropias = JSON.parse(JSON.stringify(checklistConfig.salidas || {}));
+      mergeProfundo(p.salidasPropias, patch);
+      const est = fld('evolEstado');
+      if(est && d.estado && Array.from(est.options).some(o=>o.value===d.estado)) est.value = d.estado;
+      p.checksPropios = captureCurrentAsPlantillaSet();   // solo en la ficha de este paciente (no pisa ninguna plantilla compartida)
+      if(typeof guardarCierreSel === 'function') guardarCierreSel(p);
+      schedulePatientSave(p, 400);
+      updateDraftPreview(p);
+      const st = fld('status');
+      let msg = 'Plantilla aplicada a ' + (p.cama||'este paciente') + ': ' + tildes + ' ítems tildados.';
+      const nNuevos = plan.nuevosG.length + plan.nuevosP.length, nTxt = plan.textoG.length + plan.textoP.length;
+      if(nNuevos) msg += ' ' + nNuevos + ' ítems nuevos.';
+      if(nTxt) msg += ' ' + nTxt + ' redacciones cambiadas.';
+      if(noEncontrados.length) msg += ' No se encontraron ' + noEncontrados.length + ' ítems (' + noEncontrados.slice(0,4).join(', ') + (noEncontrados.length>4?'…':'') + ').';
+      if(st){ st.textContent = msg; setTimeout(()=>{ if(st.textContent === msg) st.textContent = ''; }, 9000); }
+      else alert(msg);
+    }catch(e){ alert('No se pudo aplicar la plantilla: ' + e.message); }
+  };
+  rd.readAsText(file, 'utf-8');
+}
+
 
 /* Texto que va dentro de la frase de apertura ("Paciente en ___"). Si la
    opción tiene un texto corto propio se usa ese; si no, se deduce de la
@@ -4221,17 +4529,25 @@ function fragmentize(txt){
 }
 
 /* Celda MI / ASOC -> [{text, resuelto}]. Tachado = resuelto. */
-var MI_INICIO = /\s+(?=(?:SCA|NIH|Itu|ITU|Foco\s+respi|sepsis|Sepsis|Sme|TEC|TVP|Tvp|ACV|Hemorragia)\b)/;
+var MI_INICIO = /\s+(?=(?:SCA|NIH|Itu|ITU|Foco\s+respi|sepsis|Sepsis|Sme|S[ií]ndrome|Sindrome|TEC|TVP|Tvp|ACV|Hemorragia|Absceso|IPPB|IPYB|IR\s+tipo|NAC|Descompensaci[oó]n|Intento|Polineuropat[ií]a|Insuficiencia)\b)/;
+var MI_SOCIAL_COLA = /\s+(?=caso\s+social\b)/i;
 function cortarMi(txt){
   var res = [], base = String(txt);
-  var ms = base.match(/^(social\s*[:\-\u2013]?\s*tercer\s+nivel)\s+(?=\S)/i);
+  var ms = base.match(/^((?:caso\s+)?social\s*[:\-\u2013]?\s*tercer\s+nivel)\s+(?=\S)/i);
   if(ms){ res.push(ms[1].trim()); base = base.slice(ms[0].length); }
-  var partes = base.split(MI_INICIO);
+  // «... caso Social» al final de un diagnóstico es un ítem aparte (lo social se redacta distinto)
+  var pre = base.split(MI_SOCIAL_COLA);
+  var partes = [];
+  pre.forEach(function(x){ partes = partes.concat(x.split(MI_INICIO)); });
+  var primero = true;
   partes.forEach(function(t){
     t = t.trim(); if(!t) return;
     var prev = res.length ? res[res.length-1] : '';
-    // solo se corta si lo anterior ya "cerró" (termina en ), fecha, punto o número) y no en un conector
-    if(prev && (ms || /[)\d.]$/.test(prev)) && (res.length>1 || !ms || true)) res.push(t); else if(prev) res[res.length-1] = prev+' '+t; else res.push(t);
+    var tras = !!ms && primero; primero = false;   // lo que sigue al «social: tercer nivel» inicial siempre es otro ítem
+    // solo se corta si lo anterior ya "cerró" (termina en ), ], fecha, punto, número o «social») y no en un conector
+    if(prev && (tras || /[)\]\d.]$/.test(prev) || /^caso\s+social\b/i.test(t) || /\bsocial$/i.test(prev))) res.push(t);
+    else if(prev) res[res.length-1] = prev+' '+t;
+    else res.push(t);
   });
   return res;
 }
@@ -4244,7 +4560,7 @@ function splitItems(raw, split){
     var frags = split ? fragmentize(txt) : [txt.replace(/\s+/g,' ').trim()];
     if(split === 'mi'){
       var q = []; frags.forEach(function(f){ q = q.concat(cortarMi(f)); });
-      var q2 = []; q.forEach(function(f){ if(/^\(/.test(f) && q2.length) q2[q2.length-1] += ' ' + f; else q2.push(f); });
+      var q2 = []; q.forEach(function(f){ if(/^[(\[]/.test(f) && q2.length) q2[q2.length-1] += ' ' + f; else q2.push(f); });
       frags = q2;
     }
     frags.filter(Boolean).forEach(function(f){ items.push({ text:f, resuelto:struck }); });
@@ -4872,7 +5188,7 @@ function analizarImport(parsed, noTrasladar){
         mostrar: mostrar,
         /* Lo editado a mano después de la última importación manda: se muestra
            la diferencia pero la casilla arranca destildada. */
-        aplicar: mostrar && !manual
+        aplicar: mostrar && (f.list ? true : !manual)
       };
     });
 
@@ -5204,7 +5520,7 @@ function aplicarImport(plan){
     }
     p.cama = e.code;
     aAplicar.forEach(c=>{
-      p[c.key] = c.list ? ordenarListaImport(c.next, p[c.key]) : c.next;
+      p[c.key] = c.list ? ordenarListaImport(c.next, p[c.key], p.lastImport && p.lastImport[c.key]) : c.next;
     });
     if(e.sexo && !p.sexo) p.sexo = e.sexo;
     if(e.reset){
@@ -5234,7 +5550,7 @@ function aplicarImport(plan){
     p.id = code;
     p.cama = code;
     e.campos.filter(c=>c.aplicar).forEach(c=>{
-      p[c.key] = c.list ? ordenarListaImport(c.next, p[c.key]) : c.next;
+      p[c.key] = c.list ? ordenarListaImport(c.next, p[c.key], p.lastImport && p.lastImport[c.key]) : c.next;
     });
     if(e.sexo && !p.sexo) p.sexo = e.sexo;
     p.lastImport = snapshotImport(p);
