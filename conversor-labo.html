@@ -143,6 +143,15 @@
   .ca-confirm .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;}
   .ca-confirm .ca-yes{border-color:#b00020;color:#b00020;}
   .ca-confirm .ca-yes:hover{background:#b00020;color:#fff;}
+  .al-overlay[hidden]{display:none !important;}
+  .al-overlay{position:fixed;inset:0;background:rgba(110,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:10000;padding:14px;}
+  .al-dialog{position:relative;background:#fff;border:3px solid #c00000;border-radius:4px;width:100%;max-width:580px;max-height:92vh;overflow:auto;padding:16px 20px 14px;font:13px/1.5 'IBM Plex Sans',Arial,sans-serif;color:var(--ink);box-shadow:0 10px 30px rgba(0,0,0,.4);}
+  .al-close{position:absolute;top:4px;right:10px;border:none;background:transparent;font-size:30px;line-height:1;cursor:pointer;color:#c00000;font-weight:700;}
+  .al-head{margin:0 30px 6px 0;font-size:15px;color:#c00000;}
+  .al-item{border-top:1px solid #e3b5b5;padding:9px 0 4px;}
+  .al-item h5{margin:0 0 3px;font-size:13.5px;color:#c00000;}
+  .al-item ul{margin:3px 0 4px 18px;padding:0;}
+  .al-item li{margin-bottom:2px;}
   #laboCaBtn[hidden]{display:none !important;}
 </style>
 </head>
@@ -268,6 +277,14 @@
         <button type="button" class="ca-yes" id="caConfirmYes">Sí, no calcular</button>
       </div>
     </div>
+  </div>
+</div>
+
+<div id="alModal" class="al-overlay" hidden>
+  <div class="al-dialog" role="alertdialog" aria-modal="true" aria-labelledby="alHead">
+    <button type="button" class="al-close" id="alClose" aria-label="Cerrar">&times;</button>
+    <h4 class="al-head" id="alHead">&#9888; ALERTA: valor crítico en el laboratorio</h4>
+    <div id="alBody"></div>
   </div>
 </div>
 
@@ -597,10 +614,10 @@ function fld(id){ return document.getElementById(id); }
       ['PCR','< 0,5 - 1,0 mg/dL (método dependiente)'],
       ['GLUC','70 - 100 mg/dL (ayuno)'],
       ['HbA1c','< 5,7 % (5,7-6,4 % prediabetes; ≥6,5 % diabetes)'],
-      ['UREA','15 - 45 mg/dL'],
-      ['Relación UREA/CR','20 - 40 (>50 orienta a causa prerrenal, hipercatabolismo o sangrado digestivo)'],
-      ['CR','Hombre 0,7-1,3 / Mujer 0,6-1,1 mg/dL'],
-      ['FG','> 90 mL/min/1,73m²'],
+      ['UREA','Hasta 47 mg/dL (laboratorio del hospital)'],
+      ['Relación UREA/CR','20 - 40 (>40 orienta a causa prerrenal, hipercatabolismo o sangrado digestivo). Urea 48-60 con CR normal: sin alteración renal; urea >60 con CR normal: disociación urea/creatinina; CR >1,5: alteración de la función renal'],
+      ['CR','0,6 - 1,5 mg/dL (laboratorio del hospital)'],
+      ['FG','> 90 mL/min/1,73m² (según el informe: se marca alterado desde el estadio 3 de ERC que informa el laboratorio, ej. <60)'],
       ['LDH','140 - 280 U/L'],
       ['Amilasemia','28 - 100 U/L'],
     ],
@@ -1965,6 +1982,66 @@ function fld(id){ return document.getElementById(id); }
     return out.join('');
   }
 
+  function laboBuildNatremia(f, byCode, ctx){
+    const Na = laboToNumber(f.text);
+    if(Na==null) return null;
+    let dir = f.dir;
+    if(!dir){ if(Na<135) dir = 'bajo'; else if(Na>145) dir = 'alto'; }
+    if(!dir) return null;
+    const fmt = laboFmtNumber;
+    const num = c => (byCode[c] ? laboToNumber(byCode[c].text) : null);
+    const bullet = t => `<br>• ${t}`;
+    const gluc = num('GLUC'), urea = num('UREA');
+    const hipoK = byCode['K'] && byCode['K'].dir==='bajo';
+    const out = [];
+    if(dir==='bajo'){
+      if(Na>=135){
+        out.push(`<br>${laboRed(`Na ${f.text}`)}: sodio levemente por debajo del rango del laboratorio pero ≥135 mEq/L (no cumple el criterio de hiponatremia, que es Na <135 mEq/L).`);
+        out.push(bullet('<b>Conducta</b>: repetir el ionograma, revisar fármacos (tiazidas, ISRS, carbamazepina), ingesta de agua y volemia.'));
+        out.push('<br>');
+        return out.join('');
+      }
+      const nivel = Na>=130 ? 'LEVE' : (Na>=125 ? 'MODERADA' : 'SEVERA');
+      const rango = Na>=130 ? '130–134 mEq/L' : (Na>=125 ? '125–129 mEq/L' : '<125 mEq/L');
+      out.push(`<br>${laboRed(`Na ${f.text}`)}: <b>HIPONATREMIA ${nivel}</b> (${rango}).`);
+      out.push(bullet('<b>Clasificación</b>: hiponatremia = Na <135 mEq/L. Por nivel: leve 130–134 · moderada 125–129 · severa <125 mEq/L. Por tiempo: aguda (<48 hs) o crónica (≥48 hs o desconocida). Por síntomas: moderadamente graves (náuseas sin vómitos, confusión, cefalea) o graves (vómitos, somnolencia profunda, convulsiones, coma, distrés respiratorio). Por osmolaridad: hipotónica (verdadera), isotónica/hipertónica (pseudohiponatremia o hiperglucemia, manitol).'));
+      out.push(bullet('<b>Síntomas a buscar</b>: cefalea, náuseas, vómitos, calambres, debilidad, marcha inestable/caídas, déficit de atención, confusión, letargo, convulsiones y coma (edema cerebral, riesgo de herniación si es aguda o <120 mEq/L). Evaluar volemia: edemas, ascitis, ingurgitación yugular, turgencia, hipotensión ortostática, mucosas.'));
+      const ori = [];
+      if(gluc!=null && gluc>200){ const nc = Na + 1.6*(gluc-100)/100; ori.push(`hiperglucemia (GLUC ${fmt(gluc)}): Na corregido ≈ ${fmt(Math.round(nc*10)/10)} mEq/L (+1,6 mEq/L por cada 100 mg/dL de glucemia sobre 100); parte de la hiponatremia es por translocación de agua`); }
+      if(gluc!=null && urea!=null){ const osm = 2*Na + gluc/18 + urea/6; ori.push(`osmolaridad calculada ≈ ${Math.round(osm)} mOsm/kg (2×Na + glucosa/18 + urea/6; <275 = hipotónica); confirmar con osmolaridad medida`); }
+      else ori.push('solicitar osmolaridad plasmática (<275 mOsm/kg = hipotónica verdadera)');
+      ori.push('osmolaridad urinaria (<100 mOsm/kg: polidipsia primaria, bajo aporte de solutos), Na urinario (<30 mEq/L: hipovolemia extrarrenal, insuficiencia cardíaca, cirrosis; >30 mEq/L: diuréticos, SIAD, déficit de cortisol, pérdida renal de sal) y TSH/cortisol');
+      if(hipoK) ori.push(`hipokalemia asociada (K ${byCode['K'].text}): al reponer K el Na sube, contarlo dentro del límite de corrección`);
+      out.push(bullet(`<b>Estudio etiológico</b>: ${ori.join('; ')}. Causas frecuentes: diuréticos tiazídicos, SIAD (fármacos, dolor, náuseas, patología pulmonar o del SNC, neoplasias), hipovolemia, insuficiencia cardíaca, cirrosis, hipotiroidismo, insuficiencia suprarrenal, polidipsia.`));
+      out.push(bullet(`<b>Tratamiento</b>: ${Na<125 ? 'a este nivel, con síntomas graves es una emergencia (monitoreo / UTI): ' : ''}<br>&nbsp;&nbsp;&nbsp;&nbsp;1) <b>Síntomas graves</b> (convulsiones, coma, vómitos, distrés): NaCl 3% 150 mL EV en 20 min (o 100 mL en 10 min), repetible hasta 2 veces según síntomas y Na; objetivo inicial ↑4–6 mEq/L (alcanza para ceder los síntomas).<br>&nbsp;&nbsp;&nbsp;&nbsp;2) <b>Síntomas moderados</b> (náuseas, cefalea, confusión): NaCl 3% 150 mL EV en 20 min (una dosis), internación y control seriado del Na.<br>&nbsp;&nbsp;&nbsp;&nbsp;3) <b>Sin síntomas</b>, según volemia: <i>hipovolémica</i> → solución fisiológica 0,9%; <i>euvolémica (SIAD)</i> → restricción hídrica 500–1000 mL/día, aumentar solutos (urea 15–30 g/día o furosemida + sal) y suspender el fármaco causal; <i>hipervolémica</i> → restricción de agua y sodio, diurético de asa y tratar la causa (insuficiencia cardíaca/cirrosis). Evitar soluciones hipotónicas (dextrosa 5%).`));
+      out.push(bullet('<b>Límite de corrección</b>: no superar 10 mEq/L en las primeras 24 hs y 8 mEq/L por día luego (≤8 mEq/L/24 hs si hay alto riesgo de desmielinización osmótica: Na ≤120, alcoholismo, desnutrición, hepatopatía, hipokalemia). Na cada 1–2 hs durante el 3% y luego cada 4 hs; vigilar diuresis (en hipovolemia, al reponer volumen la diuresis acuosa puede sobrecorregir). Si se sobrecorrige: dextrosa 5% 3 mL/kg/h ± desmopresina 2 µg EV c/8 hs.'));
+    } else {
+      if(Na<=145){
+        out.push(`<br>${laboRed(`Na ${f.text}`)}: sodio levemente por encima del rango del laboratorio pero ≤145 mEq/L (no cumple el criterio de hipernatremia, que es Na >145 mEq/L).`);
+        out.push(bullet('<b>Conducta</b>: repetir el ionograma, valorar aporte de líquidos y balance hídrico.'));
+        out.push('<br>');
+        return out.join('');
+      }
+      const nivel = Na<150 ? 'LEVE' : (Na<160 ? 'MODERADA' : 'SEVERA');
+      const rango = Na<150 ? '146–149 mEq/L' : (Na<160 ? '150–159 mEq/L' : '≥160 mEq/L');
+      const fact = 0.5*(Na/140-1);
+      out.push(`<br>${laboRed(`Na ${f.text}`)}: <b>HIPERNATREMIA ${nivel}</b> (${rango}).`);
+      out.push(bullet('<b>Clasificación</b>: hipernatremia = Na >145 mEq/L (siempre hiperosmolar). Por nivel: leve 146–149 · moderada 150–159 · severa ≥160 mEq/L. Por tiempo: aguda (<48 hs) o crónica (≥48 hs). Por volemia: hipovolémica (pérdidas de agua y sodio: digestivas, sudoración, diuresis osmótica), euvolémica (pérdidas de agua libre: diabetes insípida, fiebre, hiperventilación) o hipervolémica (aporte de sodio: bicarbonato, NaCl hipertónico, soluciones con sodio).'));
+      out.push(bullet('<b>Síntomas a buscar</b>: sed (ausente en ancianos o con alteración de conciencia), irritabilidad, debilidad, letargo, temblor, hiperreflexia, rigidez, confusión, convulsiones y coma; la contracción cerebral puede causar hemorragia intracraneal. Evaluar volemia (mucosas secas, hipotensión, taquicardia, turgencia), diuresis, fiebre y balance hídrico.'));
+      const cau = [];
+      if(gluc!=null && gluc>250) cau.push(`diuresis osmótica por hiperglucemia (GLUC ${fmt(gluc)})`);
+      if(urea!=null && byCode['UREA'] && byCode['UREA'].dir==='alto') cau.push(`urea elevada (UREA ${fmt(urea)}): pérdida de agua / catabolismo`);
+      cau.push('si hay poliuria, solicitar osmolaridad y Na urinarios (orina diluida con diuresis alta: diabetes insípida, test de desmopresina; orina concentrada: pérdida extrarrenal o diuresis osmótica)');
+      cau.push('revisar diuréticos, lactulosa, vómitos/diarrea, fiebre y soluciones EV con sodio');
+      out.push(bullet(`<b>Causas a investigar</b>: ${cau.join('; ')}.`));
+      const clTxt = byCode['CL'] && byCode['CL'].dir==='alto' ? ' Si coexiste hipercloremia, preferir cristaloides balanceados (Ringer lactato) antes que solución fisiológica.' : '';
+      out.push(bullet(`<b>Tratamiento</b>: reponer agua libre, preferentemente por vía oral/SNG; si no es posible, dextrosa 5% EV (o NaCl 0,45%). Si hay inestabilidad hemodinámica, reponer primero volumen con cristaloides y luego el déficit de agua.${clTxt} Déficit de agua libre ≈ 0,5 × peso (kg) × (Na/140 − 1) ≈ ${fact.toFixed(3).replace('.',',')} L por kg de peso (ej. 60 kg ≈ ${(60*fact).toFixed(1).replace('.',',')} L), a sumar a las pérdidas continuas. Diabetes insípida central: desmopresina; hipervolémica: diurético de asa + agua libre. Si hay hiperglucemia, insulina. Na ≥160 mEq/L o síntomas neurológicos: monitoreo / UTI.${hipoK ? ' La hipokalemia asociada también debe corregirse (ajustar el K en las soluciones).' : ''}`));
+      out.push(bullet('<b>Límite de corrección</b>: en hipernatremia crónica no bajar más de 10–12 mEq/L en 24 hs (≈0,5 mEq/L/h) para evitar edema cerebral; en la aguda (<48 hs) puede ser hasta 1 mEq/L/h. Ionograma de control cada 4–6 hs (cada 2 hs si se corrige rápido) y ajustar el ritmo según la respuesta.'));
+    }
+    out.push('<br>');
+    return out.join('');
+  }
+
   function laboBuildExplicaciones(found, ctx){
     ctx = ctx || {};
     const byCode = {};
@@ -1973,7 +2050,17 @@ function fld(id){ return document.getElementById(id); }
     const sentences = [];
 
     const hbF = byCode['HB'], htoF = byCode['HTO'];
-    if((hbF && hbF.dir==='bajo') || (htoF && htoF.dir==='bajo')){
+    const tagV = (code,f)=> f ? (f.dir ? laboRed(`${code} ${f.text}`) : `${code} ${f.text}`) : null;
+    const omsMin = ctx.sex==='M' ? 13 : (ctx.sex==='F' ? 12 : null);
+    const hbNum = hbF ? laboToNumber(hbF.text) : null;
+    const anemiaLimite = !!(hbF && hbF.dir==='bajo' && !(htoF && htoF.dir==='bajo') && omsMin!=null && hbNum!=null && hbNum>=omsMin);
+    if(anemiaLimite){
+      const rdwL = byCode['RDW'] && byCode['RDW'].dir==='alto';
+      sentences.push(`${[tagV('HB',hbF),tagV('HTO',htoF)].filter(Boolean).join(', ')}: hemoglobina levemente por debajo del rango del laboratorio pero ≥${omsMin} g/dL, con hematocrito normal: no cumple el criterio OMS de anemia (<13 g/dL en varones, <12 g/dL en mujeres); valor límite. Conducta: comparar con valores previos y controlar la hemoglobina en el seguimiento; ampliar el estudio (reticulocitos, perfil férrico, B12/folato) solo si hay descenso progresivo, síntomas o sospecha de sangrado.${rdwL?` ${laboRed('RDW '+byCode['RDW'].text)} levemente elevado (anisocitosis): hallazgo inespecífico aislado.`:''}`);
+      ['HB','HTO','VCM','HCM'].forEach(c=>consumed.add(c));
+      if(rdwL) consumed.add('RDW');
+    }
+    if(!anemiaLimite && ((hbF && hbF.dir==='bajo') || (htoF && htoF.dir==='bajo'))){
       const vcmF = byCode['VCM'], hcmF = byCode['HCM'];
       const chcmF = byCode['CHCM'], rdwF = byCode['RDW'];
       const tam = !vcmF ? '' : (vcmF.dir==='bajo' ? 'microcítica' : (vcmF.dir==='alto' ? 'macrocítica' : 'normocítica'));
@@ -1981,38 +2068,39 @@ function fld(id){ return document.getElementById(id); }
       const col = (hcmF||chcmF) ? (hipo ? 'hipocrómica' : 'normocrómica') : '';
       const tipo = [tam, col].filter(Boolean).join(' ');
       const rdwAlto = rdwF && rdwF.dir==='alto';
-      const partes = [];
-      if(hbF) partes.push(`HB ${hbF.text}`);
-      if(htoF) partes.push(`HTO ${htoF.text}`);
-      if(vcmF && vcmF.dir) partes.push(`VCM ${vcmF.text}`);
-      if(hcmF && hcmF.dir) partes.push(`HCM ${hcmF.text}`);
+      const partes = [tagV('HB',hbF), tagV('HTO',htoF), (vcmF && vcmF.dir) ? tagV('VCM',vcmF) : null, (hcmF && hcmF.dir) ? tagV('HCM',hcmF) : null].filter(Boolean);
       let extra = '';
       if(tam==='microcítica') extra = ' Se sugiere solicitar perfil férrico (hierro, transferrina, saturación, ferritina) para descartar ferropenia; si la ferritina es normal/alta con inflamación, considerar anemia de trastornos crónicos o talasemia.';
       else if(tam==='macrocítica') extra = ' Se sugiere solicitar vitamina B12, ácido fólico, TSH, hepatograma y reticulocitos, y revisar alcohol y fármacos.';
       else extra = ' Se sugiere solicitar reticulocitos y perfil férrico, evaluar función renal, inflamación crónica (PCR/ERS) y pérdidas sanguíneas (sangrado digestivo: examen físico y tacto rectal); considerar transfusión sólo si hay inestabilidad hemodinámica, síntomas de isquemia o Hb <7 g/dL (<8 si enfermedad cardiovascular).';
-      sentences.push(`${laboRed(partes.join(', '))}: anemia${tipo?(' '+tipo):''}${rdwAlto?' con RDW elevado (anisocitosis: población eritrocitaria heterogénea, sugiere etiología mixta o en evolución)':''}.${extra}`);
+      sentences.push(`${partes.join(', ')}: anemia${tipo?(' '+tipo):''}${rdwAlto?' con RDW elevado (anisocitosis: población eritrocitaria heterogénea, sugiere etiología mixta o en evolución)':''}.${extra}`);
       ['HB','HTO','VCM','HCM'].forEach(c=>consumed.add(c));
       if(rdwAlto) consumed.add('RDW');
     }
 
     const ureaF = byCode['UREA'], crF = byCode['CR'], fgF = byCode['FG'];
-    if((ureaF && ureaF.dir) || (crF && crF.dir) || (fgF && fgF.dir==='bajo')){
-      const partes = [];
-      if(ureaF) partes.push(`UREA ${ureaF.text}`);
-      if(crF) partes.push(`CR ${crF.text}`);
-      if(fgF) partes.push(`FG ${fgF.text}`);
-      const ureaAlta = ureaF && ureaF.dir==='alto';
-      const crAlta = crF && crF.dir==='alto';
-      const crNormal = crF && !crF.dir;
-      if(ureaAlta && crNormal){
-        const u = laboToNumber(ureaF.text), c = laboToNumber(crF.text);
-        const ratio = (u!=null && c) ? Math.round(u/c) : null;
-        const anemiaAsoc = hbF && hbF.dir==='bajo';
-        sentences.push(`${laboRed(partes.join(', '))}: aumento aislado de urea con creatinina normal${ratio!=null?` (relación urea/creatinina ≈ ${ratio}; >50 orienta a causa prerrenal, hipercatabolismo o sangrado digestivo)`:''}; sin deterioro de la función renal establecido (el FG por CKD-EPI no es confiable en internados y adultos mayores). Valorar hipovolemia/deshidratación (balance, diuresis, aporte de líquidos e hidratación parenteral si corresponde), hipercatabolismo o corticoides, y descartar sangrado digestivo alto${anemiaAsoc?' (más aún con anemia asociada: examen físico/tacto rectal, seguimiento de hemoglobina y valorar endoscopía)':''}; reducir el aporte proteico si es excesivo, evitar nefrotóxicos y repetir urea/creatinina tras la corrección.`);
-      } else if(ureaAlta || crAlta || (fgF && fgF.dir==='bajo')){
-        sentences.push(`${laboRed(partes.join(', '))}: deterioro de la función renal; ajustar dosis de fármacos de eliminación renal, evitar nefrotóxicos (AINEs, contraste, aminoglucósidos), correlacionar con diuresis y estado de hidratación y solicitar sedimento/ionograma urinario y ecografía renal si no revierte.`);
+    if((ureaF && (ureaF.dir || ureaF.mildUrea)) || (crF && crF.dir) || (fgF && fgF.dir==='bajo')){
+      const partes = [tagV('UREA',ureaF), tagV('CR',crF), tagV('FG',fgF)].filter(Boolean).join(', ');
+      const u = ureaF ? laboToNumber(ureaF.text) : null, c = crF ? laboToNumber(crF.text) : null;
+      const ratio = (u!=null && c) ? Math.round(u/c) : null;
+      const rtxt = ratio!=null ? ` Relación urea/creatinina ≈ ${ratio} (normal 20-40).` : '';
+      const ureaAlta = !!(ureaF && (ureaF.dir==='alto' || ureaF.mildUrea)), crAlta = crF && crF.dir==='alto';
+      const crNormal = crF && !crF.dir, fgBajo = fgF && fgF.dir==='bajo';
+      const anemiaAsoc = hbF && hbF.dir==='bajo' && !anemiaLimite;
+      const fgNota = ' El FG por CKD-EPI no es confiable en internados y adultos mayores.';
+      const causasAltas = `hipovolemia/deshidratación (balance, diuresis, aporte de líquidos e hidratación parenteral si corresponde), hipercatabolismo o corticoides, y descartar sangrado digestivo alto${anemiaAsoc?' (más aún con anemia asociada: examen físico/tacto rectal, seguimiento de hemoglobina y valorar endoscopía)':''}`;
+      if(ureaAlta && crNormal && !fgBajo && u!=null && u<=60){
+        sentences.push(`${partes}: urea entre 48 y 60 mg/dL con creatinina normal: <b>no hay alteración de la función renal</b>.${rtxt}${fgNota} Valorar ${causasAltas}; reducir el aporte proteico si es excesivo, evitar nefrotóxicos y repetir urea/creatinina tras la corrección.`);
+      } else if(ureaAlta && crNormal && !fgBajo){
+        sentences.push(`${partes}: <b>DISOCIACIÓN UREA/CREATININA</b> (urea >60 mg/dL con creatinina normal, sin alteración de la función renal establecida).${rtxt}${fgNota} Relación alta: orienta a causa prerrenal (deshidratación, shock, insuficiencia cardíaca con menor flujo renal) o aumento de la producción de urea (sangrado digestivo alto, corticoides, hipercatabolismo, dieta hiperproteica). Valorar ${causasAltas}; evitar nefrotóxicos, repetir urea/creatinina tras la corrección y, si la urea sigue subiendo, solicitar ionograma urinario y ecografía renal.`);
+      } else if(crAlta || ureaAlta || fgBajo){
+        const solaCr = crAlta && !ureaAlta ? ' El aumento aislado de creatinina podría deberse a catabolismo muscular (rabdomiólisis, CPK elevada) o a fármacos que inhiben su secreción tubular (trimetoprima, cimetidina); correlacionar con la clínica.' : '';
+        const motivos = [];
+        if(ureaAlta && crAlta) motivos.push('urea y creatinina por encima de sus valores normales'); else if(crAlta) motivos.push('creatinina por encima de su valor normal'); else if(ureaAlta) motivos.push('urea elevada');
+        if(fgBajo) motivos.push('filtrado glomerular descendido');
+        sentences.push(`${partes}: <b>alteración de la función renal</b> (${motivos.join('; ')}).${rtxt}${solaCr}${fgNota} Ajustar dosis de fármacos de eliminación renal, evitar nefrotóxicos (AINEs, contraste, aminoglucósidos), correlacionar con diuresis y estado de hidratación y solicitar sedimento/ionograma urinario y ecografía renal si no revierte.`);
       } else {
-        sentences.push(`${laboRed(partes.join(', '))}: función renal por debajo del rango de referencia; ajustar dosis de fármacos de eliminación renal y correlacionar con diuresis y estado de hidratación.`);
+        sentences.push(`${partes}: función renal por debajo del rango de referencia; ajustar dosis de fármacos de eliminación renal y correlacionar con diuresis y estado de hidratación.`);
       }
       ['UREA','CR','FG'].forEach(c=>consumed.add(c));
     }
@@ -2105,6 +2193,10 @@ function fld(id){ return document.getElementById(id); }
     Object.keys(LABO_EXPLAIN).forEach(code=>{
       if(consumed.has(code)) return;
       const f = byCode[code];
+      if(code==='Na' && f){
+        const nBlock = laboBuildNatremia(f, byCode, ctx);
+        if(nBlock){ sentences.push(nBlock); consumed.add('Na'); return; }
+      }
       if(code==='K' && f){
         const kBlock = laboBuildKalemia(f, byCode, ctx);
         if(kBlock){ sentences.push(kBlock); consumed.add('K'); return; }
@@ -2345,10 +2437,145 @@ function fld(id){ return document.getElementById(id); }
     }
   });
 
+  /* ---- Ventana emergente de valores críticos: K <2,5 o ≥6,5 · glucemia <70 o >180 ---- */
+  const LABO_ALERT_LIM = {kLow:2.5, kHigh:6.5, glucLow:70, glucHigh:180};
+  let laboAlertSig = '';
+  function laboAlertClose(){ fld('alModal').hidden = true; }
+  fld('alClose').addEventListener('click', laboAlertClose);
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape' && !fld('alModal').hidden) laboAlertClose(); });
+  function laboBuildAlerts(K, G){
+    const L = LABO_ALERT_LIM, fm = laboFmtNumber, al = [];
+    const li = arr => '<ul>' + arr.map(x=>`<li>${x}</li>`).join('') + '</ul>';
+    if(K!=null && K>0.5 && K<15){
+      if(K<L.kLow) al.push({t:`HIPOKALEMIA SEVERA — K ${fm(K)} mEq/L (<${String(L.kLow).replace('.',',')})`, h:li([
+        '<b>ECG y monitoreo cardíaco continuo</b> ya: riesgo de arritmias ventriculares (TV, torsades).',
+        'Acceso venoso, de preferencia central. <b>ClK EV</b>: carga de 60 mEq en 4 hs (4 ampollas de 15 mEq en 400 mL de SF) o 45 mEq en 3 hs (300 mL de SF); con arritmia o cambios ECG de riesgo vital: 2 cargas de 60 mEq en 200 mL de SF en 2 hs, con 1 h de intervalo (solo vía central, monitoreada).',
+        '<b>Sulfato de Mg</b> 1–2 g EV en simultáneo (sin corregir el Mg la hipokalemia no cede).',
+        '<b>NO</b> en bolo ni diluir en dextrosa. Velocidad máx. 10 mEq/h por vía periférica, 40 mEq/h por central. Con falla renal, reponer con más cautela.',
+        'Kalemia de control cada 2–4 hs hasta K ≥4 mEq/L; suspender diuréticos que pierden K y revisar digoxina.']) });
+      else if(K>=L.kHigh) al.push({t:`HIPERKALEMIA GRAVE — K ${fm(K)} mEq/L (≥${String(L.kHigh).replace('.',',')})`, h:li([
+        '<b>ECG inmediato y monitoreo cardíaco</b>; no esperar la repetición del laboratorio si hay cambios ECG (descartar hemólisis en paralelo).',
+        '<b>1) Proteger la membrana</b>: gluconato de calcio 10% 10–30 mL EV en 5–10 min; repetir a los 5 min si persisten los cambios ECG.',
+        '<b>2) Meter K a la célula</b>: 10 U de insulina corriente + 25 g de glucosa EV (ej. 500 mL de Dx 10% en 1 h), con HGT cada hora durante ~6 hs; salbutamol nebulizado 10–20 mg; bicarbonato EV solo si hay acidosis metabólica.',
+        '<b>3) Eliminar K</b>: furosemida EV si hay diuresis conservada; quelante de K (ciclosilicato de zirconio 10 g VO); <b>hemodiálisis</b> si es refractaria o hay falla renal.',
+        'Suspender IECA/ARA II, espironolactona, AINEs, trimetoprima y aportes de K. Kalemia seriada (puede haber rebote).']) });
+    }
+    if(G!=null && G>10 && G<2000){
+      if(G<L.glucLow) al.push({t:`HIPOGLUCEMIA — GLUC ${fm(G)} mg/dL (<${L.glucLow})`, h:li([
+        'Confirmar con <b>HGT</b> y evaluar el estado de conciencia (<54 mg/dL o alteración neurológica = grave).',
+        '<b>Consciente y puede tragar</b>: 15–20 g de glucosa por vía oral (3–4 cucharaditas de azúcar o 150–200 mL de jugo); repetir el HGT a los 15 min y reiterar si sigue <70.',
+        '<b>Inconsciente o sin vía oral</b>: dextrosa 50% 25 g (50 mL) EV en bolo (o dextrosa 10% 150–250 mL); sin vía EV, glucagón 1 mg IM/SC.',
+        'Luego HGT cada 15 min y, si recurre o por insulina/sulfonilureas, infusión de dextrosa 5–10% con HGT horario. Con alcoholismo o desnutrición, tiamina 100 mg EV antes de la glucosa.',
+        'Buscar causa: insulina/sulfonilureas, ayuno, sepsis, insuficiencia hepática, renal o suprarrenal; ajustar el esquema de insulina (sulfonilureas: considerar octreótide).']) });
+      else if(G>L.glucHigh) al.push({t:`HIPERGLUCEMIA — GLUC ${fm(G)} mg/dL (>${L.glucHigh})`, h:li([
+        'Confirmar con <b>HGT</b> y buscar síntomas (poliuria, vómitos, dolor abdominal, deshidratación, alteración de conciencia).',
+        (G>=250 ? '<b>GLUC ≥250</b>: ' : 'Si hay síntomas o antecedente de diabetes: ') + 'solicitar gasometría, cetonemia/cetonuria e ionograma para descartar <b>cetoacidosis diabética o estado hiperosmolar</b>.',
+        'Si hay deshidratación: solución fisiológica 15–20 mL/kg en la 1ª hora (≈1–1,5 L; cautela en cardiopatía/falla renal).',
+        'Insulina corriente según esquema corrector por HGT (objetivo en internados 140–180 mg/dL). En CAD/EHH: infusión 0,1 U/kg/h EV <b>solo si K ≥3,3 mEq/L</b> (si K <3,3, reponer K primero; con K 3,3–5,2 agregar 20–30 mEq/L a las soluciones).',
+        'Revisar causas: infección, omisión de insulina, corticoides, síndrome coronario agudo.']) });
+    }
+    return al;
+  }
+  function laboBuildAlerts2(V){
+    const fm = laboFmtNumber, al = [];
+    const li = arr => '<ul>' + arr.map(x=>`<li>${x}</li>`).join('') + '</ul>';
+    const n = c => (V[c] ? V[c].value : null);
+    const Na = n('Na');
+    if(Na!=null && Na>90 && Na<200){
+      if(Na<120) al.push({t:`HIPONATREMIA SEVERA — Na ${fm(Na)} mEq/L (<120)`, h:li([
+        'Buscar síntomas graves: convulsiones, coma, vómitos, distrés (edema cerebral). Monitoreo / UTI.',
+        'Con síntomas graves: <b>NaCl 3% 150 mL EV en 20 min</b> (o 100 mL en 10 min), repetible hasta 2 veces; objetivo ↑4–6 mEq/L al inicio.',
+        '<b>No superar 8 mEq/L en 24 hs</b> (riesgo de desmielinización osmótica). Na cada 1–2 hs durante el 3%. Sin dextrosa 5% ni soluciones hipotónicas.',
+        'Pedir osmolaridad plasmática y urinaria, Na urinario, volemia; suspender tiazidas y fármacos causales.']) });
+      else if(Na>160) al.push({t:`HIPERNATREMIA SEVERA — Na ${fm(Na)} mEq/L (>160)`, h:li([
+        'Buscar compromiso neurológico (letargo, convulsiones, coma). Monitoreo / UTI.',
+        'Con inestabilidad hemodinámica reponer primero volumen con cristaloides; luego agua libre por vía oral/SNG o dextrosa 5% EV.',
+        'No bajar más de 10–12 mEq/L en 24 hs en la forma crónica (≈0,5 mEq/L/h). Ionograma cada 4–6 hs.',
+        'Buscar diabetes insípida (poliuria, osmolaridad urinaria), diuresis osmótica y pérdidas.']) });
+    }
+    let ca = n('Ca'), caTxt = 'Ca';
+    if(ca!=null && n('ALB')!=null && n('ALB')<4){ ca = laboCaCalc(ca, n('ALB')); caTxt = 'Ca corregido'; }
+    if(ca!=null && ca>3 && ca<25){
+      if(ca<7) al.push({t:`HIPOCALCEMIA SEVERA — ${caTxt} ${fm(ca)} mg/dL (<7)`, h:li([
+        'Buscar tetania, parestesias, laringoespasmo, convulsiones; <b>ECG</b> (QT prolongado) y monitoreo.',
+        '<b>Gluconato de calcio 10%: 1–2 g (10–20 mL) EV en 10–20 min</b>, luego infusión continua si persiste; no mezclar con bicarbonato.',
+        'Confirmar con calcio iónico; pedir Mg, P, PTH y 25-OH vitamina D; reponer Mg si está bajo.']) });
+      else if(ca>=14) al.push({t:`HIPERCALCEMIA GRAVE — ${caTxt} ${fm(ca)} mg/dL (≥14)`, h:li([
+        'Buscar deshidratación, alteración de conciencia, poliuria, vómitos; <b>ECG</b> (QT corto).',
+        '<b>Hidratación con solución fisiológica</b> (diuresis objetivo 100–150 mL/h, con cautela en cardiopatía/falla renal).',
+        'Calcitonina y bifosfonato EV (ácido zoledrónico 4 mg) tras hidratar, según función renal. Suspender calcio, vitamina D, tiazidas y litio.',
+        'Pedir PTH, PTHrP, fósforo, función renal.']) });
+    }
+    const mg = n('Mg');
+    if(mg!=null && mg>0.1 && mg<1.0) al.push({t:`HIPOMAGNESEMIA SEVERA — Mg ${fm(mg)} mg/dL (<1,0)`, h:li([
+      '<b>ECG y monitoreo</b>: riesgo de arritmias (torsades). Con arritmia: sulfato de Mg 2 g EV en 2–15 min.',
+      'Sin arritmia: sulfato de Mg 1–2 g EV en 1 h, luego mantenimiento; corregir K y Ca asociados.']) });
+    const ph = n('pH');
+    if(ph!=null && ph>6.5 && ph<8){
+      if(ph<7.2) al.push({t:`ACIDEMIA GRAVE — pH ${fm(ph)} (<7,20)`, h:li([
+        'Evaluar vía aérea, ventilación y perfusión; monitoreo / UTI.',
+        'Clasificar con pCO2 y HCO3 (metabólica vs respiratoria), anión GAP, lactato y cetonas; tratar la causa (cetoacidosis, shock, sepsis, intoxicación, falla renal).',
+        'Bicarbonato EV solo en acidosis metabólica grave (pH <7,1) según causa; en acidosis respiratoria, soporte ventilatorio.',
+        'Controlar K antes de insulina o bicarbonato.']) });
+      else if(ph>7.55) al.push({t:`ALCALEMIA GRAVE — pH ${fm(ph)} (>7,55)`, h:li([
+        'Clasificar con pCO2 y HCO3; <b>controlar K, Ca iónico y Mg</b> (arritmias, tetania).',
+        'Alcalosis metabólica: reponer volumen y cloro (solución fisiológica) y K; revisar vómitos, aspiración nasogástrica y diuréticos. Respiratoria: tratar dolor, ansiedad, hipoxemia.']) });
+    }
+    const lac = V['Ac Lac'];
+    if(lac && lac.value!=null){
+      const mmol = lac.range && lac.range.high!=null && lac.range.high<=5;
+      if(lac.value >= (mmol ? 4 : 36)) al.push({t:`HIPERLACTATEMIA GRAVE — lactato ${fm(lac.value)} ${mmol?'mmol/L':'mg/dL'} (≥4 mmol/L)`, h:li([
+        'Sospechar <b>hipoperfusión / shock</b> (séptico, hipovolémico, cardiogénico) o isquemia mesentérica.',
+        'Evaluar hemodinamia, cultivos y foco; antibióticos precoces si hay sospecha de sepsis; cristaloides 30 mL/kg si hipotensión o lactato ≥4; vasopresores si persiste.',
+        'Repetir lactato a las 2–4 hs; monitoreo / UTI.']) });
+    }
+    const hb = n('HB');
+    if(hb!=null && hb>2 && hb<25 && hb<7) al.push({t:`ANEMIA GRAVE — Hb ${fm(hb)} g/dL (<7)`, h:li([
+      'Evaluar inestabilidad hemodinámica, síntomas de isquemia y <b>sangrado activo</b> (tacto rectal, hematemesis, melena).',
+      'Considerar transfusión de glóbulos rojos (umbral <7 g/dL; <8 con enfermedad cardiovascular); dos accesos venosos, tipificar y cruzar.',
+      'Si hay sangrado: control del foco y reposición de volumen.']) });
+    let pl = n('PLAQ'); if(pl!=null && pl>1000) pl = pl/1000;
+    if(pl!=null && pl>0 && pl<20) al.push({t:`PLAQUETOPENIA GRAVE — plaquetas ${fm(pl)} ×10³/mm³ (<20)`, h:li([
+      'Riesgo de <b>sangrado espontáneo</b>: buscar petequias, equimosis, hemorragia mucosa y signos de sangrado intracraneal o digestivo.',
+      'Frotis de sangre periférica (descartar pseudotrombocitopenia por EDTA), coagulograma, fibrinógeno, LDH; suspender antiagregantes, anticoagulantes y fármacos causales.',
+      'Transfusión de plaquetas si hay sangrado o procedimiento; PTI, PTT/SUH y CID requieren conducta específica (hematología).']) });
+    const gb = n('GB');
+    if(gb!=null && gb>0 && gb<1) al.push({t:`LEUCOPENIA GRAVE — GB ${fm(gb)} ×10³/mm³ (<1,0)`, h:li([
+      'Riesgo de neutropenia grave e infección: si hay fiebre, es <b>emergencia</b>: cultivos y antibiótico empírico de amplio espectro dentro de la primera hora.',
+      'Aislamiento protector, recuento absoluto de neutrófilos, frotis; revisar quimioterapia y fármacos (clozapina, metamizol, antitiroideos).']) });
+    const rin = n('RIN');
+    if(rin!=null && rin>=5 && rin<30) al.push({t:`RIN SUPRATERAPÉUTICO — RIN ${fm(rin)} (≥5)`, h:li([
+      'Buscar sangrado (digestivo, urinario, intracraneal). Suspender el antagonista de vitamina K.',
+      'Sin sangrado: vitamina K 1–2,5 mg VO; con RIN >10 sin sangrado, 2,5–5 mg VO.',
+      'Con <b>sangrado grave</b>: vitamina K 5–10 mg EV lenta + concentrado de complejo protrombínico (o plasma fresco si no hay).']) });
+    const tn = V['Troponina'];
+    if(tn && tn.value!=null && tn.range && laboIsAbnormal(tn.value, tn.range)) al.push({t:`TROPONINA ELEVADA — ${fm(tn.value)}`, h:li([
+      'Descartar <b>síndrome coronario agudo</b>: ECG inmediato (repetir en 15–30 min), dolor torácico, monitoreo.',
+      'Si hay IAMCEST o SCA de alto riesgo: aspirina 300 mg, anticoagulación y reperfusión según protocolo. Repetir troponina a las 3–6 hs.',
+      'Otras causas: embolia de pulmón, miocarditis, falla renal, sepsis, taquiarritmias, insuficiencia cardíaca.']) });
+    const cpk = n('CPK');
+    if(cpk!=null && cpk>=5000) al.push({t:`CPK MUY ELEVADA — CPK ${fm(cpk)} U/L (≥5000)`, h:li([
+      'Sospechar <b>rabdomiólisis</b>: riesgo de falla renal aguda e hiperkalemia; controlar K, Ca, P, creatinina y orina (mioglobinuria).',
+      'Hidratación vigorosa con solución fisiológica (diuresis >200 mL/h), monitorear ECG y ionograma seriado; suspender estatinas y fármacos causales.']) });
+    return al;
+  }
+  function laboCheckAlerts(K, G, head, V){
+    const al = laboBuildAlerts(K, G).concat(laboBuildAlerts2(V || {}));
+    if(!al.length){ laboAlertSig = ''; return; }
+    const sig = head + '|' + al.map(a=>a.t).join('|');
+    if(sig === laboAlertSig) return;
+    laboAlertSig = sig;
+    fld('alBody').innerHTML = al.map(a=>`<div class="al-item"><h5>${a.t}</h5>${a.h}</div>`).join('') +
+      '<div style="font-size:11px;color:var(--muted);margin-top:6px;">Medidas rápidas orientativas: adaptar al protocolo del servicio y a la clínica del paciente.</div>';
+    fld('alModal').hidden = false;
+    fld('alClose').focus();
+  }
+
   function laboProcesar(){
     let raw = $input.value;
     if(!raw.trim()){
       $output.innerHTML = '';
+      laboAlertSig = '';
       $status.textContent = 'Pegá primero el texto del laboratorio.';
       laboCaReset();
       return;
@@ -2489,11 +2716,28 @@ function fld(id){ return document.getElementById(id); }
         }
       } else {
         const r = laboExtractStd(flatMasked, param, sex);
-        if(r){ text = laboFmtNumber(r.value); abnormal = laboIsAbnormal(r.value, r.range); dir = laboDir(r.value, r.range); rng = r.range; ok = true; pos = r.pos; }
+        if(r){
+          /* Rangos del laboratorio del hospital: urea hasta 47 mg/dL, creatinina 0,6-1,5 mg/dL */
+          if(param.code==='UREA') r.range = {low:(r.range && isFinite(r.range.low)) ? r.range.low : -Infinity, high:47};
+          if(param.code==='CR') r.range = {low:0.6, high:1.5};
+          if(param.code==='FG'){
+            /* El informe no da un rango normal único sino estadios de ERC: se toma como alterado desde el estadio 3 que informa el laboratorio (ej. 30-59 → <60). */
+            const m3 = flatMasked.slice(r.pos).match(/estad[ií]o\s*3[^\d]{0,20}(\d+(?:[.,]\d+)?)\s*-\s*(\d+(?:[.,]\d+)?)/i);
+            const lim = m3 ? Math.ceil(parseFloat(m3[2].replace(',','.'))) : 59;
+            if(!(r.range && isFinite(r.range.low))) r.range = {low: lim + 1, high: Infinity};
+          }
+          text = laboFmtNumber(r.value); abnormal = laboIsAbnormal(r.value, r.range); dir = laboDir(r.value, r.range); rng = r.range; ok = true; pos = r.pos;
+        }
       }
       if(ok) found.push({code:param.code, text, abnormal, l1:param.l1, l2:param.l2, pos, dir, range:rng});
     });
 
+    {
+      const uF = found.find(f=>f.code==='UREA'), cF = found.find(f=>f.code==='CR');
+      if(uF && cF && uF.dir==='alto' && !cF.dir && laboToNumber(uF.text)<=60){
+        uF.dir = null; uF.abnormal = false; uF.mildUrea = true;
+      }
+    }
     const CORE_ALIAS_ALL = LABO_MASTER.flatMap(p=>p.aliases).concat(LABO_LIQUIDOS_FIELDS.flatMap(f=>f.aliases||[])).concat(TEXT_STUDY_ALIAS_ALL);
     const rawLines = raw.split(/\r?\n/);
     const extras = [];
@@ -2689,13 +2933,25 @@ function fld(id){ return document.getElementById(id); }
       $gcResultado.innerHTML = laboBuildGasResultHtml(gasV, {showMixedValues:false});
     }
 
-    const explicaciones = laboBuildExplicaciones(found, {venoso: esVenoso, orina24: orina24Result ? orina24Result.items : null, caCorr: caCorr, discrep: discrepCodes.length ? {codes: discrepCodes, hora: discrepHora} : null});
+    const explicaciones = laboBuildExplicaciones(found, {sex: sex, venoso: esVenoso, orina24: orina24Result ? orina24Result.items : null, caCorr: caCorr, discrep: discrepCodes.length ? {codes: discrepCodes, hora: discrepHora} : null});
     if(explicaciones.length){
       if(out) out += '<br><br>';
       out += `<span style="${LABO_FONT}"><b>Explicación de alteraciones</b>: ${explicaciones.join(' ').replace(/<br>\s+/g, '<br>')}</span>`;
     }
 
     $output.innerHTML = out;
+    {
+      const kP = LABO_MASTER.find(p=>p.code==='K'), gP = LABO_MASTER.find(p=>p.code==='GLUC');
+      const kR = laboExtractStd(flatMasked, kP, sex), gR = laboExtractStd(flatMasked, gP, sex);
+      const head = (raw.match(/Orden\s*(\d+)/i)||[])[1] || raw.trim().slice(0,100);
+      const V = {};
+      ['Na','Ca','ALB','Mg','pH','HB','PLAQ','GB','RIN','Ac Lac','Troponina','CPK'].forEach(code=>{
+        const pp = LABO_MASTER.find(x=>x.code===code);
+        const r = pp ? laboExtractStd(flatMasked, pp, sex) : null;
+        if(r && r.value!=null) V[code] = r;
+      });
+      laboCheckAlerts(kR ? kR.value : null, gR ? gR.value : null, head, V);
+    }
 
     const extrasCount = extras.length;
     const catalogAlteradosFueraCore = found.filter(f=>!f.l1 && f.abnormal && !LABO_NEVER_PARCIAL.has(f.code)).length;
@@ -2726,6 +2982,7 @@ function fld(id){ return document.getElementById(id); }
     $gasaWrap.classList.remove('show');
     $output.innerHTML = '';
     $status.textContent = '';
+    laboAlertSig = '';
     laboCaReset();
     $input.focus();
   });
