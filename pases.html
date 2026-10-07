@@ -2012,7 +2012,10 @@ function getDefaultChecked(key, kind, id){
 function setDefaultChecked(key, kind, id, value){
   if(!checklistConfig.defaults) checklistConfig.defaults = {};
   if(!checklistConfig.defaults[key]) checklistConfig.defaults[key] = {normal:{}, alt:{}};
-  const map = kind==='normal' ? checklistConfig.defaults[key].normal : checklistConfig.defaults[key].alt;
+  const dk = checklistConfig.defaults[key];
+  if(!dk.normal) dk.normal = {};
+  if(!dk.alt) dk.alt = {};
+  const map = kind==='normal' ? dk.normal : dk.alt;
   map[id] = value;
 }
 /* Un check es "predeterminado global" (lo que se tilda/destilda vale para TODOS los pacientes y
