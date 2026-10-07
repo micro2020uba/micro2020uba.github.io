@@ -3843,8 +3843,10 @@ function aplicarPlantillaDatos(d, sinConfirmar){
       if(d.cama && camaCode(d.cama) && camaCode(d.cama) !== camaCode(p.cama)){
         if(!sinConfirmar && !confirm('La plantilla es de la cama ' + d.cama + ' y estás en ' + (p.cama||'otra cama') + '. ¿Aplicarla igual a este paciente?')) return null;
       }
-      const todos = x=>String(x && x.aplicarA || 'paciente').toLowerCase() === 'todos';
-      const nuevoGeneral = x=>String(x && x.aplicarA || 'todos').toLowerCase() !== 'paciente';   // ítem nuevo: general salvo que diga «paciente»
+      /* Las frases nuevas y las redacciones cambiadas de una plantilla .json son SIEMPRE generales (las ven todos
+         los pacientes); lo propio de cada paciente son los tildes y qué sale en cada texto. */
+      const todos = x=>true;
+      const nuevoGeneral = x=>true;
       const LISTAS = [['normal','normales'],['alt','alteraciones']];
 
       /* --- Plan: qué ítems se crean / cambian de redacción --- */
@@ -3864,7 +3866,6 @@ function aplicarPlantillaDatos(d, sinConfirmar){
         });
       });
       const hayGlobal = plan.nuevosG.length || plan.textoG.length;
-      if(hayGlobal && !sinConfirmar && !confirm('Esta plantilla modifica ítems GENERALES (los ven todos los pacientes): ' + plan.nuevosG.length + ' ítems nuevos y ' + plan.textoG.length + ' redacciones cambiadas. ¿Aplicar?')) return null;
 
       /* --- Ficha del paciente (solo las claves presentes) --- */
       const pac = d.paciente || {};
@@ -3909,7 +3910,13 @@ function aplicarPlantillaDatos(d, sinConfirmar){
       plan.textoG.forEach(x=>{
         if(!checklistConfig.edits[x.key]) checklistConfig.edits[x.key] = {};
         checklistConfig.edits[x.key][x.it.id] = String(x.it.texto).trim();
-        if(typeof x.it.porDefecto === 'boolean') setDefaultChecked(x.key, x.kind, x.it.id, x.it.porDefecto);
+        // la redacción propia de cualquier paciente taparía la general: se quita para que todos vean la nueva
+        patients.forEach(pp=>{
+          const e2 = pp && pp.itemsPropios && pp.itemsPropios.edits && pp.itemsPropios.edits[x.key];
+          if(e2 && Object.prototype.hasOwnProperty.call(e2, x.it.id)){ delete e2[x.it.id]; if(pp !== p) schedulePatientSave(pp, 400); }
+        });
+        // el ★ (predeterminado global) solo se toca si el archivo lo pide explícitamente con «aplicarA»:«todos»
+        if(String(x.it.aplicarA||'').toLowerCase()==='todos' && typeof x.it.porDefecto === 'boolean') setDefaultChecked(x.key, x.kind, x.it.id, x.it.porDefecto);
       });
       plan.textoP.forEach(x=>{
         // si el ítem es uno propio del paciente se edita en su lista; si no, queda como redacción propia
@@ -4134,6 +4141,50 @@ document.body.addEventListener('input', (e)=>{
   guardarChecksPropios(getSelected());
 });
 
+/* ================= Alcance de un cambio manual: todos los pacientes o solo el abierto ================= */
+function preguntarAlcance(que){
+  const p = (typeof getSelected === 'function') ? getSelected() : null;
+  if(!p) return 'todos';
+  return confirm(que + '\n\nAceptar  = para TODOS los pacientes (cada uno conserva sus propios tildes)\nCancelar = solo para este paciente (' + (p.cama || 'paciente actual') + ')') ? 'todos' : 'paciente';
+}
+function asegurarItemsPropios(p){
+  if(!p.itemsPropios) p.itemsPropios = { items:{}, edits:{} };
+  if(!p.itemsPropios.items) p.itemsPropios.items = {};
+  if(!p.itemsPropios.edits) p.itemsPropios.edits = {};
+  return p.itemsPropios;
+}
+/* Agrega una frase (y su antagónimo opcional) en el alcance elegido. Devuelve los ids creados. */
+function agregarFraseConAlcance(sysKey, kind, text, antagText, alcance){
+  const listKey = kind === 'normal' ? 'normal' : 'alteraciones';
+  const otroListKey = listKey === 'normal' ? 'alteraciones' : 'normal';
+  const base = Date.now();
+  const global = alcance !== 'paciente';
+  const pref = global ? 'custom_' : 'pac_';
+  const id = pref + base + '_a', antagId = pref + base + '_b';
+  const itA = { id, text, antagonistas: antagText ? [antagId] : [] };
+  const itB = antagText ? { id: antagId, text: antagText, antagonistas:[id] } : null;
+  if(global){
+    if(!checklistConfig.custom) checklistConfig.custom = {};
+    if(!checklistConfig.custom[sysKey]) checklistConfig.custom[sysKey] = {normal:[], alteraciones:[]};
+    checklistConfig.custom[sysKey][listKey].push(itA);
+    if(itB) checklistConfig.custom[sysKey][otroListKey].push(itB);
+    // Los ítems nuevos quedan SIN marcar para todos los pacientes: se tildan solo donde hacen falta.
+    setDefaultChecked(sysKey, kind, id, false);
+    if(itB) setDefaultChecked(sysKey, kind==='normal'?'alt':'normal', antagId, false);
+    saveCustomLocal();
+  } else {
+    const p = getSelected();
+    const ip = asegurarItemsPropios(p);
+    if(!ip.items[sysKey]) ip.items[sysKey] = {normal:[], alteraciones:[]};
+    if(!ip.items[sysKey][listKey]) ip.items[sysKey][listKey] = [];
+    if(!ip.items[sysKey][otroListKey]) ip.items[sysKey][otroListKey] = [];
+    ip.items[sysKey][listKey].push(itA);
+    if(itB) ip.items[sysKey][otroListKey].push(itB);
+    schedulePatientSave(p, 300);
+  }
+  return { id, antagId };
+}
+
 /* ================= Agregar opciones personalizadas por sistema =================
    Si se completa el campo "antagónimo", se crean LAS DOS frases juntas, cruzadas
    entre sí (antagonistas: [la una, la otra]) y cada una en la lista que le
@@ -4152,32 +4203,10 @@ document.body.addEventListener('click', (e)=>{
   const text = input.value.trim();
   const antagText = antagInput ? antagInput.value.trim() : '';
   if(!text) return;
-  if(!checklistConfig.custom) checklistConfig.custom = {};
-  if(!checklistConfig.custom[sysKey]) checklistConfig.custom[sysKey] = {normal:[], alteraciones:[]};
-  const listKey = kind === 'normal' ? 'normal' : 'alteraciones';
-  const otroListKey = listKey === 'normal' ? 'alteraciones' : 'normal';
-  const id = 'custom_'+Date.now()+'_a';
-  if(antagText){
-    const antagId = 'custom_'+Date.now()+'_b';
-    checklistConfig.custom[sysKey][listKey].push({ id, text, antagonistas:[antagId] });
-    checklistConfig.custom[sysKey][otroListKey].push({ id: antagId, text: antagText, antagonistas:[id] });
-  } else {
-    checklistConfig.custom[sysKey][listKey].push({ id, text, antagonistas:[] });
-  }
-  // Solo un signo NORMAL nuevo queda tildado de entrada en la plantilla de
-  // signos normales por defecto ("Paciente estable / en observación"), para
-  // que esa plantilla se vaya completando. Una ALTERACIÓN nueva (kind='alt')
-  // no se tilda sola ahí: tildar de entrada un hallazgo patológico en la
-  // plantilla del paciente sano generaba redacciones contradictorias/con
-  // frases sueltas (el hallazgo patológico nuevo aparecía a la vez que el
-  // signo normal ya existente). Las alteraciones nuevas quedan igual
-  // disponibles en el checklist, listas para tildarlas a mano en el paciente
-  // que corresponda.
-  // Los ítems nuevos quedan SIN marcar para todos los pacientes: se tildan solo donde hacen falta.
-  setDefaultChecked(sysKey, kind, id, false);
+  const alcance = preguntarAlcance('Agregar «' + text + (antagText ? '» y «' + antagText : '') + '»');
+  agregarFraseConAlcance(sysKey, kind, text, antagText, alcance);
   input.value = '';
   if(antagInput) antagInput.value = '';
-  saveCustomLocal();
   renderEvolBuilder(getSelected());
 });
 
@@ -4187,15 +4216,9 @@ document.body.addEventListener('change', (e)=>{
   const text = e.target.value;
   if(!text) return;
   const sysKey = e.target.dataset.sys, kind = e.target.dataset.kind;
-  if(!checklistConfig.custom) checklistConfig.custom = {};
-  if(!checklistConfig.custom[sysKey]) checklistConfig.custom[sysKey] = {normal:[], alteraciones:[]};
-  const listKey = kind === 'normal' ? 'normal' : 'alteraciones';
-  const idNuevo = 'custom_'+Date.now();
-  checklistConfig.custom[sysKey][listKey].push({ id:idNuevo, text: text, antagonistas:[] });
-  // Igual que al agregar un ítem a mano: solo se tilda solo de entrada si es
-  // un signo NORMAL (ver nota en el listener de "addCustomBtn").
-  setDefaultChecked(sysKey, kind, idNuevo, false);   // nuevo = sin marcar para todos
-  saveCustomLocal();
+  const alcance = preguntarAlcance('Agregar «' + text + '»');
+  agregarFraseConAlcance(sysKey, kind, text, '', alcance);
+  e.target.value = '';
   renderEvolBuilder(getSelected());
 });
 
@@ -4243,6 +4266,28 @@ document.body.addEventListener('click', (e)=>{
     if(nuevo === null) return;
     const texto = nuevo.trim();
     if(!texto) return;
+    const alcance = preguntarAlcance('Cambiar la frase a «' + texto + '»');
+    if(alcance === 'paciente'){
+      const pSel = getSelected();
+      const ip = asegurarItemsPropios(pSel);
+      const lk = kind==='normal' ? 'normal' : 'alteraciones';
+      const propioItem = ip.items[sysKey] && (ip.items[sysKey][lk]||[]).find(i=>i.id===id);
+      if(propioItem) propioItem.text = texto;
+      else { if(!ip.edits[sysKey]) ip.edits[sysKey] = {}; ip.edits[sysKey][id] = texto; }
+      schedulePatientSave(pSel, 300);
+      renderEvolBuilder(pSel);
+      if(typeof updateDraftPreview === 'function') updateDraftPreview(pSel);
+      return;
+    }
+    /* General: vale para todos. Las redacciones propias de un paciente tienen prioridad sobre la general
+       (ver getMergedItems), así que se quitan de TODOS los pacientes para este ítem. */
+    (typeof patients !== 'undefined' ? patients : []).forEach(pp=>{
+      const e2 = pp && pp.itemsPropios && pp.itemsPropios.edits && pp.itemsPropios.edits[sysKey];
+      if(e2 && Object.prototype.hasOwnProperty.call(e2, id)){
+        delete e2[id];
+        schedulePatientSave(pp, 300);
+      }
+    });
     if(!checklistConfig.edits) checklistConfig.edits = {};
     if(!checklistConfig.edits[sysKey]) checklistConfig.edits[sysKey] = {};
     checklistConfig.edits[sysKey][id] = texto;
