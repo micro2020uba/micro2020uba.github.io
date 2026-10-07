@@ -4142,10 +4142,56 @@ document.body.addEventListener('input', (e)=>{
 });
 
 /* ================= Alcance de un cambio manual: todos los pacientes o solo el abierto ================= */
-function preguntarAlcance(que){
+/* Diálogo propio con dos botones grandes (Todos los pacientes / Solo este paciente) y Cancelar.
+   Devuelve una Promise: 'todos' | 'paciente' | null (si se cancela). modo: 'editar' | 'agregar'. */
+function preguntarAlcance(que, modo){
   const p = (typeof getSelected === 'function') ? getSelected() : null;
-  if(!p) return 'todos';
-  return confirm(que + '\n\nAceptar  = para TODOS los pacientes (cada uno conserva sus propios tildes)\nCancelar = solo para este paciente (' + (p.cama || 'paciente actual') + ')') ? 'todos' : 'paciente';
+  if(!p) return Promise.resolve('todos');
+  if(!document.getElementById('alcanceDlgCss')){
+    const st = document.createElement('style'); st.id = 'alcanceDlgCss';
+    st.textContent = `
+      .alcance-ov{position:fixed;inset:0;background:rgba(15,20,19,.55);display:flex;align-items:center;justify-content:center;z-index:100000;padding:14px;}
+      .alcance-box{background:var(--panel,#fff);color:var(--ink,#1c2321);border:1px solid var(--ink,#1c2321);border-radius:6px;max-width:460px;width:100%;padding:18px 18px 14px;box-shadow:0 10px 30px rgba(0,0,0,.35);font-family:inherit;}
+      .alcance-box h3{margin:0 0 6px;font-size:16px;}
+      .alcance-que{margin:0 0 14px;font-size:13px;color:var(--muted,#6b6a63);word-break:break-word;}
+      .alcance-op{display:block;width:100%;text-align:left;margin:0 0 10px;padding:11px 13px;border:1.5px solid var(--accent,#2f5d5a);border-radius:5px;background:transparent;color:var(--ink,#1c2321);cursor:pointer;font-family:inherit;}
+      .alcance-op b{display:block;font-size:14px;color:var(--accent,#2f5d5a);margin-bottom:3px;}
+      .alcance-op span{display:block;font-size:12px;line-height:1.35;color:var(--muted,#6b6a63);}
+      .alcance-op:hover,.alcance-op:focus{background:var(--accent,#2f5d5a);outline:none;}
+      .alcance-op:hover b,.alcance-op:focus b,.alcance-op:hover span,.alcance-op:focus span{color:#fff;}
+      .alcance-cancel{display:block;margin:2px auto 0;background:none;border:none;color:var(--muted,#6b6a63);font-size:12px;text-decoration:underline;cursor:pointer;padding:6px 10px;}
+    `;
+    document.head.appendChild(st);
+  }
+  const esc = (typeof escapeHtml === 'function') ? escapeHtml : (t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])));
+  const cama = p.cama || 'paciente actual';
+  const dTodos = modo === 'agregar'
+    ? 'La frase queda disponible en el checklist de todos los pacientes, sin tildar. Cada paciente la tilda si le corresponde.'
+    : 'La nueva redacción se ve en el checklist de todos los pacientes. Cada uno conserva sus propios tildes.';
+  const dSolo = modo === 'agregar'
+    ? 'La frase aparece únicamente en el checklist de ' + esc(cama) + '. Los demás pacientes no la ven.'
+    : 'La nueva redacción cambia únicamente en ' + esc(cama) + '. Los demás pacientes siguen con la frase anterior.';
+  return new Promise(resolve=>{
+    const ov = document.createElement('div');
+    ov.className = 'alcance-ov';
+    ov.innerHTML = `<div class="alcance-box" role="dialog" aria-modal="true" aria-label="Alcance del cambio">
+      <h3>${modo === 'agregar' ? '¿Dónde agregar esta frase?' : '¿Dónde aplicar este cambio?'}</h3>
+      <p class="alcance-que">${esc(que)}</p>
+      <button type="button" class="alcance-op" data-r="todos"><b>👥 Todos los pacientes</b><span>${dTodos}</span></button>
+      <button type="button" class="alcance-op" data-r="paciente"><b>👤 Solo este paciente (${esc(cama)})</b><span>${dSolo}</span></button>
+      <button type="button" class="alcance-cancel" data-r="">Cancelar</button>
+    </div>`;
+    const cerrar = r=>{ document.removeEventListener('keydown', onKey, true); ov.remove(); resolve(r || null); };
+    const onKey = ev=>{ if(ev.key === 'Escape'){ ev.preventDefault(); ev.stopPropagation(); cerrar(null); } };
+    ov.addEventListener('click', ev=>{
+      const b = ev.target.closest && ev.target.closest('[data-r]');
+      if(b) cerrar(b.dataset.r);
+      else if(ev.target === ov) cerrar(null);
+    });
+    document.addEventListener('keydown', onKey, true);
+    document.body.appendChild(ov);
+    const primero = ov.querySelector('.alcance-op'); if(primero) primero.focus();
+  });
 }
 function asegurarItemsPropios(p){
   if(!p.itemsPropios) p.itemsPropios = { items:{}, edits:{} };
@@ -4193,7 +4239,7 @@ function agregarFraseConAlcance(sysKey, kind, text, antagText, alcance){
    existe para todo el checklist: tildar una destilda automáticamente a la otra
    ("Antagonistas: desmarcado automático", más abajo), y cada una se redacta en
    el lugar de la oración que le toca a su lista (normal/alteraciones). */
-document.body.addEventListener('click', (e)=>{
+document.body.addEventListener('click', async (e)=>{
   if(!e.target.classList || !e.target.classList.contains('addCustomBtn')) return;
   const sysKey = e.target.dataset.sys;
   const kind = e.target.dataset.kind;
@@ -4203,7 +4249,8 @@ document.body.addEventListener('click', (e)=>{
   const text = input.value.trim();
   const antagText = antagInput ? antagInput.value.trim() : '';
   if(!text) return;
-  const alcance = preguntarAlcance('Agregar «' + text + (antagText ? '» y «' + antagText : '') + '»');
+  const alcance = await preguntarAlcance('Agregar «' + text + (antagText ? '» y «' + antagText : '') + '»', 'agregar');
+  if(!alcance) return;   // canceló: el texto queda escrito en el campo
   agregarFraseConAlcance(sysKey, kind, text, antagText, alcance);
   input.value = '';
   if(antagInput) antagInput.value = '';
@@ -4211,21 +4258,23 @@ document.body.addEventListener('click', (e)=>{
 });
 
 /* Agregar al checklist una frase elegida del banco de sugeridas */
-document.body.addEventListener('change', (e)=>{
+document.body.addEventListener('change', async (e)=>{
   if(!e.target.classList || !e.target.classList.contains('suggestSelect')) return;
   const text = e.target.value;
   if(!text) return;
+  const selEl = e.target;
   const sysKey = e.target.dataset.sys, kind = e.target.dataset.kind;
-  const alcance = preguntarAlcance('Agregar «' + text + '»');
+  const alcance = await preguntarAlcance('Agregar «' + text + '»', 'agregar');
+  if(!alcance){ selEl.value = ''; return; }
   agregarFraseConAlcance(sysKey, kind, text, '', alcance);
-  e.target.value = '';
+  selEl.value = '';
   renderEvolBuilder(getSelected());
 });
 
 /* ================= Editar / eliminar / reordenar / marcar por defecto ================= *
    Estos cambios son globales (afectan el vocabulario compartido de todos los pacientes
    y dispositivos), no algo por-paciente — por eso se guardan en checklistConfig. */
-document.body.addEventListener('click', (e)=>{
+document.body.addEventListener('click', async (e)=>{
   const btn = e.target.closest ? e.target.closest('.chkEditBtn,.chkDelBtn,.chkUpBtn,.chkDownBtn,.chkDefaultBtn,.chkInfoBtn') : null;
   if(!btn || btn.disabled) return;
   const wrap = btn.closest('.chk-actions');
@@ -4266,7 +4315,8 @@ document.body.addEventListener('click', (e)=>{
     if(nuevo === null) return;
     const texto = nuevo.trim();
     if(!texto) return;
-    const alcance = preguntarAlcance('Cambiar la frase a «' + texto + '»');
+    const alcance = await preguntarAlcance('Cambiar la frase a «' + texto + '»', 'editar');
+    if(!alcance) return;   // canceló: no se cambia nada
     if(alcance === 'paciente'){
       const pSel = getSelected();
       const ip = asegurarItemsPropios(pSel);
