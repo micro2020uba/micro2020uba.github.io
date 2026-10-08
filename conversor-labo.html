@@ -51,7 +51,7 @@
   .note{font-size:10.5px;color:var(--muted);margin-top:12px;line-height:1.5;}
 
   .checklist-wrap{margin-top:18px;border-top:1px solid var(--line-soft);padding-top:12px;}
-  .checklist-wrap summary{cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-dark);margin:0 0 4px;user-select:none;}
+  .checklist-wrap summary{cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-dark);margin:0 0 4px;}
   .checklist-toolbar{display:flex;gap:8px;margin:10px 0 12px;}
   .checklist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;}
   .catgroup{border:1px solid var(--line-soft);border-radius:3px;padding:8px 10px;background:var(--field-bg);}
@@ -82,7 +82,6 @@
   .gascalc-grid label.gc-chk{flex-direction:row;align-items:center;gap:6px;align-self:end;padding-bottom:6px;}
   .gascalc-grid label.gc-chk input{width:auto;}
 
-  /* ===== Pedido de laboratorio ===== */
   .pedido-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0 12px;}
   .fb-status{font-size:10.5px;font-family:'IBM Plex Mono',monospace;color:var(--muted);}
   .fb-status.ok{color:var(--accent-dark);}
@@ -119,7 +118,6 @@
   .pedido-grid.has-sel .pf-here.hide{display:none;}
   .pf-movebar select{font-size:11.5px;border:1px solid var(--line-soft);background:#fff;border-radius:2px;padding:2px 4px;max-width:100%;}
 
-  /* Calcio corregido: ventana emergente */
   .ca-overlay[hidden]{display:none !important;}
   .ca-overlay{position:fixed;inset:0;background:rgba(35,48,44,.55);display:flex;align-items:center;justify-content:center;z-index:9999;padding:14px;}
   .ca-dialog{position:relative;background:#fff;border:2px solid var(--ink);border-radius:4px;box-shadow:0 10px 30px rgba(0,0,0,.3);width:100%;max-width:420px;padding:16px 18px 14px;font-family:'IBM Plex Sans',Arial,sans-serif;color:var(--ink);}
@@ -153,6 +151,53 @@
   .al-item ul{margin:3px 0 4px 18px;padding:0;}
   .al-item li{margin-bottom:2px;}
   #laboCaBtn[hidden]{display:none !important;}
+
+  .gr-top{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin:10px 0;}
+  .gr-top label{display:flex;flex-direction:column;gap:3px;font-size:10.5px;color:var(--muted);font-weight:600;}
+  .gr-top input{font-family:'IBM Plex Sans',Arial,sans-serif;font-size:13px;padding:6px 8px;border:1px solid var(--line-soft);background:var(--field-bg);border-radius:2px;}
+  #grPaciente{width:280px;max-width:100%;} #grCama{width:90px;}
+  #grInput{min-height:120px;font-family:'IBM Plex Mono',monospace;font-size:12px;padding:8px;border:1px solid var(--line-soft);background:var(--field-bg);border-radius:2px;resize:vertical;width:100%;}
+  #grStatus{font-size:11px;color:var(--accent-dark);font-family:'IBM Plex Mono',monospace;min-height:14px;}
+  #grStatus.warn{color:#a15c00;}
+  .gr-box{margin-top:10px;border:1px solid var(--line-soft);border-radius:3px;padding:8px 10px;background:var(--field-bg);font-size:11.5px;}
+  .gr-box:empty{display:none;}
+  .gr-box h5{margin:0 0 5px;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-dark);}
+  .gr-lab{display:flex;align-items:center;gap:8px;padding:3px 0;border-bottom:1px solid var(--line-soft);flex-wrap:wrap;}
+  .gr-lab:last-child{border-bottom:none;}
+  .gr-lab input[type=date]{font-size:11.5px;padding:2px 4px;border:1px solid var(--line-soft);border-radius:2px;background:#fff;}
+  .gr-lab .meta{color:var(--muted);flex:1;min-width:160px;}
+  .gr-conf{padding:4px 0;border-bottom:1px solid var(--line-soft);display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+  .gr-conf:last-child{border-bottom:none;}
+  .gr-conf b{min-width:150px;}
+  .gr-opt{border:1px solid var(--line-soft);background:#fff;border-radius:11px;padding:1px 9px;font-size:11.5px;cursor:pointer;}
+  .gr-opt.on{background:var(--accent-dark);border-color:var(--accent-dark);color:#fff;}
+  .gr-chip{display:inline-block;border:1px solid var(--line-soft);background:#fff;border-radius:11px;padding:1px 9px;margin:2px 4px 2px 0;font-size:11.5px;cursor:pointer;user-select:none;}
+  .gr-chip{cursor:grab;}
+  .gr-chip .gr-mv{color:var(--muted);padding:0 3px;font-size:10px;cursor:pointer;}
+  .gr-chip .gr-mv:hover{color:var(--accent-dark);}
+  .gr-chip .gr-lbl{padding:0 2px;cursor:pointer;}
+  .gr-chip.dragover{outline:2px dashed var(--accent-dark);}
+  .gr-chip.off{text-decoration:line-through;color:var(--muted);background:transparent;border-style:dashed;}
+  .gr-inlabel{font-size:10.5px;color:var(--muted);font-weight:600;margin:4px 0;}
+  .gr-fio{display:inline-flex;gap:4px;align-items:center;margin:2px 12px 2px 0;font-weight:600;}
+  .gr-fio input{width:64px;font-size:12px;padding:2px 5px;border:1px solid var(--line-soft);border-radius:2px;background:#fff;}
+  .gr-box .hint{color:var(--muted);margin-top:4px;}
+  .gr-preview td[contenteditable]:hover{background:#eef5f3;}
+  .gr-preview td[contenteditable]:focus{outline:2px solid var(--accent-dark);outline-offset:-2px;background:#fff;}
+  .gr-preview{overflow-x:auto;padding:12px 0 2px;background:#e9e6dd;border:1px solid var(--line-soft);border-radius:3px;margin-top:12px;}
+  .gr-preview-inner{width:max-content;margin:0 auto;padding:0 12px;}
+  .gr-pagenote{font-size:10.5px;color:var(--muted);text-align:center;margin:0 0 4px;font-family:'IBM Plex Mono',monospace;}
+.gr-page{width:210mm;height:297mm;background:#fff;color:#000;margin:0 auto 14px;padding:8mm 8mm 0;box-sizing:border-box;font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:14pt;line-height:1;overflow:hidden;font-weight:400;}
+.gr-hd{display:flex;height:6.8mm;align-items:center;font-weight:700;white-space:nowrap;}
+.gr-hd .u{text-decoration:underline;}
+.gr-hd .l{width:62%;} .gr-hd .r{width:38%;}
+.gr-hd .v{font-weight:400;text-decoration:none;}
+.gr-hd2{margin-bottom:1mm;}
+.gr-table{width:194mm;table-layout:fixed;border-collapse:separate;border-spacing:0;border-left:.3mm solid #000;border-top:.3mm solid #000;}
+.gr-table td{height:5.8mm;padding:0 .8mm;box-sizing:border-box;border-right:.3mm solid #000;border-bottom:.3mm solid #000;white-space:nowrap;overflow:hidden;text-align:left;vertical-align:middle;line-height:1;color:#000;font-weight:400;}
+.gr-table td.lb{font-weight:700;}
+.gr-table td.lx{font-weight:400;}
+.gr-table td.lr{text-align:right;}
 </style>
 </head>
 <body>
@@ -194,10 +239,10 @@
         </div>
         <div class="out-footer">
           <button type="button" class="btn-secondary" id="laboCopiarBtn">Copiar con formato</button>
+          <button type="button" class="btn-secondary" id="laboGrillaBtn" title="Fuerza la carga de este laboratorio en la Grilla Laboratorio (sección 7); normalmente se carga sola">Agregar a la grilla</button>
           <button type="button" class="btn-secondary" id="laboCaBtn" hidden title="Calcular el calcio corregido con la albúmina del paciente">Calcular calcio corregido con albúmina</button>
           <span id="laboStatus"></span>
         </div>
-        <p class="note">El texto se convierte solo, apenas pegás o editás algo (no hace falta ningún botón). Tanto "Copiar con formato" como una selección manual (Ctrl+C) copian en negro puro y rojo puro, sin ningún fondo de color, para pegar directo en Google Docs sin manchas amarillentas. El texto de arriba también es editable antes de copiarlo. Arriba va el renglón completo (todos los parámetros habilitados); abajo, separado por una línea en blanco, va el renglón resumen (listado core + hallazgos alterados fuera de lista).</p>
       </div>
     </div>
 
@@ -253,6 +298,31 @@
       <p class="note">Rangos orientativos para adultos, tomados de bibliografía general. Cada laboratorio valida su propio rango según el método y el equipo que usa: el que manda siempre es el que figura en el informe (por eso el programa calcula "alterado/normal" con el rango que trae cada laboratorio, no con esta tabla).</p>
       <div class="refrange-grid" id="laboRefRangeGrid"></div>
     </details>
+
+    <details class="checklist-wrap" id="grillaDetails">
+      <summary>7. Grilla Laboratorio (hoja A4 para imprimir)</summary>
+      <div class="gr-top">
+        <label>Paciente <input type="text" id="grPaciente" placeholder="Apellido, Nombre" autocomplete="off"></label>
+        <label>Cama <input type="text" id="grCama" placeholder="109" autocomplete="off"></label>
+      </div>
+      <div class="gr-inlabel">Texto que se está cargando en la grilla. Se completa solo con lo que pegás en la sección 1 (o con lo que pegues acá) y podés corregirlo: al editarlo, la grilla se actualiza sola.</div>
+      <textarea id="grInput" placeholder="Pegá acá un laboratorio crudo o líneas ya convertidas (se pueden pegar varios juntos)..."></textarea>
+      <div class="controls">
+        <button type="button" class="btn-primary" id="grNuevoBtn" title="Deja en blanco la caja para pegar otro laboratorio del mismo paciente; los ya cargados se conservan">Agregar nuevo labo</button>
+        <button type="button" class="btn-primary" id="grAgregarBtn">Agregar a la grilla</button>
+        <button type="button" class="btn-secondary" id="grVaciarBtn">Vaciar grilla (nuevo paciente)</button>
+        <span id="grStatus"></span>
+      </div>
+      <div class="gr-box" id="grLabs"></div>
+      <div class="gr-box" id="grConflicts"></div>
+      <div class="gr-box" id="grExtras"></div>
+      <div class="gr-box" id="grManual"></div>
+      <div class="controls" style="margin-top:12px;">
+        <button type="button" class="btn-primary" id="grPdfBtn">Descargar PDF (A4)</button>
+        <button type="button" class="btn-secondary" id="grPrintBtn">Imprimir / guardar como PDF</button>
+      </div>
+      <div class="gr-preview"><div class="gr-preview-inner" id="grPreview"></div></div>
+    </details>
   </div>
 </div>
 
@@ -280,6 +350,17 @@
   </div>
 </div>
 
+<div id="colModal" class="ca-overlay" hidden>
+  <div class="ca-dialog" role="alertdialog" aria-modal="true" aria-labelledby="colTitle">
+    <h4 id="colTitle">¿En qué columna va este laboratorio?</h4>
+    <p id="colMsg"></p>
+    <div class="ca-actions" style="flex-direction:column;align-items:stretch;">
+      <button type="button" class="ca-ok" id="colMisma"></button>
+      <button type="button" id="colOtra"></button>
+    </div>
+  </div>
+</div>
+
 <div id="alModal" class="al-overlay" hidden>
   <div class="al-dialog" role="alertdialog" aria-modal="true" aria-labelledby="alHead">
     <button type="button" class="al-close" id="alClose" aria-label="Cerrar">&times;</button>
@@ -289,20 +370,7 @@
 </div>
 
 <script>
-/* =========================================================================
-   FIREBASE — pedido de laboratorio (sección 3)
-   =========================================================================
-   Mismo proyecto de Firebase que el resto de las herramientas (pases-c121c).
-   Se usa Cloud Firestore, documento: config/laboPedido — la colección
-   "config" ya está habilitada en tus reglas actuales, así que no hace
-   falta agregar nada en la consola de Firebase.
 
-   Las reglas piden request.auth != null, y esta página no tiene login
-   (es de acceso libre, como la calculadora de balance hídrico), así que
-   se inicia sesión anónima (signInAnonymously) apenas carga la página.
-   Si algún día sacás el projectId de acá, el pedido sigue funcionando
-   pero se guarda solo en este navegador (localStorage).
-   ========================================================================= */
 const LABO_FIREBASE_CONFIG = {
   apiKey: 'AIzaSyDrBZV9QSlG27Sl0rXbwP7HGWBHQTYe56I',
   authDomain: 'pases-c121c.firebaseapp.com',
@@ -465,7 +533,6 @@ function fld(id){ return document.getElementById(id); }
     {code:'CPK',       cat:'cardiaco', kind:'std', l1:true, l2:true, aliases:[/\bcreatinfosfoquinasa\b/i, /\bcpk\b/i]},
     {code:'Troponina', cat:'cardiaco', kind:'std', l1:true, l2:true, aliases:[/\btroponina\s+i\s+cardiaca\s+ultrasensible\b/i, /\btroponina\s+i\b/i, /\btroponina\b/i]},
 
-
     {code:'Na', cat:'ionograma', kind:'std', l1:true, l2:true, aliases:[/\bsodio\b/i]},
     {code:'K',  cat:'ionograma', kind:'std', l1:true, l2:true, aliases:[/\bpotasio\b/i]},
     {code:'CL', cat:'ionograma', kind:'std', l1:true, l2:true, aliases:[/\bcloro\b/i]},
@@ -553,7 +620,6 @@ function fld(id){ return document.getElementById(id); }
     {code:'Ac Lac',      cat:'acidobase', kind:'std', l1:false, l2:true, aliases:[/\bacido l[aá]ctico\b/i]},
   ];
 
-  /* Códigos que NUNCA van al renglón LABORATORIO PARCIAL (aunque estén alterados). Siguen en el COMPLETO y en las explicaciones. */
   const LABO_NEVER_PARCIAL = new Set(['RDW']);
 
   const LABO_CATS = [
@@ -581,7 +647,6 @@ function fld(id){ return document.getElementById(id); }
     {id:'orina24', label:'Orina de 24 horas', refOnly:true},
   ];
 
-  /* Filas que empiezan con "§" son subtítulos dentro de un grupo. */
   const LABO_REF_RANGES = {
     hemograma: [
       ['GB','4,0 - 11,0 10³/mm³'],
@@ -630,7 +695,7 @@ function fld(id){ return document.getElementById(id); }
       ['K','3,5 - 5,1 mEq/L (hipokalemia leve 3-3,5 · moderada 2,5-3 · severa <2,5)'],
       ['CL','98 - 107 mEq/L'],
       ['CL corregido por Na','Cl × 140 / Na: 98 - 107 (si es normal, la hipercloremia es proporcional a la hipernatremia y no indica acidosis hiperclorémica)'],
-      ['Ca','8,5 - 10,5 mg/dL'],
+      ['Calcemia','8,5 - 10,5 mg/dL'],
       ['Calcio corregido','Ca + 0,8 × (4 − Albúmina) = 8,5 - 10,5 mg/dL (se informa al final de LABORATORIO COMPLETO y PARCIAL cuando la calcemia está alterada)'],
       ['Ca ion','4,6 - 5,3 mg/dL (1,15 - 1,32 mmol/L)'],
       ['P','2,5 - 4,5 mg/dL'],
@@ -941,7 +1006,7 @@ function fld(id){ return document.getElementById(id); }
     'limite superior','ideal','deseable','aceptable','muy alto','alto riesgo',
     'bajo','nivel no diabetico','diabetico','estadio','confirmado por',
     'inadecuado','multiplicar','raza negra','bmi','indice de riesgo','riesgo',
-    'frotis','biuret','tampon amp','pnpp','dpd','sampson','gamma glutamil',
+    'frotis','biuret','ninos','peso menor','mayor a','menor a','tampon amp','pnpp','dpd','sampson','gamma glutamil',
   ];
 
   function laboFmtNumber(n){
@@ -1018,8 +1083,7 @@ function fld(id){ return document.getElementById(id); }
           if(re.lastIndex === m.index) re.lastIndex++;
           continue;
         }
-        // Gana la palabra que aparece PRIMERO en la ventana (así "Reactivo ... No reactivo"
-        // de estudios consecutivos, ej. COVID / Influenza A / Influenza B, no se confunde).
+
         const mNeg = win.match(/\bno\s+reactivo\b|\bnegativo\b/);
         const mPos = win.match(/\breactivo\b|\bpositivo\b/);
         if(mNeg && (!mPos || mNeg.index <= mPos.index)){
@@ -1033,7 +1097,7 @@ function fld(id){ return document.getElementById(id); }
     }
     return null;
   }
-  // Resultado que puede venir numérico (con rango) o cualitativo (Negativo / Positivo / No reactivo)
+
   function laboExtractNumQual(flat, param, sex){
     const QRE = /\b(no\s+reactivo|reactivo|negativo|positivo|d[eé]bilmente\s+positivo|indeterminado|dudoso)\b/i;
     for(const rx of param.aliases){
@@ -1826,7 +1890,9 @@ function fld(id){ return document.getElementById(id); }
     'ALB':'Albúmina',
     'GGT':'Gamma-Glutamil Transpeptidasa',
   };
+  function laboDispCode(code){ return code==='Ca' ? 'Calcemia' : code; }
   function laboCodeLabel(code){
+    if(code==='Ca') return 'Calcemia';
     const title = LABO_ABBR_TITLES[code];
     return title ? `<abbr title="${title}" style="text-decoration:underline dotted;cursor:help;">${code}</abbr>` : code;
   }
@@ -1838,17 +1904,7 @@ function fld(id){ return document.getElementById(id); }
     const color = hcm==null ? '' : (hcm<27 ? 'hipocrómica' : 'normocrómica');
     return [size, color].filter(Boolean).join(' ');
   }
-  /* ---------------------------------------------------------------------
-     POTASIO — clasificación y conducta
-     Hipokalemia (<3,5 mEq/L): leve 3,0–3,4 · moderada 2,5–2,9 · severa/crítica <2,5
-       (especialmente con síntomas o alteraciones ECG).
-     Hiperkalemia (>5,0 mEq/L), según nivel y ECG:
-       leve 5,0–5,9 sin cambios ECG · moderada 5,0–5,9 con cambios ECG o 6,0–6,4 sin cambios ·
-       grave ≥6,5 con o sin cambios ECG, o 6,0–6,4 con alteraciones ECG significativas.
-     Tratamiento hipokalemia: leve → Kaon VO; moderada/severa → ClK + SO4Mg + cargas de ClK.
-     Usa, si están en el mismo laboratorio: Mg, HCO3, glucemia, CR/UREA/FG, CPK
-     y K urinario de 24 hs.
-  --------------------------------------------------------------------- */
+
   function laboBuildKalemia(f, byCode, ctx){
     ctx = ctx || {};
     const K = laboToNumber(f.text);
@@ -1865,7 +1921,7 @@ function fld(id){ return document.getElementById(id); }
     const acidosisMet = hco3!=null && hco3 < 22;
     const alcalosisMet = hco3!=null && hco3 > 26;
     const glucNum = num('GLUC');
-    const glucAlta = dirOf('GLUC')==='alto' && glucNum!=null && glucNum >= 250; // hiperglucemia grave (posible cetoacidosis / déficit de insulina)
+    const glucAlta = dirOf('GLUC')==='alto' && glucNum!=null && glucNum >= 250;
     const crF = byCode['CR'], ureaF = byCode['UREA'], fgF = byCode['FG'];
     const renalAlt = !!((crF && crF.dir==='alto') || (ureaF && ureaF.dir==='alto') || (fgF && fgF.dir==='bajo'));
     const renalTxt = [crF && `CR ${crF.text}`, ureaF && `UREA ${ureaF.text}`, fgF && `FG ${fgF.text}`].filter(Boolean).join(', ');
@@ -2042,12 +2098,69 @@ function fld(id){ return document.getElementById(id); }
     return out.join('');
   }
 
+  function laboBuildNaKSplit(code, f, byCode, ctx){
+    const v = laboToNumber(f.text);
+    if(v==null) return null;
+    const full = code==='Na' ? laboBuildNatremia(f, byCode, ctx) : laboBuildKalemia(f, byCode, ctx);
+    if(!full) return null;
+    const detail = full.replace(/^<br>/,'').replace(/(<br>)+$/,'');
+    const ver = nombre => ` <i>Hay una explicación más detallada sobre la ${nombre} al final de este informe.</i>`;
+    let dir = f.dir;
+    if(code==='Na'){
+      if(!dir){ dir = v<135 ? 'bajo' : (v>145 ? 'alto' : null); }
+      if(!dir) return null;
+      const tag = laboRed(`Na ${f.text} mEq/L`);
+      if(dir==='bajo'){
+        if(v>=135) return {short:`${tag}: valor levemente por debajo del rango del laboratorio, sin criterio de hiponatremia (Na ≥135 mEq/L); se sugiere repetir el ionograma y revisar fármacos, ingesta de agua y volemia.`, detail:null};
+        const nivel = v>=130 ? 'leve' : (v>=125 ? 'moderada' : 'severa');
+        const rango = v>=130 ? '130–134 mEq/L' : (v>=125 ? '125–129 mEq/L' : '<125 mEq/L');
+        const cond = nivel==='leve'
+          ? 'Se sugiere evaluar volemia y osmolaridad plasmática, revisar fármacos (tiazidas, ISRS) y repetir el ionograma; la corrección debe ser lenta (no más de 8–10 mEq/L en 24 hs).'
+          : (nivel==='moderada'
+            ? 'Se sugiere control seriado del sodio, estudio de osmolaridad plasmática y urinaria con sodio urinario, y tratamiento según volemia y síntomas.'
+            : 'Situación de riesgo: evaluar síntomas neurológicos (convulsiones, coma) y, si los hay, tratar con NaCl 3% en monitoreo / UTI; corrección máxima de 8–10 mEq/L en 24 hs.');
+        return {short:`${tag}: <b>hiponatremia ${nivel}</b> (${rango}). ${cond}${ver('hiponatremia')}`, detail};
+      }
+      if(v<=145) return {short:`${tag}: valor levemente por encima del rango del laboratorio, sin criterio de hipernatremia (Na ≤145 mEq/L); se sugiere repetir el ionograma y valorar balance hídrico.`, detail:null};
+      const nivel = v<150 ? 'leve' : (v<160 ? 'moderada' : 'severa');
+      const rango = v<150 ? '146–149 mEq/L' : (v<160 ? '150–159 mEq/L' : '≥160 mEq/L');
+      return {short:`${tag}: <b>hipernatremia ${nivel}</b> (${rango}). Indica déficit de agua libre en la mayoría de los casos: se sugiere evaluar volemia, balance hídrico y diuresis, reponer agua libre (vía oral/SNG o dextrosa 5% EV) y controlar el ionograma (descenso de no más de 10–12 mEq/L en 24 hs).${nivel==='severa'?' Por el nivel de sodio, requiere monitoreo / UTI.':''}${ver('hipernatremia')}`, detail};
+    }
+
+    if(!dir){ dir = v<3.5 ? 'bajo' : (v>5.0 ? 'alto' : null); }
+    if(!dir) return null;
+    const tag = laboRed(`K ${f.text} mEq/L`);
+    if(dir==='bajo'){
+      if(v>=3.5) return {short:`${tag}: valor levemente por debajo del rango del laboratorio, sin criterio de hipokalemia (K ≥3,5 mEq/L); se sugiere repetir la kalemia y revisar causas (diuréticos, diarrea, vómitos, baja ingesta).`, detail:null};
+      const nivel = v>=3 ? 'leve' : (v>=2.5 ? 'moderada' : 'severa');
+      const rango = v>=3 ? '3,0–3,4 mEq/L' : (v>=2.5 ? '2,5–2,9 mEq/L' : '<2,5 mEq/L');
+      const mgF = byCode['Mg'];
+      const mgTxt = mgF && mgF.dir==='bajo' ? `, con hipomagnesemia asociada (Mg ${mgF.text} mg/dL), que debe corregirse en simultáneo` : '';
+      const cond = nivel==='leve'
+        ? 'Se sugiere ECG, reposición por vía oral (Kaon), control de la kalemia y corrección de la causa.'
+        : (nivel==='moderada'
+          ? 'Se sugiere ECG con monitoreo, reposición endovenosa de ClK junto con sulfato de Mg y control seriado de la kalemia.'
+          : 'Situación de riesgo arritmogénico: ECG y monitoreo cardíaco continuo, reposición endovenosa de ClK + sulfato de Mg (preferentemente por vía central) y control seriado de la kalemia.');
+      return {short:`${tag}: <b>hipokalemia ${nivel}</b> (${rango})${mgTxt}. ${cond}${ver('hipokalemia')}`, detail};
+    }
+    if(v<=5.0) return {short:`${tag}: valor levemente por encima del rango del laboratorio, sin criterio de hiperkalemia (K ≤5,0 mEq/L); se sugiere repetir la kalemia, descartar hemólisis y revisar fármacos.`, detail:null};
+    const tipo = v>=6.5 ? 'grave' : (v>=6 ? 'moderada' : 'leve');
+    const rango = v>=6.5 ? '≥6,5 mEq/L' : (v>=6 ? '6,0–6,4 mEq/L' : '5,0–5,9 mEq/L');
+    const cond = tipo==='leve'
+      ? 'Se sugiere descartar pseudohiperkalemia (hemólisis), realizar ECG, suspender fármacos hiperkalemiantes y repetir la kalemia.'
+      : (tipo==='moderada'
+        ? 'Requiere ECG y monitoreo cardíaco, suspender fármacos hiperkalemiantes y medidas para reducir el potasio (insulina-glucosa, salbutamol, furosemida o quelantes); gluconato de calcio si el ECG tiene cambios.'
+        : 'Es una urgencia: ECG inmediato con monitoreo, gluconato de calcio EV para estabilizar la membrana, insulina-glucosa y salbutamol para redistribuir el potasio, y evaluar hemodiálisis.');
+    return {short:`${tag}: <b>hiperkalemia ${tipo}</b> (${rango}). ${cond}${ver('hiperkalemia')}`, detail};
+  }
+
   function laboBuildExplicaciones(found, ctx){
     ctx = ctx || {};
     const byCode = {};
     found.forEach(f=>{ byCode[f.code] = f; });
     const consumed = new Set();
     const sentences = [];
+    const detalles = [];
 
     const hbF = byCode['HB'], htoF = byCode['HTO'];
     const tagV = (code,f)=> f ? (f.dir ? laboRed(`${code} ${f.text}`) : `${code} ${f.text}`) : null;
@@ -2178,7 +2291,7 @@ function fld(id){ return document.getElementById(id); }
         const oculta = mdir==='bajo' || !mdir ? ' (enmascarada por la hipoalbuminemia: la calcemia total no la mostraba)' : '';
         interp = `hipercalcemia verdadera ${grado}${oculta}: hidratación con solución fisiológica (ajustada a la función cardíaca y renal, diuresis objetivo 100-150 mL/h), suspender calcio, vitamina D, tiazidas y litio; solicitar PTH, PTHrP, 25-OH vitamina D, fosfatemia, función renal y ECG. PTH elevada o normal-alta orienta a hiperparatiroidismo primario; PTH suprimida orienta a neoplasia (PTHrP, proteinograma por mieloma), exceso de vitamina D o enfermedad granulomatosa${corr>=14 ? '. Por ser grave o sintomática, agregar calcitonina y un bifosfonato EV (ácido zoledrónico 4 mg) tras hidratar, según la función renal' : ''}${ionTxt}`;
       }
-      const etiqueta = caF.dir ? laboRed(`Ca ${caF.text}`) : `Ca ${caF.text}`;
+      const etiqueta = caF.dir ? laboRed(`Calcemia ${caF.text}`) : `Calcemia ${caF.text}`;
       const corrAbn = laboIsAbnormal(corr, rango);
       const corrTag = corrAbn ? laboRed(`CALCIO CORREGIDO ${laboFmtNumber(corr)}`) : `<b>CALCIO CORREGIDO ${laboFmtNumber(corr)}</b>`;
       const origen = cc.source==='manual' ? 'albúmina ingresada manualmente' : 'albúmina del laboratorio';
@@ -2193,19 +2306,15 @@ function fld(id){ return document.getElementById(id); }
     Object.keys(LABO_EXPLAIN).forEach(code=>{
       if(consumed.has(code)) return;
       const f = byCode[code];
-      if(code==='Na' && f){
-        const nBlock = laboBuildNatremia(f, byCode, ctx);
-        if(nBlock){ sentences.push(nBlock); consumed.add('Na'); return; }
-      }
-      if(code==='K' && f){
-        const kBlock = laboBuildKalemia(f, byCode, ctx);
-        if(kBlock){ sentences.push(kBlock); consumed.add('K'); return; }
+      if((code==='Na' || code==='K') && f){
+        const r = laboBuildNaKSplit(code, f, byCode, ctx);
+        if(r){ sentences.push(r.short); if(r.detail) detalles.push({code, html:r.detail}); consumed.add(code); return; }
       }
       if(!f || !f.dir) return;
       let txt = LABO_EXPLAIN[code][f.dir];
       if(typeof txt==='function') txt = txt(laboToNumber(f.text), f, byCode);
       if(!txt) return;
-      sentences.push(`${laboRed(`${code} ${f.text}`)}: ${txt}.`);
+      sentences.push(`${laboRed(`${laboDispCode(code)} ${f.text}`)}: ${txt}.`);
       consumed.add(code);
     });
 
@@ -2225,7 +2334,7 @@ function fld(id){ return document.getElementById(id); }
       sentences.push(`<b>Nota del laboratorio</b>: informa discrepancia de ${cods} con la muestra previa${ctx.discrep.hora?` de las ${ctx.discrep.hora} hs`:''}, y que la nueva muestra coincide con los antecedentes del paciente. Se toma como válida la última determinación (posible error preanalítico o de identificación en la anterior); si el valor no se corresponde con la clínica, repetir la muestra.`);
     }
 
-    return sentences;
+    return {items:sentences, detalles};
   }
 
   function laboR1(n){ return Math.round(n*10)/10; }
@@ -2235,7 +2344,7 @@ function fld(id){ return document.getElementById(id); }
     if(v.ph==null || v.pco2==null || v.hco3==null) return null;
     const ph=v.ph, pco2=v.pco2, hco3=v.hco3;
     const ven = !!v.venoso;
-    // Muestra venosa: pH 7,31-7,41 y pCO2 41-51 (basal ~45) en lugar de 7,35-7,45 y 35-45 (basal 40)
+
     const T = ven ? {phLo:7.31, phHi:7.41, pcoHi:51, pcoLo:41, base:45} : {phLo:7.35, phHi:7.45, pcoHi:45, pcoLo:35, base:40};
     const acidemia = ph<T.phLo, alcalemia = ph>T.phHi;
     let primario, compensacion = '';
@@ -2338,12 +2447,6 @@ function fld(id){ return document.getElementById(id); }
     return html;
   }
 
-  /* =====================================================================
-     CALCIO CORREGIDO POR ALBÚMINA
-     Ca corregido (mg/dL) = Ca + 0,8 × (4 − Albúmina [g/dL])
-     · Albúmina en el laboratorio → cálculo directo.
-     · Sin albúmina y calcemia alterada → ventana emergente para cargarla a mano.
-  ===================================================================== */
   const caState = {sig:null, ca:null, caLab:null, alb:null, range:null, shownSig:null, possible:false};
   function laboCaParse(v){
     if(v==null) return null;
@@ -2413,7 +2516,7 @@ function fld(id){ return document.getElementById(id); }
     btn.hidden = false;
     if(caState.shownSig !== info.sig){ caState.shownSig = info.sig; laboCaOpen(); }
   }
-  /* Cancelar → doble confirmación */
+
   function laboCaAskCancel(){ fld('caConfirm').hidden = false; }
   fld('caModalCa').addEventListener('input', laboCaOnInput);
   fld('caModalAlb').addEventListener('input', laboCaOnInput);
@@ -2437,7 +2540,6 @@ function fld(id){ return document.getElementById(id); }
     }
   });
 
-  /* ---- Ventana emergente de valores críticos: K <2,5 o ≥6,5 · glucemia <70 o >180 ---- */
   const LABO_ALERT_LIM = {kLow:2.5, kHigh:6.5, glucLow:70, glucHigh:180};
   let laboAlertSig = '';
   function laboAlertClose(){ fld('alModal').hidden = true; }
@@ -2493,8 +2595,8 @@ function fld(id){ return document.getElementById(id); }
         'No bajar más de 10–12 mEq/L en 24 hs en la forma crónica (≈0,5 mEq/L/h). Ionograma cada 4–6 hs.',
         'Buscar diabetes insípida (poliuria, osmolaridad urinaria), diuresis osmótica y pérdidas.']) });
     }
-    let ca = n('Ca'), caTxt = 'Ca';
-    if(ca!=null && n('ALB')!=null && n('ALB')<4){ ca = laboCaCalc(ca, n('ALB')); caTxt = 'Ca corregido'; }
+    let ca = n('Ca'), caTxt = 'Calcemia';
+    if(ca!=null && n('ALB')!=null && n('ALB')<4){ ca = laboCaCalc(ca, n('ALB')); caTxt = 'Calcio corregido'; }
     if(ca!=null && ca>3 && ca<25){
       if(ca<7) al.push({t:`HIPOCALCEMIA SEVERA — ${caTxt} ${fm(ca)} mg/dL (<7)`, h:li([
         'Buscar tetania, parestesias, laringoespasmo, convulsiones; <b>ECG</b> (QT prolongado) y monitoreo.',
@@ -2571,9 +2673,12 @@ function fld(id){ return document.getElementById(id); }
     fld('alClose').focus();
   }
 
-  function laboProcesar(){
-    let raw = $input.value;
+  function laboProcesar(rawOverride, captureOnly){
+
+    const modoGrilla = (captureOnly === true && typeof rawOverride === 'string');
+    let raw = modoGrilla ? rawOverride : $input.value;
     if(!raw.trim()){
+      if(modoGrilla) return null;
       $output.innerHTML = '';
       laboAlertSig = '';
       $status.textContent = 'Pegá primero el texto del laboratorio.';
@@ -2598,10 +2703,6 @@ function fld(id){ return document.getElementById(id); }
     }
     raw = laboStripNumericDump(raw);
 
-    /* Comentarios libres del laboratorio intercalados entre el valor y el rango
-       (p. ej. "se observa discrepancia con el valor correspondiente a la muestra de las 8 hrs...").
-       Se quitan para no cortar la lectura del rango de referencia, y se guarda a qué
-       determinación pertenecen para dejar una nota en la explicación. */
     const discrepCodes = [];
     let discrepHora = null;
     raw = raw.replace(/\bse\s+observa\s+discrepancia[^\t\r\n]*/gi, (m, off, whole)=>{
@@ -2668,7 +2769,7 @@ function fld(id){ return document.getElementById(id); }
 
     const found = [];
     LABO_MASTER.forEach(param=>{
-      if(!laboEnabled[laboEnabledKey(param)]) return;
+      if(!modoGrilla && !laboEnabled[laboEnabledKey(param)]) return;
       let text = null, abnormal = false, ok = false, pos = null, dir = null, rng = null;
       if(param.kind==='pct'){
         const r = laboExtractPct(flatMasked, param);
@@ -2709,7 +2810,7 @@ function fld(id){ return document.getElementById(id); }
         if(r){
           text = laboFmtNumber(r.value); abnormal = false; dir = null; ok = true; pos = r.pos;
           if(param.code==='RIN'){
-            /* Muchos informes no traen rango para el RIN: se usa 0,8-1,2 (sin anticoagulación) */
+
             const rg = (r.range && r.range.high!=null && r.range.high<=10) ? r.range : {low:0.8, high:1.2};
             if(r.value > rg.high){ abnormal = true; dir = 'alto'; }
           }
@@ -2717,11 +2818,11 @@ function fld(id){ return document.getElementById(id); }
       } else {
         const r = laboExtractStd(flatMasked, param, sex);
         if(r){
-          /* Rangos del laboratorio del hospital: urea hasta 47 mg/dL, creatinina 0,6-1,5 mg/dL */
+
           if(param.code==='UREA') r.range = {low:(r.range && isFinite(r.range.low)) ? r.range.low : -Infinity, high:47};
           if(param.code==='CR') r.range = {low:0.6, high:1.5};
           if(param.code==='FG'){
-            /* El informe no da un rango normal único sino estadios de ERC: se toma como alterado desde el estadio 3 que informa el laboratorio (ej. 30-59 → <60). */
+
             const m3 = flatMasked.slice(r.pos).match(/estad[ií]o\s*3[^\d]{0,20}(\d+(?:[.,]\d+)?)\s*-\s*(\d+(?:[.,]\d+)?)/i);
             const lim = m3 ? Math.ceil(parseFloat(m3[2].replace(',','.'))) : 59;
             if(!(r.range && isFinite(r.range.low))) r.range = {low: lim + 1, high: Infinity};
@@ -2745,6 +2846,7 @@ function fld(id){ return document.getElementById(id); }
     let cursor = 0;
     for(let i=0;i<rawLines.length;i++){
       let candidate = rawLines[i].trim();
+      if(/:\s*$/.test(candidate)) continue;
       candidate = candidate.replace(/^(grafico|evolucion|item)\s*/i,'').trim();
       const digitCut = candidate.search(/\d/);
       if(digitCut !== -1) candidate = candidate.slice(0, digitCut).trim();
@@ -2771,11 +2873,52 @@ function fld(id){ return document.getElementById(id); }
       const numRes = laboFindNumberAfter(flatMasked, afterPos, 30);
       if(!numRes || numRes.value==null) continue;
       const range = laboFindRangeAfter(flatMasked, numRes.endPos, 60);
-      if(!laboIsAbnormal(numRes.value, range)) continue;
+      if(modoGrilla){ if(!range) continue; }
+      else if(!laboIsAbnormal(numRes.value, range)) continue;
 
       seenNames.add(norm);
-      extras.push({code:candidate, text:laboFmtNumber(numRes.value), abnormal:true, l1:true, l2:false, pos:extraPos});
+      extras.push({code:candidate, text:laboFmtNumber(numRes.value), abnormal:laboIsAbnormal(numRes.value, range), l1:true, l2:false, pos:extraPos});
       cursor = numRes.endPos;
+    }
+
+    if(modoGrilla){
+
+      const especiales = [];
+      const ESP_ASC = {aspecto:'Asc Aspecto', glu:'Asc GLU', protT:'Asc Prot T', amilasa:'Asc Amilasa', ldh:'Asc LDH', bili:'Asc Bili', alb:'Asc ALB', leuco:'Asc GB', hema:'Asc Hemat.'};
+      LABO_LIQUIDOS_STUDIES.forEach(study=>{
+        const si = laboFindSeqIndex(flat, study.headerParts, 0);
+        if(si==null) return;
+        LABO_LIQUIDOS_FIELDS.forEach(field=>{
+          let r = null;
+          if(field.kind==='liqtext') r = laboExtractLiqAspecto(flat, field, si);
+          else if(field.kind==='liqleuco') r = laboExtractLiqLeuco(flat, field, si);
+          else if(field.kind==='liqhema') r = laboExtractLiqHema(flat, field, si);
+          else r = laboExtractLiqStd(flat, field, si);
+          if(!r || r.value==null || r.value==='' || !ESP_ASC[field.key]) return;
+          if(field.kind==='liqleuco'){
+            const n0 = String(r.value).match(/^[\d.,]+/);
+            if(n0) especiales.push({label:ESP_ASC.leuco, text:n0[0]});
+            const pm = String(r.value).match(/Predominio\s+([^)]+)/i);
+            if(pm) especiales.push({label:'Asc Predom.', text:pm[1].trim()});
+          } else especiales.push({label:ESP_ASC[field.key], text:String(r.value)});
+        });
+      });
+      const ESP_TXT = {color:'Or. Color', aspecto:'Or. Aspecto', densidad:'Or. Dens', ph:'Or. pH', proteinas:'Or. Prot', glucosa:'Or. GLU',
+        cetonas:'Or. Cetonas', pigbil:'Or. Pig bil', hb:'Or. Hb', nitritos:'Or. Nitrit.', urobil:'Or. Urobil', esterasa:'Or. Esteras.',
+        cel_epit:'Or. C epit.', hematies:'Or. Hemat.', leucos:'Or. Leuco', cilindros:'Or. Cilind.', cristales:'Or. Cristal.', mucus_s:'Or. Mucus',
+        bacterias:'Or. Bacter.', color2:'Or. Color', aspecto2:'Or. Aspecto', densidad2:'Or. Dens', ph2:'Or. pH', prot2:'Or. Prot', glu2:'Or. GLU',
+        cet2:'Or. Cetonas', bili2:'Or. Pig bil', hb2:'Or. Hb', nitritos2:'Or. Nitrit.', urobil2:'Or. Urobil', esterasa2:'Or. Esteras.',
+        celulas:'Or. Células', cel_redondas:'Or. C redond.', hematies2:'Or. Hemat.', leucos2:'Or. Leuco', germenes:'Or. Gérmenes',
+        levaduras:'Or. Levadur.', cristales2:'Or. Cristal.', cilindros2:'Or. Cilind.', mucus_m:'Or. Mucus', resultado:'Urocultivo'};
+      LABO_TEXT_STUDIES.forEach(study=>{
+        const scan = laboScanTextStudy(flat, study, LABO_TEXT_GLOBAL_STOPS);
+        if(!scan) return;
+        scan.byChunk.forEach(arr=>arr.forEach(e=>{
+          const lb = ESP_TXT[e.field.key];
+          if(lb && e.value) especiales.push({label:lb, text:String(e.value)});
+        }));
+      });
+      return {found, extras, fio2, esVenoso, sex, age, especiales};
     }
 
     const byPos = (a,b)=> (a.pos ?? 0) - (b.pos ?? 0);
@@ -2834,7 +2977,6 @@ function fld(id){ return document.getElementById(id); }
       return tested.length>0 && tested.every(f=>!f.abnormal);
     }).map(g=>g.label);
 
-    /* ---- Calcio corregido por albúmina ---- */
     const caF0 = found.find(f=>f.code==='Ca'), albF0 = found.find(f=>f.code==='ALB');
     const caLab = caF0 ? laboToNumber(caF0.text) : null;
     const albLab = albF0 ? laboToNumber(albF0.text) : null;
@@ -2934,9 +3076,13 @@ function fld(id){ return document.getElementById(id); }
     }
 
     const explicaciones = laboBuildExplicaciones(found, {sex: sex, venoso: esVenoso, orina24: orina24Result ? orina24Result.items : null, caCorr: caCorr, discrep: discrepCodes.length ? {codes: discrepCodes, hora: discrepHora} : null});
-    if(explicaciones.length){
+    if(explicaciones.items.length){
       if(out) out += '<br><br>';
-      out += `<span style="${LABO_FONT}"><b>Explicación de alteraciones</b>: ${explicaciones.join(' ').replace(/<br>\s+/g, '<br>')}</span>`;
+      out += `<span style="${LABO_FONT}"><b>Explicación de alteraciones</b>:<br>${explicaciones.items.map(t=>'• '+t).join('<br>')}`;
+      if(explicaciones.detalles.length){
+        out += `<br><br><b>Explicaciones detalladas</b><br>${explicaciones.detalles.map(d=>d.html).join('<br><br>')}`;
+      }
+      out += '</span>';
     }
 
     $output.innerHTML = out;
@@ -2965,6 +3111,7 @@ function fld(id){ return document.getElementById(id); }
       ? ` Calcio corregido ${laboFmtNumber(caCorr.corr)} mg/dL (albúmina ${caCorr.source==='lab'?'del laboratorio':'ingresada manualmente'}).`
       : (caState.possible ? ' Calcemia alterada y sin albúmina: podés calcular el calcio corregido con el botón «Calcular calcio corregido con albúmina».' : '');
     $status.textContent = `Listo.${caTxtStatus} Renglón completo: ${line2Items.length} dato(s). Renglón resumen: ${line1CoreCount} del listado + ${catalogAlteradosFueraCore} alterado(s) adicionales del catálogo + ${extrasCount} adicional(es) alterado(s) fuera de catálogo.${liqTxt}${uroTxt}${gasaTxt}${abgTxt}${pendTxt}`;
+    if(typeof window.laboAutoGrilla==='function'){ try{ window.laboAutoGrilla($input.value); }catch(err){ console.error('Grilla (carga automática):', err); } }
   }
 
   const SECTION_STOPWORDS = [
@@ -3117,16 +3264,11 @@ function fld(id){ return document.getElementById(id); }
   laboBuildChecklist();
   laboBuildRefRangeTable();
   window.laboProcesar = laboProcesar;
+  window.laboExtraerParaGrilla = function(raw){
+    try{ return laboProcesar(raw, true); }catch(e){ console.error('Grilla: error al extraer', e); return null; }
+  };
 })();
 
-/* =========================================================================
-   SECCIÓN 3 — PEDIDO DE LABORATORIO
-   Perfiles ordenados por prioridad (de mayor a menor). Cada perfil tiene
-   uno o más grupos (ej. RUTINA → Hemograma / Glucemia / Función renal /
-   Ionograma). Es una lista de recordatorio (sin tildes): se pueden marcar varios datos y
-   pasarlos juntos a otro perfil/grupo, reordenar los perfiles y agregar datos; la estructura se guarda en Firebase (Firestore,
-   documento labo_config/pedido) y en localStorage como respaldo.
-   ========================================================================= */
 (function(){
   const LS_KEY = 'labo_pedido_v1';
   const FB_COLLECTION = 'config';
@@ -3134,7 +3276,6 @@ function fld(id){ return document.getElementById(id); }
   const $grid = fld('pedidoGrid');
   const $fbStatus = fld('pedFbStatus');
 
-  /* ---- Estructura por defecto ---------------------------------------- */
   function slug(t){
     return String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9α-ω]+/g,'_').replace(/^_+|_+$/g,'') || 'x';
   }
@@ -3180,7 +3321,7 @@ function fld(id){ return document.getElementById(id); }
   }
 
   let state = null;
-  const sel = new Set();     // ids de datos marcados para mover (solo esta sesión)
+  const sel = new Set();
 
   function uid(prefix){ return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
   function norm(t){ return String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim(); }
@@ -3190,10 +3331,9 @@ function fld(id){ return document.getElementById(id); }
         p.bloques.every(b=>b && b.id && Array.isArray(b.items) && b.items.every(it=>it && it.id && typeof it.label==='string')));
   }
 
-  /* ---- Persistencia: localStorage + Firebase ------------------------- */
-  let fb = null;               // {db, fs} cuando Firebase está listo
+  let fb = null;
   let fbTried = false;
-  let fbAuthReady = null;      // promesa: se resuelve cuando hay sesión anónima
+  let fbAuthReady = null;
   const fbConfigured = !!(LABO_FIREBASE_CONFIG && LABO_FIREBASE_CONFIG.projectId && LABO_FIREBASE_CONFIG.apiKey);
 
   function setFbStatus(txt, cls){
@@ -3209,9 +3349,7 @@ function fld(id){ return document.getElementById(id); }
       const authMod = await import(LABO_FIREBASE_SDK + 'firebase-auth.js');
       const app = appMod.getApps().length ? appMod.getApp() : appMod.initializeApp(LABO_FIREBASE_CONFIG);
       const auth = authMod.getAuth(app);
-      // Tus reglas piden "request.auth != null"; esta sección no tiene login
-      // propio, así que se usa una sesión anónima (igual que el historial
-      // de la calculadora de balance hídrico).
+
       fbAuthReady = new Promise((resolve)=>{
         authMod.onAuthStateChanged(auth, (user)=>{ if(user) resolve(user); });
       });
@@ -3281,7 +3419,6 @@ function fld(id){ return document.getElementById(id); }
     }, 700);
   }
 
-  /* ---- Estructura: helpers ------------------------------------------- */
   function destinations(){
     const list = [];
     state.perfiles.forEach((p,pi)=>{
@@ -3337,7 +3474,6 @@ function fld(id){ return document.getElementById(id); }
     scheduleSave(); render();
   }
 
-  /* ---- Render -------------------------------------------------------- */
   function el(tag, cls, txt){
     const e = document.createElement(tag);
     if(cls) e.className = cls;
@@ -3469,7 +3605,6 @@ function fld(id){ return document.getElementById(id); }
     updateMoveBar();
   }
 
-  /* ---- Botones de la barra ------------------------------------------- */
   fld('pedAgregarPerfil').addEventListener('click', ()=>{
     const nombre = (prompt('Nombre del nuevo perfil (ej. PERFIL CÁLCICO):') || '').trim();
     if(!nombre) return;
@@ -3483,7 +3618,6 @@ function fld(id){ return document.getElementById(id); }
     scheduleSave(); render();
   });
 
-  /* ---- Inicio: local primero (rápido) y después Firebase ------------- */
   async function init(){
     state = localLoad() || buildDefaults();
     render();
@@ -3498,7 +3632,7 @@ function fld(id){ return document.getElementById(id); }
       return;
     }
     if(!r.data){
-      // Primera vez: se siembra Firebase con lo que hay
+
       state.updatedAt = state.updatedAt || Date.now();
       try{ await fbSave(); setFbStatus('Guardado en Firebase ✓', 'ok'); }
       catch(e){ setFbStatus('No se pudo guardar en Firebase. Revisá las reglas de Firestore.', 'warn'); }
@@ -3510,7 +3644,7 @@ function fld(id){ return document.getElementById(id); }
       render();
       setFbStatus('Sincronizado con Firebase ✓', 'ok');
     } else {
-      // La copia local es más nueva: se sube
+
       try{ await fbSave(); setFbStatus('Guardado en Firebase ✓', 'ok'); }
       catch(e){ setFbStatus('No se pudo guardar en Firebase. Revisá las reglas de Firestore.', 'warn'); }
     }
@@ -3519,5 +3653,890 @@ function fld(id){ return document.getElementById(id); }
   window.laboPedido = {get state(){ return state; }, sel};
 })();
 </script>
+<script>
+
+(function(){
+  const LS_KEY = 'labo_grilla_v1';
+  const OCULTOS_DEF = ['FG','Cayados','B','RDW','VPM','x:nohdl','x:ir'];
+  const COLS = 8;
+  const EXTRA_P1 = 10;
+  const EXTRA_PN = 45;
+
+  const FIJAS = [
+    ['LEU','GB'],['NEU','N'],['LINF','L'],['MONO','M'],['EO','E'],['G ROJOS','GR'],['HB','HB'],['HTO','HTO'],
+    ['VCM','VCM'],['HCM','HCM'],['CHCM','CHCM'],['PLQ','PLAQ'],['T. PROT %','TP%'],['RIN','RIN'],['K.P.T.T.','KPTT'],
+    ['GLU','GLUC'],['UREA','UREA'],['CREA','CR'],['AMILASA','Amilasemia'],['GPT','GPT'],['GOT','GOT'],['FAL','FAL'],
+    ['BT','BT'],['BD','BD'],['NA\u207A','Na'],['K\u207A','K'],['Cl\u207B','CL'],['PH','pH'],
+    ['PCO\u2082','pCO2'],['PO\u2082','pO2'],['HCO\u2083','HCO3'],['EB','EB'],['SO\u2082','SO2'],
+    ['PAFI','PAFI'],['GAP','Anión GAP']
+  ];
+  const ORDEN_ASC = ['Asc Aspecto','Asc GLU','Asc Prot T','Asc Amilasa','Asc LDH','Asc Bili','Asc ALB','Asc GB','Asc Predom.','Asc Hemat.'];
+  const ORDEN_URO = ['Or. Color','Or. Aspecto','Or. Dens','Or. pH','Or. Prot','Or. GLU','Or. Cetonas','Or. Pig bil','Or. Hb','Or. Nitrit.','Or. Urobil','Or. Esteras.',
+    'Or. C epit.','Or. Células','Or. C redond.','Or. Hemat.','Or. Leuco','Or. Cilind.','Or. Cristal.','Or. Mucus','Or. Bacter.','Or. Gérmenes','Or. Levadur.','Urocultivo'];
+  const GRUPOS = {asc:{titulo:'LIQ ASCIT', orden:ORDEN_ASC}, uro:{titulo:'UROANÁLISIS', orden:ORDEN_URO}};
+  const grupoDe = l => { const s = String(l||''); if(/^Asc\s/i.test(s)) return 'asc'; if(/^Or\.\s/i.test(s) || /^Urocultivo$/i.test(s)) return 'uro'; return null; };
+  const nombreGrupo = l => String(l).replace(/^(Asc\s+|Or\.\s*)/i,'');
+  const esNeg = t => /^(neg(at\w+)?\.?|ausent\w*|no\s+(contiene|se\s+obs\w*|se\s+hall\w*|se\s+detect\w*|hay|presenta|observ\w*)\b.*)$/i.test(String(t==null?'':t).trim());
+  const UMBRAL_HORAS = 12;
+  const LOTE_MIN = 120;
+  const FIJAS_SET = new Set(FIJAS.map(f=>f[1]));
+  FIJAS_SET.add('FiO2');
+
+  const EXTRA_PRIORIDAD = ['Ca','Calcio corregido','Ca ion','P','Mg','ALB','FG','PCR','ERS','Ac Lac','Cayados','B','RDW','VPM','base buffer'];
+  const EXTRA_CORTO = {'Calcio corregido':'Ca corr','Ca ion':'Ca ion','base buffer':'B. buffer','Reticulocitos':'Retic','B':'BASO',
+    'Vit D 25-OH':'Vit D','vitamina B12':'Vit B12','colesterol T':'Col T','ferritina':'Ferritina'};
+
+  const NOMBRE_VISIBLE = {ca:'Calcemia', calcemia:'Calcemia', transf:'Transferrina', transferrina:'Transferrina',
+    sattr:'Sat Transfe', sattransf:'Sat Transfe', sattransferrina:'Sat Transfe', satdetransferrina:'Sat Transfe', saturaciondetransferrina:'Sat Transfe'};
+
+  const ALIAS = {gb:'GB',leu:'GB',leucocitos:'GB',n:'N',neu:'N',neutrofilos:'N',cayados:'Cayados',l:'L',linf:'L',linfocitos:'L',
+    m:'M',mono:'M',monocitos:'M',e:'E',eo:'E',eosinofilos:'E',b:'B',baso:'B',basofilos:'B',gr:'GR',grojos:'GR',hb:'HB',hto:'HTO',
+    vcm:'VCM',hcm:'HCM',chcm:'CHCM',rdw:'RDW',vpm:'VPM',plaq:'PLAQ',plq:'PLAQ',plaquetas:'PLAQ',ers:'ERS','tp%':'TP%',tp:'TP%','tprot%':'TP%',
+    rin:'RIN',kptt:'KPTT',pcr:'PCR',gluc:'GLUC',glu:'GLUC',glucosa:'GLUC',urea:'UREA',cr:'CR',crea:'CR',creatinina:'CR',fg:'FG',
+    na:'Na',k:'K',cl:'CL',ca:'Ca',calcemia:'Ca',calcio:'Ca',caion:'Ca ion',caionico:'Ca ion',caionizado:'Ca ion',calcioionico:'Ca ion',calcioionizado:'Ca ion',transf:'transferrina',transferrina:'transferrina',sattr:'Sat Transf',sattransf:'Sat Transf',sattransferrina:'Sat Transf',satdetransferrina:'Sat Transf',saturaciondetransferrina:'Sat Transf',p:'P',mg:'Mg',alb:'ALB',albumina:'ALB',
+    calciocorregido:'Calcio corregido',cacorregido:'Calcio corregido',cacorr:'Calcio corregido',
+    ph:'pH',pco2:'pCO2',po2:'pO2',hco3:'HCO3',basebuffer:'base buffer',eb:'EB',so2:'SO2',aniongap:'Anión GAP',gap:'Anión GAP',
+    aclac:'Ac Lac',lactato:'Ac Lac',amilasa:'Amilasemia',amilasemia:'Amilasemia',gpt:'GPT',got:'GOT',fal:'FAL',bt:'BT',bd:'BD',pafi:'PAFI',fio2:'FiO2'};
+
+  const $ = id => document.getElementById(id);
+  const esc = t => String(t==null?'':t).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const nk = s => String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9%]+/g,'');
+  const pad = n => String(n).padStart(2,'0');
+  const fechaCorta = iso => { const [y,m,d] = iso.split('-'); return `${d}/${m}/${y.slice(2)}`; };
+  const EXTRA_CORTO_NK = {}; Object.keys(EXTRA_CORTO).forEach(k=>{ EXTRA_CORTO_NK[nk(k)] = EXTRA_CORTO[k]; });
+
+  function cortoCual(t){
+    const x = String(t||'').replace(/\s+/g,' ').trim();
+    if(/^no\s+(contiene|se\s+obs\w*|hay|presenta)\b/i.test(x) || /^negativo\b/i.test(x) || /^ausente/i.test(x)) return 'Neg';
+    let m = x.match(/^positivo\s*(\+{1,4})$/i); if(m) return m[1];
+    if(/^positivo$/i.test(x)) return 'Pos';
+    if(/^escasa\s+cantidad$/i.test(x)) return 'Escasa';
+    if(/^regular(es)?(\s+cantidad)?$/i.test(x)) return 'Regular';
+    if(/^abundante(\s+cantidad)?$/i.test(x)) return 'Abund.';
+    if(/^muy\s+aumentado$/i.test(x)) return 'Muy aum.';
+    return x;
+  }
+
+  function parseFi(v){
+    const s0 = String(v==null?'':v).trim().toLowerCase().replace(',','.');
+    if(!s0) return null;
+    let m = s0.match(/^(\d+(?:\.\d+)?)\s*(?:l|lt|lts|litros?|l\/min|lpm)$/);
+    if(m) return Math.min(1, 0.20 + 0.04*parseFloat(m[1]));
+    m = s0.match(/^(\d+(?:\.\d+)?)\s*%?$/);
+    if(!m) return null;
+    let n = parseFloat(m[1]);
+    if(s0.indexOf('%')>=0 || n>1) n = n/100;
+    return (n>=0.21-1e-9 && n<=1) ? n : null;
+  }
+
+  let G = load() || vacio();
+  function vacio(){ return {paciente:'', cama:'', labs:[], prefer:{}, edits:{}, ocultos:OCULTOS_DEF.slice(), ordenExtra:[], mostrados:[], destino:{}, ocultosInit:true, seq:0,
+    manual:[], hojasExtra:0, fio2:{}, fuente:{ids:[], texto:''}, v2:true}; }
+  function remapK(k){ return (typeof k==='string' && k.indexOf('x:')===0 && ALIAS[k.slice(2)]) ? ALIAS[k.slice(2)] : k; }
+
+  function migrar(g){
+    g.labs.forEach(l=>{
+      if(!l.vals) l.vals = {};
+      if(l.vals.PAFI && String(l.vals.PAFI.text).trim()==='\u2014'){ delete l.vals.PAFI; l.venoso = true; }
+      Object.keys(l.vals).forEach(k=>{
+        const k2 = remapK(k);
+        if(k2!==k){ if(!(k2 in l.vals)) l.vals[k2] = {label:k2, text:l.vals[k].text}; delete l.vals[k]; }
+      });
+    });
+    const remapPair = o => { const out = {}; Object.keys(o||{}).forEach(pk=>{
+      const i = pk.indexOf('|'); const k2 = pk.slice(0,i)+'|'+remapK(pk.slice(i+1)); if(!(k2 in out)) out[k2] = o[pk]; }); return out; };
+    g.edits = remapPair(g.edits); g.prefer = remapPair(g.prefer);
+    g.ocultos = (g.ocultos||[]).map(remapK).filter((k,i,a)=>a.indexOf(k)===i);
+    g.ordenExtra = (g.ordenExtra||[]).filter(k=>remapK(k)===k);
+    if(!g.v2){ g.ordenExtra = g.ordenExtra.filter(k=>k!=='Ca ion'); g.v2 = true; }
+    return g;
+  }
+  function load(){
+    try{
+      const o = JSON.parse(localStorage.getItem(LS_KEY)||'null');
+      if(o && Array.isArray(o.labs)){
+        const g = Object.assign(vacio(), o);
+        g.v2 = !!o.v2;
+        if(!o.ocultosInit){ OCULTOS_DEF.forEach(k=>{ if(!g.ocultos.includes(k)) g.ocultos.push(k); }); g.ocultosInit = true; }
+        if(!Array.isArray(g.ordenExtra)) g.ordenExtra = [];
+        if(!Array.isArray(g.mostrados)) g.mostrados = [];
+        if(!g.destino || typeof g.destino!=='object') g.destino = {};
+        if(!Array.isArray(g.manual)) g.manual = [];
+        if(!g.fio2 || typeof g.fio2!=='object') g.fio2 = {};
+        if(!g.fuente || !Array.isArray(g.fuente.ids)) g.fuente = {ids:[], texto:''};
+        return migrar(g);
+      }
+    }catch(e){}
+    return null;
+  }
+  function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(G)); }catch(e){} }
+  function reiniciarGrilla(){
+    const keep = {ocultos:G.ocultos.slice(), ordenExtra:(G.ordenExtra||[]).slice(), mostrados:(G.mostrados||[]).slice()};
+    G = vacio(); G.ocultos = keep.ocultos; G.ordenExtra = keep.ordenExtra; G.mostrados = keep.mostrados;
+  }
+
+  function canon(label){
+    const k = nk(label);
+    if(ALIAS[k]) return {key:ALIAS[k], label:ALIAS[k]};
+    return {key:'x:'+k, label:String(label).trim()};
+  }
+  const esNumerico = t => /^[<>]?\s*-?\d[\d.,]*\s*%?$/.test(String(t).trim());
+  function valorNorm(t){
+    let s = String(t).trim().toLowerCase().replace('%','').replace(/\s+/g,'');
+    if(/^-?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g,'');
+    s = s.replace(',','.');
+    const n = parseFloat(s);
+    return isNaN(n) ? 's:'+s : 'n:'+n;
+  }
+  function isoDeDMY(d,m,y){
+    d = parseInt(d,10); m = parseInt(m,10); y = parseInt(y,10);
+    if(y<100) y += 2000;
+    if(!(d>=1&&d<=31&&m>=1&&m<=12)) return null;
+    return `${y}-${pad(m)}-${pad(d)}`;
+  }
+
+  function parseCrudo(raw){
+    if(typeof window.laboExtraerParaGrilla !== 'function') return null;
+    const res = window.laboExtraerParaGrilla(raw);
+    if(!res) return null;
+    const vals = {};
+    const put = (key,label,text)=>{ if(text==null || String(text).trim()==='') return; if(!(key in vals)) vals[key] = {label, text:String(text).trim()}; };
+    res.found.forEach(f=>{ if(esNumerico(f.text)){ const c = canon(f.code); put(c.key, c.label, f.text); } });
+    res.extras.forEach(x=>{ if(esNumerico(x.text)){ const c = canon(x.code); put(c.key, c.label, x.text); } });
+    const num = k => vals[k] ? parseFloat(String(vals[k].text).replace(',','.')) : null;
+
+    const ca = num('Ca'), alb = num('ALB');
+    if(ca!=null && alb!=null && !vals['Calcio corregido']){
+      put('Calcio corregido','Calcio corregido', String(Math.round((ca + 0.8*(4-alb))*10)/10));
+    }
+
+    const po2 = num('pO2');
+    if(po2!=null && res.fio2!=null && !res.esVenoso && !vals['PAFI']){
+      const f = res.fio2 > 1 ? res.fio2/100 : res.fio2;
+      if(f>0) put('PAFI','PAFI', String(Math.round(po2/f)));
+    }
+    if(res.fio2!=null && !vals['FiO2']) put('FiO2','FiO2', String(res.fio2));
+
+    (res.especiales||[]).forEach(x=>{ const c = canon(x.label); put(c.key, c.label, cortoCual(x.text)); });
+
+    let fecha = null;
+    const mf = raw.match(/Fecha\s*(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})/i);
+    let dt = null;
+    if(mf){
+      fecha = isoDeDMY(mf[1],mf[2],mf[3]);
+      if(fecha) dt = Date.UTC(parseInt(mf[3],10), parseInt(mf[2],10)-1, parseInt(mf[1],10), parseInt(mf[4],10), parseInt(mf[5],10))/60000;
+    }
+    const mp = raw.match(/Paciente\s*:?\s*([^\n\r]{2,70}?)\s*Edad\s*:?\s*\d/i);
+    const mc = raw.match(/Cama\s*:?\s*(\d{1,4}[A-Za-z]?)/i);
+    return {vals, fecha, dt, venoso: !!res.esVenoso, paciente: mp ? mp[1].replace(/\s+/g,' ').trim() : '', cama: mc ? mc[1] : ''};
+  }
+
+  function parseConvertido(text){
+    const lines = text.split(/\r?\n/);
+    const bloques = [], ignoradas = [];
+    let cur = null;
+    const reFecha = /^\s*(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s*:\s*(.*)$/;
+    lines.forEach(line=>{
+      if(!line.trim()) return;
+      const m = line.match(reFecha);
+      if(m){
+        cur = {fecha: isoDeDMY(m[1],m[2],m[3]), txt: m[4]};
+        if(cur.fecha) bloques.push(cur); else { ignoradas.push(line.trim()); cur = null; }
+      } else if(cur && /[^,:]+:\s*\S/.test(line)){
+        cur.txt += ' ' + line.trim();
+      } else {
+        ignoradas.push(line.trim());
+      }
+    });
+    const labs = bloques.map(b=>{
+      const vals = {};
+      const txtFix = b.txt.replace(/(\d%?)[ \t]+(?=[A-Za-zÁÉÍÓÚÑáéíóúñ][A-Za-zÁÉÍÓÚÑáéíóúñ0-9 \/]{0,28}:)/g, '$1, ');
+      const trozos = txtFix.split(/(?:,\s*|(?<=[\d%])\.\s+)(?=[^\d,.:][^,:.]*:)/);
+      trozos.forEach(t=>{
+        const i = t.indexOf(':');
+        if(i<1) return;
+        const label = t.slice(0,i).trim();
+        let v = t.slice(i+1).trim().replace(/\.$/,'').trim();
+        if(/^-?\d+,\d+%?$/.test(v)) v = v.replace(',','.');
+        if(!label || !v) return;
+        const c = canon(label);
+        if(!(c.key in vals)) vals[c.key] = {label:c.label, text:v};
+      });
+      return {fecha:b.fecha, vals};
+    }).filter(l=>Object.keys(l.vals).length);
+    return {labs, ignoradas};
+  }
+
+  function setStatus(msg, warn){ const s=$('grStatus'); s.textContent = msg||''; s.className = warn ? 'warn' : ''; }
+  function mismaPersona(a,b){ return nk(a)===nk(b); }
+
+  const firmaLab = l => JSON.stringify(Object.keys(l.vals).sort().map(k=>[k, valorNorm(l.vals[k].text)]));
+  let tocados = [];
+  let ultimoId = null;
+  let fuenteEnCurso = '';
+  const colaPreg = [];
+  const fmtDT = m => { const d = new Date(m*60000); return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth()+1)} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`; };
+  const fmtDTL = m => { const d = new Date(m*60000); return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth()+1)}/${d.getUTCFullYear()} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`; };
+  function tipoLab(l){
+    const ks = Object.keys(l.vals).map(k=>String(l.vals[k].label||k));
+    const asc = ks.some(x=>/^Asc\s/.test(x)), uro = ks.some(x=>/^(Or\.\s|Urocultivo$)/.test(x));
+    const gral = ks.some(x=>!/^(Asc\s|Or\.\s|Urocultivo$)/.test(x));
+    const t = [];
+    if(gral) t.push('laboratorio');
+    if(asc) t.push('líquido ascítico');
+    if(uro) t.push('uroanálisis');
+    return t.join(' + ') || 'laboratorio';
+  }
+  function labCercano(lab){
+    let mejor = null;
+    G.labs.forEach(l=>{
+      if(l.dt==null || (lab.orden && l.orden===lab.orden)) return;
+      if((l.fechaReal||l.fecha)===lab.fechaReal || l.fecha===lab.fecha) return;
+      const dif = Math.abs(l.dt - lab.dt);
+      if(dif<=UMBRAL_HORAS*60 && (!mejor || dif<mejor.dif)) mejor = {lab:l, dif};
+    });
+    return mejor;
+  }
+  function mostrarPregunta(){
+    const q = colaPreg[0];
+    if(!q){ $('colModal').hidden = true; return; }
+    const l = q.cerca.lab;
+    const h = Math.round(q.cerca.dif/6)/10;
+    const cuando = q.lab.dt >= l.dt ? 'después' : 'antes';
+    $('colMsg').innerHTML = `Este ${esc(tipoLab(q.lab))} (ingreso ${esc(fmtDTL(q.lab.dt))}) se hizo unas ${h} h ${cuando} de un ${esc(tipoLab(l))} del mismo paciente (ingreso ${esc(fmtDTL(l.dt))}), pero en otro día. Puede ser el mismo turno de guardia. ¿Dónde lo agrego?`;
+    $('colMisma').textContent = `En la misma columna que el anterior (${fechaCorta(q.fechaCerca)})`;
+    $('colOtra').textContent = `En una columna distinta (${fechaCorta(q.lab.fechaReal)})`;
+    $('colModal').hidden = false;
+    $('colMisma').focus();
+  }
+  function resolverPregunta(misma){
+    const q = colaPreg.shift();
+    if(!q){ $('colModal').hidden = true; return; }
+    const fecha = misma ? q.fechaCerca : q.lab.fechaReal;
+    q.lab.fecha = fecha;
+    G.destino[q.clave] = fecha;
+    tocados = [];
+    agregarLab(q.lab, q.origen, true);
+    if(G.fuente && G.fuente.texto===q.fuenteTexto && ultimoId!=null && !G.fuente.ids.includes(ultimoId)) G.fuente.ids.push(ultimoId);
+    save(); renderTodo();
+    setStatus(`Laboratorio agregado en la columna del ${fechaCorta(fecha)}.`);
+    mostrarPregunta();
+  }
+  function agregarLab(lab, origen, decidido){
+    lab.fechaReal = lab.fechaReal || lab.fecha;
+    const clave = lab.orden || ('f:'+lab.fecha+'|'+firmaLab(lab));
+    const yaOrden = !!(lab.orden && G.labs.some(l=>l.orden===lab.orden));
+    if(!decidido && !yaOrden){
+      if(G.destino[clave]) lab.fecha = G.destino[clave];
+      else if(lab.dt!=null){
+        const hermano = G.labs.find(l=>l.dt!=null && (l.fechaReal||l.fecha)===lab.fechaReal && Math.abs(l.dt-lab.dt)<=LOTE_MIN);
+        if(hermano){ lab.fecha = hermano.fecha; G.destino[clave] = hermano.fecha; }
+        else {
+          const cerca = labCercano(lab);
+          if(cerca){
+            colaPreg.push({lab, origen, cerca, clave, fechaCerca:cerca.lab.fecha, fuenteTexto:fuenteEnCurso});
+            if(colaPreg.length===1) mostrarPregunta();
+            return 'pend';
+          }
+        }
+      }
+    }
+    const igual = G.labs.find(l=>l.fecha===lab.fecha && firmaLab(l)===firmaLab(lab));
+    if(igual){ tocados.push(igual.id); ultimoId = igual.id; if(lab.venoso!=null) igual.venoso = lab.venoso; return 'dup'; }
+    if(lab.orden){
+      const ex = G.labs.find(l=>l.orden===lab.orden);
+      if(ex){
+        const same = firmaLab(ex)===firmaLab(lab);
+        ex.vals = lab.vals; if(lab.venoso!=null) ex.venoso = lab.venoso;
+        if(lab.dt!=null) ex.dt = lab.dt;
+        if(!ex.fechaManual) ex.fecha = lab.fecha;
+        tocados.push(ex.id); ultimoId = ex.id;
+        return same ? 'dup' : 'upd';
+      }
+    }
+    G.seq += 1;
+    G.labs.push({id:G.seq, fecha:lab.fecha, fechaReal:lab.fechaReal, dt:lab.dt==null?null:lab.dt, origen, orden:lab.orden||null, venoso:!!lab.venoso, vals:lab.vals});
+    tocados.push(G.seq); ultimoId = G.seq;
+    return 'ok';
+  }
+
+  function partirCrudos(t){
+    const partes = t.split(/(?=Nextlab\s*NextLAB)/i).filter(x=>x.trim().length>30);
+    return partes.length>1 ? partes : [t];
+  }
+
+  let lastRes = {agregados:0, actualizados:0, repetidos:0, pendientes:0};
+  function agregarTextoInterno(texto, fallbackISO, opts){
+    const auto = !!(opts && opts.auto);
+    const t = String(texto||'');
+    lastRes = {agregados:0, actualizados:0, repetidos:0, pendientes:0};
+    if(!t.trim()){ if(!auto) setStatus('Pegá primero un laboratorio.', true); return false; }
+    const esConv = /^\s*\d{1,2}\/\d{1,2}\/\d{2,4}\s*:/m.test(t);
+    let agregados = 0, repetidos = 0, actualizados = 0, pendientes = 0, msgExtra = '';
+    const cuenta = x => { if(x==='ok') agregados++; else if(x==='upd') actualizados++; else if(x==='pend') pendientes++; else repetidos++; };
+    if(esConv){
+      const r = parseConvertido(t);
+      if(!r.labs.length){ setStatus('No se reconoció ninguna línea con fecha y valores.', true); return false; }
+      r.labs.forEach(l=>cuenta(agregarLab(l,'Convertido')));
+      if(r.ignoradas.length) msgExtra = ` · ${r.ignoradas.length} renglón(es) sin fecha ignorado(s): «${r.ignoradas[0].slice(0,40)}${r.ignoradas[0].length>40?'…':''}» (cargalos a mano en la vista previa)`;
+    } else {
+      const partes = partirCrudos(t);
+      let sinReconocer = 0, sinFecha = 0, nuevoPac = '';
+      for(const parte of partes){
+        const r = parseCrudo(parte);
+        if(!r || !Object.keys(r.vals).length){ sinReconocer++; continue; }
+        if(r.paciente && G.paciente && !mismaPersona(r.paciente, G.paciente)){
+          if(auto){
+
+            const previo = G.paciente;
+            reiniciarGrilla();
+            nuevoPac = ` · paciente nuevo: grilla reiniciada (antes: «${previo}»)`;
+          } else if(!confirm(`Este laboratorio es de «${r.paciente}», pero la grilla es de «${G.paciente}».\n\n¿Agregarlo igual a esta grilla?`)) { setStatus('Cancelado: era de otro paciente.', true); return false; }
+        }
+        if(!G.paciente && r.paciente) G.paciente = r.paciente;
+        if(!G.cama && r.cama) G.cama = r.cama;
+        const fecha = r.fecha || fallbackISO;
+        if(!fecha){ sinFecha++; continue; }
+        const orden = (parte.match(/Orden\s*(\d{4,})/i)||[])[1] || null;
+        cuenta(agregarLab({fecha, vals:r.vals, orden, venoso:r.venoso, dt:r.fecha ? r.dt : null}, 'Nextlab'));
+        if(!r.fecha) msgExtra += ' · fecha tomada del campo Fecha (el texto no la traía)';
+      }
+      msgExtra += nuevoPac;
+      if(!(agregados||actualizados||repetidos||pendientes)){
+        if(sinFecha){ setStatus('No se encontró la fecha del laboratorio. Cargala en el campo Fecha de la sección 1 y volvé a agregar.', true); return false; }
+        setStatus('No se pudo reconocer ningún dato en el laboratorio pegado. Revisá el formato (podés corregir el texto en la caja de arriba).', true); return false;
+      }
+      if(sinReconocer) msgExtra += ` · ${sinReconocer} bloque(s) sin datos reconocibles`;
+      if(sinFecha) msgExtra += ` · ${sinFecha} bloque(s) sin fecha`;
+    }
+    lastRes = {agregados, actualizados, repetidos, pendientes};
+    if(agregados || actualizados){ save(); renderTodo(); }
+    setStatus(`${agregados} laboratorio(s) agregado(s)` + (actualizados ? ` · ${actualizados} actualizado(s)` : '') + (repetidos ? ` · ${repetidos} ya estaba(n) cargado(s)` : '') + (pendientes ? ` · ${pendientes} esperando que elijas la columna` : '') + msgExtra, !(agregados||actualizados||repetidos||pendientes));
+    return (agregados + actualizados) > 0;
+  }
+
+  function agregarTexto(texto, fallbackISO, opts){
+    const ids = (G.fuente && G.fuente.ids) || [];
+    const reemplazar = !!(opts && opts.replace) && ids.length>0;
+    const backup = G.labs.slice();
+    fuenteEnCurso = String(texto||'').slice(0,60000);
+    if(reemplazar) G.labs = G.labs.filter(l=>ids.indexOf(l.id)<0);
+    tocados = [];
+    const ok = agregarTextoInterno(texto, fallbackISO, opts);
+    if(!tocados.length){
+      if(lastRes.pendientes>0){ G.fuente = {ids:[], texto:fuenteEnCurso}; save(); renderTodo(); return ok; }
+      if(reemplazar) G.labs = backup;
+      return ok;
+    }
+    G.fuente = {ids: tocados.filter((x,i,a)=>a.indexOf(x)===i), texto: String(texto||'').slice(0,60000)};
+    save(); renderTodo();
+    if(reemplazar) setStatus(`Grilla actualizada con el texto corregido (${G.fuente.ids.length} laboratorio(s)).`);
+    return ok;
+  }
+
+  const ordenDe = t => (String(t||'').match(/Orden\s*(\d{4,})/i)||[])[1] || null;
+  window.laboAutoGrilla = function(raw){
+    if(!raw || !raw.trim()) return;
+    const prev = (G.fuente && G.fuente.texto) || '';
+
+    const mismo = !!prev && ((ordenDe(prev) && ordenDe(prev)===ordenDe(raw)) || prev.slice(0,120)===raw.slice(0,120));
+    $('grInput').value = raw;
+    const ok = agregarTexto(raw, ($('laboFecha') && $('laboFecha').value) || null, {auto:true, replace:mismo});
+    const st = $('laboStatus');
+    if(ok) st.textContent += ' · Cargado en la Grilla Laboratorio (sección 7).';
+    else if(lastRes.pendientes) st.textContent += ' · Grilla Laboratorio: elegí en qué columna va este laboratorio.';
+    else if(lastRes.repetidos) st.textContent += ' · Ya estaba cargado en la Grilla Laboratorio.';
+    else if($('grStatus').className==='warn' && $('grStatus').textContent) st.textContent += ' · Grilla: ' + $('grStatus').textContent;
+  };
+
+  const esManual = k => String(k).indexOf('m:')===0;
+  function unificar(){
+    const porFecha = {};
+    G.labs.forEach((lab,idx)=>{
+      const d = porFecha[lab.fecha] = porFecha[lab.fecha] || {opts:{}, orden:[]};
+      Object.keys(lab.vals).forEach(k=>{
+        const v = lab.vals[k];
+        const lista = d.opts[k] = d.opts[k] || [];
+        if(!d.orden.includes(k)) d.orden.push(k);
+        if(!lista.some(o=>valorNorm(o.text)===valorNorm(v.text))) lista.push({labId:lab.id, n:idx+1, origen:lab.origen, text:v.text, label:v.label, venoso:!!lab.venoso});
+      });
+    });
+    const fechas = Object.keys(porFecha).sort();
+    const celdas = {}, conflictos = [], etiquetas = {}, apariciones = [];
+    const venosoF = new Set();
+    fechas.forEach(f=>{
+      const d = porFecha[f];
+      d.orden.forEach(k=>{
+        const lista = d.opts[k];
+        etiquetas[k] = etiquetas[k] || lista[0].label;
+        if(!apariciones.includes(k)) apariciones.push(k);
+        let elegido = lista[0];
+        if(lista.length>1){
+          const pref = G.prefer[f+'|'+k];
+          elegido = lista.find(o=>o.labId===pref) || lista[0];
+          conflictos.push({fecha:f, key:k, label:lista[0].label, lista, elegido});
+        }
+        celdas[f+'|'+k] = elegido.text;
+        if(k==='pO2' && elegido.venoso) venosoF.add(f);
+      });
+    });
+
+    const pafiAsumido = [], fechasO2 = [], fiAuto = {};
+    fechas.forEach(f=>{
+      const po2 = parseFloat(String(celdas[f+'|pO2']??'').replace(',','.'));
+      if(venosoF.has(f) || !isFinite(po2) || po2<=0) return;
+      fechasO2.push(f);
+      let fiLab = parseFloat(String(celdas[f+'|FiO2']??'').replace('%','').replace(',','.'));
+      if(!isFinite(fiLab) || fiLab<=0) fiLab = null; else if(fiLab>1) fiLab = fiLab/100;
+      fiAuto[f] = fiLab || 0.21;
+      const fiMan = parseFi(G.fio2 && G.fio2[f]);
+      if(!fiMan && (f+'|PAFI') in celdas) return;
+      const fi = fiMan || fiAuto[f];
+      celdas[f+'|PAFI'] = String(Math.round(po2/fi));
+      if(!fiMan && !fiLab) pafiAsumido.push(f);
+    });
+    Object.keys(G.edits).forEach(ek=>{
+      const [f,k] = ek.split('|');
+      if(!fechas.includes(f)) return;
+      celdas[ek] = G.edits[ek];
+      if(!(k in etiquetas)){ etiquetas[k] = k.replace(/^x:/,''); }
+      if(!apariciones.includes(k)) apariciones.push(k);
+    });
+    G.manual.forEach(m=>{ etiquetas[m.key] = m.label; });
+    return {fechas, celdas, conflictos, etiquetas, apariciones, pafiAsumido, venosoF, fechasO2, fiAuto};
+  }
+
+  function ordenCompletoExtra(U){
+    const cand = U.apariciones.filter(k=>!FIJAS_SET.has(k) && !esManual(k) &&
+      U.fechas.some(f=>(f+'|'+k) in U.celdas && String(U.celdas[f+'|'+k]).trim()!==''));
+    const gk = k => grupoDe(U.etiquetas[k]);
+    const prio = EXTRA_PRIORIDAD.filter(k=>cand.includes(k));
+    const porGrupo = g => cand.filter(k=>gk(k)===g).sort((a,b)=>{
+      const L = GRUPOS[g].orden, ia = L.indexOf(U.etiquetas[a]), ib = L.indexOf(U.etiquetas[b]);
+      return (ia<0?999:ia) - (ib<0?999:ib);
+    });
+    const base = prio.concat(cand.filter(k=>!prio.includes(k) && !gk(k)), porGrupo('asc'), porGrupo('uro'));
+    const ord = (G.ordenExtra||[]).filter(k=>base.includes(k));
+    const nuevos = base.filter(k=>!ord.includes(k));
+
+    const iCI = nuevos.indexOf('Ca ion');
+    if(iCI>=0 && base.includes('Calcio corregido')){
+      nuevos.splice(iCI,1);
+      const jn = nuevos.indexOf('Calcio corregido');
+      if(jn>=0) nuevos.splice(jn+1,0,'Ca ion');
+      else { const jo = ord.indexOf('Calcio corregido'); ord.splice(jo+1,0,'Ca ion'); }
+    }
+    const todo = ord.concat(nuevos);
+    return todo.filter(k=>!gk(k)).concat(todo.filter(k=>gk(k)==='asc'), todo.filter(k=>gk(k)==='uro'));
+  }
+  function estaOculto(U,k){
+    if(G.ocultos.includes(k)) return true;
+    if((G.mostrados||[]).includes(k)) return false;
+    if(!grupoDe(U.etiquetas[k])) return false;
+    const vs = U.fechas.map(f=>U.celdas[f+'|'+k]).filter(v=>v!=null && String(v).trim()!=='');
+    return vs.length>0 && vs.every(esNeg);
+  }
+
+  function filasExtra(U){
+    const vis = ordenCompletoExtra(U).filter(k=>!estaOculto(U,k));
+    const out = vis.filter(k=>!grupoDe(U.etiquetas[k]));
+    ['asc','uro'].forEach(n=>{
+      const ks = vis.filter(k=>grupoDe(U.etiquetas[k])===n);
+      if(ks.length){ out.push('h:'+n); ks.forEach(k=>out.push(k)); }
+    });
+    return out.concat(G.manual.map(m=>m.key));
+  }
+  const nombreChip = (U,k) => { const l = U.etiquetas[k] || k; return NOMBRE_VISIBLE[nk(l)] || l; };
+  const rotuloExtra = (U,k) => {
+    const l = U.etiquetas[k] || k;
+    if(esManual(k)) return l;
+    if(grupoDe(l)) return nombreGrupo(l);
+    const n = nk(l);
+    return NOMBRE_VISIBLE[n] || EXTRA_CORTO_NK[n] || (l.length>12 ? l.slice(0,12) : l);
+  };
+
+  function armarPaginas(U){
+    const extras = filasExtra(U);
+    const bloques = [];
+    for(let i=0;i<Math.max(U.fechas.length,1);i+=COLS) bloques.push(U.fechas.slice(i,i+COLS));
+    const necesarias = Math.ceil(Math.max(0, extras.length-EXTRA_P1)/EXTRA_PN);
+    const total = Math.max(necesarias, G.hojasExtra||0);
+    const paginas = [];
+    bloques.forEach((fechas,bi)=>{
+      paginas.push({tipo:'main', fechas, extras: extras.slice(0,EXTRA_P1), bloque:bi, base:0});
+      for(let j=0;j<total;j++){
+        const i = EXTRA_P1 + j*EXTRA_PN;
+        paginas.push({tipo:'extra', fechas, extras: extras.slice(i,i+EXTRA_PN), bloque:bi, base:i});
+      }
+    });
+    return {paginas, extras, necesarias};
+  }
+
+  function celdaVal(U, f, k, editable){
+    const txt = f ? (U.celdas[f+'|'+k] ?? '') : '';
+    if(editable && f) return `<td class="gr-v" contenteditable="true" data-f="${esc(f)}" data-k="${esc(k)}">${esc(txt)}</td>`;
+    return `<td>${esc(txt)}</td>`;
+  }
+
+  function filaExtraHtml(U, pg, i, cols, editable){
+    const k = pg.extras[i];
+    if(k && k.indexOf('h:')===0){
+      return `<tr><td class="lb" colspan="${cols.length+1}">${esc(GRUPOS[k.slice(2)].titulo)}</td></tr>`;
+    }
+    if(k){
+      const lab = rotuloExtra(U,k);
+      const cl = grupoDe(U.etiquetas[k]) ? 'lx lr' : 'lx';
+      const tdL = (editable && esManual(k)) ? `<td class="lx gr-lbl-ed" contenteditable="true" data-mk="${esc(k)}">${esc(lab)}</td>` : `<td class="${cl}">${esc(lab)}</td>`;
+      return `<tr>${tdL}${cols.map(f=>celdaVal(U,f,k,editable)).join('')}</tr>`;
+    }
+    if(editable){
+      const p = pg.base + i;
+      return `<tr><td class="lx gr-lbl-ed" contenteditable="true" data-blank="${p}"></td>${cols.map(f=>f ? `<td class="gr-v" contenteditable="true" data-f="${esc(f)}" data-blank="${p}"></td>` : '<td></td>').join('')}</tr>`;
+    }
+    return `<tr><td class="lx"></td>${cols.map(()=>'<td></td>').join('')}</tr>`;
+  }
+
+  function htmlPagina(U, pg, editable){
+    const cols = Array.from({length:COLS}, (_,i)=>pg.fechas[i] || null);
+    let filas = '';
+
+    filas += `<tr><td class="lb">FECHA</td>${cols.map(f=>`<td>${f?fechaCorta(f):''}</td>`).join('')}</tr>`;
+    if(pg.tipo==='main'){
+      FIJAS.forEach(([rot,k])=>{
+        filas += `<tr><td class="lb">${esc(rot)}</td>${cols.map(f=>celdaVal(U,f,k,editable)).join('')}</tr>`;
+      });
+      for(let i=0;i<EXTRA_P1;i++) filas += filaExtraHtml(U,pg,i,cols,editable);
+    } else {
+      for(let i=0;i<EXTRA_PN;i++) filas += filaExtraHtml(U,pg,i,cols,editable);
+    }
+    const colg = `<colgroup><col style="width:27mm">${cols.map(()=>'<col>').join('')}</colgroup>`;
+    return `<div class="gr-page">
+      <div class="gr-hd"><span class="l"><span class="u">Clínica Médica Zubizarreta</span></span><span class="r"><span class="u">Grilla de Laboratorio${pg.tipo==='extra'?' (datos extra)':''}</span></span></div>
+      <div class="gr-hd gr-hd2"><span class="l"><span class="u">Paciente:</span>&nbsp;<span class="v">${esc(G.paciente)}</span></span><span class="r"><span class="u">Cama:</span>&nbsp;<span class="v">${esc(G.cama)}</span></span></div>
+      <table class="gr-table">${colg}${filas}</table>
+    </div>`;
+  }
+
+  const tieneValoresManual = k => Object.keys(G.edits).some(e=>e.slice(e.indexOf('|')+1)===k && String(G.edits[e]).trim()!=='');
+  function limpiarManual(){
+    while(G.manual.length){
+      const m = G.manual[G.manual.length-1];
+      if(m.label || tieneValoresManual(m.key)) break;
+      G.manual.pop();
+    }
+  }
+  function renderTodo(){
+    limpiarManual();
+    $('grPaciente').value = G.paciente || '';
+    $('grCama').value = G.cama || '';
+    const U = unificar();
+    const {paginas, extras, necesarias} = armarPaginas(U);
+
+    const nL = G.labs.length;
+    $('grLabs').innerHTML = nL ? '<h5>Laboratorios cargados</h5>' + G.labs.map((l,i)=>
+      `<div class="gr-lab"><span><b>#${i+1}</b></span><input type="date" value="${esc(l.fecha)}" data-id="${l.id}" title="Corregir la fecha de este laboratorio">
+       <span class="meta">${esc(l.origen)} · ${esc(tipoLab(l))}${l.dt!=null?' · ingreso '+esc(fmtDT(l.dt)):''} · ${Object.keys(l.vals).length} valores${l.venoso?' · muestra venosa':''}</span>
+       <button type="button" class="btn-tiny" data-del="${l.id}">Quitar</button></div>`).join('') : '';
+
+    $('grConflicts').innerHTML = U.conflictos.length ? '<h5>Valores distintos para el mismo día — elegí cuál queda</h5>' +
+      U.conflictos.map(c=>`<div class="gr-conf"><b>${fechaCorta(c.fecha)} · ${esc(NOMBRE_VISIBLE[nk(c.label)] || c.label)}</b>` +
+        c.lista.map(o=>`<button type="button" class="gr-opt${o===c.elegido?' on':''}" data-pf="${c.fecha}" data-pk="${esc(c.key)}" data-pl="${o.labId}">${esc(o.text)} <small>(lab #${o.n})</small></button>`).join('') + '</div>').join('') : '';
+
+    const fmtFi = x => String(Math.round(x*100)/100);
+    const fiHtml = U.fechasO2.length ? `<h5>O₂ usado para calcular el PAFI (FiO₂) — por defecto 0,21 (aire ambiente)</h5>` +
+      `<div>${U.fechasO2.map(f=>`<label class="gr-fio">${fechaCorta(f)} <input type="text" data-fio="${f}" value="${esc((G.fio2&&G.fio2[f])||'')}" placeholder="${fmtFi(U.fiAuto[f])}" inputmode="decimal" autocomplete="off"></label>`).join('')}</div>` +
+      `<div class="hint">Escribí la FiO₂ como fracción (0.35) o en % (35), o los litros de O₂ por cánula nasal (por ejemplo «3 L» ≈ 0.32: 0.20 + 0.04 por litro). Vacío = 0.21, o la FiO₂ que informe el laboratorio. El PAFI de esa fecha se recalcula solo. Las muestras venosas no tienen PAFI.</div>` : '';
+    const ordenExtra = ordenCompletoExtra(U);
+    const exHtml = ordenExtra.length ? `<h5${fiHtml?' style="margin-top:12px;"':''}>Datos extra (debajo de GAP) — tocá el nombre para ocultarlo/mostrarlo · arrastrá un dato o usá ◀ ▶ para cambiar el orden en que sale en la hoja y en el PDF</h5>` +
+      ordenExtra.map(k=>`<span class="gr-chip${estaOculto(U,k)?' off':''}" draggable="true" data-ex="${esc(k)}"><span class="gr-mv" data-mv="-1" title="Subir (antes)">◀</span><span class="gr-lbl" title="Ocultar / mostrar">${esc(nombreChip(U,k))}</span><span class="gr-mv" data-mv="1" title="Bajar (después)">▶</span></span>`).join('') +
+      `<div style="margin-top:6px;"><button type="button" class="btn-tiny" data-ex-reset="1">Volver al orden por defecto</button></div>` +
+      (extras.length>EXTRA_P1 ? `<div style="margin-top:6px;color:#a15c00;">Entran ${EXTRA_P1} datos extra en la hoja principal; los otros ${extras.length-EXTRA_P1} pasan a una hoja de datos extra. Ocultá los que no necesites para que todo entre en una sola hoja.</div>` : '') : '';
+    $('grExtras').innerHTML = fiHtml + exHtml;
+
+    if(nL || G.manual.length){
+      const chipsMan = G.manual.filter(m=>m.label || tieneValoresManual(m.key)).map(m=>
+        `<span class="gr-chip" style="cursor:default;">${esc(m.label||'(sin nombre)')} <span class="gr-mv" data-mdel="${esc(m.key)}" title="Quitar esta fila">✕</span></span>`).join('');
+      $('grManual').innerHTML = `<h5>Agregar datos a mano (filas y hojas extra)</h5>` +
+        `<div>En la vista previa, escribí directamente en las <b>filas en blanco</b> de abajo de todo: el <b>nombre</b> en la primera columna y los <b>valores</b> en cada fecha. Se guardan solos y salen en el PDF.</div>` +
+        (chipsMan ? `<div style="margin-top:6px;">Filas agregadas a mano: ${chipsMan}</div>` : '') +
+        `<div style="margin-top:6px;"><button type="button" class="btn-tiny" data-hoja="1">＋ Agregar hoja de datos extra</button> ` +
+        `<button type="button" class="btn-tiny" data-hoja="-1" ${(G.hojasExtra||0)>necesarias?'':'disabled'}>− Quitar hoja agregada</button> ` +
+        `<span style="color:var(--muted);">Hojas por ventana de fechas: ${paginas.filter(pg=>pg.bloque===0).length}</span></div>`;
+    } else $('grManual').innerHTML = '';
+
+    $('grPreview').innerHTML = paginas.map((pg,i)=>
+      `<div class="gr-pagenote">Hoja ${i+1} de ${paginas.length}${pg.tipo==='extra'?' · datos extra':''}</div>` + htmlPagina(U,pg,true)).join('');
+    window.__grU = U; window.__grPaginas = paginas;
+  }
+
+  const fechaFb = () => ($('laboFecha') && $('laboFecha').value) || null;
+  $('grAgregarBtn').addEventListener('click', ()=>{
+    const v = $('grInput').value;
+    const cambio = !!(G.fuente && G.fuente.ids.length) && v !== G.fuente.texto;
+    agregarTexto(v, fechaFb(), {replace:cambio});
+  });
+  let grAutoTimer = null;
+
+  $('grInput').addEventListener('paste', e=>{
+    const t = (e.clipboardData || window.clipboardData).getData('text');
+    if(!t || (t.length<150 && t.indexOf('\n')<0)) return;
+    e.preventDefault();
+    $('grInput').value = t;
+    if(grAutoTimer) clearTimeout(grAutoTimer);
+    grAutoTimer = setTimeout(()=>{ agregarTexto(t, fechaFb(), {auto:true}); }, 60);
+  });
+  $('grInput').addEventListener('input', ()=>{
+    if(grAutoTimer) clearTimeout(grAutoTimer);
+    grAutoTimer = setTimeout(()=>{
+      const v = $('grInput').value;
+      if(v.trim()) agregarTexto(v, fechaFb(), {auto:true, replace:true});
+    }, 1500);
+  });
+  $('grNuevoBtn').addEventListener('click', ()=>{
+    if(grAutoTimer) clearTimeout(grAutoTimer);
+    G.fuente = {ids:[], texto:''};
+    save();
+    $('laboLimpiarBtn').click();
+    $('grInput').value = '';
+    $('grInput').focus();
+    setStatus('Caja en blanco: pegá el siguiente laboratorio del mismo paciente (los ya cargados se conservan).');
+  });
+  $('colMisma').addEventListener('click', ()=>resolverPregunta(true));
+  $('colOtra').addEventListener('click', ()=>resolverPregunta(false));
+  $('laboGrillaBtn').addEventListener('click', ()=>{
+    const fb = $('laboFecha').value || null;
+    $('grInput').value = $('laboInput').value;
+    const ok = agregarTexto($('laboInput').value, fb);
+    $('laboStatus').textContent = ok ? 'Agregado a la grilla semanal (sección 7).' : ($('grStatus').textContent || 'No se pudo agregar a la grilla.');
+    if(ok){ const d=$('grillaDetails'); d.open = true; }
+  });
+  $('grVaciarBtn').addEventListener('click', ()=>{
+    if(!confirm('¿Vaciar la grilla completa (laboratorios, correcciones, filas agregadas a mano y datos del paciente) y el texto de la sección 1?')) return;
+    reiniciarGrilla();
+    $('grInput').value = '';
+    $('laboLimpiarBtn').click();
+    if(grAutoTimer) clearTimeout(grAutoTimer);
+    save(); renderTodo(); setStatus('Grilla vaciada (se mantiene tu orden y los datos ocultos).');
+  });
+  $('grPaciente').addEventListener('input', e=>{ G.paciente = e.target.value; save(); refrescarEncabezados(); });
+  $('grCama').addEventListener('input', e=>{ G.cama = e.target.value; save(); refrescarEncabezados(); });
+  function refrescarEncabezados(){
+    document.querySelectorAll('#grPreview .gr-hd2 .l .v').forEach(n=>n.textContent = G.paciente);
+    document.querySelectorAll('#grPreview .gr-hd2 .r .v').forEach(n=>n.textContent = G.cama);
+  }
+  $('grLabs').addEventListener('click', e=>{
+    const b = e.target.closest('[data-del]'); if(!b) return;
+    const id = parseInt(b.dataset.del,10);
+    G.labs = G.labs.filter(l=>l.id!==id); save(); renderTodo();
+  });
+  $('grLabs').addEventListener('change', e=>{
+    const inp = e.target.closest('input[type=date]'); if(!inp || !inp.value) return;
+    const l = G.labs.find(x=>x.id===parseInt(inp.dataset.id,10)); if(!l) return;
+    l.fecha = inp.value; l.fechaManual = true; save(); renderTodo();
+  });
+  $('grConflicts').addEventListener('click', e=>{
+    const b = e.target.closest('[data-pl]'); if(!b) return;
+    G.prefer[b.dataset.pf+'|'+b.dataset.pk] = parseInt(b.dataset.pl,10);
+    delete G.edits[b.dataset.pf+'|'+b.dataset.pk];
+    save(); renderTodo();
+  });
+  function moverExtra(k, destKey, delta){
+    const ord = ordenCompletoExtra(unificar());
+    const i0 = ord.indexOf(k); if(i0<0) return;
+    let i1;
+    if(destKey!=null){ i1 = ord.indexOf(destKey); if(i1<0 || i1===i0) return; }
+    else { i1 = i0 + delta; if(i1<0 || i1>=ord.length) return; }
+    ord.splice(i0,1); ord.splice(i1,0,k);
+    G.ordenExtra = ord; save(); renderTodo();
+  }
+  $('grExtras').addEventListener('click', e=>{
+    if(e.target.closest('[data-ex-reset]')){ G.ordenExtra = []; save(); renderTodo(); return; }
+    const c = e.target.closest('[data-ex]'); if(!c) return;
+    const k = c.dataset.ex;
+    const mv = e.target.closest('[data-mv]');
+    if(mv){ moverExtra(k, null, parseInt(mv.dataset.mv,10)); return; }
+    const oculto = estaOculto(unificar(), k);
+    G.ocultos = G.ocultos.filter(x=>x!==k);
+    G.mostrados = (G.mostrados||[]).filter(x=>x!==k);
+    if(oculto) G.mostrados.push(k); else G.ocultos.push(k);
+    save(); renderTodo();
+  });
+
+  $('grExtras').addEventListener('change', e=>{
+    const inp = e.target.closest && e.target.closest('input[data-fio]'); if(!inp) return;
+    const f = inp.dataset.fio, v = inp.value.trim();
+    if(!G.fio2) G.fio2 = {};
+    if(!v){ delete G.fio2[f]; }
+    else if(parseFi(v)==null){ setStatus('FiO₂ no válida: usá 0.21 a 1 (o 21 a 100 %), o litros como «3 L».', true); inp.value = G.fio2[f] || ''; return; }
+    else G.fio2[f] = v;
+    save(); renderTodo();
+  });
+  $('grExtras').addEventListener('keydown', e=>{ if(e.key==='Enter' && e.target.matches && e.target.matches('input[data-fio]')){ e.preventDefault(); e.target.blur(); } });
+  let dragKey = null;
+  $('grExtras').addEventListener('dragstart', e=>{
+    const c = e.target.closest && e.target.closest('[data-ex]'); if(!c) return;
+    dragKey = c.dataset.ex;
+    try{ e.dataTransfer.setData('text/plain', dragKey); e.dataTransfer.effectAllowed = 'move'; }catch(_){}
+  });
+  $('grExtras').addEventListener('dragover', e=>{
+    const c = e.target.closest && e.target.closest('[data-ex]');
+    if(!c || dragKey==null) return;
+    e.preventDefault();
+    $('grExtras').querySelectorAll('.dragover').forEach(n=>n.classList.remove('dragover'));
+    c.classList.add('dragover');
+  });
+  $('grExtras').addEventListener('drop', e=>{
+    const c = e.target.closest && e.target.closest('[data-ex]');
+    if(!c || dragKey==null) return;
+    e.preventDefault();
+    const k = dragKey; dragKey = null;
+    moverExtra(k, c.dataset.ex, 0);
+  });
+  $('grExtras').addEventListener('dragend', ()=>{ dragKey = null; $('grExtras').querySelectorAll('.dragover').forEach(n=>n.classList.remove('dragover')); });
+
+  $('grManual').addEventListener('click', e=>{
+    const del = e.target.closest('[data-mdel]');
+    if(del){
+      const k = del.dataset.mdel;
+      G.manual = G.manual.filter(m=>m.key!==k);
+      Object.keys(G.edits).forEach(ek=>{ if(ek.slice(ek.indexOf('|')+1)===k) delete G.edits[ek]; });
+      save(); renderTodo(); return;
+    }
+    const h = e.target.closest('[data-hoja]'); if(!h || h.disabled) return;
+    const U = unificar(); const necesarias = armarPaginas(U).necesarias;
+    if(h.dataset.hoja==='1') G.hojasExtra = Math.max(G.hojasExtra||0, necesarias) + 1;
+    else G.hojasExtra = Math.max(necesarias, (G.hojasExtra||0) - 1);
+    save(); renderTodo();
+  });
+
+  function crearManualHasta(p, label){
+    const E = filasExtra(unificar()).length;
+    const n = Math.max(1, p - E + 1);
+    let key = null;
+    for(let i=0;i<n;i++){
+      G.seq += 1; key = 'm:'+G.seq;
+      G.manual.push({key, label: i===n-1 ? label : ''});
+    }
+    return key;
+  }
+  const $prev = $('grPreview');
+  $prev.addEventListener('keydown', e=>{
+    const c = e.target.classList;
+    if(e.key==='Enter' && c && (c.contains('gr-v') || c.contains('gr-lbl-ed'))){ e.preventDefault(); e.target.blur(); }
+  });
+  $prev.addEventListener('paste', e=>{
+    const c = e.target.classList;
+    if(!c || !(c.contains('gr-v') || c.contains('gr-lbl-ed'))) return;
+    e.preventDefault();
+    const t = (e.clipboardData || window.clipboardData).getData('text').replace(/\s+/g,' ').trim();
+    document.execCommand('insertText', false, t);
+  });
+  $prev.addEventListener('focusout', e=>{
+    const td = e.target;
+    if(!td.classList) return;
+    if(td.classList.contains('gr-lbl-ed')){
+      const txt = td.textContent.replace(/\s+/g,' ').trim();
+      if(td.dataset.mk){
+        const m = G.manual.find(x=>x.key===td.dataset.mk);
+        if(!m || m.label===txt) return;
+        m.label = txt; save(); renderTodo();
+      } else if(td.dataset.blank!=null){
+        if(!txt) return;
+        crearManualHasta(parseInt(td.dataset.blank,10), txt); save(); renderTodo();
+      }
+      return;
+    }
+    if(!td.classList.contains('gr-v')) return;
+    const f = td.dataset.f, nuevo = td.textContent.trim();
+    let k = td.dataset.k;
+    if(k==null && td.dataset.blank!=null){
+      if(!nuevo) return;
+      k = crearManualHasta(parseInt(td.dataset.blank,10), '');
+    }
+    const actual = (window.__grU && window.__grU.celdas[f+'|'+k]) ?? '';
+    if(nuevo === String(actual) && !esManual(k)) return;
+    if(nuevo === String(actual)) return;
+    G.edits[f+'|'+k] = nuevo; save(); renderTodo();
+  });
+
+  function paginasLimpias(){
+    const U = unificar(); const {paginas} = armarPaginas(U);
+    return paginas.map(pg=>htmlPagina(U,pg,false)).join('');
+  }
+  function nombreArchivo(){
+    const base = ['Grilla_Lab', G.paciente || 'paciente', G.cama ? 'cama'+G.cama : ''].filter(Boolean).join('_');
+    const ult = unificar().fechas.slice(-1)[0];
+    return (base + (ult ? '_'+ult : '')).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9_-]+/g,'_').replace(/_+/g,'_') + '.pdf';
+  }
+  function cargarScript(src){
+    return new Promise((ok,mal)=>{
+      const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = ()=>mal(new Error('No se pudo cargar '+src));
+      document.head.appendChild(s);
+    });
+  }
+  async function descargarPDF(){
+    const btn = $('grPdfBtn'); btn.disabled = true;
+    let cont = null;
+    try{
+      setStatus('Generando PDF…');
+      if(!window.html2canvas) await cargarScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+      if(!(window.jspdf && window.jspdf.jsPDF)) await cargarScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+      if(document.fonts && document.fonts.ready) await document.fonts.ready;
+      cont = document.createElement('div');
+      cont.style.cssText = 'position:fixed;left:-10000px;top:0;width:210mm;background:#fff;';
+      cont.innerHTML = '<style>'+CSS_PAGINA+'.gr-page{margin:0 !important;}</style>' + paginasLimpias();
+      document.body.appendChild(cont);
+      const pages = cont.querySelectorAll('.gr-page');
+      const pdf = new window.jspdf.jsPDF({unit:'mm', format:'a4', orientation:'portrait'});
+      for(let i=0;i<pages.length;i++){
+        const canvas = await window.html2canvas(pages[i], {scale:3, backgroundColor:'#ffffff', logging:false});
+        if(i>0) pdf.addPage('a4','portrait');
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 210, 297, undefined, 'FAST');
+      }
+      pdf.save(nombreArchivo());
+      setStatus('PDF descargado.');
+    }catch(err){
+      console.error(err);
+      setStatus('No se pudo generar el PDF directo ('+err.message+'). Usá «Imprimir / guardar como PDF».', true);
+    }finally{
+      if(cont) cont.remove();
+      btn.disabled = false;
+    }
+  }
+  function imprimir(){
+    const ifr = document.createElement('iframe');
+    ifr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+    document.body.appendChild(ifr);
+    const doc = ifr.contentWindow.document;
+    doc.open();
+    doc.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+esc(nombreArchivo().replace(/\.pdf$/,''))+'</title><style>@page{size:A4 portrait;margin:0;}html,body{margin:0;padding:0;background:#fff;}'+
+      CSS_PAGINA + '.gr-page{margin:0 !important;page-break-after:always;break-after:page;}.gr-page:last-child{page-break-after:auto;break-after:auto;}</style></head><body>' + paginasLimpias() + '</body></html>');
+    doc.close();
+    setTimeout(()=>{
+      try{ ifr.contentWindow.focus(); ifr.contentWindow.print(); }catch(e){ setStatus('No se pudo abrir la impresión: '+e.message, true); }
+      setTimeout(()=>ifr.remove(), 60000);
+    }, 400);
+  }
+  $('grPdfBtn').addEventListener('click', descargarPDF);
+  $('grPrintBtn').addEventListener('click', imprimir);
+
+  const CSS_PAGINA = `.gr-page{width:210mm;height:297mm;background:#fff;color:#000;margin:0 auto 14px;padding:8mm 8mm 0;box-sizing:border-box;font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:14pt;line-height:1;overflow:hidden;font-weight:400;}
+.gr-hd{display:flex;height:6.8mm;align-items:center;font-weight:700;white-space:nowrap;}
+.gr-hd .u{text-decoration:underline;}
+.gr-hd .l{width:62%;} .gr-hd .r{width:38%;}
+.gr-hd .v{font-weight:400;text-decoration:none;}
+.gr-hd2{margin-bottom:1mm;}
+.gr-table{width:194mm;table-layout:fixed;border-collapse:separate;border-spacing:0;border-left:.3mm solid #000;border-top:.3mm solid #000;}
+.gr-table td{height:5.8mm;padding:0 .8mm;box-sizing:border-box;border-right:.3mm solid #000;border-bottom:.3mm solid #000;white-space:nowrap;overflow:hidden;text-align:left;vertical-align:middle;line-height:1;color:#000;font-weight:400;}
+.gr-table td.lb{font-weight:700;}
+.gr-table td.lx{font-weight:400;}
+.gr-table td.lr{text-align:right;}
+`;
+  if(G.fuente && G.fuente.texto) $('grInput').value = G.fuente.texto;
+  renderTodo();
+  window.grilla = {get estado(){ return G; }, agregarTexto, unificar, armarPaginas, parseConvertido, parseCrudo, renderTodo};
+})();
+</script>
+
 </body>
 </html>
