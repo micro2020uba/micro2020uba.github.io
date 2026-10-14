@@ -1073,12 +1073,12 @@ function captureCurrentAsPlantillaSet(){
     const merged = getMergedItems(key);
     const normal = {}, alt = {};
     merged.normal.forEach(item=>{
-      if(!isChecked(key,'normal',item.id)) return;
+      if(!isChecked(key,'normal',item.id)){ normal[item.id] = false; return; }   /* false explícito: Firestore (merge) conserva las claves viejas y los destildados volvían a tildarse */
       const det = item.detail ? detailValFor(key,'normal',item.id) : '';
       normal[item.id] = det || true;
     });
     merged.alteraciones.forEach(item=>{
-      if(!isChecked(key,'alt',item.id)) return;
+      if(!isChecked(key,'alt',item.id)){ alt[item.id] = false; return; }   /* false explícito: Firestore (merge) conserva las claves viejas y los destildados volvían a tildarse */
       const det = item.detail ? detailValFor(key,'alt',item.id) : '';
       alt[item.id] = det || true;
     });
@@ -1683,6 +1683,7 @@ function bibAplicar(p, ids, silencioso){
   p.bibIds = ids2.slice();
   p.bibChecks = { fecha: bibHoy(), k:{} };
   aplicarPlantillaObj(p, { estado:r.estado, set:r.set });
+  p.checksPropios = captureCurrentAsPlantillaSet();   // queda guardado en la ficha: lo que destildes después se conserva al recargar
   savePatientNow(p);
   const sel = fld('evolPlantilla');
   if(sel){ bibAsegurarOpcion(sel, p.plantillaSeleccionada); sel.value = p.plantillaSeleccionada; }
