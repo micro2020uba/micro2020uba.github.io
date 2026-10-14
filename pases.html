@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-   Versión: 29 (28/09/2026)
+   Versión: 42 (28/09/2026)
 -->
 <html lang="es-AR">
 <head>
@@ -1436,9 +1436,6 @@ function bibLimpiarTexto(t){
   t = t.replace(/\b([Ss])indrome\b/g, (m,c)=>c+'índrome').replace(/\b([Dd])ia(s?)\b/g, (m,c,s)=>c+'ía'+s);
   t = t.replace(/\(\s*fi\s*:?\s*(\d)/gi, '(FI: $1').replace(/\bTto\b/g,'tto').replace(/\b([Ss])olcial\b/g,'$1ocial');
   t = t.replace(/\b[uU]ltimo d[ií]a\b/g,'último día').replace(/\bcolistin\b/gi,'colistina');
-  // abreviaturas de tipeo rápido: «+sme abstinencia» → «y síndrome de abstinencia» (los «A + B» de antibióticos no se tocan)
-  t = t.replace(/\b([Ss])me\.?\s+(?:de\s+)?abstinencia\b/g, (m,c)=>c+'índrome de abstinencia').replace(/\b([Ss])me\b\.?/g, (m,c)=>c+'índrome');
-  t = t.replace(/(\S)\s+\+(?=[A-Za-zÁÉÍÓÚÜÑáéíóúüñ])\s*/g, '$1 y ');
   return t.replace(/\s{2,}/g,' ').trim();
 }
 function bibFrasePlana(t){
@@ -3482,13 +3479,8 @@ function variantSeed(patient){
   const dia = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
   return (patient && patient.evolCount || 0) + dia;
 }
-/* Las variantes rotativas (p. ej. «orientado en tiempo, espacio y persona», «consciente y vigil»,
-   «con inversión del ciclo sueño-vigilia», «con uso de músculos accesorios») cambiaban la redacción
-   —y a veces el hallazgo— sin que se tildara nada. Ahora se escribe exactamente el texto del ítem.
-   Poner true solo si se quiere volver a rotar sinónimos. */
-const ROTAR_VARIANTES = false;
 function pickVariant(item, patient){
-  if(ROTAR_VARIANTES && item.variants && item.variants.length>1){
+  if(item.variants && item.variants.length>1){
     return item.variants[variantSeed(patient) % item.variants.length];
   }
   return item.text;
@@ -3628,7 +3620,7 @@ function itemIncluidoEn(salida, key, kind, id){
   if(m && typeof m[salida] === 'boolean') return m[salida];
   if(key === 'cierre') return true;
   // Neurológico: la apertura de siempre (vigil, reactivo, sin foco) sale en los tres textos; el resto de los normales, solo si se tildan acá.
-  if(key === 'neuro' && kind === 'normal') return true;
+  if(key === 'neuro' && kind === 'normal') return ['vigil','reactivo','sinfoco'].indexOf(id) !== -1;
   return salida === 'corta' ? kind === 'alt' : true;
 }
 function bloqueOn(salida, id){
@@ -3770,7 +3762,7 @@ const CONTRADICCIONES = {
     [/murmullo vesicular conservado|buena entrada de aire/i, /murmullo vesicular (disminuido|abolido)/i]
   ],
   dig:[
-    [/^blando/i, /defensa|\btens[oa]\b|a tensi[oó]n/i],
+    [/^blando/i, /defensa/i],
     [/^depresible/i, /distendid|globoso|tenso/i],
     [/^indoloro/i, /^doloroso|^dolor/i],
     [/^RHA \(\+\)/i, /^RHA (disminuidos|\(-\))/i],
@@ -3820,8 +3812,7 @@ function unirFoneticos(lista){
 /* Concordancia de género de los adjetivos que describen al paciente (no al abdomen, etc.). */
 function generoPac(t, p){
   if(!t || !p || p.sexo !== 'F') return t;
-  return t.replace(/\b(desorientad|confus|somnolient|orientad|reactiv|obnubilad|agitad|estuporos|excitad)o(s?)\b/gi, (m, raiz, s)=> raiz + 'a' + s)
-          .replace(/\bcolaborador\b/gi, m=> m + 'a').replace(/\bcolaboradores\b/gi, m=> m.slice(0,-2) + 'as');
+  return t.replace(/\b(desorientad|confus|somnolient|orientad|reactiv|obnubilad|agitad|estuporos|excitad)o(s?)\b/gi, (m, raiz, s)=> raiz + 'a' + s);
 }
 
 /* El MI se muestra tal como se cargó; al redactar el texto se corrigen las faltas típicas de
@@ -3830,13 +3821,6 @@ function limpiarMI(t){
   t = String(t||'');
   t = t.replace(/\[\s*/g,'(').replace(/\s*\]/g,')');
   t = t.replace(/\(\s+/g,'(').replace(/\s+\)/g,')');
-  t = t.replace(/\b([Ss])me\.?\s+(?:de\s+)?abstinencia\b/g, (m,c)=>c+'índrome de abstinencia');
-  t = t.replace(/\b([Ss])me\b\.?/g, (m,c)=>c+'índrome');
-  // «A +B», «A + B»: el «+» entre diagnósticos se lee «A y B» (o «A, B y C»).
-  if(/\S\s*\+\s*[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(t)){
-    const seg = t.split(/\s*\+\s*(?=[A-Za-zÁÉÍÓÚÜÑáéíóúüñ])/).map(x=>x.trim()).filter(Boolean);
-    t = seg.length > 1 ? seg.slice(0,-1).join(', ') + ' y ' + seg[seg.length-1] : seg.join('');
-  }
   t = t.replace(/\b([Ss])indrome\b/g, (m,c)=>c+'índrome');
   t = t.replace(/\b([Dd])ia(s?)\b/g, (m,c,s)=>c+'ía'+s);
   t = t.replace(/\(\s*fi\s*:?\s*(\d)/gi, '(FI: $1');
@@ -3997,32 +3981,21 @@ function prefijoMiembros(lista){
   return /^(integridad|piel|tegumentos|moviliza|pulsos|perfusi|escara|[uú]lcera|lesi[oó]n|herida|curaci|edema|flogosis|signos|palidez|cianosis|limitaci|se\s|sin m[aá]s)/i.test(lista[0])
     ? capitalize(unidos) : `Miembros ${unidos}`;
 }
-/* Otros ítems renales tildados (agregados a mano: «diuresis espontánea», «sonda vesical», etc.). */
-function renalExtras(salida, p){
-  const conocidos = ['diuresispos','diuresisneg','oliguria','anuria'];
-  const m = getMergedItems('renal'), out = [];
-  m.normal.forEach(i=>{ if(conocidos.indexOf(i.id)===-1 && isOn(salida,'renal','normal',i.id)) out.push(itemPhrase('renal','normal',i.id,p)); });
-  m.alteraciones.forEach(i=>{ if(conocidos.indexOf(i.id)===-1 && isOn(salida,'renal','alt',i.id)) out.push(itemPhrase('renal','alt',i.id,p)); });
-  return out.filter(Boolean);
-}
 function buildCatarsisDiuresisClause(patient, salida){
-  const catNeg = isOn(salida,'dig','alt','catarsisneg');
-  const catPos = !catNeg && isOn(salida,'dig','normal','catarsispos');
+  const catPos = isOn(salida,'dig','normal','catarsispos');
   const diuPos = isOn(salida,'renal','normal','diuresispos');
   const ml = detailValFor('renal','normal','diuresispos');
-  const extras = renalExtras(salida, patient);
-  const conExtras = b=> extras.length ? (b ? b + ', ' : '') + extras.join(', ') : b;
   if(catPos && diuPos){
-    return conExtras(`catarsis y diuresis conservadas${ml?` (diuresis ${ml} ml en bolsa colectora)`:''}`);
+    return `catarsis y diuresis conservadas${ml?` (diuresis ${ml} ml en bolsa colectora)`:''}`;
   }
   const parts = [];
   if(catPos) parts.push('catarsis conservada');
-  else if(catNeg) parts.push(itemPhrase('dig','alt','catarsisneg',patient));
+  else if(isOn(salida,'dig','alt','catarsisneg')) parts.push(itemPhrase('dig','alt','catarsisneg',patient));
   if(diuPos) parts.push(`diuresis conservada${ml?` (${ml} ml en bolsa colectora)`:''}`);
   else if(isOn(salida,'renal','alt','oliguria')) parts.push(itemPhrase('renal','alt','oliguria',patient));
   else if(isOn(salida,'renal','alt','anuria')) parts.push(itemPhrase('renal','alt','anuria',patient));
   else if(isOn(salida,'renal','alt','diuresisneg')) parts.push(itemPhrase('renal','alt','diuresisneg',patient));
-  return conExtras(parts.join(' y '));
+  return parts.join(' y ');
 }
 function buildCsvLine(){
   const ta = val('evolTA'), fc = val('evolFC'), sat = val('evolSat'), t = val('evolT');
@@ -4295,55 +4268,24 @@ function baseNeuroAdjetivos(estado){
 function buildOpeningExamSentence(p, estado, salida){
   const base = baseNeuroAdjetivos(estado);
   const unir = l=>l.length>1 ? l.slice(0,-1).join(', ') + ' y ' + l[l.length-1] : (l[0]||'');
-  const norm = t=>String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
   // La apertura (vigil / reactivo / sin foco) parte del Estado general y se puede quitar desde la plantilla.
   const cons = itemIncluidoEn(salida,'neuro','normal','vigil') ? generoPac(base.consciencia, p) : '';
   const reac = itemIncluidoEn(salida,'neuro','normal','reactivo') ? base.reactividad + (p.sexo === 'F' ? 'a' : 'o') : '';
-  const merged = getMergedItems('neuro');
-  const ESPECIALES = ['vigil','reactivo','sinfoco'];                 // se redactan según el Estado general
-  const ADJETIVOS_ALT = ['desorientado','excitacion','noobedece','confuso','glasgow','somnoliento']; // van en la lista de adjetivos
-  const altOn = merged.alteraciones.filter(i=>isOn(salida,'neuro','alt',i.id));
-  const altIdsOn = new Set(altOn.map(i=>i.id));
-  const altNorm = altOn.map(i=>norm(itemPhrase('neuro','alt',i.id,p)));
-  // Normales agregados a mano que se contradicen con una alteración tildada (los de fábrica ya traen antagonistas).
-  const CONTRA = [[/^orientad/, /desorient|confus/], [/colaborador/, /excitaci|no colabor/], [/^obedece/, /no obedece/],
-                  [/fuerza.*conservad/, /debilidad|paresi|plejia|foco motor/], [/lenguaje|habla/, /afasia|disartria/],
-                  [/pupilas.*(isocor|reactiv)/, /anisocoria|midriasis|miosis|hiporreactiv/]];
-  const vistos = new Set();
-  const normalesExtra = [];
-  merged.normal.forEach(i=>{
-    if(ESPECIALES.indexOf(i.id) !== -1) return;
-    if(!isOn(salida,'neuro','normal',i.id)) return;
-    if((i.antagonistas||[]).some(a=>altIdsOn.has(a))) return;
-    const t = generoPac(itemPhrase('neuro','normal',i.id,p), p);
-    const k = norm(t);
-    if(!t || vistos.has(k)) return;                                  // «orientado en las 3 esferas» no se repite
-    if(CONTRA.some(([rn,ra])=>rn.test(k) && altNorm.some(a=>ra.test(a)))) return;
-    vistos.add(k); normalesExtra.push(t);
-  });
-  const adj = [], hall = [];
-  altOn.forEach(i=>{
-    if(i.id === 'focomotor') return;
-    if(i.id === 'somnoliento' && base.consciencia === 'somnoliento') return;
-    const t = generoPac(itemPhrase('neuro','alt',i.id,p), p);
-    const k = norm(t);
-    if(!t || vistos.has(k)) return;
-    vistos.add(k);
-    (ADJETIVOS_ALT.indexOf(i.id) !== -1 ? adj : hall).push(t);       // lo agregado a mano se redacta «con …»
-  });
-  const focoAlt = altIdsOn.has('focomotor');
-  if(focoAlt) hall.unshift(itemPhrase('neuro','alt','focomotor',p));
+  const normalesExtra = ['orientado3','colaborador','obedeceordenes']
+    .filter(id=>isOn(salida,'neuro','normal',id))
+    .map(id=>generoPac(itemPhrase('neuro','normal',id,p), p));
+  const altIds = ['desorientado','excitacion','noobedece','confuso','glasgow','somnoliento']
+    .filter(id=>!(id==='somnoliento' && base.consciencia==='somnoliento'));
+  const otrasAlt = altIds.filter(id=>isOn(salida,'neuro','alt',id))
+    .map(id=>generoPac(itemPhrase('neuro','alt',id,p), p));
   let foco = '';
-  const focoEnHall = hall.some(t=>/paresi|plej|hemipar|hemiplej|foco motor|d[eé]ficit motor/i.test(t));
-  if(!focoAlt && !focoEnHall && itemIncluidoEn(salida,'neuro','normal','sinfoco')) foco = 'sin signo de foco motor agudo';
+  if(isOn(salida,'neuro','alt','focomotor')) foco = itemPhrase('neuro','alt','focomotor',p);
+  else if(itemIncluidoEn(salida,'neuro','normal','sinfoco')) foco = 'sin signo de foco motor agudo';
   // Si la historia clínica ya presentó al paciente («Paciente masculino de 88 años…»), no se
   // repite «Paciente»: se pasa al examen con «Al examen físico, …».
   const inicio = bloqueOn(salida,'dx') ? 'Al examen físico, paciente' : 'Paciente';
-  const adjetivos = [cons, reac].concat(normalesExtra, adj, foco ? [foco] : []).filter(Boolean);
-  const conCon = hall.filter(t=>!/^(con|sin)\s/i.test(t)).map(t=>t.replace(/^con\s+/i,''));
-  const otros = hall.filter(t=>/^(con|sin)\s/i.test(t));
-  const hallTxt = (conCon.length ? ', con ' + unir(conCon) : '') + otros.map(t=>', ' + t).join('');
-  return `${inicio} en ${estadoCortoTexto(estado)}${adjetivos.length ? ', ' + unir(adjetivos) : ''}${hallTxt}${trendPhraseFor('neuro',p)}.`;
+  const hallazgos = [cons, reac].concat(normalesExtra, otrasAlt, foco ? [foco] : []).filter(Boolean);
+  return `${inicio} en ${estadoCortoTexto(estado)}${hallazgos.length ? ', ' + unir(hallazgos) : ''}${trendPhraseFor('neuro',p)}.`;
 }
 
 /* Cuerpo del examen (CSV + cardio/resp/abdomen-renal/miembros/infecto +
@@ -4368,8 +4310,7 @@ function buildExamBody(p, salida){
   const estudioTipo = fld('evolEstudioTipo') ? fld('evolEstudioTipo').value : '';
   const estudioInforme = fld('evolEstudioInforme') ? fld('evolEstudioInforme').value.trim() : '';
 
-  let out = bloqueOn(salida,'csv') ? buildCsvLine() + ' ' : '';
-  out += buildVscObservacionesSentence(p);
+  let out = '';   // CSV y observaciones van antes de «Al examen físico» (ver buildSalidaText)
   if(cv) out += `${capitalize(cv)}${trendPhraseFor('cv',p)}. `;
   if(bloqueOn(salida,'estudio') && estudioTipo && estudioInforme) out += `Se recibe informe de ${estudioTipo}: ${estudioInforme}. `;
   if(resp) out += `${capitalize(resp)}${trendPhraseFor('resp',p)}. `;
@@ -4478,6 +4419,9 @@ function buildSalidaText(p, salida){
   const estado = fld('evolEstado').value;
   const partes = [fecha + ':'];
   if(bloqueOn(salida,'dx')) partes.push(dxSentence(p));
+  /* Orden: diagnóstico → CSV (+ observaciones de signos vitales) → «Al examen físico…» → resto del examen. */
+  if(bloqueOn(salida,'csv')) partes.push(buildCsvLine());
+  partes.push(buildVscObservacionesSentence(p).trim());
   if(bloqueOn(salida,'apertura')) partes.push(buildOpeningExamSentence(p, estado, salida));
   partes.push(salida === 'corta' ? buildCuerpoCorto(p) : buildExamBody(p, salida));
   return pulirTexto(partes.filter(Boolean).join(' '));
@@ -4503,8 +4447,7 @@ function shortSystemSentences(key, p, prefijoNormal){
 }
 function shortCatDiuSentences(p){
   const S = 'corta';
-  const catNeg = isOn(S,'dig','alt','catarsisneg');
-  const catPos = !catNeg && isOn(S,'dig','normal','catarsispos');
+  const catPos = isOn(S,'dig','normal','catarsispos');
   const diuPos = isOn(S,'renal','normal','diuresispos');
   const ml = detailValFor('renal','normal','diuresispos');
   const out = [];
@@ -4513,11 +4456,11 @@ function shortCatDiuSentences(p){
     if(catPos) out.push('catarsis conservada');
     if(diuPos) out.push(`diuresis conservada${ml?` (${ml} ml en bolsa colectora)`:''}`);
   }
-  if(catNeg) out.push(itemPhrase('dig','alt','catarsisneg',p));
+  if(isOn(S,'dig','alt','catarsisneg')) out.push(itemPhrase('dig','alt','catarsisneg',p));
   if(isOn(S,'renal','alt','oliguria')) out.push(itemPhrase('renal','alt','oliguria',p));
   else if(isOn(S,'renal','alt','anuria')) out.push(itemPhrase('renal','alt','anuria',p));
   else if(isOn(S,'renal','alt','diuresisneg')) out.push(itemPhrase('renal','alt','diuresisneg',p));
-  return out.concat(renalExtras(S, p));
+  return out;
 }
 function shortMiembrosSentences(p){
   const S = 'corta';
@@ -4569,8 +4512,7 @@ function buildCuerpoCorto(p){
   const estudioTipo = fld('evolEstudioTipo') ? fld('evolEstudioTipo').value : '';
   const estudioInforme = fld('evolEstudioInforme') ? fld('evolEstudioInforme').value.trim() : '';
 
-  let out = bloqueOn(S,'csv') ? buildCsvLine() + ' ' : '';
-  out += buildVscObservacionesSentence(p);
+  let out = '';   // CSV y observaciones van antes de «Al examen físico» (ver buildSalidaText)
   const hallazgos = [].concat(
     shortSystemSentences('cv', p, ''),
     (bloqueOn(S,'estudio') && estudioTipo && estudioInforme) ? [`Se recibe informe de ${estudioTipo}: ${estudioInforme}`] : [],
