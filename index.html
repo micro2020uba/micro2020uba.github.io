@@ -175,6 +175,18 @@
       <span class="go">Abrir →</span>
     </button>
 
+    <!-- CONTACTOS: se abre como modal con un iframe hacia contactos.html.
+         Lectura libre; el botón "Administrar" de adentro pide iniciar sesión
+         (misma cuenta de Firebase que usa el Pase de guardia). -->
+    <button type="button" class="tool-card" id="openContactosBtn">
+      <div class="icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M6 2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6V2Zm6 4a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Zm-4.5 9.5V17h9v-1.5c0-1.7-3-2.5-4.5-2.5s-4.5.8-4.5 2.5ZM3 6h1.5v2H3V6Zm0 5h1.5v2H3v-2Zm0 5h1.5v2H3v-2Z"/></svg>
+      </div>
+      <h2>Contactos</h2>
+      <p>Directorio de interconsultas por hospital y servicio, con WhatsApp y correo en un toque. Para editar, mover contactos de servicio y exportar a Excel: botón Administrar.</p>
+      <span class="go">Abrir →</span>
+    </button>
+
     <!-- Para sumar una herramienta nueva más adelante, copiá uno de los
          .tool-card de arriba (o el placeholder de abajo) y armá su propio
          acceso: navegación de página completa (como Pase de guardia) o
@@ -231,6 +243,19 @@
   </div>
 </div>
 
+<div class="labo-standalone-overlay" id="contactosStandaloneOverlay">
+  <div class="labo-standalone-modal">
+    <div class="labo-standalone-header">
+      <span>
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M6 2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6V2Zm6 4a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Zm-4.5 9.5V17h9v-1.5c0-1.7-3-2.5-4.5-2.5s-4.5.8-4.5 2.5ZM3 6h1.5v2H3V6Zm0 5h1.5v2H3v-2Zm0 5h1.5v2H3v-2Z"/></svg>
+        CONTACTOS — Directorio de interconsultas
+      </span>
+      <button type="button" class="labo-standalone-close" id="contactosStandaloneCloseBtn" title="Cerrar">×</button>
+    </div>
+    <iframe id="contactosStandaloneFrame" title="Directorio de contactos" src=""></iframe>
+  </div>
+</div>
+
 <script>
 (function(){
   const today = new Date();
@@ -255,6 +280,7 @@
   const BH_VERSION = '2026-09-30-2';
   const CALC_VERSION = '2026-09-13-1';
   const GUARDIAS_VERSION = '2026-09-13-1';
+  const CONTACTOS_VERSION = '2026-10-22-1';
 
 /* ---- Pase de guardia: navegación de página completa ---- */
 document.getElementById('openPaseBtn').addEventListener('click', ()=>{
@@ -358,6 +384,36 @@ document.getElementById('openGuardiasBtn').addEventListener('click', ()=>{
   });
 })();
 
+/* ---- Contactos: modal con iframe hacia contactos.html ---- */
+(function(){
+  const overlay = document.getElementById('contactosStandaloneOverlay');
+  const frame = document.getElementById('contactosStandaloneFrame');
+  const openBtn = document.getElementById('openContactosBtn');
+  const closeBtn = document.getElementById('contactosStandaloneCloseBtn');
+
+  function openContactosStandalone(){
+    try{localStorage.setItem('pwa_last','contactos')}catch(e){}
+    if(!frame.dataset.loaded){
+      frame.src = 'contactos.html?v=' + encodeURIComponent(CONTACTOS_VERSION);
+      frame.dataset.loaded = '1';
+    }
+    overlay.classList.add('open');
+  }
+  function closeContactosStandalone(){
+    try{localStorage.removeItem('pwa_last')}catch(e){}
+    overlay.classList.remove('open');
+  }
+
+  openBtn.addEventListener('click', openContactosStandalone);
+  closeBtn.addEventListener('click', closeContactosStandalone);
+  overlay.addEventListener('click', (e)=>{
+    if(e.target === overlay) closeContactosStandalone();
+  });
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape' && overlay.classList.contains('open')) closeContactosStandalone();
+  });
+})();
+
 /* ---- Reabrir la última herramienta al tocar el ícono de la app ----
    El manifest lanza la app con "?source=pwa". Cada herramienta guarda en
    localStorage ('pwa_last') cuál fue la última que abriste. Si entrás por
@@ -368,7 +424,7 @@ document.getElementById('openGuardiasBtn').addEventListener('click', ()=>{
     const fromApp = new URLSearchParams(location.search).get('source') === 'pwa';
     const last = localStorage.getItem('pwa_last');
     if(!fromApp){ localStorage.removeItem('pwa_last'); return; }
-    const ids = { pase:'openPaseBtn', guardias:'openGuardiasBtn', labo:'openLaboBtn', calc:'openCalcBtn', bh:'openBhBtn' };
+    const ids = { pase:'openPaseBtn', guardias:'openGuardiasBtn', labo:'openLaboBtn', calc:'openCalcBtn', bh:'openBhBtn', contactos:'openContactosBtn' };
     if(last && ids[last]) document.getElementById(ids[last]).click();
   }catch(e){}
 })();
