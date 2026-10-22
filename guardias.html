@@ -1,5 +1,8 @@
 <!DOCTYPE html>
 <!--
+   Versión: 12 (22/10/2026) — buscador por cama/nombre sobre el resumen; las
+   camas abiertas que salen de la pantalla al hacer scroll se pliegan solas
+   (con compensación de scroll para que la pantalla no salte).
    Versión: 11 (13/09/2026)
    Herramienta: Guardias — pendientes por cama
 
@@ -98,6 +101,15 @@
 
   main{max-width:1400px;margin:0 auto;padding:18px clamp(10px,2.5vw,28px) 60px;}
 
+  /* ===== Buscador (cama / nombre) ===== */
+  .search-box{background:var(--panel);border:2px solid var(--ink);border-radius:4px;padding:12px 14px;margin-bottom:16px;box-shadow:2px 3px 0 rgba(0,0,0,.05);}
+  .search-row{display:flex;gap:8px;align-items:center;}
+  .search-row input{flex:1;min-width:0;font-family:inherit;font-size:14px;padding:9px 10px;border:1px solid var(--line-soft);border-radius:3px;background:var(--field-bg);color:var(--ink);}
+  .search-row input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(47,93,90,.18);}
+  .search-info{margin-top:8px;font-size:11.5px;color:var(--muted);}
+  .search-results{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  .search-results .sr-item{font-size:12.5px;border:1px solid var(--line-soft);background:var(--field-bg);border-radius:12px;padding:3px 10px;}
+  .search-results .sr-name{color:var(--muted);}
   .toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
   .toolbar .info{font-size:11.5px;color:var(--muted);max-width:560px;line-height:1.5;}
 
@@ -108,7 +120,7 @@
     color:var(--paper);background:var(--accent-dark);text-align:left;padding:9px 10px;border-right:1px solid rgba(255,255,255,.15);
   }
   thead th:last-child{border-right:none;}
-  col.col-cama{width:64px;}
+  col.col-cama{width:84px;}
   col.col-pac{width:14%;}
   col.col-dni{width:9%;}
   col.col-edad{width:6%;}
@@ -121,7 +133,18 @@
   tbody tr:hover{background:#fbfaf5;}
   tbody tr.no-pend{opacity:.72;}
 
-  .cama-num{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:13.5px;color:var(--accent-dark);padding-top:2px;}
+  .cama-num{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:13.5px;color:var(--accent-dark);}
+  .bed-toggle{display:flex;align-items:center;gap:7px;width:100%;background:none;border:none;padding:2px 0;text-align:left;cursor:pointer;color:var(--accent-dark);}
+  .bed-toggle .caret{font-size:11px;color:var(--muted);width:10px;}
+  .bed-toggle:hover .cama-num{text-decoration:underline;}
+  .bed-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px;}
+  /* Cama cerrada: solo el número (la celda ocupa todo el ancho) */
+  tbody tr.collapsed td:not(:first-child){display:none;}
+  tbody tr.collapsed td:first-child{padding:6px 12px;}
+  tbody tr.collapsed .cama-num{font-size:14px;}
+  tbody tr.open td:first-child{background:#efece2;}
+  table.all-closed thead{display:none;}
+  .toolbar-btns{display:flex;gap:6px;}
 
   [contenteditable="true"]{
     outline:none;min-height:20px;line-height:1.4;white-space:pre-wrap;word-break:break-word;
@@ -231,6 +254,8 @@
     border-radius:10px;padding:2px 8px 2px 6px;cursor:pointer;color:var(--accent-dark);background:var(--field-bg);user-select:none;}
   .hgt-toggle input{margin:0;}
   .hgt-toggle.off{opacity:.5;text-decoration:line-through;color:var(--muted);}
+  .hgt-start-row{margin-bottom:6px;font-size:10.5px;color:var(--muted);}
+  .hgt-start-row select{font-family:inherit;font-size:11px;padding:2px 4px;border:1px solid var(--line-soft);border-radius:3px;background:var(--field-bg);color:var(--accent-dark);font-weight:600;}
   .hgt-none{font-size:11px;color:var(--muted);font-style:italic;}
   .hgt-legacy{margin-bottom:5px;}
 
@@ -257,6 +282,8 @@
     tbody td{border:none;padding:6px 12px;}
     tbody td::before{content:attr(data-label);display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;text-transform:uppercase;color:var(--muted);margin-bottom:3px;}
     tbody td[data-label="Cama"]{background:#efece2;}
+    tbody td[data-label="Cama"]::before{display:none;}
+    tbody tr.collapsed{padding:0;}
     .divider-row td::before{display:none;}
   }
   @media (max-width:480px){
@@ -270,7 +297,7 @@
 
   @media print{
     *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;}
-    header, .toolbar, footer, .manejo-pop, .add-manejo-btn, .chip .x, .chip input.chip-check{display:none !important;}
+    header, .toolbar, .search-box, footer, .bed-toggle .caret, .manejo-pop, .add-manejo-btn, .chip .x, .chip input.chip-check{display:none !important;}
     body{background:#fff;}
     main{padding:0;max-width:none;}
     .table-wrap{border:1px solid #000;box-shadow:none;}
@@ -326,6 +353,15 @@
 </header>
 
 <main>
+  <div class="search-box" id="searchBox">
+    <div class="search-row">
+      <input type="search" id="searchInput" placeholder="Buscar por n° de cama o nombre…" autocomplete="off" aria-label="Buscar paciente">
+      <button type="button" class="btn small" id="searchClearBtn">Borrar</button>
+    </div>
+    <div class="search-info" id="searchInfo" style="display:none;"></div>
+    <div class="search-results" id="searchResults"></div>
+  </div>
+
   <div class="summary-box" id="summaryBox">
     <h2>Resumen de pendientes</h2>
     <div id="summaryList" class="summary-list"></div>
@@ -336,12 +372,16 @@
 
   <div class="toolbar">
     <div class="info">
-      Cargá en <b>MANEJO</b> lo que falta hacer con cada paciente; en <b>DATOS</b> vas anotando lo que recolectás para cada cosa marcada. Las camas sin pendientes bajan automáticamente al final de la lista.
+      Tocá el número de una cama para desplegar sus datos. Cargá en <b>MANEJO</b> lo que falta hacer con cada paciente; en <b>DATOS</b> vas anotando lo que recolectás para cada cosa marcada. Las camas sin pendientes bajan automáticamente al final de la lista.
+    </div>
+    <div class="toolbar-btns">
+      <button type="button" class="btn small" id="openAllBtn">Abrir todas</button>
+      <button type="button" class="btn small" id="closeAllBtn">Cerrar todas</button>
     </div>
   </div>
 
   <div class="table-wrap">
-    <table>
+    <table id="mainTable">
       <colgroup>
         <col class="col-cama"><col class="col-pac"><col class="col-dni"><col class="col-edad"><col class="col-mi"><col class="col-manejo"><col class="col-datos">
       </colgroup>
@@ -602,11 +642,21 @@ onAuthStateChanged(auth, (user)=>{
   // siga cargando ahí. _hiddenMoments guarda qué momentos el usuario decidió
   // ocultar para esta cama (no todos los pacientes tienen control de HGT en
   // los 4 momentos); por defecto (array vacío) se muestran los 4.
+  // _start = momento en el que EMPIEZA el control de esa cama (por defecto
+  // predesayuno). Los demás momentos se acomodan a continuación, en el orden
+  // natural del día, dando la vuelta: si empieza en premerienda queda
+  // premerienda → precena → predesayuno → prealmuerzo.
+  function hgtOrderedMoments(hgt){
+    let i = HGT_MOMENTS.findIndex(m => m.key === (hgt && hgt._start));
+    if(i < 0) i = 0;
+    return HGT_MOMENTS.slice(i).concat(HGT_MOMENTS.slice(0, i));
+  }
+
   function ensureHgtDatos(c){
     const cur = c.datos['HGT'];
     if(!cur || typeof cur !== 'object' || Array.isArray(cur)){
       const legacyText = (typeof cur === 'string' && cur.trim()) ? cur : '';
-      const fresh = {_hiddenMoments: []};
+      const fresh = {_hiddenMoments: [], _start: 'predesayuno'};
       HGT_MOMENTS.forEach(m => fresh[m.key] = {glu:'', corr:''});
       if(legacyText) fresh._legacy = legacyText;
       c.datos['HGT'] = fresh;
@@ -619,6 +669,7 @@ onAuthStateChanged(auth, (user)=>{
         }
       });
       if(!Array.isArray(cur._hiddenMoments)) cur._hiddenMoments = [];
+      if(!HGT_MOMENTS.some(m => m.key === cur._start)) cur._start = 'predesayuno';
     }
     return c.datos['HGT'];
   }
@@ -627,7 +678,7 @@ onAuthStateChanged(auth, (user)=>{
   // Solo incluye los momentos que el usuario no ocultó para esta cama.
   function hgtDatosLines(c){
     const hgt = ensureHgtDatos(c);
-    return HGT_MOMENTS.filter(m => !hgt._hiddenMoments.includes(m.key)).map(m =>
+    return hgtOrderedMoments(hgt).filter(m => !hgt._hiddenMoments.includes(m.key)).map(m =>
       m.label+': '+(hgt[m.key].glu || '—')+' mg% de glucemia — Corrección: '+(hgt[m.key].corr || '—')+' UI'
     );
   }
@@ -905,6 +956,7 @@ onAuthStateChanged(auth, (user)=>{
   }
 
   function render(){
+    renderSearchResults();
     renderSummary();
     renderSummaryByBed();
     if(isEditingTabla()){
@@ -932,9 +984,9 @@ onAuthStateChanged(auth, (user)=>{
     const tbody = document.getElementById('tbody');
     const items = masterItems();
 
-    const pending = BED_NUMBERS.filter(b => state.camas[b].manejo.length > 0)
+    const pending = BED_NUMBERS.filter(bedVisible).filter(b => state.camas[b].manejo.length > 0)
                                 .sort((a,b)=> Number(a)-Number(b));
-    const notPending = BED_NUMBERS.filter(b => state.camas[b].manejo.length === 0)
+    const notPending = BED_NUMBERS.filter(bedVisible).filter(b => state.camas[b].manejo.length === 0)
                                    .sort((a,b)=> Number(a)-Number(b));
 
     let html = '';
@@ -943,8 +995,12 @@ onAuthStateChanged(auth, (user)=>{
       html += '<tr class="divider-row"><td colspan="7">▾ Camas sin pendientes ▾</td></tr>';
     }
     notPending.forEach(b => html += rowHtml(b, items, true));
+    if(!pending.length && !notPending.length){
+      html = '<tr><td colspan="7" style="padding:16px;color:var(--muted);font-style:italic;">Sin resultados para la búsqueda.</td></tr>';
+    }
 
     tbody.innerHTML = html;
+    document.getElementById('mainTable').classList.toggle('all-closed', openBeds.size === 0);
     attachRowEvents();
     afterTableRender();
   }
@@ -963,13 +1019,17 @@ onAuthStateChanged(auth, (user)=>{
       legacyHtml = '<div class="hgt-legacy"><span class="lbl">Nota anterior:</span> '+
         '<div contenteditable="true" data-hgt-legacy="1" data-placeholder="...">'+esc(hgt._legacy)+'</div></div>';
     }
-    const toggleRow = '<div class="hgt-toggle-row">'+HGT_MOMENTS.map(m=>{
+    const startRow = '<div class="hgt-start-row"><label>Empieza en: '+
+      '<select data-hgt-start="1" data-bed="'+bed+'">'+
+      HGT_MOMENTS.map(m=>'<option value="'+m.key+'"'+(hgt._start===m.key?' selected':'')+'>'+m.label+'</option>').join('')+
+      '</select></label></div>';
+    const toggleRow = '<div class="hgt-toggle-row">'+hgtOrderedMoments(hgt).map(m=>{
       const hidden = hgt._hiddenMoments.includes(m.key);
       return '<label class="hgt-toggle'+(hidden?' off':'')+'">'+
         '<input type="checkbox" data-hgt-toggle="'+m.key+'" data-bed="'+bed+'" '+(hidden?'':'checked')+'>'+
         m.label+'</label>';
     }).join('')+'</div>';
-    const blocks = HGT_MOMENTS.filter(m => !hgt._hiddenMoments.includes(m.key)).map(m=>{
+    const blocks = hgtOrderedMoments(hgt).filter(m => !hgt._hiddenMoments.includes(m.key)).map(m=>{
       const v = hgt[m.key];
       return '<div class="hgt-block">'+
         '<div class="hgt-block-title">'+m.label+'</div>'+
@@ -980,11 +1040,29 @@ onAuthStateChanged(auth, (user)=>{
       '</div>';
     }).join('');
     const blocksOrEmpty = blocks || '<div class="hgt-none">Ningún momento seleccionado arriba.</div>';
-    return '<div class="dato-line hgt-datos'+(done?' done':'')+'"><span class="lbl">HGT:</span>'+toggleRow+legacyHtml+blocksOrEmpty+'</div>';
+    return '<div class="dato-line hgt-datos'+(done?' done':'')+'"><span class="lbl">HGT:</span>'+startRow+toggleRow+legacyHtml+blocksOrEmpty+'</div>';
   }
+
+  // Camas desplegables: por defecto solo se ve el número de cama; al tocarlo
+  // se abre el resto de los datos del paciente. openBeds guarda cuáles están
+  // abiertas (se mantiene entre renders; al recargar la página vuelve todo
+  // cerrado).
+  const openBeds = new Set();
+  function setBedOpen(bed, open){
+    if(open) openBeds.add(bed); else openBeds.delete(bed);
+    render();
+  }
+
+  document.getElementById('openAllBtn').addEventListener('click', function(){
+    BED_NUMBERS.forEach(b => openBeds.add(b)); render();
+  });
+  document.getElementById('closeAllBtn').addEventListener('click', function(){
+    openBeds.clear(); render();
+  });
 
   function rowHtml(bed, items, noPend){
     const c = state.camas[bed];
+    const isOpen = openBeds.has(bed);
     const chips = c.manejo.map((name, idx)=>{
       const done = !!c.hechos[name];
       const cid = 'chk-'+bed+'-'+idx;
@@ -1003,10 +1081,15 @@ onAuthStateChanged(auth, (user)=>{
              '<div contenteditable="true" data-datos="'+esc(name)+'" data-placeholder="escribir...">'+esc(val)+'</div></div>';
     }).join('');
 
-    const trCls = noPend ? ' class="no-pend"' : '';
+    const trCls = ' class="'+(noPend?'no-pend ':'')+(isOpen?'open':'collapsed')+'"';
+    const nPend = c.manejo.length;
+    const camaTd = '<td data-label="Cama"'+(isOpen?'':' colspan="7"')+'>'+
+      '<button type="button" class="bed-toggle" data-action="toggleBed" aria-expanded="'+(isOpen?'true':'false')+'" title="'+(isOpen?'Cerrar':'Abrir')+' cama '+bed+'">'+
+        '<span class="caret">'+(isOpen?'▾':'▸')+'</span><span class="cama-num">'+bed+'</span>'+
+      '</button></td>';
 
     return '<tr data-bed="'+bed+'"'+trCls+'>'+
-      '<td data-label="Cama"><div class="cama-num">'+bed+'</div></td>'+
+      camaTd+
       '<td data-label="Paciente"><div contenteditable="true" data-field="paciente" data-placeholder="sin nombre">'+esc(c.paciente)+'</div></td>'+
       '<td data-label="DNI"><div contenteditable="true" data-field="dni" data-placeholder="DNI">'+esc(c.dni||'')+'</div></td>'+
       '<td data-label="Edad"><div contenteditable="true" data-field="edad" data-placeholder="edad">'+esc(c.edad||'')+'</div></td>'+
@@ -1082,6 +1165,29 @@ onAuthStateChanged(auth, (user)=>{
         const idx = hgt._hiddenMoments.indexOf(moment);
         if(this.checked){ if(idx !== -1) hgt._hiddenMoments.splice(idx,1); }
         else { if(idx === -1) hgt._hiddenMoments.push(moment); }
+        lastLocalEdit[bed] = Date.now();
+        saveLocal();
+        scheduleFsSaveCama(bed);
+        render();
+      });
+    });
+
+    // Abrir / cerrar una cama (solo número visible cuando está cerrada)
+    tbody.querySelectorAll('[data-action="toggleBed"]').forEach(btn=>{
+      btn.addEventListener('click', function(e){
+        e.stopPropagation();
+        const bed = this.closest('tr').dataset.bed;
+        setBedOpen(bed, !openBeds.has(bed));
+      });
+    });
+
+    // Elegir en qué momento empieza el control de HGT de esta cama
+    tbody.querySelectorAll('[data-hgt-start]').forEach(el=>{
+      el.addEventListener('change', function(){
+        const bed = this.dataset.bed;
+        const c = state.camas[bed];
+        const hgt = ensureHgtDatos(c);
+        hgt._start = this.value;
         lastLocalEdit[bed] = Date.now();
         saveLocal();
         scheduleFsSaveCama(bed);
@@ -1352,6 +1458,9 @@ onAuthStateChanged(auth, (user)=>{
   }
 
   function goToBed(bed){
+    // El desplazamiento suave no debe disparar el plegado automático.
+    suppressAutoCollapseUntil = Date.now() + 1500;
+    if(!openBeds.has(bed)){ openBeds.add(bed); renderTable(); }
     const tr = rowFor(bed);
     if(!tr) return;
     const top = tr.getBoundingClientRect().top + window.scrollY - headerHeight() - 12;
@@ -1367,6 +1476,105 @@ onAuthStateChanged(auth, (user)=>{
     e.preventDefault();
     goToBed(a.dataset.gotoBed);
   });
+
+  /* ============================= Buscador (cama / nombre) =============================
+     Filtra la tabla y lista los resultados arriba del resumen (cada uno es un
+     link que salta a la cama). Las camas encontradas se despliegan solas para
+     que se vea el nombre; al borrar la búsqueda vuelven a plegarse. Mientras
+     hay una búsqueda activa, el plegado automático por scroll queda en pausa. */
+  let searchQuery = '';
+  const searchOpened = new Set();
+  const searchInputEl = document.getElementById('searchInput');
+  function normTxt(s){
+    return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+  }
+  function matchesSearch(bed){
+    const tokens = normTxt(searchQuery).split(/\s+/).filter(Boolean);
+    if(!tokens.length) return true;
+    const hay = bed + ' ' + normTxt(state.camas[bed].paciente);
+    return tokens.every(t => hay.includes(t));
+  }
+  function bedVisible(bed){ return !searchQuery.trim() || matchesSearch(bed); }
+
+  function renderSearchResults(){
+    const info = document.getElementById('searchInfo');
+    const box = document.getElementById('searchResults');
+    if(!searchQuery.trim()){ info.style.display='none'; box.innerHTML=''; return; }
+    const matches = BED_NUMBERS.filter(matchesSearch);
+    info.style.display = 'block';
+    info.textContent = matches.length
+      ? matches.length + (matches.length===1 ? ' resultado' : ' resultados')
+      : 'Sin resultados.';
+    box.innerHTML = matches.map(b=>{
+      const n = (state.camas[b].paciente||'').trim();
+      return '<span class="sr-item">'+bedLinkHtml(b)+(n ? ' <span class="sr-name">· '+esc(n)+'</span>' : '')+'</span>';
+    }).join('');
+  }
+
+  function applySearch(){
+    searchQuery = searchInputEl.value;
+    if(searchQuery.trim()){
+      BED_NUMBERS.filter(matchesSearch).slice(0,10).forEach(b=>{
+        if(!openBeds.has(b)){ openBeds.add(b); searchOpened.add(b); }
+      });
+    }else{
+      searchOpened.forEach(b => openBeds.delete(b));
+      searchOpened.clear();
+    }
+    renderTableQueued = false;
+    renderSearchResults();
+    renderTable();
+  }
+  searchInputEl.addEventListener('input', applySearch);
+  document.getElementById('searchClearBtn').addEventListener('click', function(){
+    searchInputEl.value = '';
+    applySearch();
+    searchInputEl.focus();
+  });
+
+  /* ============================= Plegado automático al salir de pantalla =============================
+     Cuando se hace scroll y una cama abierta queda totalmente fuera de la
+     pantalla, se pliega sola. Se evalúa recién cuando el scroll se detiene
+     (no mientras el dedo/rueda se mueve), y se compensa el desplazamiento
+     para que lo que se está mirando no salte de lugar al achicarse la lista. */
+  let suppressAutoCollapseUntil = 0;
+  let autoCollapseTimer = null;
+  function scheduleAutoCollapse(){
+    clearTimeout(autoCollapseTimer);
+    autoCollapseTimer = setTimeout(autoCollapseOffscreen, 350);
+  }
+  function autoCollapseOffscreen(){
+    if(searchQuery.trim() || !openBeds.size) return;
+    if(Date.now() < suppressAutoCollapseUntil){ scheduleAutoCollapse(); return; }
+    if(isEditingTabla()) return;
+    const hdr = headerHeight();
+    const vh = window.innerHeight;
+    const rows = Array.from(document.querySelectorAll('#tbody tr[data-bed]'));
+    const toClose = [];
+    let anchor = null, anchorTop = 0;
+    rows.forEach(tr=>{
+      const r = tr.getBoundingClientRect();
+      if(!anchor && r.bottom > hdr + 1 && r.top < vh){ anchor = tr; anchorTop = r.top; }
+      const bed = tr.dataset.bed;
+      if(openBeds.has(bed) && (r.bottom < hdr || r.top > vh)
+         && bed !== popoverBed && !tr.contains(document.activeElement)){
+        toClose.push(bed);
+      }
+    });
+    if(!toClose.length) return;
+    toClose.forEach(b => openBeds.delete(b));
+    const anchorBed = anchor ? anchor.dataset.bed : null;
+    renderTable();
+    if(anchorBed){
+      const again = rowFor(anchorBed);
+      if(again){
+        const delta = again.getBoundingClientRect().top - anchorTop;
+        if(Math.abs(delta) > 1) window.scrollBy(0, delta);
+      }
+    }
+    renderSummary();
+  }
+  window.addEventListener('scroll', scheduleAutoCollapse, {passive:true});
 
   function renderSummary(){
     const box = document.getElementById('summaryList');
@@ -1664,7 +1872,7 @@ onAuthStateChanged(auth, (user)=>{
 
           if(name === 'HGT'){
             const hgt = ensureHgtDatos(c);
-            HGT_MOMENTS.filter(m => !hgt._hiddenMoments.includes(m.key)).forEach(m=>{
+            hgtOrderedMoments(hgt).filter(m => !hgt._hiddenMoments.includes(m.key)).forEach(m=>{
               const labelX = marginL + 26;
               doc.setFontSize(8);
               doc.setTextColor(100,100,100);
