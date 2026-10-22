@@ -205,7 +205,18 @@
 <div class="wrap">
   <div class="head">
     <h1>Transformador de laboratorio → LABO</h1>
-    <div class="sub">Pegá el texto tal como lo copiás de la página del laboratorio. Se convierte solo al pegar. Genera un renglón completo y, debajo, el renglón resumen.</div>
+    <div class="sub">
+      Pegá el texto tal como lo copiás de la página del laboratorio; se convierte solo al pegar. El primer renglón del resultado es el <b>sistema numérico compacto</b>: cada grupo lleva una sigla, los valores van separados por <b>|</b> y siempre en el mismo orden (si falta un dato queda un «-»). Rojo = alterado · negro = normal.<br>
+      <b>H</b> (hemograma): GB | N (%) | GR | Hb | Hto | Plaq (en miles), y al final «Reticulocitos» si vienen &nbsp;·&nbsp;
+      <b>Q</b> (química): Glucemia | Urea | Creatinina &nbsp;·&nbsp;
+      <b>I</b> (ionograma): Na | K | Cl, y luego con sigla Ca, Ca ion, P, Mg, Alb (y «Calcio corregido» al final si se calcula) &nbsp;·&nbsp;
+      <b>HEP</b> (hepatograma): GPT | GOT | FAL | BT | BD | GGT &nbsp;·&nbsp;
+      <b>C</b> (coagulograma): TP | RIN | KPTT &nbsp;·&nbsp;
+      <b>RFA</b> (reactantes de fase aguda): PCR | ERS &nbsp;·&nbsp;
+      <b>Serología</b>: «Negativa» si todo lo informado (VDRL, HBc, HBsAg, HCV, HIV) es no reactivo; si alguno es reactivo se informa cuál, por ej. «VDRL reactivo».<br>
+      Lo demás (FG, L, M, E, índices, lípidos, etc.) va al final con su sigla habitual. Ejemplo: <span style="font-family:'IBM Plex Mono',monospace;">H: 4,7|54|3,4|9,4|29,7|158 &nbsp; Q: 132|36|0,55 &nbsp; I: 138,7|3,6|97,8|Ca: 10|P: 4|Mg: 2|Alb: 3,4</span>.
+      Debajo siguen LABORATORIO COMPLETO, LABORATORIO PARCIAL y la Explicación de alteraciones, como antes.
+    </div>
   </div>
   <div class="body">
     <div class="grid">
@@ -3010,7 +3021,74 @@ function fld(id){ return document.getElementById(id); }
       line1Html = line1Html ? `${line1Html}<br>${sent}` : `${prefix}${sent}`;
     });
 
+    function buildCompactLine(){
+      const byC = {};
+      found.forEach(f=>{ if(!(f.code in byC)) byC[f.code] = f; });
+      const used = new Set();
+      const fmtC = f=>{
+        let t = String(f.text).replace('%','').trim();
+        if(f.code==='PLAQ'){
+          const n = parseFloat(t.replace(/\./g,''));
+          if(!isNaN(n)) t = laboFmtNumber(n>=1000 ? n/1000 : n);
+        }
+        return t.replace('.', ',');
+      };
+      const paint = (f, txt)=> f.abnormal ? `<span style="color:#FF0000;font-weight:700;">${txt}</span>` : txt;
+      const positional = codes=>{
+        const arr = codes.map(c=>{
+          const f = byC[c];
+          if(!f) return '-';
+          used.add(c);
+          return paint(f, fmtC(f));
+        });
+        while(arr.length && arr[arr.length-1]==='-') arr.pop();
+        return arr;
+      };
+      const labeled = (pairs)=>{
+        const out = [];
+        pairs.forEach(([c, lbl])=>{
+          const f = byC[c];
+          if(!f) return;
+          used.add(c);
+          out.push(paint(f, `${lbl}: ${fmtC(f)}`));
+        });
+        return out;
+      };
+      const groups = [];
+      const addGroup = (label, parts, tail)=>{
+        if(parts.length) groups.push(`${label}: ${parts.join('|')}${tail||''}.`);
+      };
+      const hPos = positional(['GB','N','GR','HB','HTO','PLAQ']);
+      const cayTail = labeled([['Reticulocitos','Reticulocitos']]);
+      addGroup('H', hPos.length ? hPos : (cayTail.length ? ['-'] : []), cayTail.length ? ', ' + cayTail[0] : '');
+      addGroup('Q', positional(['GLUC','UREA','CR']));
+      let iParts = positional(['Na','K','CL']).concat(labeled([['Ca','Ca'],['Ca ion','Ca ion'],['P','P'],['Mg','Mg'],['ALB','Alb']]));
+      const caCorrTail = caCorr ? ', ' + paint(caCorrItem[0], `Calcio corregido: ${laboFmtNumber(caCorr.corr).replace('.', ',')}`) : '';
+      addGroup('I', iParts, caCorrTail);
+      addGroup('HEP', positional(['GPT','GOT','FAL','BT','BD','GGT']));
+      addGroup('C', positional(['TP%','RIN','KPTT']));
+      addGroup('RFA', positional(['PCR','ERS']));
+      {
+        const serPres = ['VDRL','HBc Total','HBc IgM','HBsAg','HCV','HIV Ag','HIV Ac','Chagas ELISA','Chagas HAI'].filter(c=>byC[c]);
+        if(serPres.length){
+          serPres.forEach(c=>used.add(c));
+          const reac = serPres.filter(c=>byC[c].abnormal);
+          if(reac.length) groups.push(`Serología: ${reac.map(c=>paint(byC[c], `${c} reactivo`)).join(', ')}.`);
+          else groups.push('Serología: Negativa.');
+        }
+      }
+      const NO_EN_RESTO = ['Cayados','L','M','E','B','VCM','HCM','CHCM','RDW','VPM','FG','IR','No HDL'];
+      const rest = found.filter(f=>!used.has(f.code) && !NO_EN_RESTO.includes(f.code) && f.text!=='No reactivo').concat(extras)
+        .sort((a,b)=>(a.pos??0)-(b.pos??0))
+        .map(f=>paint(f, `${f.code==='vitamina B12' ? 'B12' : laboCodeLabel(f.code)}: ${fmtC(f)}`));
+      if(rest.length) groups.push(rest.join(', ') + '.');
+      if(!groups.length) return '';
+      return prefix + groups.join('&nbsp;&nbsp;&nbsp;&nbsp;');
+    }
+    const compactHtml = buildCompactLine();
+
     let out = '';
+    if(compactHtml) out += `<span style="${LABO_FONT}">${compactHtml}</span><br><br>`;
     if(line2Html) out += `<span style="${LABO_FONT}"><b>LABORATORIO COMPLETO:</b><br>${line2Html}</span>`;
     if(line2Html && line1Html) out += '<br><br>';
     if(line1Html) out += `<span style="${LABO_FONT}"><b>LABORATORIO PARCIAL:</b><br>${line1Html}</span>`;
