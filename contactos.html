@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Directorio de interconsultas</title>
+<link rel="icon" href="logos/zubizarreta.png">
+<style>
+:root{--g:#0e5a3c;--g2:#e6f0ea;--bg:#f5f7f6;--ink:#15211b;--mut:#5d6b64;--ln:#d5ddd8;--wa:#128c7e;--gm:#b3261e}
+*{box-sizing:border-box}body{margin:0;font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:var(--g);color:#fff;padding:12px 14px;position:sticky;top:0;z-index:5}
+.top{display:flex;align-items:center;gap:10px;max-width:960px;margin:0 auto}
+.top img{width:44px;height:44px;border-radius:50%;background:#fff}.top h1{font-size:1.05rem;margin:0;flex:1;line-height:1.2}
+.sbox{max-width:960px;margin:10px auto 0;position:relative}
+#q{width:100%;padding:12px 40px 12px 14px;border:0;border-radius:10px;font-size:1rem}
+#clr{position:absolute;right:4px;top:3px;border:0;background:none;font-size:1.5rem;color:var(--mut);display:none;padding:4px 10px}
+main{max-width:960px;margin:0 auto;padding:14px}
+button,.btn{font:inherit;cursor:pointer;border:1px solid var(--ln);background:#fff;color:var(--ink);padding:8px 12px;border-radius:8px}
+button.pri,.pri{background:var(--g);color:#fff;border-color:var(--g)}button.dng{color:var(--gm)}button.sm{padding:4px 9px;font-size:.85rem}
+header button{background:transparent;color:#fff;border-color:#ffffff88}
+a{color:inherit;text-decoration:none}:focus-visible{outline:3px solid #e0a800;outline-offset:2px}
+.bc{margin:0 0 10px;color:var(--mut);font-size:.9rem}.bc a{color:var(--g);text-decoration:underline}
+h2{margin:6px 0 10px;font-size:1.2rem}h3{margin:14px 0 8px;font-size:1rem;color:var(--mut)}
+.grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.hc{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--ln);border-radius:12px;padding:12px}
+.hc img,.hn img{width:46px;height:46px;border-radius:50%;object-fit:cover;flex:none;background:#fff}
+.hc.main{grid-column:1/-1;background:var(--g2);border-color:var(--g);padding:16px}.hc.main img{width:76px;height:76px}.hc.main b{font-size:1.2rem}
+.hc small,.sub{color:var(--mut);display:block}.hc .t{flex:1;min-width:0}
+.ad{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.list a.it,.list div.it{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#fff;border:1px solid var(--ln);border-radius:10px;padding:12px 14px;margin-bottom:8px}
+.card{background:#fff;border:1px solid var(--ln);border-left:6px solid var(--wa);border-radius:12px;padding:12px 14px}
+.card.gm{border-left-color:var(--gm)}.cl{display:block}
+.hn{display:flex;align-items:center;gap:8px;font-weight:700;color:var(--g);margin-bottom:6px}.hn img{width:28px;height:28px}
+.nm{font-size:1.1rem;font-weight:600}.cg{color:var(--mut)}.em{font-size:1.05rem;word-break:break-all;font-weight:600}
+.tag{display:inline-block;background:var(--g2);color:var(--g);border-radius:6px;padding:1px 8px;font-size:.82rem;margin-top:6px}
+.go{display:inline-block;margin-top:10px;padding:8px 14px;border-radius:8px;color:#fff;background:var(--wa);font-weight:600}.gm .go{background:var(--gm)}
+.obs{font-size:.88rem;color:var(--mut);margin-top:4px}
+.empty{text-align:center;color:var(--mut);padding:30px 10px}
+dialog{border:0;border-radius:14px;padding:18px;width:min(94vw,520px);max-height:90vh}dialog.wide{width:min(98vw,1100px)}dialog::backdrop{background:#0008}
+label{display:block;margin:8px 0;font-size:.9rem;color:var(--mut)}input,select,textarea{display:block;width:100%;padding:9px;margin-top:3px;border:1px solid var(--ln);border-radius:8px;font:inherit;color:var(--ink)}
+.row{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}.err{color:var(--gm);margin:6px 0}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:8px;display:none;z-index:99;max-width:92vw}
+.tw{overflow:auto;max-height:50vh;border:1px solid var(--ln);border-radius:8px}table{border-collapse:collapse;font-size:.8rem;width:100%}td,th{border-bottom:1px solid var(--ln);padding:2px;white-space:nowrap}th{position:sticky;top:0;background:#fff}
+td input{margin:0;padding:4px;min-width:90px;font-size:.8rem}.ok{color:var(--g)}.er{color:var(--gm)}.du{color:#9a6700}
+</style></head><body>
+<header><div class="top"><img src="logos/zubizarreta.png" alt=""><h1>Directorio de interconsultas<br><small style="font-weight:400">Hospital Zubizarreta</small></h1><button id="auth">Administrar</button></div>
+<div class="sbox"><input id="q" type="search" placeholder="Buscar hospital, servicio, médico, correo, teléfono o cargo" autocomplete="off"><button id="clr" aria-label="Limpiar búsqueda">×</button></div></header>
+<main id="app"></main><dialog id="dlg"></dialog><div id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script type="module">
+import{initializeApp,getApps}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import{getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged,setPersistence,browserLocalPersistence}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import{getFirestore,collection,doc,onSnapshot,setDoc,writeBatch,getDocs,getDoc}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+const CFG={apiKey:"AIzaSyDrBZV9QSlG27Sl0rXbwP7HGWBHQTYe56I",authDomain:"pases-c121c.firebaseapp.com",projectId:"pases-c121c",storageBucket:"pases-c121c.firebasestorage.app",messagingSenderId:"261660416072",appId:"1:261660416072:web:e500450ad82c33de1be07d"};
+/* Base anterior del directorio (solo lectura, se usa una vez para copiar los datos con "Traer datos de la base anterior") */
+const OLD_CFG={apiKey:"AIzaSyBTM7T-LxEbX7aeuuWppLj3-CF83JcNHQE",authDomain:"contactoszubi-6fb90.firebaseapp.com",projectId:"contactoszubi-6fb90",storageBucket:"contactoszubi-6fb90.firebasestorage.app",messagingSenderId:"326370266628",appId:"1:326370266628:web:91299ee5c2919f792e6f51"};
+const app0=getApps().length?getApps()[0]:initializeApp(CFG);
+const auth=getAuth(app0),db=getFirestore(app0);
+const DEF_CARGOS=["R1","R2","R3","R4","JR","Médico Planta","Jefe de servicio","Médico particular"];
+const SEED=[["zubizarreta","Hospital Zubizarreta"],["durand","Hospital Durand"],["pirovano","Hospital Pirovano"],["ramos-mejia","Hospital Ramos Mejía"],["argerich","Hospital Argerich"],["marie-curie","Hospital Oncológico Marie Curie"],["tornu","Hospital Tornú"],["particular","Particular"]];
+const SVC=["Cardiología","Cirugía General","Cirugía Plástica","Clínica Médica","Coloprocto","Dermatología","Endocrinología","Fonoaudiología Deglutoria","Hematología","Hepatología","Kinesiología Motora","Kinesiología Respiratoria","Neumología","Nutrición","Psiquiatría","Traumatología"];
+const COLS=["hospital","servicio","tipo_contacto","titulo","nombre","cargo","telefono","email"];
+const $=s=>document.querySelector(s),dlg=$("#dlg"),app=$("#app");
+const cl=s=>String(s??"").replace(/[\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g,"").trim();
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const norm=s=>String(s??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
+const cmp=(a,b)=>String(a).localeCompare(String(b),"es",{sensitivity:"base"});
+const digits=t=>String(t||"").replace(/\D/g,""),slug=s=>norm(s).replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+const okMail=e=>/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e);
+const okTel=t=>/^\+?[\d\s().-]+$/.test(t)&&digits(t).length>=10&&digits(t).length<=15;
+const normTel=t=>{t=String(t).trim();let d=digits(t);if(t.startsWith("+"))return"+"+d;d=d.replace(/^0+/,"");
+if(d.startsWith("54")){if(!d.startsWith("549")&&d.length===12)d="549"+d.slice(2)}else if(d.length===10)d="549"+d;return"+"+d};
+const normTrat=t=>({"dr":"Dr.","dr.":"Dr.","dra":"Dra.","dra.":"Dra.","lic":"Lic.","lic.":"Lic."})[norm(t)]||"";
+let H=[],S=[],C=[],CARGOS=[...DEF_CARGOS],cargosOk=false,ready=0,admin=false,q="";
+let hm=new Map,sm=new Map;
+function toast(m){const t=$("#toast");t.textContent=m;t.style.display="block";clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display="none",3500)}
+const listen=(c,set)=>onSnapshot(collection(db,c),s=>{set(s.docs.map(d=>({id:d.id,...d.data()})));ready++;render()},e=>{app.innerHTML=`<p class="empty">No se pudo leer la base de datos: ${esc(e.message)}</p>`});
+listen("hospitales",d=>H=d);listen("servicios",d=>S=d);listen("contactos",d=>C=d);
+onSnapshot(doc(db,"contactos_config","cargos"),s=>{cargosOk=s.exists();if(cargosOk)CARGOS=s.data().lista||DEF_CARGOS;render()});
+onAuthStateChanged(auth,u=>{admin=!!u;$("#auth").textContent=admin?"Salir del modo admin":"Administrar";render()});
+$("#auth").onclick=()=>admin?signOut(auth):loginUI();
+$("#q").oninput=e=>{q=e.target.value;$("#clr").style.display=q?"block":"none";render()};
+$("#clr").onclick=()=>{q="";$("#q").value="";$("#clr").style.display="none";render();$("#q").focus()};
+const logo=h=>h?.logo?`<img src="${esc(h.logo)}" alt="" loading="lazy">`:"";
+const sortH=a=>[...a].sort((x,y)=>(y.principal?1:0)-(x.principal?1:0)||cmp(x.nombre,y.nombre));
+const sortS=a=>[...a].sort((x,y)=>cmp(x.nombre,y.nombre));
+const adm=(a,id,extra="")=>admin?`<span class="ad">${extra}<button class="sm" data-a="e${a}" data-id="${id}">Editar</button><button class="sm dng" data-a="d${a}" data-id="${id}">Eliminar</button></span>`:"";
+function card(c,showSvc){const h=hm.get(c.hospitalId),s=sm.get(c.servicioId),wa=c.tipo==="WHATSAPP";
+const href=wa?`https://wa.me/${digits(c.telefono)}`:`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(c.email)}`;
+return`<article class="card ${wa?"":"gm"}"><a class="cl" href="${href}" target="_blank" rel="noopener"><div class="hn">${logo(h)}<span>${esc(h?.nombre||"Hospital")}</span></div>
+${wa?`<div class="nm">${esc(c.titulo??c.tratamiento)} ${esc(c.nombre)}</div><div class="cg">${esc(c.cargo)}</div>`:`<div class="em">${esc(c.email)}</div>`}
+${showSvc?`<div><span class="tag">${esc(s?.nombre||"Servicio")}</span></div>`:""}
+<span class="go">${wa?"Abrir WhatsApp":"Redactar correo"}</span></a>${adm("c",c.id,`<button class="sm" data-a="mc" data-id="${c.id}">Mover</button>`)}</article>`}
+const cnt=(a,k,id)=>a.filter(x=>x[k]===id).length;
+function render(){
+if(ready<3){app.innerHTML='<p class="empty">Cargando directorio…</p>';return}
+hm=new Map(H.map(h=>[h.id,h]));sm=new Map(S.map(s=>[s.id,s]));
+if(q.trim())return search();
+const[v,id]=location.hash.slice(2).split("/");
+if(v==="h"&&hm.has(id)){const h=hm.get(id),ss=sortS(S.filter(s=>s.hospitalId===id));
+app.innerHTML=`<p class="bc"><a href="#/">Hospitales</a></p><div class="hc" style="margin-bottom:10px">${logo(h)}<div class="t"><b>${esc(h.nombre)}</b><small>${ss.length} servicios</small></div></div>
+${admin?`<div class="ad"><button class="pri" data-a="ns" data-id="${id}">+ Nuevo servicio</button><button data-a="ms" data-id="${id}">Agregar servicios ya cargados</button></div>`:""}
+<h2>Servicios</h2><div class="list">${ss.map(s=>`<div class="it"><a href="#/s/${s.id}" style="flex:1"><b>${esc(s.nombre)}</b><span class="sub">${cnt(C,"servicioId",s.id)} contactos</span></a>${adm("s",s.id)}</div>`).join("")||'<p class="empty">Este hospital todavía no tiene servicios.</p>'}</div>`;return}
+if(v==="s"&&sm.has(id)){const s=sm.get(id),h=hm.get(s.hospitalId),cs=C.filter(c=>c.servicioId===id).sort((a,b)=>cmp(a.nombre||a.email,b.nombre||b.email));
+app.innerHTML=`<p class="bc"><a href="#/">Hospitales</a> / <a href="#/h/${s.hospitalId}">${esc(h?.nombre)}</a></p><h2>${esc(s.nombre)}</h2>
+${admin?`<div class="ad"><button class="pri" data-a="nc" data-id="${id}">+ Nuevo contacto</button></div>`:""}
+<div class="grid">${cs.map(c=>card(c)).join("")}</div>${cs.length?"":'<p class="empty">Este servicio todavía no tiene contactos.</p>'}`;return}
+const hs=sortH(H);
+app.innerHTML=`${admin?`<div class="ad"><button class="pri" data-a="nh">+ Nuevo hospital</button><button data-a="imp">Importar Excel/CSV</button><button data-a="cg">Cargos</button><button data-a="xl">Exportar Excel completo</button><button data-a="xs">Exportar Excel simple</button><button data-a="mig">Traer datos de la base anterior</button><button data-a="seed">Cargar hospitales y servicios iniciales</button></div>`:""}
+<h2>Hospitales</h2><div class="grid">${hs.map(h=>`<div class="hc ${h.principal?"main":""}"><a href="#/h/${h.id}" style="display:contents">${logo(h)}<div class="t"><b>${esc(h.nombre)}</b><small>${cnt(S,"hospitalId",h.id)} servicios · ${cnt(C,"hospitalId",h.id)} contactos</small></div></a>${adm("h",h.id)}</div>`).join("")}</div>
+${hs.length?"":'<p class="empty">Todavía no hay hospitales cargados.</p>'}`}
+function search(){const toks=norm(q).split(" "),dq=digits(q);
+const m=h=>toks.every(t=>h.includes(t))||(dq.length>=3&&toks.length===1&&h.includes(dq));
+const hh=sortH(H).filter(h=>m(norm(h.nombre)));
+const ss=sortS(S).filter(s=>m(norm(s.nombre+" "+(hm.get(s.hospitalId)?.nombre||""))));
+const cc=C.filter(c=>{const h=hm.get(c.hospitalId),s=sm.get(c.servicioId);return m(norm([h?.nombre,s?.nombre,c.titulo??c.tratamiento,c.nombre,c.cargo,c.email,c.telefono,digits(c.telefono)].join(" ")))}).sort((a,b)=>cmp(hm.get(a.hospitalId)?.nombre,hm.get(b.hospitalId)?.nombre)||cmp(a.nombre||a.email,b.nombre||b.email));
+app.innerHTML=!(hh.length+ss.length+cc.length)?`<p class="empty">No se encontraron resultados para “${esc(q)}”.</p>`:
+`${hh.length?`<h3>Hospitales</h3><div class="grid">${hh.map(h=>`<a class="hc" href="#/h/${h.id}" onclick="clr()">${logo(h)}<div class="t"><b>${esc(h.nombre)}</b></div></a>`).join("")}</div>`:""}
+${ss.length?`<h3>Servicios</h3><div class="list">${ss.map(s=>`<a class="it" href="#/s/${s.id}" onclick="clr()"><span><b>${esc(s.nombre)}</b><span class="sub">${esc(hm.get(s.hospitalId)?.nombre)}</span></span></a>`).join("")}</div>`:""}
+${cc.length?`<h3>Contactos (${cc.length})</h3><div class="grid">${cc.slice(0,100).map(c=>card(c,true)).join("")}</div>`:""}`}
+window.clr=()=>$("#clr").click();
+window.onhashchange=()=>{window.scrollTo(0,0);render()};
+/* ---------- formularios ---------- */
+function form(title,fields,save,vals={},okMsg="Guardado"){
+const draw=()=>{dlg.className="";dlg.innerHTML=`<form><h3>${title}</h3>`+fields.filter(f=>!f.show||f.show(vals)).map(f=>`<label>${f.l}${f.type==="select"?`<select name="${f.k}">${(typeof f.o==="function"?f.o(vals):f.o).map(o=>`<option ${o===(vals[f.k]??"")?"selected":""}>${esc(o)}</option>`).join("")}</select>`:f.type==="area"?`<textarea name="${f.k}">${esc(vals[f.k]||"")}</textarea>`:`<input name="${f.k}" value="${esc(vals[f.k]||"")}" type="${f.type||"text"}"${f.dl?` list="dl_${f.k}" autocomplete="off"`:""}>${f.dl?`<datalist id="dl_${f.k}">${f.dl.map(n=>`<option value="${esc(n)}">`).join("")}</datalist>`:""}`}</label>`).join("")+`<p id="ferr" class="err"></p><div class="row"><button type="button" id="cx">Cancelar</button><button class="pri">Guardar</button></div></form>`;
+const fm=dlg.querySelector("form"),grab=()=>{for(const[k,v]of new FormData(fm))vals[k]=fm.elements[k]?.type==="password"?v:cl(v)};
+fm.querySelectorAll("select").forEach(s=>s.onchange=()=>{grab();const f=fields.find(x=>x.k===s.name);if(f&&f.rs)vals[f.rs]="";draw()});$("#cx").onclick=()=>dlg.close();
+fm.onsubmit=async e=>{e.preventDefault();grab();try{const er=await save(vals);if(er){$("#ferr").textContent=er;return}dlg.close();toast(okMsg)}catch(x){$("#ferr").textContent="Error: "+x.message}}};
+draw();dlg.showModal()}
+const newId=c=>doc(collection(db,c)).id;
+const hForm=h=>form(h?"Editar hospital":"Nuevo hospital",[{k:"nombre",l:"Nombre"},{k:"logo",l:"Ruta del logo (ej. logos/durand.png)"}],async v=>{
+if(!v.nombre)return"El nombre es obligatorio.";if(H.some(x=>x.id!==h?.id&&norm(x.nombre)===norm(v.nombre)))return"Ya existe un hospital con ese nombre.";
+await setDoc(doc(db,"hospitales",h?.id||newId("hospitales")),{nombre:v.nombre,logo:v.logo||""},{merge:true})},{...h});
+const svcNames=hid=>{const have=new Set(S.filter(s=>s.hospitalId===hid).map(s=>norm(s.nombre)));return[...new Map(S.filter(s=>!have.has(norm(s.nombre))).map(s=>[norm(s.nombre),s.nombre])).values()].sort(cmp)};
+const sForm=(hid,s)=>form(s?"Editar servicio":"Nuevo servicio",[{k:"nombre",l:"Nombre del servicio (escribí o elegí uno ya cargado)",dl:svcNames(hid)}],async v=>{
+if(!v.nombre)return"El nombre es obligatorio.";if(S.some(x=>x.hospitalId===hid&&x.id!==s?.id&&norm(x.nombre)===norm(v.nombre)))return"Ese servicio ya existe en este hospital.";
+await setDoc(doc(db,"servicios",s?.id||newId("servicios")),{hospitalId:hid,nombre:v.nombre},{merge:true})},{...s});
+const hNames=()=>sortH(H).map(h=>h.nombre);
+const sNamesOf=v=>{const h=H.find(x=>norm(x.nombre)===norm(v.hospital));return h?sortS(S.filter(s=>s.hospitalId===h.id)).map(s=>s.nombre):[]};
+const destOf=v=>{const h=H.find(x=>norm(x.nombre)===norm(v.hospital));return h&&S.find(x=>x.hospitalId===h.id&&norm(x.nombre)===norm(v.servicio))||null};
+const ckey=c=>c.tipo==="WHATSAPP"?digits(c.telefono):c.email;
+const cForm=(sid,c)=>{const s0=sm.get(sid),h0=hm.get(s0?.hospitalId);form(c?"Editar contacto":"Nuevo contacto",[
+{k:"hospital",l:"Hospital",type:"select",o:hNames,rs:"servicio"},
+{k:"servicio",l:"Servicio (para cambiarlo de servicio, elegí otro)",type:"select",o:sNamesOf},
+{k:"tipo",l:"Tipo de contacto",type:"select",o:["WHATSAPP","GMAIL"]},
+{k:"titulo",l:"Título",type:"select",o:["Dr.","Dra.","Lic."],show:v=>v.tipo==="WHATSAPP"},
+{k:"nombre",l:"Nombre completo",show:v=>v.tipo==="WHATSAPP"},
+{k:"cargo",l:"Cargo",type:"select",o:["",...CARGOS],show:v=>v.tipo==="WHATSAPP"},
+{k:"telefono",l:"Teléfono (si falta el prefijo se agrega +549; ej. 1123456789)",show:v=>v.tipo==="WHATSAPP"},
+{k:"email",l:"Correo electrónico",type:"email",show:v=>v.tipo==="GMAIL"}],async v=>{
+const s=destOf(v);if(!s)return"Elegí un hospital y un servicio que existan.";
+const d={hospitalId:s.hospitalId,servicioId:s.id,tipo:v.tipo};
+if(v.tipo==="WHATSAPP"){if(!v.nombre||!v.cargo)return"Nombre y cargo son obligatorios.";if(!okTel(v.telefono||""))return"Teléfono inválido: código de área + número (10 dígitos) o con prefijo internacional.";
+Object.assign(d,{titulo:v.titulo||"Dr.",nombre:v.nombre,cargo:v.cargo,telefono:normTel(v.telefono),email:""})}
+else{if(!okMail(v.email||""))return"Correo inválido.";Object.assign(d,{titulo:"",nombre:"",cargo:"",telefono:"",email:v.email.toLowerCase()})}
+const k=ckey(d);
+if(C.some(x=>x.id!==c?.id&&x.servicioId===s.id&&x.tipo===d.tipo&&ckey(x)===k))return"Ya existe este contacto en ese servicio.";
+await setDoc(doc(db,"contactos",c?.id||newId("contactos")),d,{merge:true})},{hospital:h0?.nombre,servicio:s0?.nombre,tipo:"WHATSAPP",titulo:"Dr.",...c,...(c&&{titulo:c.titulo??c.tratamiento})})};
+/* Mover un contacto a otro servicio u hospital (queda guardado en Firebase y se sincroniza en todos los dispositivos) */
+function moveUI(c){const h0=hm.get(c.hospitalId),s0=sm.get(c.servicioId);
+form("Mover a "+(c.nombre||c.email),[{k:"hospital",l:"Hospital",type:"select",o:hNames,rs:"servicio"},{k:"servicio",l:"Servicio",type:"select",o:sNamesOf}],async v=>{
+const s=destOf(v);if(!s)return"Elegí un hospital y un servicio que existan.";if(s.id===c.servicioId)return"Ya está en ese servicio.";
+if(C.some(x=>x.id!==c.id&&x.servicioId===s.id&&x.tipo===c.tipo&&ckey(x)===ckey(c)))return"Ya existe este contacto en ese servicio.";
+await setDoc(doc(db,"contactos",c.id),{hospitalId:s.hospitalId,servicioId:s.id},{merge:true})},{hospital:h0?.nombre,servicio:s0?.nombre},"Contacto movido")}
+function loginUI(){let pre="";try{pre=localStorage.getItem("authPrefillEmail")||""}catch(e){}
+form("Administrar",[{k:"email",l:"Correo",type:"email"},{k:"pass",l:"Contraseña",type:"password"}],async v=>{
+if(!v.email||!v.pass)return"Completá el correo y la contraseña.";
+try{await setPersistence(auth,browserLocalPersistence);await signInWithEmailAndPassword(auth,v.email,v.pass);try{localStorage.setItem("authPrefillEmail",v.email)}catch(e){}}
+catch(e){return({"auth/invalid-credential":"Correo o contraseña incorrectos.","auth/wrong-password":"Correo o contraseña incorrectos.","auth/user-not-found":"Correo o contraseña incorrectos.","auth/invalid-email":"El correo no tiene un formato válido.","auth/too-many-requests":"Demasiados intentos. Probá en unos minutos.","auth/network-request-failed":"Sin conexión a internet."})[e.code]||"No se pudo iniciar sesión ("+(e.code||e.message)+")."}
+},{email:pre},"Sesión iniciada")}
+/* ---------- exportar a Excel ---------- */
+const ordC=()=>[...C].sort((a,b)=>(hm.get(b.hospitalId)?.principal?1:0)-(hm.get(a.hospitalId)?.principal?1:0)||cmp(hm.get(a.hospitalId)?.nombre||"",hm.get(b.hospitalId)?.nombre||"")||cmp(sm.get(a.servicioId)?.nombre||"",sm.get(b.servicioId)?.nombre||"")||cmp(a.nombre||a.email,b.nombre||b.email));
+const hoy=()=>new Date().toLocaleDateString("sv-SE");
+function xlsxOk(){if(typeof XLSX==="undefined"){toast("No se pudo cargar la librería de Excel (¿sin conexión?)");return false}return true}
+function exportFull(){if(!xlsxOk())return;
+const rows=[COLS,...ordC().map(c=>[hm.get(c.hospitalId)?.nombre||"",sm.get(c.servicioId)?.nombre||"",c.tipo||"",c.titulo??c.tratamiento??"",c.nombre||"",c.cargo||"",c.telefono||"",c.email||""])];
+const ws=XLSX.utils.aoa_to_sheet(rows);ws["!cols"]=COLS.map(()=>({wch:22}));
+const sv=[["hospital","servicio"],...sortH(H).flatMap(h=>sortS(S.filter(s=>s.hospitalId===h.id)).map(s=>[h.nombre,s.nombre]))];
+const ws2=XLSX.utils.aoa_to_sheet(sv);ws2["!cols"]=[{wch:34},{wch:30}];
+const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Contactos");XLSX.utils.book_append_sheet(wb,ws2,"Servicios");
+XLSX.writeFile(wb,`contactos_completo_${hoy()}.xlsx`);toast(`Excel completo: ${rows.length-1} contactos`)}
+function exportSimple(){if(!xlsxOk())return;
+const rows=[["Contacto (teléfono o mail)","Nombre","Especialidad","Cargo","Hospital"],...ordC().map(c=>[c.tipo==="WHATSAPP"?c.telefono||"":c.email||"",[c.titulo??c.tratamiento,c.nombre].filter(Boolean).join(" "),sm.get(c.servicioId)?.nombre||"",c.cargo||"",hm.get(c.hospitalId)?.nombre||""])];
+const ws=XLSX.utils.aoa_to_sheet(rows);ws["!cols"]=[{wch:30},{wch:32},{wch:28},{wch:20},{wch:34}];
+const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Contactos");
+XLSX.writeFile(wb,`contactos_simple_${hoy()}.xlsx`);toast(`Excel simple: ${rows.length-1} contactos`)}
+/* ---------- copiar datos de la base anterior (una sola vez) ---------- */
+async function migrar(){if(!confirm("¿Copiar a esta base los hospitales, servicios, contactos y cargos de la base anterior?\nLo que ya exista acá con el mismo ID no se toca."))return;
+const oa=getApps().find(a=>a.name==="old")||initializeApp(OLD_CFG,"old"),od=getFirestore(oa);
+const ops=[];for(const[cn,have]of[["hospitales",hm],["servicios",sm],["contactos",new Map(C.map(c=>[c.id,c]))]]){const s=await getDocs(collection(od,cn));s.forEach(d=>{if(!have.has(d.id))ops.push([cn,d.id,d.data()])})}
+if(!cargosOk){const cs=await getDoc(doc(od,"config","cargos"));if(cs.exists())ops.push(["contactos_config","cargos",cs.data()])}
+if(!ops.length)return toast("No había nada nuevo para copiar");
+for(let i=0;i<ops.length;i+=400){const b=writeBatch(db);ops.slice(i,i+400).forEach(([c,id,d])=>b.set(dr(c,id),d));await b.commit()}
+toast(`Se copiaron ${ops.length} registros`)}
+async function delMany(refs){for(let i=0;i<refs.length;i+=400){const b=writeBatch(db);refs.slice(i,i+400).forEach(r=>b.delete(r));await b.commit()}}
+const dr=(c,id)=>doc(db,c,id);
+async function seed(){const b=writeBatch(db);let n=0;
+SEED.forEach(([id,nombre])=>{if(!hm.has(id)){b.set(dr("hospitales",id),{nombre,logo:`logos/${id}.png`,principal:id==="zubizarreta"});n++}});
+SVC.forEach(nm=>{const id="zubizarreta_"+slug(nm);if(!sm.has(id)&&!S.some(s=>s.hospitalId==="zubizarreta"&&norm(s.nombre)===norm(nm))){b.set(dr("servicios",id),{hospitalId:"zubizarreta",nombre:nm});n++}});
+if(!cargosOk){b.set(dr("contactos_config","cargos"),{lista:DEF_CARGOS});n++}
+if(!n)return toast("Los datos iniciales ya estaban cargados");await b.commit();toast(`Se crearon ${n} registros`)}
+function multiServ(hid){const names=svcNames(hid);dlg.className="";
+dlg.innerHTML=`<h3>Agregar servicios ya cargados</h3><input id="msq" type="search" placeholder="Buscar servicio" autocomplete="off"><div id="msl" style="max-height:50vh;overflow:auto;margin-top:8px">${names.map(n=>`<label style="color:var(--ink);margin:2px 0"><input type="checkbox" style="display:inline;width:auto" value="${esc(n)}"> ${esc(n)}</label>`).join("")||'<p class="empty">No hay otros servicios para agregar.</p>'}</div><div class="row"><button id="cx4">Cancelar</button><button class="pri" id="okms">Agregar seleccionados</button></div>`;
+$("#msq").oninput=e=>{const t=norm(e.target.value);dlg.querySelectorAll("#msl label").forEach(l=>l.style.display=norm(l.textContent).includes(t)?"":"none")};
+$("#cx4").onclick=()=>dlg.close();
+$("#okms").onclick=async()=>{const sel=[...dlg.querySelectorAll("#msl input:checked")].map(x=>x.value);if(!sel.length)return toast("Elegí al menos un servicio");const b=writeBatch(db);sel.forEach(n=>b.set(doc(collection(db,"servicios")),{hospitalId:hid,nombre:n}));try{await b.commit();dlg.close();toast(`Se agregaron ${sel.length} servicios`)}catch(x){toast("Error: "+x.message)}};
+dlg.showModal()}
+/* ---------- clicks ---------- */
+document.addEventListener("click",async e=>{const b=e.target.closest("[data-a]");if(!b||!admin)return;const a=b.dataset.a,id=b.dataset.id;
+if(a==="nh")hForm();else if(a==="eh")hForm(hm.get(id));
+else if(a==="dh"&&confirm("¿Eliminar el hospital con todos sus servicios y contactos?")){await delMany([...C.filter(c=>c.hospitalId===id).map(c=>dr("contactos",c.id)),...S.filter(s=>s.hospitalId===id).map(s=>dr("servicios",s.id)),dr("hospitales",id)]);toast("Hospital eliminado")}
+else if(a==="ns")sForm(id);else if(a==="ms")multiServ(id);else if(a==="es")sForm(sm.get(id).hospitalId,sm.get(id));
+else if(a==="ds"&&confirm("¿Eliminar el servicio con todos sus contactos?")){await delMany([...C.filter(c=>c.servicioId===id).map(c=>dr("contactos",c.id)),dr("servicios",id)]);toast("Servicio eliminado")}
+else if(a==="nc")cForm(id);else if(a==="ec"){const c=C.find(x=>x.id===id);cForm(c.servicioId,c)}
+else if(a==="dc"&&confirm("¿Eliminar este contacto?")){await delMany([dr("contactos",id)]);toast("Contacto eliminado")}
+else if(a==="seed")seed().catch(x=>toast("Error: "+x.message));else if(a==="imp")importUI();else if(a==="xl")exportFull();else if(a==="xs")exportSimple();else if(a==="mig")migrar().catch(x=>toast("Error: "+x.message));else if(a==="mc")moveUI(C.find(x=>x.id===id));else if(a==="cg")cargosUI()});
+function cargosUI(){dlg.className="";dlg.innerHTML=`<h3>Cargos</h3><div id="cl">${CARGOS.map((c,i)=>`<div class="it" style="display:flex;justify-content:space-between;padding:4px 0">${esc(c)}<button class="sm dng" data-i="${i}">Quitar</button></div>`).join("")}</div><div class="row"><button id="ac">+ Agregar cargo</button><button id="cx2">Cerrar</button></div>`;
+const sv=async l=>{await setDoc(dr("contactos_config","cargos"),{lista:l});setTimeout(cargosUI,300)};
+$("#cx2").onclick=()=>dlg.close();$("#ac").onclick=()=>{const n=(prompt("Nombre del nuevo cargo")||"").trim();if(n&&!CARGOS.some(c=>norm(c)===norm(n)))sv([...CARGOS,n])};
+dlg.querySelectorAll("[data-i]").forEach(x=>x.onclick=()=>confirm("¿Quitar este cargo de la lista? Los contactos existentes no se modifican.")&&sv(CARGOS.filter((_,i)=>i!=x.dataset.i)));dlg.showModal()}
+/* ---------- importación ---------- */
+let IMP=[],ALLOW=new Set,VIRT=new Map;
+const hRank=n=>{const h=H.find(x=>norm(x.nombre)===norm(n));return h?.principal?0:1};
+function sortImp(){IMP.sort((a,b)=>hRank(a.hospital)-hRank(b.hospital)||cmp(a.hospital,b.hospital)||cmp(a.servicio,b.servicio)||cmp(a.nombre||a.email,b.nombre||b.email))}
+function downloadTpl(){const ws=XLSX.utils.aoa_to_sheet([COLS]);for(let r=2;r<=500;r++)ws["G"+r]={t:"s",v:"",z:"@"};ws["!ref"]="A1:H500";ws["!cols"]=COLS.map(()=>({wch:20}));
+const wi=XLSX.utils.aoa_to_sheet([["Una fila por contacto. Hoja: Contactos."],["tipo_contacto: WHATSAPP o GMAIL."],["WHATSAPP: titulo (Dr. o Dra.), nombre, cargo y telefono con prefijo internacional (ej. +5491123456789) son obligatorios."],["GMAIL: solo email; dejar nombre, titulo, cargo y telefono vacíos."],["hospital y servicio deben coincidir con los ya cargados (se ignoran mayúsculas y tildes)."],["Dar formato Texto a la columna telefono para conservar el signo +."]]);
+const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Contactos");XLSX.utils.book_append_sheet(wb,wi,"Instrucciones");XLSX.writeFile(wb,"plantilla_contactos.xlsx")}
+function validate(){const seen=new Set,miss=new Map;VIRT=new Map;
+const ex=new Set(C.map(c=>c.hospitalId+"|"+c.servicioId+"|"+c.tipo+"|"+(c.tipo==="WHATSAPP"?digits(c.telefono):c.email)));
+IMP.forEach(r=>{const er=[];r.s="ok";r.hid=r.sid=null;const nh=norm(r.hospital),ns=norm(r.servicio);
+let h=H.find(x=>norm(x.nombre)===nh);
+if(!nh)er.push("Falta hospital");else if(h)r.hid=h.id;else{const k="H|"+nh;miss.set(k,"Hospital: "+r.hospital);if(ALLOW.has(k)){r.hid="new:"+nh;VIRT.set(r.hid,{c:"hospitales",d:{nombre:r.hospital.trim(),logo:""}})}else er.push("Hospital inexistente")}
+if(!ns)er.push("Falta servicio");else if(r.hid){const s=S.find(x=>x.hospitalId===r.hid&&norm(x.nombre)===ns);if(s)r.sid=s.id;else{const k="S|"+r.hid+"|"+ns;miss.set(k,"Servicio: "+r.servicio+" ("+(h?.nombre||r.hospital)+")");if(ALLOW.has(k)||String(r.hid).startsWith("new:")&&ALLOW.has("H|"+nh)&&ALLOW.has(k)){r.sid="new:"+r.hid+"|"+ns;VIRT.set(r.sid,{c:"servicios",d:{hospitalId:r.hid,nombre:r.servicio.trim()}})}else er.push("Servicio inexistente en ese hospital")}}
+const t=norm(r.tipo_contacto).toUpperCase();r.t=t;let key;
+if(t==="WHATSAPP"){if(!normTrat(r.titulo))er.push("Título: Dr., Dra. o Lic.");if(!r.nombre.trim())er.push("Falta nombre");
+const c=CARGOS.find(x=>norm(x)===norm(r.cargo));if(!c)er.push("Cargo no registrado");else r.cg=c;
+if(!r.telefono.trim())er.push("Falta teléfono");else if(!okTel(r.telefono))er.push("Teléfono inválido");key=digits(normTel(r.telefono))}
+else if(t==="GMAIL"){if(!r.email.trim())er.push("Falta email");else if(!okMail(r.email.trim()))er.push("Email inválido");if(r.nombre.trim())er.push("El nombre debe quedar vacío en GMAIL");key=r.email.trim().toLowerCase()}
+else er.push("tipo_contacto debe ser WHATSAPP o GMAIL");
+if(er.length){r.s="err";r.m=er.join("; ");return}
+const k=r.hid+"|"+r.sid+"|"+t+"|"+key;if(ex.has(k)){r.s="dup";r.m="Ya existe en el directorio"}else if(seen.has(k)){r.s="dup";r.m="Repetido en el archivo"}else{seen.add(k);r.m="Listo"}});
+return miss}
+function paint(){const miss=validate();const n=s=>IMP.filter(r=>r.s===s).length;
+IMP.forEach((r,i)=>{const e=$("#st"+i);if(e){e.className={ok:"ok",err:"er",dup:"du"}[r.s];e.textContent=({ok:"✔ ",err:"✖ ",dup:"⚠ "}[r.s])+r.m}});
+$("#sum").textContent=`${n("ok")} se agregarán · ${n("err")} con errores (se omiten) · ${n("dup")} duplicados (se omiten)`;
+$("#miss").innerHTML=miss.size?`<p><b>Hospitales o servicios inexistentes.</b> Marcá solo los que quieras crear (revisá que no sea un error de tipeo):</p><p><button type="button" id="mall">Marcar todos</button> <button type="button" id="mnone">Desmarcar todos</button></p>`+[...miss].map(([k,l])=>`<label style="color:var(--ink)"><input type="checkbox" style="display:inline;width:auto" data-k="${esc(k)}" ${ALLOW.has(k)?"checked":""}> ${esc(l)}</label>`).join(""):"";
+$("#miss").querySelectorAll("input").forEach(c=>c.onchange=()=>{c.checked?ALLOW.add(c.dataset.k):ALLOW.delete(c.dataset.k);paint()});const ma=$("#mall");if(ma){ma.onclick=()=>{miss.forEach((_,k)=>ALLOW.add(k));paint()};$("#mnone").onclick=()=>{miss.forEach((_,k)=>ALLOW.delete(k));paint()}}}
+function importUI(){IMP=[];ALLOW=new Set;dlg.className="wide";
+dlg.innerHTML=`<h3>Importar contactos</h3><p><button id="tp">Descargar plantilla</button> <input type="file" id="fl" accept=".xlsx,.csv" style="display:inline;width:auto;border:0"></p><div id="pv"></div><div class="row"><button id="cx3">Cancelar</button><button class="pri" id="go" disabled>Importar válidos</button></div>`;
+$("#tp").onclick=downloadTpl;$("#cx3").onclick=()=>dlg.close();
+$("#fl").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const wb=XLSX.read(await f.arrayBuffer(),{type:"array",raw:true});const ws=wb.Sheets.Contactos||wb.Sheets[wb.SheetNames[0]];
+const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:""});const hd=rows[0].map(x=>norm(x));const miss=COLS.filter(c=>!hd.includes(c));
+if(miss.length){$("#pv").innerHTML=`<p class="err">Faltan columnas: ${miss.join(", ")}. Usá la plantilla.</p>`;return}
+IMP=rows.slice(1).map((r,i)=>[r,i+2]).filter(([r])=>r.some(x=>String(x).trim())).map(([r,n])=>({_n:n,...Object.fromEntries(COLS.map(c=>[c,cl(r[hd.indexOf(c)])]))}));sortImp();
+if(!IMP.length){$("#pv").innerHTML='<p class="err">El archivo no tiene filas.</p>';return}
+$("#pv").innerHTML=`<p id="sum"></p><div id="miss"></div><p class="sub">Podés corregir las celdas antes de importar.</p><div class="tw"><table><tr><th>#</th>${COLS.map(c=>`<th>${c}</th>`).join("")}<th>Estado</th></tr>${IMP.map((r,i)=>`<tr><td>${r._n}</td>${COLS.map(c=>`<td><input data-i="${i}" data-c="${c}" value="${esc(r[c])}"></td>`).join("")}<td id="st${i}"></td></tr>`).join("")}</table></div>`;
+$("#pv").querySelectorAll("td input").forEach(x=>x.onchange=()=>{IMP[x.dataset.i][x.dataset.c]=cl(x.value);paint();$("#go").disabled=!IMP.some(r=>r.s==="ok")});
+paint();$("#go").disabled=!IMP.some(r=>r.s==="ok")}catch(x){$("#pv").innerHTML=`<p class="err">No se pudo leer el archivo: ${esc(x.message)}</p>`}};
+$("#go").onclick=async()=>{const ok=IMP.filter(r=>r.s==="ok");if(!ok.length||!confirm(`¿Importar ${ok.length} contactos?`))return;$("#go").disabled=true;
+try{const map=new Map,ops=[];const need=new Set;ok.forEach(r=>{[r.hid,r.sid].forEach(i=>String(i).startsWith("new:")&&need.add(i))});
+[...need].sort((a,b)=>VIRT.get(a).c==="hospitales"?-1:1).forEach(v=>{const x=VIRT.get(v),id=newId(x.c);map.set(v,id);ops.push([x.c,id,{...x.d,hospitalId:x.d.hospitalId?map.get(x.d.hospitalId)||x.d.hospitalId:undefined}])});
+ops.forEach(o=>{if(o[2].hospitalId===undefined)delete o[2].hospitalId});
+ok.forEach(r=>{const w=r.t==="WHATSAPP";ops.push(["contactos",newId("contactos"),{hospitalId:map.get(r.hid)||r.hid,servicioId:map.get(r.sid)||r.sid,tipo:r.t,titulo:w?normTrat(r.titulo):"",nombre:w?r.nombre:"",cargo:w?r.cg:"",telefono:w?normTel(r.telefono):"",email:w?"":r.email.toLowerCase()}])});
+for(let i=0;i<ops.length;i+=400){const b=writeBatch(db);ops.slice(i,i+400).forEach(([c,id,d])=>b.set(dr(c,id),d));await b.commit()}
+dlg.close();toast(`Importados ${ok.length} contactos. Omitidos: ${IMP.length-ok.length}`)}catch(x){$("#go").disabled=false;toast("Error al importar: "+x.message)}};
+dlg.showModal()}
+</script></body></html>
