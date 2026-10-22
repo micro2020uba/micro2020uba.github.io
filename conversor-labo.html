@@ -24,7 +24,7 @@
   @media (max-width:860px){ .grid{grid-template-columns:1fr;} .pipe{display:none;} }
   .panel{display:flex;flex-direction:column;}
   .panel h3{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-dark);margin:0 0 7px;}
-  #laboInput{min-height:320px;flex:1;font-family:'IBM Plex Mono',monospace;font-size:12px;padding:8px;border:1px solid var(--line-soft);background:var(--field-bg);border-radius:2px;resize:vertical;width:100%;}
+  #laboInput{min-height:80px;height:80px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:12px;padding:8px;border:1px solid var(--line-soft);background:var(--field-bg);border-radius:2px;resize:vertical;width:100%;}
   .controls{display:flex;align-items:center;gap:8px;margin-top:9px;flex-wrap:wrap;}
   .controls label{font-size:10.5px;color:var(--muted);font-weight:600;}
   .controls button{font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:11.5px;padding:7px 12px;border-radius:2px;cursor:pointer;border:none;}
@@ -221,7 +221,7 @@
   <div class="body">
     <div class="grid">
       <div class="panel">
-        <h3>1. Datos crudos del laboratorio</h3>
+        <h3>1. Datos crudos del laboratorio <span id="laboPacienteTag"></span></h3>
         <textarea id="laboInput" placeholder="Pegá acá el texto copiado del laboratorio..."></textarea>
         <div class="controls">
           <label for="laboFecha">Fecha:</label>
@@ -2688,6 +2688,10 @@ function fld(id){ return document.getElementById(id); }
 
     const modoGrilla = (captureOnly === true && typeof rawOverride === 'string');
     let raw = modoGrilla ? rawOverride : $input.value;
+    if(!modoGrilla){
+      const mpac = raw.match(/Paciente\s*:?\s*([^\n\r]{2,70}?)\s*Edad\s*:?\s*\d/i);
+      fld('laboPacienteTag').textContent = mpac ? '(' + mpac[1].replace(/\s+/g,' ').trim() + ')' : '';
+    }
     if(!raw.trim()){
       if(modoGrilla) return null;
       $output.innerHTML = '';
@@ -3021,7 +3025,7 @@ function fld(id){ return document.getElementById(id); }
       line1Html = line1Html ? `${line1Html}<br>${sent}` : `${prefix}${sent}`;
     });
 
-    function buildCompactLine(){
+    function buildCompactLine(black){
       const byC = {};
       found.forEach(f=>{ if(!(f.code in byC)) byC[f.code] = f; });
       const used = new Set();
@@ -3033,7 +3037,8 @@ function fld(id){ return document.getElementById(id); }
         }
         return t.replace('.', ',');
       };
-      const paint = (f, txt)=> f.abnormal ? `<span style="color:#FF0000;font-weight:700;">${txt}</span>` : txt;
+      const paint = (f, txt)=> (!black && f.abnormal) ? `<span style="color:#FF0000;font-weight:700;">${txt}</span>` : txt;
+      const lbl = L => black ? `<b>${L}:</b>` : `${L}:`;
       const positional = codes=>{
         const arr = codes.map(c=>{
           const f = byC[c];
@@ -3056,7 +3061,7 @@ function fld(id){ return document.getElementById(id); }
       };
       const groups = [];
       const addGroup = (label, parts, tail)=>{
-        if(parts.length) groups.push(`${label}: ${parts.join('|')}${tail||''}.`);
+        if(parts.length) groups.push(`${lbl(label)} ${parts.join('|')}${tail||''}.`);
       };
       const hPos = positional(['GB','N','GR','HB','HTO','PLAQ']);
       const cayTail = labeled([['Reticulocitos','Reticulocitos']]);
@@ -3073,8 +3078,8 @@ function fld(id){ return document.getElementById(id); }
         if(serPres.length){
           serPres.forEach(c=>used.add(c));
           const reac = serPres.filter(c=>byC[c].abnormal);
-          if(reac.length) groups.push(`Serología: ${reac.map(c=>paint(byC[c], `${c} reactivo`)).join(', ')}.`);
-          else groups.push('Serología: Negativa.');
+          if(reac.length) groups.push(`${lbl('Serología')} ${reac.map(c=>paint(byC[c], `${c} reactivo`)).join(', ')}.`);
+          else groups.push(`${lbl('Serología')} Negativa.`);
         }
       }
       const NO_EN_RESTO = ['Cayados','L','M','E','B','VCM','HCM','CHCM','RDW','VPM','FG','IR','No HDL'];
@@ -3085,9 +3090,11 @@ function fld(id){ return document.getElementById(id); }
       if(!groups.length) return '';
       return prefix + groups.join('&nbsp;&nbsp;&nbsp;&nbsp;');
     }
-    const compactHtml = buildCompactLine();
+    const compactHtml = buildCompactLine(false);
+    const compactBlackHtml = buildCompactLine(true);
 
     let out = '';
+    if(compactBlackHtml) out += `<span style="font-family:Calibri,Carlito,'Segoe UI',Arial,sans-serif;font-size:12pt;color:#000000;font-weight:400;">${compactBlackHtml}</span><br><br>`;
     if(compactHtml) out += `<span style="${LABO_FONT}">${compactHtml}</span><br><br>`;
     if(line2Html) out += `<span style="${LABO_FONT}"><b>LABORATORIO COMPLETO:</b><br>${line2Html}</span>`;
     if(line2Html && line1Html) out += '<br><br>';
@@ -3203,6 +3210,7 @@ function fld(id){ return document.getElementById(id); }
 
   fld('laboLimpiarBtn').addEventListener('click', ()=>{
     $input.value = '';
+    fld('laboPacienteTag').textContent = '';
     $gasaInput.value = '';
     $gasaWrap.classList.remove('show');
     $output.innerHTML = '';
