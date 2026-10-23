@@ -115,6 +115,17 @@
 
   <div class="tool-grid">
 
+    <!-- LABORATORIO: se abre como modal con un iframe hacia conversor-labo.html,
+         accesible para cualquiera sin necesidad de iniciar sesión. -->
+    <button type="button" class="tool-card" id="openLaboBtn">
+      <div class="icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18 2H8a2 2 0 0 0-2 2v.5A1.5 1.5 0 0 0 4.5 6H4v13.5A2.5 2.5 0 0 0 6.5 22h5.79c-.85-1-1.29-2.28-1.29-3.5a5.5 5.5 0 0 1 3-4.9V9a1 1 0 0 1 1-1h.5a.5.5 0 0 0 0-1H14a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h.5a.5.5 0 0 0 0-1H9.5a.5.5 0 0 0 0 1H10a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-.5a.5.5 0 0 0 0 1H10a1 1 0 0 1 1 1v.09A5.49 5.49 0 0 1 15.5 9V6.5A1.5 1.5 0 0 0 14 5V4a2 2 0 0 0 2-2h2Z"/><path d="M17 12a3.5 3.5 0 0 0-1 6.85V21a2 2 0 0 0 4 0v-2.15A3.5 3.5 0 0 0 17 12Zm-1 3.5a1 1 0 1 1 2 0v3a1 1 0 0 1-2 0Z"/></svg>
+      </div>
+      <h2>Laboratorio</h2>
+      <p>Pegá un resultado de laboratorio y obtené la línea lista para copiar, con los valores alterados marcados. Acceso libre, sin necesidad de iniciar sesión.</p>
+      <span class="go">Abrir →</span>
+    </button>
+
     <!-- PASE DE GUARDIA: navega de página completa a pases.html.
          El "?v=" de PASE_VERSION evita que el navegador sirva una copia
          vieja guardada en caché cuando subas cambios nuevos a ese archivo. -->
@@ -124,17 +135,6 @@
       </div>
       <h2>Pase de guardia</h2>
       <p>Archivero de pacientes por cama, EVOL por checklist y generador del pase completo. Requiere iniciar sesión.</p>
-      <span class="go">Abrir →</span>
-    </button>
-
-    <!-- LABORATORIO: se abre como modal con un iframe hacia conversor-labo.html,
-         accesible para cualquiera sin necesidad de iniciar sesión. -->
-    <button type="button" class="tool-card" id="openLaboBtn">
-      <div class="icon">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18 2H8a2 2 0 0 0-2 2v.5A1.5 1.5 0 0 0 4.5 6H4v13.5A2.5 2.5 0 0 0 6.5 22h5.79c-.85-1-1.29-2.28-1.29-3.5a5.5 5.5 0 0 1 3-4.9V9a1 1 0 0 1 1-1h.5a.5.5 0 0 0 0-1H14a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h.5a.5.5 0 0 0 0-1H9.5a.5.5 0 0 0 0 1H10a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-.5a.5.5 0 0 0 0 1H10a1 1 0 0 1 1 1v.09A5.49 5.49 0 0 1 15.5 9V6.5A1.5 1.5 0 0 0 14 5V4a2 2 0 0 0 2-2h2Z"/><path d="M17 12a3.5 3.5 0 0 0-1 6.85V21a2 2 0 0 0 4 0v-2.15A3.5 3.5 0 0 0 17 12Zm-1 3.5a1 1 0 1 1 2 0v3a1 1 0 0 1-2 0Z"/></svg>
-      </div>
-      <h2>Laboratorio</h2>
-      <p>Pegá un resultado de laboratorio y obtené la línea lista para copiar, con los valores alterados marcados. Acceso libre, sin necesidad de iniciar sesión.</p>
       <span class="go">Abrir →</span>
     </button>
 
@@ -160,6 +160,16 @@
       </div>
       <h2>Calculadoras clínicas</h2>
       <p>ECG (frecuencia y eje cardíaco), GASA, SOFA y medio interno/oximetría, cada una con acceso independiente. Acceso libre, sin necesidad de iniciar sesión.</p>
+      <span class="go">Abrir →</span>
+    </button>
+
+    <!-- GUÍA CLÍNICA: modal con iframe hacia guia_clinica.html (acceso libre). -->
+    <button type="button" class="tool-card" id="openGuiaBtn">
+      <div class="icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5 3h11a3 3 0 0 1 3 3v15H8a3 3 0 0 1-3-3V3Zm2 2v10.2A3 3 0 0 1 8 15h9V6a1 1 0 0 0-1-1H7Zm1 12a1 1 0 0 0 0 2h9v-2H8Zm2-9h5v1.5h-5V8Zm0 3h5v1.5h-5V11Z"/></svg>
+      </div>
+      <h2>Guía clínica</h2>
+      <p>Scores y cálculos (Child-Pugh/MELD, CHA₂DS₂-VASc, Wells, síncope, FENa, Na/K), patologías, electrolitos y esquemas de ATB en tablas. Acceso libre.</p>
       <span class="go">Abrir →</span>
     </button>
 
@@ -256,6 +266,16 @@
   </div>
 </div>
 
+<div class="labo-standalone-overlay" id="guiaStandaloneOverlay">
+  <div class="labo-standalone-modal">
+    <div class="labo-standalone-header">
+      <span>GUÍA CLÍNICA — scores · patologías · ATB</span>
+      <button type="button" class="labo-standalone-close" id="guiaStandaloneCloseBtn" title="Cerrar">×</button>
+    </div>
+    <iframe id="guiaStandaloneFrame" title="Guía clínica" src=""></iframe>
+  </div>
+</div>
+
 <script>
 (function(){
   const today = new Date();
@@ -276,10 +296,11 @@
    adelante, sumale acá su propia constante de versión.
    ========================================================================= */
   const PASE_VERSION = '2026-10-05-1';
-  const LABO_VERSION = '2026-09-02-4';
+  const LABO_VERSION = '2026-10-22-1';
   const BH_VERSION = '2026-09-30-2';
   const CALC_VERSION = '2026-09-13-1';
   const GUARDIAS_VERSION = '2026-09-13-1';
+  const GUIA_VERSION = '2026-10-22-1';
   const CONTACTOS_VERSION = '2026-10-22-1';
 
 /* ---- Pase de guardia: navegación de página completa ---- */
@@ -414,6 +435,24 @@ document.getElementById('openGuardiasBtn').addEventListener('click', ()=>{
   });
 })();
 
+/* ---- Guía clínica: modal con iframe hacia guia_clinica.html ---- */
+(function(){
+  const overlay = document.getElementById('guiaStandaloneOverlay');
+  const frame = document.getElementById('guiaStandaloneFrame');
+  const openBtn = document.getElementById('openGuiaBtn');
+  const closeBtn = document.getElementById('guiaStandaloneCloseBtn');
+  function openGuia(){
+    try{localStorage.setItem('pwa_last','guia')}catch(e){}
+    if(!frame.dataset.loaded){ frame.src = 'guia_clinica.html?v=' + encodeURIComponent(GUIA_VERSION); frame.dataset.loaded = '1'; }
+    overlay.classList.add('open');
+  }
+  function closeGuia(){ try{localStorage.removeItem('pwa_last')}catch(e){} overlay.classList.remove('open'); }
+  openBtn.addEventListener('click', openGuia);
+  closeBtn.addEventListener('click', closeGuia);
+  overlay.addEventListener('click', (e)=>{ if(e.target === overlay) closeGuia(); });
+  document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape' && overlay.classList.contains('open')) closeGuia(); });
+})();
+
 /* ---- Reabrir la última herramienta al tocar el ícono de la app ----
    El manifest lanza la app con "?source=pwa". Cada herramienta guarda en
    localStorage ('pwa_last') cuál fue la última que abriste. Si entrás por
@@ -422,9 +461,10 @@ document.getElementById('openGuardiasBtn').addEventListener('click', ()=>{
 (function restoreLastTool(){
   try{
     const fromApp = new URLSearchParams(location.search).get('source') === 'pwa';
-    const last = localStorage.getItem('pwa_last');
-    if(!fromApp){ localStorage.removeItem('pwa_last'); return; }
-    const ids = { pase:'openPaseBtn', guardias:'openGuardiasBtn', labo:'openLaboBtn', calc:'openCalcBtn', bh:'openBhBtn', contactos:'openContactosBtn' };
+    const direct = new URLSearchParams(location.search).get('open');
+    const last = direct || localStorage.getItem('pwa_last');
+    if(!fromApp && !direct){ localStorage.removeItem('pwa_last'); return; }
+    const ids = { pase:'openPaseBtn', guardias:'openGuardiasBtn', labo:'openLaboBtn', calc:'openCalcBtn', bh:'openBhBtn', contactos:'openContactosBtn', guia:'openGuiaBtn' };
     if(last && ids[last]) document.getElementById(ids[last]).click();
   }catch(e){}
 })();
