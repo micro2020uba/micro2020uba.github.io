@@ -3,7 +3,7 @@
    Si cambiás conversor-labo.html, actualizá LABO_VERSION (igual que en index.html). */
 (function(){
   if(window.top!==window.self) return;
-  const LABO_VERSION='2026-11-10-1';
+  const LABO_VERSION='2026-11-10-2';
   const css=document.createElement('style');
   css.textContent='#laboFab{position:fixed;left:12px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:1100;background:#1e403d;color:#fff;border:2px solid #111;border-radius:22px;padding:9px 14px;font:700 12px/1 "IBM Plex Mono",monospace;letter-spacing:.08em;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.3)}'
    +'#laboFabOv{display:none;position:fixed;inset:0;z-index:2000;background:#fff;padding:0}#laboFabOv.open{display:block}'
