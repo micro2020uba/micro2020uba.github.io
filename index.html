@@ -76,12 +76,12 @@
   /* ===== Modal contenedor del transformador de LABO (conversor-labo.html embebido) ===== */
   .labo-standalone-overlay{
     display:none;position:fixed;inset:0;background:rgba(28,35,33,.6);
-    z-index:1200;align-items:flex-start;justify-content:center;padding:clamp(10px,3vh,40px) 14px;overflow:auto;
+    z-index:1200;align-items:stretch;justify-content:center;padding:0;overflow:hidden;
   }
   .labo-standalone-overlay.open{display:flex;}
   .labo-standalone-modal{
-    background:var(--panel);border:2px solid var(--ink);border-radius:4px;
-    width:100%;max-width:1220px;height:min(88vh,900px);box-shadow:0 14px 46px rgba(0,0,0,.35);
+    background:var(--panel);
+    width:100%;max-width:none;height:100vh;height:100dvh;border:none;border-radius:0;box-shadow:none;
     display:flex;flex-direction:column;overflow:hidden;
   }
   .labo-standalone-header{
@@ -296,7 +296,7 @@
    adelante, sumale acá su propia constante de versión.
    ========================================================================= */
   const PASE_VERSION = '2026-10-05-1';
-  const LABO_VERSION = '2026-10-22-1';
+  const LABO_VERSION = '2026-11-10-1';
   const BH_VERSION = '2026-09-30-2';
   const CALC_VERSION = '2026-09-13-1';
   const GUARDIAS_VERSION = '2026-09-13-1';
