@@ -1,0 +1,16 @@
+{
+  "name": "Laboratorio — Transformador LABO",
+  "short_name": "Labo",
+  "id": "./conversor-labo.html",
+  "start_url": "./conversor-labo.html?source=pwa",
+  "scope": "./conversor-labo.html",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#faf7f0",
+  "theme_color": "#1e403d",
+  "icons": [
+    {"src": "icons/icon-labo-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-labo-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-labo-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
