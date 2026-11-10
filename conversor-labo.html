@@ -4,6 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Transformador de laboratorio → LABO</title>
+<link rel="manifest" href="manifest-labo.webmanifest">
+<meta name="theme-color" content="#1e403d">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="icons/icon-labo-192.png">
+<script>
+  if('serviceWorker' in navigator && window.top===window.self){
+    window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+  }
+</script>
 
 <style>
   :root{
@@ -225,7 +234,7 @@
         <textarea id="laboInput" placeholder="Pegá acá el texto copiado del laboratorio..."></textarea>
         <div class="controls">
           <label for="laboFecha">Fecha:</label>
-          <input type="date" id="laboFecha">
+          <input type="date" id="laboFecha"><span id="laboFechaOrigen" style="font-size:11px;color:var(--muted);"></span>
           <button type="button" class="btn-secondary" id="laboLimpiarBtn">Limpiar</button>
         </div>
         <div class="gasa-wrap" id="laboGasaWrap">
@@ -411,6 +420,31 @@ function fld(id){ return document.getElementById(id); }
     const m = String(t.getMonth()+1).padStart(2,'0');
     const d = String(t.getDate()).padStart(2,'0');
     $fecha.value = `${y}-${m}-${d}`;
+  }
+
+  /* Fecha de origen: si el texto pegado trae "Fecha dd/mm/aaaa" (Nextlab), se usa esa
+     y no la de hoy. Si el usuario corrige el campo a mano, se respeta esa elección
+     hasta que se pegue otro laboratorio con una fecha distinta. */
+  let laboFechaDetectada = null, laboFechaManual = false;
+  function laboDetectarFecha(raw){
+    const m = raw.match(/Fecha\s*:?\s*(\d{1,2})\/(\d{1,2})\/(\d{4})\s+\d{1,2}:\d{2}/i)
+           || raw.match(/Fecha\s*:?\s*(\d{1,2})\/(\d{1,2})\/(\d{4})/i);
+    if(!m) return null;
+    const d = parseInt(m[1],10), mo = parseInt(m[2],10), y = parseInt(m[3],10);
+    if(d<1 || d>31 || mo<1 || mo>12 || y<2000 || y>2100) return null;
+    return `${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  }
+  function laboAplicarFechaOrigen(raw){
+    const det = laboDetectarFecha(raw);
+    const tag = document.getElementById('laboFechaOrigen');
+    if(det){
+      if(det !== laboFechaDetectada){ laboFechaDetectada = det; laboFechaManual = false; }
+      if(!laboFechaManual) $fecha.value = det;
+    } else if(laboFechaDetectada !== null){
+      laboFechaDetectada = null;
+      if(!laboFechaManual) laboToday();
+    }
+    if(tag) tag.textContent = (laboFechaDetectada && !laboFechaManual) ? ' (tomada del laboratorio)' : (laboFechaManual ? ' (corregida a mano)' : '');
   }
 
   function laboToNumber(str){
@@ -2691,6 +2725,7 @@ function fld(id){ return document.getElementById(id); }
     if(!modoGrilla){
       const mpac = raw.match(/Paciente\s*:?\s*([^\n\r]{2,70}?)\s*Edad\s*:?\s*\d/i);
       fld('laboPacienteTag').textContent = mpac ? '(' + mpac[1].replace(/\s+/g,' ').trim() + ')' : '';
+      laboAplicarFechaOrigen(raw);
     }
     if(!raw.trim()){
       if(modoGrilla) return null;
@@ -3217,6 +3252,8 @@ function fld(id){ return document.getElementById(id); }
     $status.textContent = '';
     laboAlertSig = '';
     laboCaReset();
+    laboFechaDetectada = null; laboFechaManual = false; laboToday();
+    const tg = document.getElementById('laboFechaOrigen'); if(tg) tg.textContent = '';
     $input.focus();
   });
   $output.addEventListener('copy', (e)=>{
@@ -3345,6 +3382,7 @@ function fld(id){ return document.getElementById(id); }
     $gcResultado.innerHTML = '';
   });
 
+  $fecha.addEventListener('change', ()=>{ laboFechaManual = true; laboProcesar(); });
   laboToday();
   laboLoadEnabled();
   laboBuildChecklist();
