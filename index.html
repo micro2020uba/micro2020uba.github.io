@@ -197,6 +197,17 @@
       <span class="go">Abrir →</span>
     </button>
 
+    <!-- CONVERSOR DOCX → MARKDOWN: modal con iframe hacia conversor-docx-md.html
+         (carga múltiple, todo se procesa en el navegador), acceso libre. -->
+    <button type="button" class="tool-card" id="openDocxBtn">
+      <div class="icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm8 1.5V8h4.5L14 3.5ZM11 11h2v4.2l1.6-1.6L16 15l-4 4-4-4 1.4-1.4L11 15.2V11Z"/></svg>
+      </div>
+      <h2>Conversor DOCX → Markdown</h2>
+      <p>Cargá varios archivos .docx a la vez y descargalos como .md: uno por archivo, en un .zip o unidos en uno solo. Se procesa en el navegador, sin subir nada. Acceso libre, sin necesidad de iniciar sesión.</p>
+      <span class="go">Abrir →</span>
+    </button>
+
     <!-- Para sumar una herramienta nueva más adelante, copiá uno de los
          .tool-card de arriba (o el placeholder de abajo) y armá su propio
          acceso: navegación de página completa (como Pase de guardia) o
@@ -276,6 +287,19 @@
   </div>
 </div>
 
+<div class="labo-standalone-overlay" id="docxStandaloneOverlay">
+  <div class="labo-standalone-modal">
+    <div class="labo-standalone-header">
+      <span>
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm8 1.5V8h4.5L14 3.5ZM11 11h2v4.2l1.6-1.6L16 15l-4 4-4-4 1.4-1.4L11 15.2V11Z"/></svg>
+        CONVERSOR DOCX → MARKDOWN — carga múltiple
+      </span>
+      <button type="button" class="labo-standalone-close" id="docxStandaloneCloseBtn" title="Cerrar">×</button>
+    </div>
+    <iframe id="docxStandaloneFrame" title="Conversor DOCX a Markdown" src=""></iframe>
+  </div>
+</div>
+
 <script>
 (function(){
   const today = new Date();
@@ -302,6 +326,7 @@
   const GUARDIAS_VERSION = '2026-09-13-1';
   const GUIA_VERSION = '2026-10-22-3';
   const CONTACTOS_VERSION = '2026-10-22-1';
+  const DOCX_VERSION = '2026-11-11-1';
 
 /* ---- Pase de guardia: navegación de página completa ---- */
 document.getElementById('openPaseBtn').addEventListener('click', ()=>{
@@ -453,6 +478,24 @@ document.getElementById('openGuardiasBtn').addEventListener('click', ()=>{
   document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape' && overlay.classList.contains('open')) closeGuia(); });
 })();
 
+/* ---- Conversor DOCX → Markdown: modal con iframe hacia conversor-docx-md.html ---- */
+(function(){
+  const overlay = document.getElementById('docxStandaloneOverlay');
+  const frame = document.getElementById('docxStandaloneFrame');
+  const openBtn = document.getElementById('openDocxBtn');
+  const closeBtn = document.getElementById('docxStandaloneCloseBtn');
+  function openDocx(){
+    try{localStorage.setItem('pwa_last','docx')}catch(e){}
+    if(!frame.dataset.loaded){ frame.src = 'conversor-docx-md.html?v=' + encodeURIComponent(DOCX_VERSION); frame.dataset.loaded = '1'; }
+    overlay.classList.add('open');
+  }
+  function closeDocx(){ try{localStorage.removeItem('pwa_last')}catch(e){} overlay.classList.remove('open'); }
+  openBtn.addEventListener('click', openDocx);
+  closeBtn.addEventListener('click', closeDocx);
+  overlay.addEventListener('click', (e)=>{ if(e.target === overlay) closeDocx(); });
+  document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape' && overlay.classList.contains('open')) closeDocx(); });
+})();
+
 /* ---- Reabrir la última herramienta al tocar el ícono de la app ----
    El manifest lanza la app con "?source=pwa". Cada herramienta guarda en
    localStorage ('pwa_last') cuál fue la última que abriste. Si entrás por
@@ -464,7 +507,7 @@ document.getElementById('openGuardiasBtn').addEventListener('click', ()=>{
     const direct = new URLSearchParams(location.search).get('open');
     const last = direct || localStorage.getItem('pwa_last');
     if(!fromApp && !direct){ localStorage.removeItem('pwa_last'); return; }
-    const ids = { pase:'openPaseBtn', guardias:'openGuardiasBtn', labo:'openLaboBtn', calc:'openCalcBtn', bh:'openBhBtn', contactos:'openContactosBtn', guia:'openGuiaBtn' };
+    const ids = { pase:'openPaseBtn', guardias:'openGuardiasBtn', labo:'openLaboBtn', calc:'openCalcBtn', bh:'openBhBtn', contactos:'openContactosBtn', guia:'openGuiaBtn', docx:'openDocxBtn' };
     if(last && ids[last]) document.getElementById(ids[last]).click();
   }catch(e){}
 })();
