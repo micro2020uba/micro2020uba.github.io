@@ -1,9 +1,4 @@
 <!DOCTYPE html>
-<!--
- Versión: 29 (25/09/2026) — soporte para múltiples antibióticos, cada uno
- con su propia frecuencia y horario de administración (todos diluidos en
- 100 ml SF).
--->
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -55,7 +50,6 @@
   .num{font-family:'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums;}
   .wrap{max-width:1340px; margin:0 auto;}
 
-  /* ---------- Header ---------- */
   h1{font-size:1.05rem; letter-spacing:.01em; margin:0 0 4px; font-weight:700;}
   .sub{color:var(--ink-soft); font-size:.82rem; margin:0 0 18px;}
   .page-head{
@@ -145,8 +139,6 @@
     min-width:180px;
   }
   .bh-goal select{ width:100%; }
-  /* Tarjeta de balance actual: usa el mismo formato de tarjeta completa que
-     el resto de las secciones (.report-card), no una insignia flotante. */
   .bh-actual{
     margin-bottom:16px;
     transition:background .15s, color .15s;
@@ -255,7 +247,6 @@
     border-radius:4px;
   }
 
-  /* ---------- ATB config ---------- */
   .atb-card{
     background:var(--panel);
     border:1px solid var(--border);
@@ -290,13 +281,6 @@
     cursor:pointer;
   }
   .atb-enable-label input{width:16px; height:16px; cursor:pointer;}
-  .atb-disabled-hint{
-    display:none;
-    width:100%;
-    font-size:.78rem;
-    color:var(--ink-soft);
-    font-style:italic;
-  }
   #atbConfigBody{
     display:flex;
     gap:22px;
@@ -305,7 +289,6 @@
     width:100%;
   }
   .atb-card.atb-disabled #atbConfigBody{display:none;}
-  .atb-card.atb-disabled .atb-disabled-hint{display:block;}
   .atb-list{
     width:100%;
     display:flex;
@@ -371,7 +354,103 @@
   .atb-item-remove:hover{color:var(--negativo);}
   .atb-add-btn{align-self:flex-start;}
 
-  /* ---------- Bloques bloqueados por balance previo ---------- */
+  .acc-card{display:block; padding:0; margin-bottom:16px;}
+  .acc-head{
+    width:100%;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:14px 18px;
+    background:transparent;
+    border:none;
+    cursor:pointer;
+    text-align:left;
+    font-family:inherit;
+    color:var(--ink);
+  }
+  .acc-title{
+    flex:0 0 auto;
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    color:var(--ink-soft);
+    font-weight:700;
+  }
+  .acc-status{
+    flex:1 1 auto;
+    min-width:0;
+    font-size:.76rem;
+    color:var(--ink-soft);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .acc-status.on{
+    color:var(--ink);
+    font-weight:600;
+  }
+  .acc-arrow{
+    flex:0 0 auto;
+    color:var(--ink-soft);
+    font-size:.85rem;
+    transition:transform .15s;
+  }
+  .acc-card.open .acc-arrow{transform:rotate(180deg);}
+  .acc-body{
+    display:none;
+    padding:0 18px 14px;
+    gap:14px 22px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  .acc-card.open .acc-body{display:flex;}
+
+  .php-list{
+    width:100%;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .php-item{
+    display:flex;
+    align-items:flex-end;
+    gap:14px;
+    flex-wrap:wrap;
+    background:var(--egreso-soft);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:10px 12px;
+  }
+  .php-item.invalid{background:var(--negativo-soft);}
+  .php-item .field{min-width:130px; margin-bottom:0;}
+  .php-fixed-when{
+    font-size:.85rem;
+    font-weight:600;
+    color:var(--ink);
+    padding:8px 0;
+    min-width:130px;
+  }
+  .php-item-info{
+    flex:1 1 200px;
+    align-self:center;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:.76rem;
+    color:var(--egreso);
+  }
+  .php-item.invalid .php-item-info{color:var(--negativo);}
+  option.hora-clave{
+    background:#FDE7C2;
+    color:#A34A06;
+    font-weight:700;
+  }
+  .php-total{
+    width:100%;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:.8rem;
+    font-weight:600;
+    color:var(--egreso);
+  }
+
   .panel.locked{background:#F7F9FB;}
   .panel.locked .panel-head{opacity:.55;}
   .lock-note{
@@ -386,7 +465,6 @@
   .panel.locked .panel-body, .panel.locked .panel-foot.hide-when-locked{display:none;}
   .panel.locked .lock-note{display:block;}
 
-  /* ---------- Historial ---------- */
   .hist-card{
     background:var(--panel);
     border:1px solid var(--border);
@@ -439,7 +517,6 @@
   }
   .hist-report.show{display:block;}
 
-  /* ---------- Quarters grid: un solo panel dividido en 4 cuadrantes ---------- */
   .quarters{
     display:grid;
     grid-template-columns:1fr 1fr;
@@ -526,8 +603,6 @@
     flex:0 0 auto;
     white-space:nowrap;
   }
-  /* Total de antibióticos: incluye el detalle "(Nombre 100 + ...)", así que
-     puede ser largo: la caja se achica y el texto baja de renglón. */
   .row .rauto[data-role="atbTotalValue"]{
     flex:0 1 auto;
     min-width:0;
@@ -615,7 +690,6 @@
   }
   .bh-chip .tag{font-family:'IBM Plex Sans', sans-serif; font-weight:600; font-size:.65rem; text-transform:uppercase; letter-spacing:.03em; margin-left:6px; opacity:.85;}
 
-  /* ---------- Report ---------- */
   .report-card{
     background:var(--panel);
     border:1px solid var(--border);
@@ -675,7 +749,6 @@
   }
   .toast.show{opacity:1;}
 
-  /* ---------- Cómo se calculan AE y PI ---------- */
   .formula-card{
     background:var(--panel);
     border:1px solid var(--border);
@@ -745,7 +818,6 @@
     .col + .col{border-left:none; border-top:1px solid var(--border);}
   }
 
-  /* ---------- Celulares: ingresos y egresos siempre visibles juntos, sin scroll horizontal ---------- */
   @media (max-width: 520px){
     body{padding:12px 12px 50px;}
     .page-head{gap:10px;}
@@ -754,7 +826,10 @@
     .field-nombre input{width:100%;}
     .field-cama input, .field-peso input{width:100%;}
     .field-cama, .field-peso{flex:1 1 90px;}
-    .atb-card, #doseCard{padding:14px;}
+    .atb-card:not(.acc-card){padding:14px;}
+    .acc-head{padding:12px 14px;}
+    .acc-body{padding:0 14px 12px;}
+    .php-item{padding:8px 10px; gap:10px;}
     .atb-card .field{min-width:0; flex:1 1 160px;}
     .atb-card .field select{width:100%;}
     .atb-item-head{padding:7px 8px;}
@@ -792,11 +867,10 @@
   <div class="page-head">
     <div>
       <h1>Calculadora de balance hídrico</h1>
-      <p class="sub">Cargá lo nuevo registrado en cada bloque de 6 hs — el acumulado, el PHP, el agua endógena y las pérdidas insensibles se calculan solos.</p>
     </div>
     <div class="page-head-actions">
-      <button class="btn ghost" id="infusionBtn" type="button">Velocidad de infusión</button>
       <button class="btn ghost" id="newCalcBtnTop" type="button">+ Nuevo cálculo</button>
+      <button class="btn ghost" id="infusionBtn" type="button">Velocidad de infusión</button>
     </div>
   </div>
 
@@ -836,19 +910,6 @@
           <input type="number" id="peso" value="60" min="1" step="1">
         </div>
       </div>
-      <div class="patient-section php-section">
-        <div class="field">
-          <label for="phpPlan">Plan PHP (24 hs)</label>
-          <select id="phpPlan">
-            <option value="0">Intermitente · sin PHP</option>
-            <option value="7">A 7 · 500 ml</option>
-            <option value="14">A 14 · 1000 ml</option>
-            <option value="21" selected>A 21 · 1500 ml</option>
-            <option value="28">A 28 · 2000 ml</option>
-          </select>
-        </div>
-        <div class="php-readout" id="phpReadout">375 ml cada 6 hs</div>
-      </div>
       <div class="patient-section bh-section">
         <div class="bh-goal">
           <label for="bhGoal">Objetivo de BH</label>
@@ -863,52 +924,80 @@
     </div>
   </div>
 
-  <div class="atb-card">
-    <h2>Hora real de inicio del plan</h2>
-    <div class="field">
-      <label for="atbStartHour">Arranca el cuadrante "6 hs" a las</label>
-      <select id="atbStartHour"></select>
-    </div>
-    <div class="atb-hint">Es la hora del reloj a la que arranca tu primer cuadrante (6 hs) — por ejemplo, si tu turno empieza a las 06:30, elegí esa opción. Se usa para mostrar el horario de reloj de cada cuadrante y para calcular en qué cuadrante corresponde cada antibiótico según su frecuencia.</div>
-  </div>
-
-  <div class="atb-card" id="atbConfigCard">
-    <h2>Antibióticos (ATB)</h2>
-    <label class="atb-enable-label">
-      <input type="checkbox" id="atbEnabledCb">
-      El paciente recibe antibióticos
-    </label>
-    <div class="atb-disabled-hint" id="atbDisabledHint">Sin antibióticos indicados: el grupo ATB no se muestra en los cuadrantes ni se suma al balance. Tildá la opción de arriba si el paciente empieza a recibirlos.</div>
-    <div id="atbConfigBody">
-      <div class="atb-list" id="atbList"></div>
-      <button type="button" class="btn small ghost atb-add-btn" id="addAtbBtn">+ Agregar antibiótico</button>
-      <div class="atb-hint">Cada antibiótico tiene su propia frecuencia, horario de administración y dilución (por defecto 100 ml, pero podés cambiarla si ese antibiótico se diluye en más). Por ejemplo, uno cada 6 hs y otro cada 8 o 12 hs, cada uno a su horario. Con esos datos la calculadora tilda sola los cuadrantes que corresponden a cada antibiótico; tildá o destildá cualquier casillero si el horario real difiere. Cuando coinciden dos o más en el mismo cuadrante, se suman los ml de dilución de cada uno.</div>
+  <div class="atb-card acc-card" id="startCard">
+    <button type="button" class="acc-head" data-acc="start" aria-expanded="false">
+      <span class="acc-title">Hora real de inicio del plan</span>
+      <span class="acc-status on" id="startAccStatus"></span>
+      <span class="acc-arrow">▾</span>
+    </button>
+    <div class="acc-body">
+      <div class="field">
+        <select id="atbStartHour" aria-label="Hora real de inicio del plan"></select>
+      </div>
     </div>
   </div>
 
-  <div class="atb-card" id="doseCard">
-    <h2>Alimentación enteral y agua libre</h2>
-    <div class="field">
-      <label for="enteralRate">Ritmo de alim. enteral</label>
-      <select id="enteralRate">
-        <option value="0" selected>No indicada</option>
-        <option value="21">21 ml/h · 7 gotas/min</option>
-        <option value="42">42 ml/h · 14 gotas/min</option>
-        <option value="63">63 ml/h · 21 gotas/min</option>
-        <option value="84">84 ml/h · 28 gotas/min</option>
-      </select>
+  <div class="atb-card acc-card" id="phpCard">
+    <button type="button" class="acc-head" data-acc="php" aria-expanded="false">
+      <span class="acc-title">Plan de PHP (hidratación parenteral)</span>
+      <span class="acc-status on" id="phpAccStatus"></span>
+      <span class="acc-arrow">▾</span>
+    </button>
+    <div class="acc-body">
+      <div class="php-list" id="phpList"></div>
+      <button type="button" class="btn small ghost atb-add-btn" id="addPhpBtn">+ Agregar cambio de plan</button>
+      <div class="php-total" id="phpTotalInfo"></div>
     </div>
-    <div class="field">
-      <label for="aguaLibreRate">Ritmo de agua libre</label>
-      <select id="aguaLibreRate">
-        <option value="0" selected>No indicada</option>
-        <option value="21">21 ml/h · 7 gotas/min</option>
-        <option value="42">42 ml/h · 14 gotas/min</option>
-        <option value="63">63 ml/h · 21 gotas/min</option>
-        <option value="84">84 ml/h · 28 gotas/min</option>
-      </select>
+  </div>
+
+  <div class="atb-card acc-card" id="atbConfigCard">
+    <button type="button" class="acc-head" data-acc="atb" aria-expanded="false">
+      <span class="acc-title">Antibióticos (ATB)</span>
+      <span class="acc-status" id="atbAccStatus">Sin antibióticos</span>
+      <span class="acc-arrow">▾</span>
+    </button>
+    <div class="acc-body">
+      <label class="atb-enable-label">
+        <input type="checkbox" id="atbEnabledCb">
+        El paciente recibe antibióticos
+      </label>
+      <div id="atbConfigBody">
+        <div class="atb-list" id="atbList"></div>
+        <button type="button" class="btn small ghost atb-add-btn" id="addAtbBtn">+ Agregar antibiótico</button>
+        <div class="atb-hint">Cada antibiótico tiene su propia frecuencia, horario de administración y dilución (por defecto 100 ml, pero podés cambiarla si ese antibiótico se diluye en más). Por ejemplo, uno cada 6 hs y otro cada 8 o 12 hs, cada uno a su horario. Con esos datos la calculadora tilda sola los cuadrantes que corresponden a cada antibiótico; tildá o destildá cualquier casillero si el horario real difiere. Cuando coinciden dos o más en el mismo cuadrante, se suman los ml de dilución de cada uno.</div>
+      </div>
     </div>
-    <div class="atb-hint">Cada cuadrante tildado suma el ritmo elegido × 6 hs (aparecen como subítems de Vía oral, en cada cuadrante). Al elegir un ritmo se tildan los 4 cuadrantes; destildá el casillero puntual si en ese bloque no se administró (por ejemplo, todavía no había arrancado o se suspendió).</div>
+  </div>
+
+  <div class="atb-card acc-card" id="doseCard">
+    <button type="button" class="acc-head" data-acc="dose" aria-expanded="false">
+      <span class="acc-title">Alimentación enteral y agua libre</span>
+      <span class="acc-status" id="doseAccStatus">No indicadas</span>
+      <span class="acc-arrow">▾</span>
+    </button>
+    <div class="acc-body">
+      <div class="field">
+        <label for="enteralRate">Ritmo de alim. enteral</label>
+        <select id="enteralRate">
+          <option value="0" selected>No indicada</option>
+          <option value="21">21 ml/h · 7 gotas/min</option>
+          <option value="42">42 ml/h · 14 gotas/min</option>
+          <option value="63">63 ml/h · 21 gotas/min</option>
+          <option value="84">84 ml/h · 28 gotas/min</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="aguaLibreRate">Ritmo de agua libre</label>
+        <select id="aguaLibreRate">
+          <option value="0" selected>No indicada</option>
+          <option value="21">21 ml/h · 7 gotas/min</option>
+          <option value="42">42 ml/h · 14 gotas/min</option>
+          <option value="63">63 ml/h · 21 gotas/min</option>
+          <option value="84">84 ml/h · 28 gotas/min</option>
+        </select>
+      </div>
+      <div class="atb-hint">Cada cuadrante tildado suma el ritmo elegido × 6 hs (aparecen como subítems de Vía oral, en cada cuadrante). Al elegir un ritmo se tildan los 4 cuadrantes; destildá el casillero puntual si en ese bloque no se administró (por ejemplo, todavía no había arrancado o se suspendió).</div>
+    </div>
   </div>
 
   <main class="quarters" id="quarters"></main>
@@ -960,15 +1049,10 @@
 
 <script>
 (function(){
-  const PLAN_VOLUMES = {0:0, 7:500, 14:1000, 21:1500, 28:2000}; // 0 = plan intermitente (sin PHP continuo)
+  const PLAN_VOLUMES = {0:0, 7:500, 14:1000, 21:1500, 28:2000};
   const HOURS = [6,12,18,24];
   const QCOLORS = ['#2F9E44','#1C7ED6','#C2410C','#152A52'];
 
-  // Rangos horarios (reloj) de cada cuadrante, según la "hora real de inicio
-  // del plan" elegida (state.atbStartHour, que admite medias horas: 6.5 = 06:30).
-  // Ej.: inicio 06:00 -> ['06:00-12:00hs', ..., '00:00-06:00hs']. El límite
-  // exacto de medianoche se muestra como "24:00" al final de un tramo y como
-  // "00:00" al empezar el siguiente.
   function fmtClockHour(h, isEnd){
     const totalMin = Math.round(h*60);
     let m = ((totalMin % 1440) + 1440) % 1440;
@@ -985,14 +1069,10 @@
       return `${fmtClockHour(from,false)}-${fmtClockHour(to,true)}hs`;
     });
   }
-  const ATB_DOSE_DEFAULT = 100; // dilución por defecto para un antibiótico nuevo (editable por antibiótico)
+  const ATB_DOSE_DEFAULT = 100;
 
-  // Ritmos de goteo disponibles para alim. enteral y agua libre (ml/h -> gotas/min)
   const DOSE_RATES = {21:7, 42:14, 63:21, 84:28};
 
-  // Frecuencias disponibles por antibiótico (siempre alineadas a 00 hs: cada 6
-  // hs -> 6/12/18/24, cada 8 hs -> 8/16/24, etc. — ya no se elige un horario
-  // propio por antibiótico)
   const ATB_FREQ_OPTIONS = [
     {value:'6',    label:'Cada 6 hs'},
     {value:'8',    label:'Cada 8 hs'},
@@ -1000,13 +1080,11 @@
     {value:'24',   label:'Cada 24 hs'},
     {value:'none', label:'No indicado'},
   ];
-  // Hora real de inicio del plan, en pasos de media hora (00:00 a 23:30)
-  const PLAN_START_OPTIONS = Array.from({length:48}, (_,i)=>{
-    const h = Math.floor(i/2);
-    const m = (i%2) * 30;
-    const value = h + m/60;
-    return { value:String(value), label:String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+' hs' };
-  });
+  const PLAN_START_OPTIONS = Array.from({length:24}, (_,h)=>({
+    value:String(h),
+    label:String(h).padStart(2,'0')+':00 hs',
+    key:h % 6 === 0
+  }));
 
   const ING_FIELDS = [
     {key:'voGroup', label:'Vía oral (VO)',          type:'voGroup'},
@@ -1021,10 +1099,6 @@
     {key:'catarsis', label:'Catarsis/Diarrea',      type:'input'},
     {key:'pi',       label:'Pérdidas insens. (PI)', type:'auto'},
   ];
-  // Campos que no se muestran por defecto en cada cuadrante: aparecen solo
-  // cuando se agregan desde el selector "+ Agregar" de ese cuadrante.
-  // Los que llevan groupKey:'vo' se agregan/ocultan desde el selector propio
-  // de Vía oral (debajo de su total), en vez del selector general de Ingresos.
   const OPTIONAL_FIELDS = [
     {key:'voLiquido', label:'Líquido',        type:'input', side:'ing', groupKey:'vo'},
     {key:'voSolido',  label:'Sólido',         type:'input', side:'ing', groupKey:'vo'},
@@ -1039,15 +1113,10 @@
     nombre: '',
     cama: '',
     peso: 60,
-    phpPlan: 21,
-    // No todos los pacientes reciben antibióticos: por defecto el grupo ATB
-    // queda oculto/desactivado hasta que se tilde "Recibe antibióticos".
+    phpSegments: [ { id:'php1', rate:21, desde:0 } ],
     atbEnabled: false,
-    // Uno o más antibióticos, cada uno con su propia frecuencia y horario de
-    // administración; cada uno se diluye en la cantidad de ml que se indique
-    // (por defecto 100, ver dilucion en cada entrada de atbList).
     atbList: [ { id:'atb1', nombre:'', freq:'12', startHour:0, dilucion:ATB_DOSE_DEFAULT } ],
-    atbStartHour: 0, // hora real de inicio del PLAN (para el rótulo de cada cuadrante)
+    atbStartHour: 6,
     enteralRate: 0,
     aguaLibreRate: 0,
     bhGoal: 'neutro-pos',
@@ -1056,19 +1125,39 @@
       voLiquido:0, voSolido:0, alim:0, transf:0, exp:0,
       enteral:false, aguaLibre:false,
       diuresis:0, catarsis:0, vomitos:0, drenajes:0,
-      atb:{}, // { [antibioticoId]: boolean } — tildado en este cuadrante
-      confirmed:false,
+      atb:{},
+      confirmed:true,
       opt:{ voLiquido:false, voSolido:false, enteral:false, aguaLibre:false, transf:false, drenajes:false, vomitos:false }
     }))
   };
 
-  // Genera un id nuevo y estable para un antibiótico agregado a mano.
+  function newPhpId(){
+    return 'php_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+  }
+  function normHour(v){
+    const n = Math.round(Number(v)||0);
+    return ((n % 24) + 24) % 24;
+  }
+  function migratePhpFrom(obj){
+    if (!obj) return null;
+    if (Array.isArray(obj.phpSegments) && obj.phpSegments.length){
+      return obj.phpSegments.map((sg, idx)=>({
+        id: (sg && sg.id) ? String(sg.id) : ('php'+(idx+1)),
+        rate: (sg && Number(sg.rate) in PLAN_VOLUMES) ? Number(sg.rate) : 21,
+        desde: idx === 0 ? 0 : normHour(sg && sg.desde),
+        cuad: (idx > 0 && sg && [1,2,3].includes(Number(sg.cuad))) ? Number(sg.cuad) : null
+      }));
+    }
+    if (obj.phpPlan !== undefined && obj.phpPlan !== null && Number(obj.phpPlan) in PLAN_VOLUMES){
+      return [ { id:'php1', rate:Number(obj.phpPlan), desde:0 } ];
+    }
+    return null;
+  }
+
   function newAtbId(){
     return 'atb_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
   }
 
-  // Homogeneiza una lista de antibióticos venida de localStorage/historial
-  // (o el formato viejo de una sola frecuencia global) a la forma actual.
   function migrateAtbListFrom(obj){
     if (!obj) return null;
     if (Array.isArray(obj.atbList) && obj.atbList.length){
@@ -1082,26 +1171,15 @@
       }));
     }
     if (obj.atbFreq){
-      // formato viejo: una sola frecuencia global -> un antibiótico único
       return [{ id:'atb1', nombre:'', freq:String(obj.atbFreq), startHour: Number(obj.atbStartHour)||0, dilucion: ATB_DOSE_DEFAULT }];
     }
     return null;
   }
 
-  // Normaliza un bloque cargado desde localStorage o desde un registro del
-  // historial: si no trae "opt" (registros guardados antes de que estos tres
-  // campos fueran opcionales), se infiere activo cuando ya tiene un valor
-  // cargado distinto de 0, para no perder datos previos de vista. atbIds es
-  // la lista de antibióticos vigente, para reconstruir block.atb como mapa;
-  // el formato viejo (b.atb booleano) se traslada al primer antibiótico.
   function normalizeBlock(b, atbIds){
     const ids = atbIds || [];
     const hasSplitVo = b.voLiquido !== undefined || b.voSolido !== undefined;
     const nb = {
-      // formato viejo: "vo" era un campo de texto libre (admitía "200+300").
-      // Si el bloque ya viene con voLiquido/voSolido se respeta tal cual;
-      // si no, el total viejo se vuelca entero a "Líquido" para no perder
-      // lo cargado (el usuario puede reasignar a Sólido a mano si hace falta).
       voLiquido: hasSplitVo ? (Number(b.voLiquido)||0) : parseAmount(b.vo),
       voSolido: hasSplitVo ? (Number(b.voSolido)||0) : 0,
       alim:Number(b.alim)||0, transf:Number(b.transf)||0, exp:Number(b.exp)||0,
@@ -1148,10 +1226,6 @@
     try{ localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); }catch(e){}
   }
 
-  // ---------- sincronización opcional con Firebase (nube) ----------
-  // El historial funciona igual sin conexión: todo esto es un agregado sobre
-  // localStorage, nunca un reemplazo. Ver window.__bhFirestore, expuesto por
-  // el módulo de Firebase al final del archivo.
   const HISTORIAL_DIAS = 30;
   function fb(){
     return (window.__bhFirestore && window.__bhFirestore.ready) ? window.__bhFirestore : null;
@@ -1188,8 +1262,6 @@
       console.error('No se pudo borrar el registro en Firebase:', err);
     });
   }
-  // Se llama una vez que la sesión anónima de Firebase queda lista (la invoca
-  // el módulo de Firebase, ver window.attachBhFirestoreSync más abajo).
   function attachFirestoreSync(){
     const f = fb();
     if (!f) return;
@@ -1198,7 +1270,6 @@
       snapshot.forEach(d=> remoteList.push(fsRecordToLocal(d.id, d.data())));
       const localList = loadHistorial();
       const remoteIds = new Set(remoteList.map(r=>r.id));
-      // lo que se guardó localmente sin conexión todavía no está en la nube: se sube ahora
       localList.filter(r=>!remoteIds.has(r.id)).forEach(r=> syncRecordToFirestore(r));
       const merged = remoteList.concat(localList.filter(r=>!remoteIds.has(r.id)));
       merged.sort((a,b)=>a.id-b.id);
@@ -1216,15 +1287,14 @@
     if (typeof saved.cama === 'string') state.cama = saved.cama;
     if (typeof saved.nombre === 'string') state.nombre = saved.nombre;
     if (saved.peso) state.peso = saved.peso;
-    if (saved.phpPlan !== undefined && saved.phpPlan !== null && Number(saved.phpPlan) in PLAN_VOLUMES) state.phpPlan = Number(saved.phpPlan);
-    if (saved.atbStartHour !== undefined) state.atbStartHour = Number(saved.atbStartHour) || 0;
+    const migratedPhp = migratePhpFrom(saved);
+    if (migratedPhp) state.phpSegments = migratedPhp;
+    if (saved.atbStartHour !== undefined) state.atbStartHour = Math.round(Number(saved.atbStartHour) || 0) % 24;
     const migratedAtbList = migrateAtbListFrom(saved);
     if (migratedAtbList) state.atbList = migratedAtbList;
     if (typeof saved.atbEnabled === 'boolean'){
       state.atbEnabled = saved.atbEnabled;
     } else {
-      // registros guardados antes de esta opción: se infiere que sí recibía
-      // ATB si ya había algo cargado (antibiótico con nombre, o más de uno)
       state.atbEnabled = state.atbList.some(a=>a.nombre && a.nombre.trim()) || state.atbList.length > 1;
     }
     const VALID_RATES = [0,21,42,63,84];
@@ -1238,16 +1308,6 @@
     }
   })();
 
-  // Calcula, para cada uno de los 4 cuadrantes, si le corresponde una dosis de
-  // este antibiótico — asumiendo que se administra a horarios fijos del reloj
-  // cada "freq" horas a partir de "atbHour" (p. ej. freq=8, atbHour=10 -> 10,
-  // 18, 02 hs), y que el cuadrante "6 hs" del plan arranca en turnoStart
-  // (hora real del reloj, la del plan, no la del antibiótico).
-  // Calcula, para cada uno de los 4 cuadrantes, si le corresponde una dosis de
-  // este antibiótico — asumiendo que se administra a horas fijas del reloj,
-  // alineadas a las 00 hs, cada "freq" horas (p. ej. freq=8 -> 08, 16, 24 hs),
-  // dentro de la ventana real (turnoStart + 6*i, turnoStart + 6*(i+1)] de cada
-  // cuadrante. turnoStart admite medias horas (6.5 = 06:30).
   function computeAtbPattern(freq, atbHour, turnoStart){
     const n = Number(freq);
     if (freq === 'none' || !n) return [false,false,false,false];
@@ -1264,16 +1324,12 @@
       return false;
     });
   }
-  // Recalcula el patrón tildado de UN antibiótico en los 4 cuadrantes (se usa
-  // cuando cambia su frecuencia u horario, o al agregarlo).
   function applyAtbDefaultsForId(id){
     const cfg = state.atbList.find(a=>a.id===id);
     if (!cfg) return;
     const pattern = computeAtbPattern(cfg.freq, cfg.startHour, state.atbStartHour);
     state.blocks.forEach((b,i)=>{ b.atb[id] = pattern[i]; });
   }
-  // Recalcula el patrón de TODOS los antibióticos configurados (se usa cuando
-  // cambia la hora real de inicio del plan, o al restaurar sin datos guardados).
   function applyAllAtbDefaults(){
     state.atbList.forEach(cfg=> applyAtbDefaultsForId(cfg.id));
   }
@@ -1283,7 +1339,6 @@
   function fmt(n){ return nf.format(Math.round(n)); }
   function signed(n){ const r = Math.round(n); return (r>=0?'+':'') + fmt(r); }
 
-  // Permite cargar la vía oral como suma, p.ej. "200+300" -> 500
   function parseAmount(raw){
     if (raw === undefined || raw === null) return 0;
     const s = String(raw).trim();
@@ -1362,15 +1417,10 @@
     return row;
   }
 
-  // Etiqueta a mostrar para un antibiótico: su nombre si lo cargaron, o
-  // "ATB N" según su posición en la lista.
   function atbLabel(cfg, idx){
     return (cfg.nombre && cfg.nombre.trim()) ? cfg.nombre.trim() : ('ATB ' + (idx+1));
   }
 
-  // Texto entre paréntesis que muestra de qué antibióticos sale el total del
-  // cuadrante (ej. " (AMS 100 + Claritromicina 250)"), para que quede claro
-  // que el total YA los incluye y no hay que volver a sumarlos aparte.
   function atbBreakdownText(block){
     const parts = [];
     state.atbList.forEach((cfg, idx)=>{
@@ -1379,8 +1429,6 @@
     return parts.length ? ` (${parts.join(' + ')})` : '';
   }
 
-  // Subfila de un antibiótico puntual dentro del grupo "Antibióticos (ATB)"
-  // de un cuadrante: checkbox + dosis (100 ml si está tildado).
   function buildAtbSubrow(cfg, idx){
     const row = document.createElement('div');
     row.className = 'row subrow';
@@ -1406,9 +1454,6 @@
     return row;
   }
 
-  // Sincroniza las subfilas de antibióticos de un panel con state.atbList:
-  // agrega las que falten, saca las que ya no existen y actualiza etiquetas
-  // y orden (se llama en cada recalcAll, igual que los campos opcionales).
   function syncAtbSubrowsForPanel(panel){
     const wrap = panel.querySelector('[data-role="atbSubrows"]');
     if (!wrap) return;
@@ -1423,7 +1468,7 @@
       } else {
         row.querySelector('[data-role="atbItemLabel"]').textContent = '↳ ' + atbLabel(cfg, idx) + ':';
       }
-      wrap.appendChild(row); // (re)ubica al final, en el orden de state.atbList
+      wrap.appendChild(row);
     });
   }
 
@@ -1434,7 +1479,6 @@
     return bd;
   }
 
-  // ---------- campos opcionales por cuadrante (Transfusiones/Drenajes/Vómitos) ----------
   function wrapRoleOf(field){
     return field.groupKey ? (field.groupKey + 'Rows') : (field.side + 'Rows');
   }
@@ -1455,7 +1499,6 @@
     if (!wrap || wrap.querySelector(`[data-opt-key="${field.key}"]`)) return;
     const row = buildRow(field, field.side);
     row.dataset.optKey = field.key;
-    // agrupa el input y el botón de quitar para no romper el space-between de la fila
     const inp = row.querySelector('.rinput');
     const valueWrap = document.createElement('span');
     valueWrap.className = 'opt-value';
@@ -1474,7 +1517,6 @@
     row.appendChild(valueWrap);
     const bd = buildBreakdownRow(field);
     if (field.side === 'egr' && !field.groupKey){
-      // se inserta antes de PI (auto), que siempre queda al final de egresos
       const autoRow = wrap.querySelector('[data-type="auto"]');
       wrap.insertBefore(row, autoRow);
       wrap.insertBefore(bd, autoRow);
@@ -1595,6 +1637,12 @@
       }
       ingRowsWrap.appendChild(buildRow(f,'ing'));
       if (f.type==='input' || f.type==='dose') ingRowsWrap.appendChild(buildBreakdownRow(f));
+      if (f.key === 'php'){
+        const phpBd = document.createElement('div');
+        phpBd.className = 'breakdown';
+        phpBd.dataset.role = 'phpBreakdown';
+        ingRowsWrap.appendChild(phpBd);
+      }
     });
     colIng.appendChild(ingRowsWrap);
     colIng.appendChild(buildAddControl('ing'));
@@ -1636,11 +1684,6 @@
 
   for (let i=0;i<4;i++) quartersEl.appendChild(buildPanel(i));
 
-  // ---------- calculation ----------
-  // Nota sobre "balance previo": cuando está activo, los bloques hasta la hora
-  // recibida quedan bloqueados (sin detalle propio) y el cálculo de los bloques
-  // siguientes arranca sumando incrementos de a 6 hs sobre el acumulado dado,
-  // en vez de sumar desde 0.
   function fieldsCumulative(key, uptoIndex){
     const start = getStartIndex();
     let sum = 0;
@@ -1662,7 +1705,6 @@
     return sum;
   }
 
-  // Alim. enteral / agua libre: cada cuadrante tildado suma ritmo(ml/h) × 6 hs.
   function doseRateOf(key){
     const field = ING_FIELDS.find(f=>f.key===key);
     return field ? (Number(state[field.rateKey])||0) : 0;
@@ -1676,24 +1718,60 @@
     for (let i=start;i<=uptoIndex;i++) sum += doseDeltaFor(key,i);
     return sum;
   }
-  // Al elegir/quitar un ritmo, tilda o destilda solo los cuadrantes que el
-  // usuario no haya tocado a mano todavía no aplica: por simplicidad, tildar
-  // los 4 cuadrantes cuando se elige un ritmo, y destildarlos cuando se
-  // vuelve a "No indicada" (el usuario puede destildar cuadrantes puntuales).
   function applyDoseDefaults(key){
     const on = doseRateOf(key) > 0;
     state.blocks.forEach(b=> b[key] = on);
   }
 
-  // PHP, agua endógena y pérdidas insensibles: siempre acumulados desde el inicio
-  // del plan (hora 0) según la fórmula, sin importar si hay un balance previo
-  // cargado — no dependen de qué tan detallado esté el registro anterior.
+  function phpTimeline(){
+    const start = ((Number(state.atbStartHour)||0) % 24 + 24) % 24;
+    const items = state.phpSegments.map((seg, idx)=>{
+      const rate = (Number(seg.rate) in PLAN_VOLUMES) ? Number(seg.rate) : 0;
+      let from = 0, valid = true;
+      if (idx > 0){
+        if ([1,2,3].includes(Number(seg.cuad))){
+          from = 6 * Number(seg.cuad);
+        } else {
+          from = (((Number(seg.desde)||0) - start) % 24 + 24) % 24;
+          if (from <= 0) valid = false;
+        }
+      }
+      return { seg, idx, rate, vol: PLAN_VOLUMES[rate]||0, from, to:from, hours:0, ml:0, mlPerHour:0, valid };
+    });
+    const active = items.filter(it=>it.valid).sort((a,b)=> (a.from - b.from) || (a.idx - b.idx));
+    active.forEach((it,k)=>{
+      it.to = (k < active.length-1) ? active[k+1].from : 24;
+      it.hours = it.to - it.from;
+      it.mlPerHour = it.vol/24;
+      it.ml = it.mlPerHour * it.hours;
+    });
+    return { start, items, active };
+  }
+  function phpPartsUpTo(hour){
+    const tl = phpTimeline();
+    return tl.active.map(it=>{
+      const hrs = Math.max(0, Math.min(it.to, hour) - it.from);
+      return { it, hrs, ml: it.mlPerHour*hrs, clockFrom: tl.start + it.from, clockTo: tl.start + it.from + hrs };
+    }).filter(p=>p.hrs > 0);
+  }
+  function phpCumulative(hour){
+    return phpPartsUpTo(hour).reduce((sum,p)=> sum + p.ml, 0);
+  }
+  function normalizePhpOrder(){
+    const tl = phpTimeline();
+    const first = state.phpSegments[0];
+    const rest = tl.items.slice(1).sort((a,b)=>{
+      if (a.valid !== b.valid) return a.valid ? -1 : 1;
+      return (a.from - b.from) || (a.idx - b.idx);
+    }).map(it=>it.seg);
+    state.phpSegments = [first].concat(rest);
+  }
+
   function autoValues(hour){
     const peso = Number(state.peso)||0;
-    const plan = PLAN_VOLUMES[state.phpPlan] || 0;
     const frac = hour/24;
     return {
-      php: plan*frac,
+      php: phpCumulative(hour),
       ae: peso*5*frac,
       pi: peso*10*frac
     };
@@ -1706,7 +1784,6 @@
     const prev = baseline.prev;
 
     if (baseline.enabled && i < baselineIdx){
-      // bloque anterior al dato recibido: sin detalle propio disponible
       return {
         hour, locked:true, isBaselinePoint:false,
         auto:{php:0, ae:0, pi:0},
@@ -1717,8 +1794,6 @@
     }
 
     if (baseline.enabled && i === baselineIdx){
-      // el bloque del dato recibido: PHP/AE/PI se calculan solos para esa hora,
-      // el resto son los valores manuales previos que cargó el usuario
       const auto = autoValues(hour);
       const vo = Number(prev.vo)||0, alim = Number(prev.alim)||0,
             transf = Number(prev.transf)||0, exp = Number(prev.exp)||0, atb = Number(prev.atb)||0,
@@ -1825,12 +1900,85 @@
     el.innerHTML = parts.length > 1 ? `${terms}<span class="plus">=</span>${fmt(total)}` : terms;
   }
 
+  function fmt1(n){
+    return new Intl.NumberFormat('es-AR', {minimumFractionDigits:1, maximumFractionDigits:1}).format(n);
+  }
+  function fmtMl(n){
+    return new Intl.NumberFormat('es-AR', {minimumFractionDigits:0, maximumFractionDigits:1}).format(n);
+  }
+  function fmtHoursTxt(h){
+    return String(Math.round(h*100)/100).replace('.', ',');
+  }
+  function phpRateLabel(rate){
+    return rate > 0 ? ('PHP a ' + rate) : 'Intermitente (sin PHP)';
+  }
+
+  function renderPhpBreakdown(el, hour){
+    if (!el) return;
+    const parts = phpPartsUpTo(hour);
+    if (parts.length <= 1){ el.innerHTML = ''; return; }
+    const lines = parts.map(p=>
+      `<div>${phpRateLabel(p.it.rate)} · ${fmtClockHour(p.clockFrom,false)}–${fmtClockHour(p.clockTo,true)} (${fmtHoursTxt(p.hrs)} hs): ${fmtMl(p.ml)} ml</div>`
+    );
+    const total = parts.reduce((sum,p)=> sum + p.ml, 0);
+    el.innerHTML = lines.join('') + `<div><span class="plus">=</span> ${fmtMl(total)} ml</div>`;
+  }
+
+  function updatePhpInfo(){
+    const listEl = document.getElementById('phpList');
+    const totalEl = document.getElementById('phpTotalInfo');
+    if (!listEl || !totalEl) return;
+    const tl = phpTimeline();
+    tl.items.forEach(it=>{
+      const row = listEl.querySelector(`[data-php-id="${it.seg.id}"]`);
+      if (!row) return;
+      row.classList.toggle('invalid', !it.valid);
+      const info = row.querySelector('[data-role="phpItemInfo"]');
+      if (!info) return;
+      if (!it.valid){
+        info.textContent = '⚠ Esa hora coincide con el inicio del plan: elegí otra hora para el cambio.';
+      } else {
+        const rateTxt = it.rate > 0 ? (fmt1(it.mlPerHour) + ' ml/h') : 'sin PHP';
+        info.textContent = `Hasta las ${fmtClockHour(tl.start + it.to, true)} · ${fmtHoursTxt(it.hours)} hs · ${fmtMl(it.ml)} ml (${rateTxt})`;
+      }
+    });
+    const total = tl.active.reduce((sum,it)=> sum + it.ml, 0);
+    const phpSt = document.getElementById('phpAccStatus');
+    if (phpSt){
+      phpSt.textContent = tl.active.map((it,k)=>{
+        const lbl = it.rate > 0 ? ('PHP a ' + it.rate) : 'Intermitente';
+        return k === 0 ? lbl : `${lbl} desde ${fmtClockHour(tl.start + it.from, false)}`;
+      }).join(' · ');
+    }
+    totalEl.textContent = tl.items.length > 1 ? `PHP total en 24 hs: ${fmtMl(total)} ml` : '';
+  }
+
+  function updateAccStatus(){
+    const startSt = document.getElementById('startAccStatus');
+    if (startSt) startSt.textContent = fmtClockHour(state.atbStartHour, false) + ' hs';
+    const atbSt = document.getElementById('atbAccStatus');
+    if (atbSt){
+      if (state.atbEnabled){
+        atbSt.textContent = 'En el plan · ' + state.atbList.map((c,i)=> `${atbLabel(c,i)} (${atbFreqLabel(c.freq)})`).join(' · ');
+        atbSt.classList.add('on');
+      } else {
+        atbSt.textContent = 'Sin antibióticos';
+        atbSt.classList.remove('on');
+      }
+    }
+    const doseSt = document.getElementById('doseAccStatus');
+    if (doseSt){
+      const parts = [];
+      if (doseRateOf('enteral') > 0) parts.push('Enteral ' + doseRateOf('enteral') + ' ml/h');
+      if (doseRateOf('aguaLibre') > 0) parts.push('Agua libre ' + doseRateOf('aguaLibre') + ' ml/h');
+      doseSt.textContent = parts.length ? parts.join(' · ') : 'No indicadas';
+      doseSt.classList.toggle('on', parts.length > 0);
+    }
+  }
+
   function recalcAll(){
-    // sync PHP readout
-    const plan = PLAN_VOLUMES[state.phpPlan]||0;
-    document.getElementById('phpReadout').textContent = (Number(state.phpPlan) === 0)
-      ? 'Vía intermitente: sin PHP continuo (0 ml)'
-      : fmt(plan/4) + ' ml cada 6 hs';
+    updatePhpInfo();
+    updateAccStatus();
 
     let lastConfirmed = getLastConfirmed();
     const hourRanges = computeHourRanges(state.atbStartHour);
@@ -1866,7 +2014,6 @@
           foot.classList.add('hide-when-locked');
           lockNote.innerHTML = `Incluido en el acumulado recibido hasta las ${HOURS[Number(state.baseline.hourIndex)]} hs — sin detalle propio disponible.`;
         }
-        // deja los inputs del bloque bloqueados sin poder editarse
         panel.querySelectorAll('input').forEach(inp=>{ if (inp.dataset.type==='delta' || inp.dataset.type==='atbCheckbox' || inp.dataset.type==='doseCheckbox') inp.disabled = true; });
       } else {
         confirmLabel.style.display = '';
@@ -1875,14 +2022,13 @@
         foot.classList.remove('hide-when-locked');
         panel.querySelectorAll('input').forEach(inp=>{ if (inp.dataset.type==='delta' || inp.dataset.type==='atbCheckbox' || inp.dataset.type==='doseCheckbox') inp.disabled = false; });
 
-        // auto fields
         panel.querySelectorAll('[data-type="auto"]').forEach(row=>{
           const key = row.dataset.autoKey;
           const box = row.querySelector('.rauto');
           box.textContent = fmt(q.auto[key]) + ' ml';
         });
+        renderPhpBreakdown(panel.querySelector('[data-role="phpBreakdown"]'), q.hour);
 
-        // grupo de VO: solo el total del cuadrante (líquido + sólido)
         const voTotalValueEl = panel.querySelector('[data-role="voTotalValue"]');
         if (voTotalValueEl){
           const liq = Number(block.voLiquido)||0;
@@ -1890,9 +2036,6 @@
           voTotalValueEl.textContent = `${fmt(liq+sol)} ml`;
         }
 
-        // grupo de antibióticos: total del cuadrante + una subfila por cada uno
-        // (el total ya incluye a cada tildado abajo — se aclara entre paréntesis
-        // para que no se sumen de nuevo "a mano" por error)
         const atbTotalValueEl = panel.querySelector('[data-role="atbTotalValue"]');
         if (atbTotalValueEl) atbTotalValueEl.textContent = fmt(atbDeltaFor(i)) + ' ml' + atbBreakdownText(block);
         panel.querySelectorAll('[data-type="atbItemRow"]').forEach(row=>{
@@ -1905,7 +2048,6 @@
           doseLabel.textContent = block.atb[id] ? (fmt(dilucion) + ' ml') : '— ml';
         });
 
-        // dose rows (alim. enteral / agua libre)
         panel.querySelectorAll('[data-type="doseRow"]').forEach(row=>{
           const key = row.dataset.key;
           const rate = doseRateOf(key);
@@ -1916,7 +2058,6 @@
           doseLabel.textContent = (block[key] && rate>0) ? (fmt(rate*6) + ' ml') : '— ml';
         });
 
-        // input rows + breakdowns
         panel.querySelectorAll('[data-type="delta"]').forEach(inp=>{
           if (document.activeElement !== inp){
             inp.value = block[inp.dataset.key];
@@ -1926,11 +2067,9 @@
           renderBreakdown(bd, bd.dataset.breakdownKey, i);
         });
 
-        // totals
         panel.querySelector('[data-role="ingTotal"]').textContent = fmt(q.ingreso) + ' ml';
         panel.querySelector('[data-role="egrTotal"]').textContent = fmt(q.egreso) + ' ml';
 
-        // BH chip
         const cls = classify(q.bh);
         const colors = CLASS_COLORS[cls.cls];
         const chip = panel.querySelector('[data-role="bhChip"]');
@@ -1938,7 +2077,6 @@
         chip.style.background = colors.bg;
         chip.style.color = colors.fg;
 
-        // diuresis rate (desde el arranque real de este tramo: 0 hs, o la hora del acumulado recibido)
         const peso = Number(state.peso)||1;
         const elapsed = q.hour;
         const rate = elapsed > 0 ? (q.diuresis / (peso * elapsed)) : 0;
@@ -1948,7 +2086,6 @@
       }
     }
 
-    // header BH type badge
     const badge = document.getElementById('bhTypeBadge');
     const matchEl = document.getElementById('bhMatch');
     const detailEl = document.getElementById('bhDetail');
@@ -1981,9 +2118,9 @@
       }
     }
 
-    // reference table active row
+    const usedVols = new Set(phpTimeline().active.filter(it=>it.hours > 0 && it.vol > 0).map(it=>it.vol));
     document.querySelectorAll('#refTable td[data-vol]').forEach(td=>{
-      const isActive = Number(td.dataset.vol) === plan;
+      const isActive = usedVols.has(Number(td.dataset.vol));
       td.classList.toggle('active', isActive);
       td.nextElementSibling.classList.toggle('active', isActive);
     });
@@ -2024,7 +2161,6 @@
     box.textContent = lines.join(' ');
   }
 
-  // ---------- events ----------
   function attachClearZero(el, getValueFn){
     el.addEventListener('focus', ()=>{ if (el.value === '0') el.value = ''; });
     el.addEventListener('blur', ()=>{ if (el.value.trim() === '') el.value = String(getValueFn()); });
@@ -2042,14 +2178,12 @@
     state.peso = Number(e.target.value)||0;
     recalcAll();
   });
-  document.getElementById('phpPlan').addEventListener('change', e=>{
-    state.phpPlan = Number(e.target.value);
-    recalcAll();
-  });
-  document.getElementById('atbStartHour').innerHTML = PLAN_START_OPTIONS.map(o=>`<option value="${o.value}">${o.label}</option>`).join('');
+  document.getElementById('atbStartHour').innerHTML = PLAN_START_OPTIONS.map(o=>`<option value="${o.value}"${o.key?' class="hora-clave"':''}>${o.label}</option>`).join('');
   document.getElementById('atbStartHour').addEventListener('change', e=>{
     state.atbStartHour = Number(e.target.value) || 0;
     applyAllAtbDefaults();
+    normalizePhpOrder();
+    renderPhpConfig();
     recalcAll();
   });
 
@@ -2058,10 +2192,9 @@
     recalcAll();
   });
 
-  // ---------- lista dinámica de antibióticos ----------
   const atbListEl = document.getElementById('atbList');
 
-  const atbExpanded = new Set(); // ids de ATB actualmente desplegados (los demás quedan como resumen compacto)
+  const atbExpanded = new Set();
 
   function atbFreqLabel(freq){
     const opt = ATB_FREQ_OPTIONS.find(o=>o.value===freq);
@@ -2181,8 +2314,6 @@
     }
   });
   atbListEl.addEventListener('click', e=>{
-    // Toda la franja del encabezado (texto, espacio vacío y flechita) abre/cierra;
-    // solo la "×" de quitar queda excluida.
     const headEl = e.target.closest('.atb-item-head');
     if (headEl && !e.target.closest('[data-role="removeAtb"]')){
       const item = headEl.closest('.atb-item');
@@ -2211,6 +2342,127 @@
     renderAtbConfig();
     recalcAll();
   });
+  document.querySelectorAll('.acc-head').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const card = btn.closest('.acc-card');
+      const open = card.classList.toggle('open');
+      btn.setAttribute('aria-expanded', String(open));
+    });
+  });
+
+  const phpListEl = document.getElementById('phpList');
+
+  function renderPhpConfig(){
+    const start = ((Number(state.atbStartHour)||0) % 24 + 24) % 24;
+    const rateOptions = Object.keys(PLAN_VOLUMES).map(Number).sort((a,b)=>a-b).map(r=>({
+      value: r,
+      label: r === 0 ? 'Intermitente · sin PHP' : `A ${r} · ${PLAN_VOLUMES[r]} ml/24 hs`
+    }));
+    phpListEl.innerHTML = '';
+    state.phpSegments.forEach((seg, idx)=>{
+      const item = document.createElement('div');
+      item.className = 'php-item';
+      item.dataset.phpId = seg.id;
+
+      if (idx === 0){
+        const fixed = document.createElement('div');
+        fixed.className = 'php-fixed-when';
+        fixed.textContent = `Desde el inicio (${fmtClockHour(start,false)} hs)`;
+        item.appendChild(fixed);
+      } else {
+        const fieldWhen = document.createElement('div');
+        fieldWhen.className = 'field';
+        const labelWhen = document.createElement('label');
+        labelWhen.textContent = 'Cambio desde';
+        fieldWhen.appendChild(labelWhen);
+        const selWhen = document.createElement('select');
+        selWhen.dataset.phpField = 'desde';
+        const quadOptions = [1,2,3].map(k=>`<option value="q${k}"${Number(seg.cuad)===k?' selected':''}>Cuadrante ${HOURS[k]} hs (${fmtClockHour(start + 6*k, false)})</option>`).join('');
+        const hourOptions = PLAN_START_OPTIONS.map(o=>`<option value="${o.value}"${o.key?' class="hora-clave"':''}${(!seg.cuad && Number(o.value)===Number(seg.desde))?' selected':''}>${o.label}</option>`).join('');
+        selWhen.innerHTML = `<optgroup label="Cuadrante">${quadOptions}</optgroup><optgroup label="Hora">${hourOptions}</optgroup>`;
+        fieldWhen.appendChild(selWhen);
+        item.appendChild(fieldWhen);
+      }
+
+      const fieldRate = document.createElement('div');
+      fieldRate.className = 'field';
+      const labelRate = document.createElement('label');
+      labelRate.textContent = idx === 0 ? 'Plan inicial' : 'Nuevo plan';
+      fieldRate.appendChild(labelRate);
+      const selRate = document.createElement('select');
+      selRate.dataset.phpField = 'rate';
+      selRate.innerHTML = rateOptions.map(o=>`<option value="${o.value}"${o.value===Number(seg.rate)?' selected':''}>${o.label}</option>`).join('');
+      fieldRate.appendChild(selRate);
+      item.appendChild(fieldRate);
+
+      const info = document.createElement('div');
+      info.className = 'php-item-info';
+      info.dataset.role = 'phpItemInfo';
+      item.appendChild(info);
+
+      if (idx > 0){
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'atb-item-remove';
+        removeBtn.dataset.role = 'removePhp';
+        removeBtn.title = 'Quitar este cambio de plan';
+        removeBtn.textContent = '×';
+        item.appendChild(removeBtn);
+      }
+      phpListEl.appendChild(item);
+    });
+    updatePhpInfo();
+  }
+
+  phpListEl.addEventListener('change', e=>{
+    const t = e.target;
+    const item = t.closest('.php-item');
+    if (!item) return;
+    const seg = state.phpSegments.find(sg=>sg.id === item.dataset.phpId);
+    if (!seg) return;
+    if (t.dataset.phpField === 'rate'){
+      seg.rate = Number(t.value) || 0;
+      recalcAll();
+    } else if (t.dataset.phpField === 'desde'){
+      if (String(t.value).startsWith('q')){
+        const k = Number(String(t.value).slice(1));
+        const st = ((Number(state.atbStartHour)||0) % 24 + 24) % 24;
+        seg.cuad = k;
+        seg.desde = normHour(st + 6*k);
+      } else {
+        seg.cuad = null;
+        seg.desde = Number(t.value) || 0;
+      }
+      normalizePhpOrder();
+      renderPhpConfig();
+      recalcAll();
+    }
+  });
+  phpListEl.addEventListener('click', e=>{
+    const btn = e.target.closest('[data-role="removePhp"]');
+    if (!btn) return;
+    const id = btn.closest('.php-item').dataset.phpId;
+    state.phpSegments = state.phpSegments.filter((sg,idx)=> idx === 0 || sg.id !== id);
+    renderPhpConfig();
+    recalcAll();
+  });
+  document.getElementById('addPhpBtn').addEventListener('click', ()=>{
+    const tl = phpTimeline();
+    const usedFrom = new Set(tl.active.map(it=>it.from));
+    const candidates = [6,12,18].concat(Array.from({length:23}, (_,i)=>i+1));
+    const elapsed = candidates.find(c=>!usedFrom.has(c)) || 6;
+    const last = tl.active[tl.active.length-1];
+    state.phpSegments.push({
+      id: newPhpId(),
+      rate: last ? last.rate : 21,
+      desde: normHour(tl.start + elapsed),
+      cuad: (elapsed % 6 === 0 && elapsed < 24) ? elapsed / 6 : null
+    });
+    normalizePhpOrder();
+    renderPhpConfig();
+    recalcAll();
+  });
+
   document.getElementById('enteralRate').addEventListener('change', e=>{
     state.enteralRate = Number(e.target.value) || 0;
     applyDoseDefaults('enteral');
@@ -2242,7 +2494,6 @@
       recalcAll();
     }
   });
-  // el cero de referencia desaparece al enfocar la caja para poder escribir directo
   quartersEl.addEventListener('focusin', e=>{
     if (e.target.matches('.rinput') && e.target.value === '0') e.target.value = '';
   });
@@ -2277,7 +2528,6 @@
       recalcAll();
     }
   });
-  // quitar un campo opcional (Transfusiones/Drenajes/Vómitos) ya agregado a un cuadrante
   quartersEl.addEventListener('click', e=>{
     const btn = e.target.closest('[data-role="removeOpt"]');
     if (!btn) return;
@@ -2312,7 +2562,7 @@
       if (confirm('¿Guardar este cálculo en el historial antes de empezar uno nuevo?')){
         saveCurrentToHistorial();
       } else if (!confirm('¿Seguro que querés borrar los datos cargados sin guardarlos?')){
-        return; // se arrepintió, no se toca nada
+        return;
       }
     } else if (!confirm('¿Empezar un cálculo nuevo? Se borran los datos cargados.')){
       return;
@@ -2320,10 +2570,10 @@
     state.nombre = '';
     state.cama = '';
     state.peso = 60;
-    state.phpPlan = 21;
+    state.phpSegments = [ { id:'php1', rate:21, desde:0 } ];
     state.atbEnabled = false;
     state.atbList = [ { id:'atb1', nombre:'', freq:'12', startHour:0, dilucion:ATB_DOSE_DEFAULT } ];
-    state.atbStartHour = 0;
+    state.atbStartHour = 6;
     state.enteralRate = 0;
     state.aguaLibreRate = 0;
     state.bhGoal = 'neutro-pos';
@@ -2332,12 +2582,12 @@
       voLiquido:0, voSolido:0, alim:0, transf:0, exp:0,
       enteral:false, aguaLibre:false,
       diuresis:0, catarsis:0, vomitos:0, drenajes:0,
-      atb:{}, confirmed:false,
+      atb:{}, confirmed:true,
       opt:{ voLiquido:false, voSolido:false, enteral:false, aguaLibre:false, transf:false, drenajes:false, vomitos:false }
     }));
     applyAllAtbDefaults();
     syncFormFromState();
-    quartersEl.querySelectorAll('[data-role="confirm"]').forEach(cb=>cb.checked=false);
+    quartersEl.querySelectorAll('[data-role="confirm"]').forEach(cb=>cb.checked=true);
     recalcAll();
   }
   document.getElementById('resetBtn').addEventListener('click', startNewCalculation);
@@ -2348,7 +2598,6 @@
   infusionModalEl.addEventListener('click', e=>{ if (e.target === infusionModalEl) infusionModalEl.style.display = 'none'; });
   document.addEventListener('keydown', e=>{ if (e.key === 'Escape' && infusionModalEl.style.display !== 'none') infusionModalEl.style.display = 'none'; });
 
-  // ---------- historial de registros guardados ----------
   const historialListEl = document.getElementById('historialList');
 
   function showToast(id){
@@ -2361,8 +2610,6 @@
     return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
-  // Los registros de más de 30 días se borran solos; el borrado manual (por ítem
-  // o "Vaciar historial") funciona en cualquier momento, no depende de esto.
   function purgeHistorialVencido(){
     const list = loadHistorial();
     const limite = Date.now() - HISTORIAL_DIAS*24*60*60*1000;
@@ -2418,11 +2665,13 @@
     } else if (btn.dataset.act === 'cargar'){
       if (!confirm('¿Cargar este registro? Se reemplazan los datos que estás cargando ahora (podés guardarlos antes si querés conservarlos).')) return;
       Object.assign(state, JSON.parse(JSON.stringify(rec.snapshot)));
+      state.atbStartHour = Math.round(Number(state.atbStartHour) || 0) % 24;
       state.baseline = { enabled:false, hourIndex:1, prev:{ vo:0, alim:0, transf:0, exp:0, atb:0, enteral:0, aguaLibre:0, diuresis:0, catarsis:0, vomitos:0, drenajes:0 } };
+      state.phpSegments = migratePhpFrom(rec.snapshot) || [ { id:'php1', rate:21, desde:0 } ];
+      delete state.phpPlan;
       const migratedAtbList = migrateAtbListFrom(state);
       if (migratedAtbList) state.atbList = migratedAtbList;
       if (typeof rec.snapshot.atbEnabled !== 'boolean'){
-        // registros guardados antes de esta opción
         state.atbEnabled = state.atbList.some(a=>a.nombre && a.nombre.trim()) || state.atbList.length > 1;
       }
       if (Array.isArray(state.blocks)){
@@ -2476,15 +2725,14 @@
     renderHistorial();
   });
 
-  // ---------- sincronizar los campos del formulario con el estado ----------
   function syncFormFromState(){
     document.getElementById('nombrePaciente').value = state.nombre || '';
     document.getElementById('cama').value = state.cama || '';
     document.getElementById('peso').value = state.peso;
-    document.getElementById('phpPlan').value = state.phpPlan;
     document.getElementById('atbEnabledCb').checked = !!state.atbEnabled;
     document.getElementById('atbStartHour').value = state.atbStartHour;
     renderAtbConfig();
+    renderPhpConfig();
     document.getElementById('enteralRate').value = state.enteralRate;
     document.getElementById('aguaLibreRate').value = state.aguaLibreRate;
     document.getElementById('bhGoal').value = state.bhGoal;
@@ -2494,35 +2742,11 @@
   renderHistorial();
   recalcAll();
 
-  // El módulo de Firebase (más abajo) llama a esto apenas la sesión anónima
-  // queda lista. Si Firebase no está configurado o falla, esto nunca se llama
-  // y todo sigue funcionando solo con localStorage, como hasta ahora.
   window.attachBhFirestoreSync = attachFirestoreSync;
 })();
 </script>
 
 <script type="module">
-/* =========================================================================
-   Firestore: historial de balance hídrico en la nube (opcional)
-   =========================================================================
-   Mismo proyecto de Firebase que pases.html. Usa sesión anónima
-   (signInAnonymously) porque esta calculadora es de acceso libre — no pide
-   login, pero igual cumple con la regla "request.auth != null" de Firestore.
-
-   Para que esto funcione hace falta agregar en la consola de Firebase
-   (Firestore Database → Reglas) un bloque para la colección nueva, dentro
-   de "service cloud.firestore { match /databases/{database}/documents { ... } }":
-
-     match /balance_historial/{docId} {
-       allow read, write: if request.auth != null;
-     }
-
-   Y para que los registros se borren solos a los 30 días del lado del
-   servidor (además del borrado local que ya hace esta página), conviene
-   activar una política de TTL: Firestore Database → TTL → colección
-   "balance_historial" → campo "expiraEn". Sin esto la limpieza automática
-   sigue funcionando igual, pero solo mientras alguien abra la página en
-   algún dispositivo (el borrado local dispara también el borrado remoto). */
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import {
