@@ -689,13 +689,19 @@ onAuthStateChanged(auth, (user)=>{
   /* El MI se guarda como lista de ítems ({text, resuelto}) porque así lo
      maneja el archivero; acá se muestra como una línea de texto. */
   function miToText(mi){
-    if(Array.isArray(mi)) return mi.filter(i=>i && !i.resuelto).map(i=>i.text).join(' ');
+    if(Array.isArray(mi)) return mi.filter(i=>i && !i.resuelto).map(i=>i.text).join(' · ');
     return String(mi==null?'':mi);
   }
+  /* Si el texto no cambió, se devuelve la lista tal cual vino del archivero (ítems, orden y resueltos
+     intactos). Si se editó, cada « · » separa un ítem; los resueltos se conservan. Antes, cualquier
+     guardado juntaba todo el MI en UN solo ítem y rompía la lista que arma el importador. */
   function miFromText(txt, prev){
-    const resueltos = Array.isArray(prev) ? prev.filter(i=>i && i.resuelto) : [];
+    const prevArr = Array.isArray(prev) ? prev.filter(i=>i) : [];
     const t = String(txt==null?'':txt).trim();
-    return (t ? [{text:t, resuelto:false}] : []).concat(resueltos);
+    if(prevArr.length && t === miToText(prevArr).trim()) return prevArr;
+    const resueltos = prevArr.filter(i=>i.resuelto);
+    const nuevos = t ? t.split(/\s*·\s*/).map(x=>x.trim()).filter(Boolean).map(x=>({text:x, resuelto:false})) : [];
+    return nuevos.concat(resueltos);
   }
 
   /* v2: al pasar al documento único por cama, se arranca con la caché
@@ -708,6 +714,7 @@ onAuthStateChanged(auth, (user)=>{
   let state = { camas:{}, customItems:[] };
   let lastLocalEdit = {}; // { camaNum: timestampMs } — para no dejar que un onSnapshot atrasado pise una edición reciente
   const saveDebouncers = {}; // debounce de escritura a Firestore por cama
+  const dirtyFields = {};   // { camaNum: {paciente:true, dni:true, edad:true, mi:true} } — solo lo que se tipeó a mano en esta pantalla
   let itemsSaveTimer = null;
   // pendingCamaWrite[bed] = true mientras haya un cambio local de esa cama
   // que todavía no se confirmó guardado en la nube (por red caída, por
@@ -811,15 +818,23 @@ onAuthStateChanged(auth, (user)=>{
     /* merge:true es clave: en ese mismo documento viven ANT, MC, ASOC,
        cultivos y la evolución que carga el archivero. Si escribiéramos
        el documento entero, los borraríamos. */
-    fs.setDoc(fs.doc(fs.camasCol, camaDocId(bed)), {
+    /* Nombre, DNI, edad y MI los trae pases.html desde el .md. Acá solo se escriben si se editaron a mano en
+       esta pantalla; si no, un guardado de manejo/datos (o «Limpiar») pisaba con la copia local, a veces
+       vieja, lo que se acababa de importar. */
+    const dirty = dirtyFields[bed] || {};
+    const payload = {
       cama: camaDocId(bed),
-      nombre: c.paciente, dni: c.dni, edad: c.edad,
-      mi: miFromText(c.mi, c._miArr),
       manejo: c.manejo,
       datos: fsMergeSafeMap(c.datos),
       hechos: fsMergeSafeMap(c.hechos),
       updatedAt: Date.now()
-    }, {merge:true}).then(()=>{
+    };
+    if(dirty.paciente) payload.nombre = c.paciente;
+    if(dirty.dni) payload.dni = c.dni;
+    if(dirty.edad) payload.edad = c.edad;
+    if(dirty.mi) payload.mi = miFromText(c.mi, c._miArr);
+    fs.setDoc(fs.doc(fs.camasCol, camaDocId(bed)), payload, {merge:true}).then(()=>{
+      if(camaWriteGen[bed] === myGen) delete dirtyFields[bed];
       // Solo se libera el bloqueo si, mientras tanto, no se programó un
       // guardado más nuevo para esta misma cama (ese otro guardado, con un
       // número de generación mayor, es el que va a confirmar el último
@@ -1111,6 +1126,7 @@ onAuthStateChanged(auth, (user)=>{
         const bed = this.closest('tr').dataset.bed;
         const field = this.dataset.field;
         state.camas[bed][field] = this.textContent;
+        (dirtyFields[bed] = dirtyFields[bed] || {})[field] = true;
         lastLocalEdit[bed] = Date.now();
         saveLocal();
         scheduleFsSaveCama(bed);
