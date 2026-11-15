@@ -174,6 +174,38 @@
   details.collapsible > summary::before{content:'▸';display:inline-block;transition:transform .12s;font-size:9px;}
   details.collapsible[open] > summary::before{transform:rotate(90deg);}
   details.collapsible .collapsible-body{padding-top:9px;}
+  /* ---- LABO: gráfico de evolución ---- */
+  .labo-panel{margin:0 0 12px;}
+  .labo-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 8px;}
+  .labo-bar label{font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;}
+  .labo-bar select{padding:5px 8px;border:1px solid var(--line-soft);border-radius:3px;background:var(--field-bg);font:inherit;font-size:13px;max-width:100%;}
+  .labo-graf{background:var(--panel);border:1px solid var(--line-soft);border-radius:4px;padding:10px 10px 6px;}
+  .labo-graf-t{font-weight:700;font-size:14px;} .labo-graf-t small{font-weight:400;color:var(--muted);}
+  .labo-graf-r{font-size:11.5px;color:var(--muted);margin:2px 0 4px;}
+  .labo-svg{display:block;width:100%;height:auto;}
+  .labo-svg .lb-grid{stroke:var(--line-soft);stroke-width:.7;}
+  .labo-svg .lb-ejeL{stroke:var(--ink);stroke-width:1;}
+  .labo-svg .lb-eje{font-size:10.5px;fill:var(--muted);font-family:'IBM Plex Mono',monospace;}
+  .labo-svg.grande .lb-eje{font-size:11px;}
+  .labo-svg .lb-linea{fill:none;stroke:var(--accent);stroke-width:1.8;stroke-linejoin:round;}
+  .labo-svg .lb-punto{fill:var(--panel);stroke:var(--accent);stroke-width:1.8;}
+  .labo-svg .lb-punto.lb-ult{fill:var(--accent-dark);stroke:var(--accent-dark);}
+  .labo-svg .lb-punto.lb-guardia{stroke:var(--warn);}
+  .labo-svg .lb-val{font-size:10px;fill:var(--ink);font-family:'IBM Plex Mono',monospace;}
+  .labo-grupo{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:12px 0 5px;}
+  .labo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;}
+  .labo-mini{display:block;text-align:left;background:var(--panel);border:1px solid var(--line-soft);border-radius:4px;padding:6px 7px 2px;cursor:pointer;font:inherit;color:var(--ink);}
+  .labo-mini:hover{border-color:var(--accent);}
+  .labo-mini-t{display:block;font-size:11.5px;font-weight:700;}
+  .labo-mini-v{display:block;font-size:13px;color:var(--accent-dark);font-family:'IBM Plex Mono',monospace;} .labo-mini-v small{color:var(--muted);font-size:10px;}
+  .labo-tabla-det{margin:10px 0 4px;} .labo-tabla-det > summary{cursor:pointer;font-size:12px;font-weight:600;color:var(--accent-dark);}
+  .labo-tabla-wrap{overflow:auto;max-height:340px;border:1px solid var(--line-soft);border-radius:3px;margin-top:6px;background:var(--panel);}
+  .labo-tabla{border-collapse:collapse;font-size:11.5px;font-family:'IBM Plex Mono',monospace;}
+  .labo-tabla th,.labo-tabla td{padding:3px 7px;border-bottom:1px solid #ece8dc;white-space:nowrap;text-align:right;}
+  .labo-tabla thead th{position:sticky;top:0;background:#efece2;z-index:1;font-family:'IBM Plex Sans',Arial,sans-serif;font-size:10.5px;}
+  .labo-tabla tbody th{position:sticky;left:0;background:#faf8f2;text-align:left;font-weight:600;}
+  .labo-tabla tbody th em{font-weight:400;color:var(--warn);font-style:normal;font-size:10px;}
+  .labo-nota{font-size:11px;color:var(--muted);margin:6px 0 0;line-height:1.4;}
   .field{display:flex;flex-direction:column;gap:4px;margin-bottom:8px;}
   .field label{font-size:10.5px;color:var(--muted);font-weight:600;}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px;}
@@ -2128,7 +2160,7 @@ function newPatient(cama){
   const code = camaCode(cama);
   const fs = fsApi();
   const id = code || (fs ? fs.doc(fs.pacientesCol).id : ('local'+Date.now()));
-  return { id, cama:code, nombre:'', sexo:'', edad:'', dni:'', fi:'', mc:'', ant:'', mi:[], asoc:[], cult:[], ic:'', evol:'', evolCount:0, lastEstado:'', lastChecklist:null, manejo:[], datos:{}, hechos:{} };
+  return { id, cama:code, nombre:'', sexo:'', edad:'', dni:'', fi:'', mc:'', ant:'', mi:[], asoc:[], cult:[], ic:'', img:'', labo:'', evol:'', evolCount:0, lastEstado:'', lastChecklist:null, manejo:[], datos:{}, hechos:{} };
 }
 /* Si cambia el número de cama de una ficha, el documento tiene que
    mudarse al id nuevo (y borrarse el viejo) para no dejar duplicados. */
@@ -2138,6 +2170,9 @@ function relocatePatientToCama(p){
   if(!code || code === p.id) { if(code) p.cama = code; return; }
   if(patients.some(x=>x!==p && x.id===code)){
     alert('Ya existe una carpeta para la cama '+code+'. Usá esa carpeta o cambiá el número.');
+    /* La ficha no puede quedarse con esa cama: aparecería duplicada en el archivero. */
+    p.cama = /^C\d+$/.test(p.id) ? p.id : '';
+    renderAll();
     return;
   }
   const viejo = p.id;
@@ -2204,6 +2239,12 @@ function savePatientNow(p, opts){
   if(!fs || !p || !p.id) return;
   clearTimeout(saveTimers[p.id]);
   delete pendingSavePatients[p.id];
+  /* Si la ficha ya no está en la lista (se mudó de cama, se vació o la borró otra pestaña) no se vuelve a
+     escribir: resucitaría un documento borrado y dejaría una ficha duplicada. Si la lista tiene una copia
+     más nueva del mismo id, se guarda esa y no la vieja. */
+  const vigente = patients.includes(p) ? p : patients.find(x=>x.id===p.id);
+  if(!vigente) return;
+  p = vigente;
   fs.setDoc(fs.doc(fs.db,'pacientes',p.id), patientDataForSave(p, opts), {merge:true}).catch(()=>{
     fld('status').textContent = 'No se pudo guardar en la nube — revisá tu conexión.';
   });
@@ -2283,7 +2324,7 @@ function vaciarCarpeta(p){
   const camaTxt = p.cama ? `de la cama ${p.cama}` : '';
   if(!confirm(`¿Vaciar la carpeta ${camaTxt}? Se van a borrar todos los datos del paciente actual (nombre, EVOL, MI, ASOC, etc.). La carpeta queda con el mismo número de cama, lista para el próximo paciente.`)) return;
   const cama = p.cama;
-  p.nombre=''; p.sexo=''; p.edad=''; p.dni=''; p.fi=''; p.mc=''; p.ant=''; p.mi=[]; p.asoc=[]; p.cult=[]; p.ic='';
+  p.nombre=''; p.sexo=''; p.edad=''; p.dni=''; p.fi=''; p.mc=''; p.ant=''; p.mi=[]; p.asoc=[]; p.cult=[]; p.ic=''; p.img=''; p.labo='';
   p.evol=''; p.evolCount=0; p.lastEstado=''; p.lastChecklist=null;
   p.manejo=[]; p.datos={}; p.hechos={};
   delete p.plantillaSeleccionada; delete p.bibIds; delete p.bibChecks;
@@ -2577,6 +2618,136 @@ function renderItemList(containerId, patient, field){
 }
 
 /* ================= Formulario principal ================= */
+/* ================= LABO: gráfico de evolución por parámetro =================
+   Lee el texto de LABO de la ficha (todo el historial de la internación, no solo lo del día) y
+   dibuja, para cada parámetro, cómo evolucionó con el tiempo. No usa librerías externas. */
+let laboSelPorFicha = {};     // id de ficha -> parámetro elegido
+let laboVistaPorFicha = {};   // id de ficha -> 'uno' | 'todos'
+let laboCache = { txt:null, dia:null, res:null };
+function laboDe(p){
+  const txt = p.labo || '';
+  const ref = p.lastImportAt ? new Date(p.lastImportAt) : new Date();
+  const dia = ref.getFullYear()+'-'+ref.getMonth()+'-'+ref.getDate();
+  if(laboCache.txt === txt && laboCache.dia === dia && laboCache.res) return laboCache.res;
+  const res = (typeof PaseParser !== 'undefined' && PaseParser.parseLabo) ? PaseParser.parseLabo(txt, ref) : { entradas:[], series:{}, descartados:0, dudosas:[] };
+  laboCache = { txt:txt, dia:dia, res:res };
+  return res;
+}
+function laboFecha(t, conAnio){
+  const d = new Date(t);
+  return String(d.getUTCDate()).padStart(2,'0')+'/'+String(d.getUTCMonth()+1).padStart(2,'0')+(conAnio?'/'+d.getUTCFullYear():'');
+}
+function laboVal(v){
+  const a = Math.abs(v);
+  return String(a>=100 ? Math.round(v) : (a>=10 ? Math.round(v*10)/10 : Math.round(v*100)/100)).replace('.',',');
+}
+function laboTicks(min, max, n){
+  const span = (max-min) || 1, raw = span/n, mag = Math.pow(10, Math.floor(Math.log10(raw))), nr = raw/mag;
+  const step = (nr<1.5 ? 1 : nr<3 ? 2 : nr<7 ? 5 : 10) * mag;
+  const ini = Math.floor(min/step+1e-9), fin = Math.ceil(max/step-1e-9), out = [];
+  for(let i=ini; i<=fin; i++) out.push(+(i*step).toFixed(10));
+  return out.length>1 ? out : [min-step, max+step];
+}
+function laboSvg(serie, def, grande){
+  const W = grande?680:300, H = grande?270:118;
+  const m = grande ? {l:52,r:16,t:18,b:34} : {l:36,r:8,t:10,b:18};
+  const pw = W-m.l-m.r, ph = H-m.t-m.b, unidad = def[2] ? ' '+def[2] : '';
+  let tmin = serie[0].t, tmax = serie[serie.length-1].t;
+  if(tmin===tmax){ tmin -= 864e5; tmax += 864e5; }
+  { const pad = (tmax-tmin)*(grande?0.045:0.06); tmin -= pad; tmax += pad; }   // aire a los costados: el primer/último punto no quedan sobre el eje
+  let vmin = Math.min.apply(null, serie.map(x=>x.v)), vmax = Math.max.apply(null, serie.map(x=>x.v));
+  if(vmin===vmax){ const d = Math.abs(vmin)*0.1 || 1; vmin -= d; vmax += d; }
+  const ticks = laboTicks(vmin, vmax, grande?5:2), y0 = ticks[0], y1 = ticks[ticks.length-1];
+  const X = t => m.l + (t-tmin)/(tmax-tmin)*pw, Y = v => m.t + ph - (v-y0)/(y1-y0)*ph;
+  // varias mediciones el mismo día: se separan unos píxeles para que se vean todas
+  const vistos = {};
+  const pts = serie.map(x=>{ const k = vistos[x.t] = (vistos[x.t]===undefined ? 0 : vistos[x.t]+1); return { x: X(x.t) + k*(grande?9:5), y: Y(x.v), s:x }; });
+  let g = '';
+  ticks.forEach(v=>{
+    const y = Y(v).toFixed(1);
+    g += '<line x1="'+m.l+'" x2="'+(W-m.r)+'" y1="'+y+'" y2="'+y+'" class="lb-grid"/>'+
+         '<text x="'+(m.l-6)+'" y="'+(+y+3.5)+'" text-anchor="end" class="lb-eje">'+laboVal(v)+'</text>';
+  });
+  const dist = []; serie.forEach(x=>{ if(!dist.length || dist[dist.length-1]!==x.t) dist.push(x.t); });
+  let xt = dist;
+  if(grande && dist.length>8){ const paso = Math.ceil(dist.length/8); xt = dist.filter((_,i)=>i%paso===0 || i===dist.length-1); }
+  if(!grande) xt = dist.length>1 ? [dist[0], dist[dist.length-1]] : [dist[0]];
+  xt.forEach((t,i)=>{
+    const x = X(t).toFixed(1), anc = (!grande && i===0 && xt.length>1) ? 'start' : (!grande && i>0 ? 'end' : 'middle');
+    g += '<line x1="'+x+'" x2="'+x+'" y1="'+(m.t+ph)+'" y2="'+(m.t+ph+4)+'" class="lb-grid"/>'+
+         '<text x="'+x+'" y="'+(m.t+ph+(grande?17:14))+'" text-anchor="'+anc+'" class="lb-eje">'+laboFecha(t)+'</text>';
+  });
+  g += '<line x1="'+m.l+'" x2="'+m.l+'" y1="'+m.t+'" y2="'+(m.t+ph)+'" class="lb-ejeL"/><line x1="'+m.l+'" x2="'+(W-m.r)+'" y1="'+(m.t+ph)+'" y2="'+(m.t+ph)+'" class="lb-ejeL"/>';
+  if(pts.length>1) g += '<polyline class="lb-linea" points="'+pts.map(q=>q.x.toFixed(1)+','+q.y.toFixed(1)).join(' ')+'"/>';
+  pts.forEach((q,i)=>{
+    const s = q.s, ult = i===pts.length-1;
+    const tip = laboFecha(s.t,true)+(s.label?' · '+s.label:'')+(s.sinFecha?' (renglón sin fecha en el pase: se ubicó en la fecha del pase)':'')+': '+laboVal(s.v)+unidad;
+    g += '<circle cx="'+q.x.toFixed(1)+'" cy="'+q.y.toFixed(1)+'" r="'+(grande?4:2.6)+'" class="lb-punto'+(ult?' lb-ult':'')+(s.label?' lb-guardia':'')+'"><title>'+escapeHtml(tip)+'</title></circle>';
+    if(grande && pts.length<=20) g += '<text x="'+q.x.toFixed(1)+'" y="'+(q.y-8).toFixed(1)+'" text-anchor="middle" class="lb-val">'+laboVal(s.v)+'</text>';
+  });
+  return '<svg viewBox="0 0 '+W+' '+H+'" class="labo-svg'+(grande?' grande':'')+'" role="img" aria-label="'+escapeHtml(def[0])+'">'+g+'</svg>';
+}
+function laboResumen(serie, def){
+  const vs = serie.map(x=>x.v), u = def[2] ? ' '+def[2] : '';
+  const primero = serie[0], ult = serie[serie.length-1];
+  const d = ult.v - primero.v;
+  let tend = '';
+  if(serie.length>1) tend = ' · de '+laboVal(primero.v)+' ('+laboFecha(primero.t)+') a '+laboVal(ult.v)+' ('+laboFecha(ult.t)+')';
+  return serie.length+(serie.length===1?' medición':' mediciones')+' · mín '+laboVal(Math.min.apply(null,vs))+' · máx '+laboVal(Math.max.apply(null,vs))+u+tend;
+}
+function renderLaboPanel(p){
+  const box = fld('laboPanel');
+  if(!box || !p) return;
+  const L = laboDe(p), D = PaseParser.LAB_DEF;
+  const keys = Object.keys(D).filter(k=>L.series[k] && L.series[k].length);
+  if(!keys.length){
+    box.innerHTML = '<p class="empty-note">Todavía no hay valores de laboratorio para graficar. Se cargan al importar el pase (.md) o pegando el texto en el cuadro de abajo.</p>';
+    return;
+  }
+  let sel = laboSelPorFicha[p.id];
+  if(!sel || !L.series[sel]){ sel = ['hb','cr','pcr','gb'].find(k=>L.series[k]) || keys[0]; laboSelPorFicha[p.id] = sel; }
+  const vista = laboVistaPorFicha[p.id] || 'uno';
+  const grupos = []; keys.forEach(k=>{ const g = D[k][1]; let o = grupos.find(x=>x.g===g); if(!o){ o = {g:g, ks:[]}; grupos.push(o); } o.ks.push(k); });
+  const fechas = L.entradas.filter(e=>!e.sinFecha).map(e=>e.t);
+  const sinF = L.entradas.filter(e=>e.sinFecha).length;
+  let notas = L.entradas.length+' extracciones'+(fechas.length ? ' entre el '+laboFecha(Math.min.apply(null,fechas),true)+' y el '+laboFecha(Math.max.apply(null,fechas),true) : '');
+  if(sinF) notas += ' · '+sinF+' renglón(es) sin fecha en el pase (se ubicaron en la fecha del pase)';
+  if(L.dudosas.length) notas += ' · ⚠ no se graficó el renglón con fecha fuera de secuencia ('+L.dudosas.join(', ')+'): revisá si es un error de tipeo del pase';
+  if(L.descartados) notas += ' · '+L.descartados+' valor(es) descartado(s) por ser imposibles o ser de orina';
+  let h = '<div class="labo-bar"><label>Parámetro <select id="laboSel">'+
+    grupos.map(o=>'<optgroup label="'+impEsc(o.g)+'">'+o.ks.map(k=>'<option value="'+k+'"'+(k===sel?' selected':'')+'>'+impEsc(D[k][0])+' ('+L.series[k].length+')</option>').join('')+'</optgroup>').join('')+
+    '</select></label><button type="button" class="secondary small" id="laboVistaBtn">'+(vista==='todos'?'↩ Ver un parámetro':'▦ Ver todos los parámetros')+'</button></div>';
+  if(vista==='todos'){
+    h += '<div class="labo-todos">';
+    grupos.forEach(o=>{
+      h += '<div class="labo-grupo">'+impEsc(o.g)+'</div><div class="labo-grid">';
+      o.ks.forEach(k=>{
+        const s = L.series[k], ult = s[s.length-1];
+        h += '<button type="button" class="labo-mini" data-k="'+k+'" title="Ampliar"><span class="labo-mini-t">'+impEsc(D[k][0])+'</span><span class="labo-mini-v">'+laboVal(ult.v)+(D[k][2]?' <small>'+impEsc(D[k][2])+'</small>':'')+'</span>'+laboSvg(s, D[k], false)+'</button>';
+      });
+      h += '</div>';
+    });
+    h += '</div>';
+  } else {
+    const s = L.series[sel], d = D[sel];
+    h += '<div class="labo-graf"><div class="labo-graf-t">'+impEsc(d[0])+(d[2]?' <small>('+impEsc(d[2])+')</small>':'')+'</div>'+
+         '<div class="labo-graf-r">'+impEsc(laboResumen(s, d))+'</div>'+laboSvg(s, d, true)+'</div>';
+  }
+  // tabla por fecha
+  const ents = L.entradas.slice().sort((a,b)=>b.t-a.t || a.idx-b.idx);
+  h += '<details class="labo-tabla-det"><summary>Tabla de valores por fecha</summary><div class="labo-tabla-wrap"><table class="labo-tabla"><thead><tr><th>Fecha</th>'+
+    keys.map(k=>'<th title="'+impEsc(D[k][0]+(D[k][2]?' ('+D[k][2]+')':''))+'">'+impEsc(D[k][0])+'</th>').join('')+'</tr></thead><tbody>'+
+    ents.map(e=>'<tr><th>'+laboFecha(e.t,true)+(e.label?' <em>'+impEsc(e.label)+'</em>':'')+(e.sinFecha?' <em>sin fecha</em>':'')+'</th>'+
+      keys.map(k=>'<td>'+(e.v[k]!==undefined ? laboVal(e.v[k]) : '')+'</td>').join('')+'</tr>').join('')+
+    '</tbody></table></div></details>';
+  h += '<div class="labo-nota">'+impEsc(notas)+'</div>';
+  box.innerHTML = h;
+  const selEl = fld('laboSel');
+  selEl.addEventListener('change', ()=>{ laboSelPorFicha[p.id] = selEl.value; laboVistaPorFicha[p.id] = 'uno'; renderLaboPanel(p); });
+  fld('laboVistaBtn').addEventListener('click', ()=>{ laboVistaPorFicha[p.id] = (vista==='todos' ? 'uno' : 'todos'); renderLaboPanel(p); });
+  box.querySelectorAll('.labo-mini').forEach(b=>b.addEventListener('click', ()=>{ laboSelPorFicha[p.id] = b.dataset.k; laboVistaPorFicha[p.id] = 'uno'; renderLaboPanel(p); }));
+}
+
 function renderForm(){
   const col = fld('formCol');
   const p = getSelected();
@@ -2674,6 +2845,22 @@ function renderForm(){
       </div>
     </details>
 
+    <details class="collapsible" data-sec="img">
+      <summary>IMG — Imágenes</summary>
+      <div class="collapsible-body">
+        <div class="field"><textarea data-f="img" style="min-height:140px;" placeholder="Estudios por imágenes (se carga completo desde el pase)"></textarea></div>
+      </div>
+    </details>
+
+    <details class="collapsible" data-sec="labo">
+      <summary>LABO — Laboratorio</summary>
+      <div class="collapsible-body">
+        <div id="laboPanel" class="labo-panel"></div>
+        <div class="field"><label>Texto completo del laboratorio (todo el historial de la internación, tal como viene del pase)</label>
+          <textarea data-f="labo" style="min-height:160px;font-family:'IBM Plex Mono',monospace;font-size:12px;" placeholder="Se carga completo desde el pase"></textarea></div>
+      </div>
+    </details>
+
     <fieldset>
       <legend>EVOL — Evolución</legend>
       <div id="evolBuilder"></div>
@@ -2703,6 +2890,9 @@ function renderForm(){
   renderItemList('miList', p, 'mi');
   renderItemList('asocList', p, 'asoc');
   renderItemList('cultList', p, 'cult');
+  renderLaboPanel(p);
+  { const taLabo = col.querySelector('[data-f="labo"]'); let tLabo = null;
+    if(taLabo) taLabo.addEventListener('input', ()=>{ clearTimeout(tLabo); tLabo = setTimeout(()=>renderLaboPanel(p), 500); }); }
 
   fld('miAddBtn').addEventListener('click',()=>{
     const v = fld('miNuevo').value.trim();
@@ -5343,15 +5533,80 @@ function applyRemoteSnapshot(remoteListRaw){
     }
   });
 
+  { const vistos = new Set(); patients = patients.filter(p=>{ if(vistos.has(p.id)) return false; vistos.add(p.id); return true; }); }
+
   if(!selectedId || !patients.find(p=>p.id===selectedId)){
     selectedId = firstPatientId();
     selectedPatientDataChanged = true;
   }
 
   renderSidebar();
-  renderPreview();
+  /* Antes acá se llamaba renderPreview(), que programa el guardado de la ficha abierta: guardaba lo que
+     acababa de llegar de la nube, eso cambiaba updatedAt, llegaba otro cambio, y así sin parar (varias
+     escrituras por minuto mientras la página estuviera abierta). Lo que llega de la nube no se reescribe. */
   if(!activeInsideForm && selectedPatientDataChanged) renderForm();
+  programarDepuracionDuplicados();
 
+}
+
+/* ================= Fichas duplicadas de una misma cama =================
+   Puede haber dos documentos para la misma cama (por ejemplo pacientes/C118 y otro con id
+   automático): el archivero mostraba dos filas iguales. Si son la misma persona (mismo DNI, o
+   mismo nombre cuando no hay DNI) se unen en una sola ficha con id = número de cama, que es
+   la que lee guardias.html: se conserva la más completa y se le suma lo que le falte a las
+   otras (evolución, LABO, pendientes de guardia…). Si son personas distintas no se toca nada. */
+let dupTimer = null, dupAvisadas = '';
+function programarDepuracionDuplicados(){
+  if(dupTimer) return;                                  // ya hay una revisión en camino: no se posterga con cada cambio
+  dupTimer = setTimeout(()=>{ dupTimer = null; depurarFichasDuplicadas(); }, 1200);
+}
+function puntajeFicha(p){ return (p.evolCount||0)*1e13 + (p.lastImportAt||0); }
+function mismaPersonaFicha(a, b){
+  const da = dniNorm(a.dni), db = dniNorm(b.dni);
+  if(da && db) return da === db;
+  const na = String(a.nombre||'').trim(), nb = String(b.nombre||'').trim();
+  if(!na || !nb) return true;                      // una está vacía: es un resto de la misma cama
+  return mismaPersonaPorNombreEstricto(na, nb) || mismaPersonaPorNombre(na, nb) === true;
+}
+function depurarFichasDuplicadas(){
+  if(!fsApi()) return;
+  if(formBusy()){ programarDepuracionDuplicados(); return; }      // no se toca nada mientras se está escribiendo en la ficha
+  const grupos = {};
+  patients.forEach(p=>{ const c = camaCode(p.cama); if(c) (grupos[c] = grupos[c] || []).push(p); });
+  let unidas = 0; const distintas = [];
+  Object.keys(grupos).forEach(code=>{
+    const g = grupos[code];
+    if(g.length < 2) return;
+    g.sort((a,b)=> puntajeFicha(b) - puntajeFicha(a) || (b.id===code?1:0) - (a.id===code?1:0));
+    const keep = g[0], otras = [];
+    g.slice(1).forEach(o=>{ if(mismaPersonaFicha(keep, o)) otras.push(o); else if(distintas.indexOf(code)===-1) distintas.push(code); });
+    if(!otras.length) return;
+    otras.forEach(o=>{
+      fusionarEnFicha(keep, o, true);                 // solo completa lo que a la ficha elegida le falte
+      patients = patients.filter(x=>x!==o);
+      if(o.id !== keep.id) deletePatientRemote(o.id);
+      if(selectedId === o.id) selectedId = keep.id;
+      if(peekId === o.id) peekId = keep.id;
+    });
+    if(keep.id !== code){
+      const viejo = keep.id;
+      keep.id = code;
+      if(selectedId === viejo) selectedId = code;
+      if(peekId === viejo) peekId = code;
+      deletePatientRemote(viejo);
+    }
+    keep.cama = code;
+    escribirFichaCompleta(keep);
+    unidas += otras.length;
+  });
+  const st = fld('status');
+  if(unidas && st) st.textContent = 'Se unió '+unidas+(unidas===1?' ficha duplicada':' fichas duplicadas')+' (misma cama y mismo paciente).';
+  const clave = distintas.join(',');
+  if(distintas.length && clave !== dupAvisadas && st){
+    dupAvisadas = clave;
+    st.textContent = 'Atención: hay dos pacientes distintos cargados en la misma cama ('+distintas.join(', ')+'). Revisá cuál corresponde y eliminá la otra carpeta.';
+  }
+  if(unidas){ renderAll(); }
 }
 
 function iniciarAppPrincipal(){
@@ -5516,7 +5771,11 @@ function fragmentize(txt){
       var first = f.split(/\s+/)[0];
       var last = prev ? prev.split(/\s+/).pop().toLowerCase() : '';
       var startsConnector = CONNECT.has(first) && first === first.toLowerCase();
-      if(prev && (startsConnector || CONNECT.has(last))) out[out.length-1] = prev+' '+f;
+      /* Un doble espacio tipeado dentro del renglón («Cefazolina  D0 (FI 13/11)») no es un corte: lo que
+         sigue es la continuación del ítem anterior (día de tratamiento, fecha de inicio, paréntesis). */
+      var startsCont = /^(?:d\s*[:.]?\s*\d+\b|d[ií]as?\s*[:.]?\s*\d+\b|fi\s*[:.]?\s*\d|\))/i.test(f);
+      var prevAbierto = /[+,]$/.test(prev);
+      if(prev && (startsConnector || startsCont || prevAbierto || CONNECT.has(last))) out[out.length-1] = prev+' '+f;
       else out.push(f);
     });
   });
@@ -5524,11 +5783,14 @@ function fragmentize(txt){
 }
 
 /* Celda MI / ASOC -> [{text, resuelto}]. Tachado = resuelto. */
-var MI_INICIO = /\s+(?=(?:SCA|NIH|Itu|ITU|Foco\s+respi|sepsis|Sepsis|Sme|S[ií]ndrome|Sindrome|TEC|TVP|Tvp|ACV|Hemorragia|Absceso|IPPB|IPYB|IR\s+tipo|NAC|Descompensaci[oó]n|Intento|Polineuropat[ií]a|Insuficiencia)\b)/;
+var MI_INICIO = /\s+(?=(?:SCA|NIH|NACS?|ITU|Foco\s+respi|sepsis|Sme|Sdme|Sdr|S[ií]ndrome|TEC|TVP|ACV|AVC|Hemorragia|Absceso|IPPB|IPYB|IPTB|IR\s+tipo|Neumon[ií]a|Descompensaci[oó]n|Intento|Polineuropat[ií]a|Insuficiencia|Politrauma|Crisis|Celulitis|Bacteri?emia|Pielonefritis|Colangitis|Pancreatitis|Cetoacidosis|Lumbociatalgia|Fractura|Delirium|En\s+plan\s+de|Cuidados\s+paliativos)\b)/i;
 var MI_SOCIAL_COLA = /\s+(?=caso\s+social\b)/i;
+/* Palabras que, al final del fragmento anterior, indican que lo que sigue es parte del mismo diagnóstico
+   («secundario a ITU», «con NAC», «post TEC», «crisis comicial vs síncope»). */
+var MI_CONECTOR_FINAL = new Set(['con','de','del','en','por','y','e','o','u','a','al','sin','para','x','hasta','desde','la','el','los','las','se','secundaria','secundario','secundarias','secundarios','asociada','asociado','post','pos','tras','vs','vs.','probable','posible','sospecha','descartar','contexto','foco','tipo','grado','nivel','sobre','ante','ex','previo','previa']);
 function cortarMi(txt){
   var res = [], base = String(txt);
-  var ms = base.match(/^((?:caso\s+)?social\s*[:\-\u2013]?\s*tercer\s+nivel)\s+(?=\S)/i);
+  var ms = base.match(/^((?:caso\s+)?social\s*[:\-\u2013]?\s*(?:tercer\s+nivel|(?:a\s+la\s+espera|esperando|derivaci[oó]n)\b.*?\bobra\s+social))\s+(?=\S)/i);
   if(ms){ res.push(ms[1].trim()); base = base.slice(ms[0].length); }
   // «... caso Social» al final de un diagnóstico es un ítem aparte (lo social se redacta distinto)
   var pre = base.split(MI_SOCIAL_COLA);
@@ -5539,8 +5801,11 @@ function cortarMi(txt){
     t = t.trim(); if(!t) return;
     var prev = res.length ? res[res.length-1] : '';
     var tras = !!ms && primero; primero = false;   // lo que sigue al «social: tercer nivel» inicial siempre es otro ítem
-    // solo se corta si lo anterior ya "cerró" (termina en ), ], fecha, punto, número o «social») y no en un conector
-    if(prev && (tras || /[)\]\d.]$/.test(prev) || /^caso\s+social\b/i.test(t) || /\bsocial$/i.test(prev))) res.push(t);
+    // Se corta salvo que el fragmento anterior quede «abierto»: termina en un conector o en + , : ( - /
+    var ult = (prev.match(/(\S+)\s*$/) || [,''])[1].toLowerCase().replace(/[.,;:]+$/,'');
+    var parAbierto = (prev.match(/\(/g)||[]).length > (prev.match(/\)/g)||[]).length;
+    var abierto = parAbierto || /[+,:(\[\-\u2013\/]$/.test(prev) || MI_CONECTOR_FINAL.has(ult);
+    if(prev && (tras || /^caso\s+social\b/i.test(t) || /\bsocial$/i.test(prev) || !abierto)) res.push(t);
     else if(prev) res[res.length-1] = prev+' '+t;
     else res.push(t);
   });
@@ -5567,15 +5832,34 @@ function splitItems(raw, split){
    suele pegar los cultivos en una sola línea («HMC x2 773356 → NEGATIVO FINAL UC 773356 → klebsiella…»).
    Se corta antes de cada «HMC x2», «UC 773356», «Uc:», «urocultivo:», etc. (no antes de «HMC negativos»),
    y si el corte dejó una fecha suelta, se la pega con el cultivo que sigue. */
-var CULT_CORTE = /\s+(?=(?:hmc|hc|uc|uroc|urocultivos?|hemocultivos?|coprocultivo|esputo|hisopado|lcr|covi)\b\s*(?:x\s*\d|\d|:|→))/i;
+var CULT_KW = /\b(?:(?:hmc|hcmt|hcm|hct|hc)x?(?![a-z])|uc|uroc[a-z]*|hemocult[a-z]*|coproc[a-z]*|cultivos?|esputo|hisopado|covid[\s\-\/]?flu|covi[\s\-\/]?flu|covidflu|lcr|filmarray|film\s+array|c\.\s*dif[a-z]*)\b/ig;
+/* Si la palabra anterior es una de estas, el tipo de cultivo es parte de la misma frase («hisopado covid-flu»,
+   «HMC y UC negativos», «en UC», «sensible a ...») y no se corta ahí. */
+var CULT_NO_CORTAR = new Set(['y','e','o','con','de','del','en','por','a','al','sin','para','la','el','los','las','hisopado','test','pcr','x','vs','cultivo','cultivos','rapido','rápido']);
 function splitCultText(txt){
-  var piezas = String(txt==null?'':txt).split(CULT_CORTE).map(function(x){ return x.trim(); }).filter(Boolean);
+  var s = String(txt==null?'':txt), cortes = [0], m;
+  CULT_KW.lastIndex = 0;
+  while((m = CULT_KW.exec(s))){
+    var i = m.index; if(i === 0) continue;
+    var antes = s.slice(0,i);
+    var pw = (antes.match(/(\S+)\s*$/) || [,''])[1].toLowerCase().replace(/[.,;:()]+$/,'');
+    if(CULT_NO_CORTAR.has(pw)) continue;
+    if(/[(\/]$/.test(antes.replace(/\s+$/,''))) continue;
+    cortes.push(i);
+  }
+  cortes.push(s.length);
+  var piezas = [];
+  for(var k=0;k<cortes.length-1;k++){ var t = s.slice(cortes[k],cortes[k+1]).trim(); if(t) piezas.push(t); }
   var out = [];
-  for(var i=0;i<piezas.length;i++){
-    var m = piezas[i].match(/^(.*\S)\s+(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?:?)$/);
-    if(m && i+1<piezas.length){ piezas[i] = m[1]; piezas[i+1] = m[2]+' '+piezas[i+1]; }
-    else if(/^\d{1,2}\/\d{1,2}(\/\d{2,4})?:?$/.test(piezas[i]) && i+1<piezas.length){ piezas[i+1] = piezas[i]+' '+piezas[i+1]; continue; }
-    out.push(piezas[i].trim());
+  for(var i2=0;i2<piezas.length;i2++){
+    var pz = piezas[i2];
+    // solo números/fechas sueltos (p. ej. «779068 ,779067»): son el rótulo del cultivo que sigue
+    if(/^[\d\s,;.\/:\-]+$/.test(pz) && i2+1<piezas.length){ piezas[i2+1] = pz+' '+piezas[i2+1]; continue; }
+    // fecha (y número de protocolo) pegados al final: pertenecen al cultivo que sigue
+    var mm = pz.match(/^(.*\S)\s+(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?:?(?:\s+\d{5,8}:?)?)$/);
+    CULT_KW.lastIndex = 0;
+    if(mm && i2+1<piezas.length && (CULT_KW.test(mm[1]) || mm[1].split(/\s+/).length>=3)){ pz = mm[1]; piezas[i2+1] = mm[2]+' '+piezas[i2+1]; }
+    out.push(pz.trim());
   }
   return out.filter(Boolean);
 }
@@ -5634,7 +5918,7 @@ function parseHeader(info, ref){
   if(fn) out.fn = fn[1].replace(/[.\s]+$/,'');
   var fi = s.match(/\bfi\b\s*[:.]?\s*(\d{1,2}\s*[\/\-.]\s*\d{1,2}(?:\s*[\/\-.]\s*\d{2,4})?)/i);
   if(fi) out.fiRaw = fi[1].replace(/\s+/g,'');
-  var ic = s.match(/\bic\b\s*[:.]?\s*([A-Za-zÁÉÍÓÚáéíóú]+)/);
+  var ic = s.match(/\bic\b\s*[:.]?\s*([A-Za-zÁÉÍÓÚáéíóú]+)/i);
   if(ic) out.ic = ic[1];
   var cut = s.search(/\b(?:dni|fn|fi|ic|edad)\b|\d/i);
   var nom = (cut>=0 ? s.slice(0,cut) : s).replace(/[,;:\-\s]+$/,'').trim();
@@ -5701,7 +5985,7 @@ function parsePase(md, opts){
       ant: cleanBlock(raw.ant,false), mc: cleanBlock(raw.mc,false),
       mi: splitItems(raw.mi, split ? 'mi' : false), asoc: splitItems(raw.asoc, split),
       cult: splitCultItems(raw.cult), evol: cleanBlock(raw.evol,true),
-      labo: cleanBlock(raw.labo,true), img: cleanBlock(raw.img,true),
+      labo: formatLabo(cleanBlock(raw.labo,true)), img: cleanBlock(raw.img,true),
       pend: pend.active, pendResuelto: pend.struck, plan: cleanBlock(raw.plan,false),
       warnings: pw
     };
@@ -5734,6 +6018,8 @@ function parsePase(md, opts){
     var sx = {}, mm, re = /\bpaciente\s+(femenina|masculino)\b/gi;
     while((mm = re.exec(blob))) sx[mm[1].toLowerCase()==='femenina' ? 'F' : 'M'] = true;
     if(Object.keys(sx).length===1) p.sexo = Object.keys(sx)[0];
+    // Si el pase no lo dice, se deduce del nombre (queda vacío si el nombre es dudoso); se puede cambiar a mano
+    if(!p.sexo) p.sexo = sexoPorNombre(p.nombre);
 
     pacientes.push(p);
   });
@@ -5754,7 +6040,198 @@ function parsePase(md, opts){
   return { pacientes: pacientes, avisos: avisos };
 }
 
-  return { parsePase: parsePase, normCama: normCama, splitCultText: splitCultText };
+
+/* ================= Sexo según el nombre =================
+   Se usa solo cuando el pase no lo dice explícitamente. Los nombres dudosos (los que valen para
+   ambos sexos, o que no están en la lista) se dejan sin sexo para que se elija a mano. */
+var NOMBRES_F = new Set(('maria ana laura marta monica susana silvia graciela claudia patricia norma beatriz elsa elena rosa teresa carmen julia liliana adriana alicia gladys mirta nelida nelly olga irma ines isabel juana juliana lucia lidia lydia luisa margarita mariana marcela noemi sandra sara silvana stella veronica victoria viviana zulema zulma paula pabla angelica berta blanca camila catalina cecilia celia clara cristina daniela dora dolores delia diana ester eugenia eva evangelina fabiana felisa fernanda flavia florencia francisca gabriela gisela gloria griselda guadalupe hilda irene jorgelina josefa karina leonor lorena magdalena marisa marina matilde mercedes micaela mabel natalia nora pilar rita romina rosario sabrina sofia soledad sonia tamara tatiana ursula valeria vanesa vanessa yanina yolanda zoe amalia amelia aurora avelina azucena bernarda brenda candela carla carolina celeste concepcion consuelo corina cintia cynthia dalila dina edith eleonora elida elisa elisabet elizabeth elba emilia erica estela estefania evelia fatima felicitas hortensia ida iris jacinta jessica johana judith lara leticia lilian lilia lourdes lucrecia macarena malvina mara margot maximina maxima melina miriam nancy nidia nilda noelia ofelia paola perla petrona priscila rebeca regina renata rina rosalia rosana roxana ruth sabina selva serafina silvina simona tomasa vanina vilma virginia wanda yesica yamila yasmin zunilda ramona eulalia genoveva herminia dominga ofelia fermina aida').split(' '));
+var NOMBRES_M = new Set(('jose juan carlos luis jorge miguel pedro pablo ricardo roberto eduardo daniel alberto oscar hector raul ramon horacio ruben mario hugo julio cesar sergio marcelo fernando gustavo alejandro diego javier martin nicolas matias santiago facundo lucas agustin franco gonzalo ignacio ezequiel sebastian maximiliano maximo leonardo antonio manuel francisco angel rafael victor osvaldo nestor armando walter claudio dario fabian gabriel german guillermo ivan jonatan leandro mauricio norberto omar rodolfo salvador tomas esteban emilio enrique ernesto federico felipe gerardo gregorio ismael lorenzo mariano nelson orlando patricio rodrigo samuel simon teodoro vicente celso abel christian cristian adrian andres arturo bruno damian domingo elias fausto flavio hernan hipolito humberto jacinto jaime jesus joaquin lisandro luciano marcos mateo nahuel pascual reinaldo remigio renato silvio tadeo teofilo valentin aldo alfredo anibal anselmo atilio benito bernardo blas camilo cayetano cipriano clemente constantino cristobal dante demetrio edgardo edmundo efrain emiliano eugenio faustino fidel florencio gaspar gilberto heraldo ireneo isidoro jeronimo julian justo lazaro leon leopoldo lucio mauro melchor mieczyslaw wladyslaw stanislaw boleslaw tadeusz jerzy janusz zygmunt pawel piotr marek ramiro rolando rosendo ruperto saul severo timoteo tobias ulises urbano vladimir wilfredo yamil zacarias amadeo bautista benjamin cesareo dionisio eusebio fabio gaston genaro gerónimo iñaki jonathan kevin lautaro marcial maximo octavio olegario pio rogelio ruben santos segundo tiburcio venancio').split(' '));
+function normNombre(s){ return String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); }
+function sexoPorNombre(nombre){
+  var s = normNombre(nombre).replace(/\s+/g,' ').trim();
+  if(!s) return '';
+  var partes = s.split(',');
+  var dado = partes.length>1 ? partes.slice(1).join(' ') : s;   // «Apellido, Nombre» → solo lo de después de la coma
+  var toks = dado.split(/[^a-zñ]+/).filter(Boolean), f = 0, m = 0;
+  toks.forEach(function(t, i){
+    var prev = i>0 ? toks[i-1] : '';
+    if(t==='maria'){ f += .5; return; }                      // «María» sola no define (José María)
+    if((t==='jose' || t==='jesus') && prev==='maria'){ f += 1; return; }   // María José / María Jesús
+    if(NOMBRES_F.has(t)) f += 1; else if(NOMBRES_M.has(t)) m += 1;
+  });
+  return f>m ? 'F' : (m>f ? 'M' : '');
+}
+
+/* ================= LABO: lectura de valores para el gráfico =================
+   El texto del laboratorio viene en varios formatos a la vez (con barras verticales «H: 4,1|44|…»,
+   con barras «H 7.9/11/34/289», en texto libre «gb 5.5 hb 12.9» o como «GB: 7.5, N: 55%»).
+   Orden de los formatos compactos (el mismo que imprime el laboratorio):
+   H = GB|N|GR|Hb|Hto|Plaq (con 5 valores: GB|N|Hb|Hto|Plaq; con 4: GB|Hb|Hto|Plaq) · Q = Glu|Urea|Cr ·
+   I = Na|K|Cl · HEP = GPT|GOT|FAL|BT|BD · C = TP|RIN|KPTT · RFA = PCR|ERS · EAB = pH|pCO2|pO2|HCO3|EB. */
+var LAB_DEF = {
+  gb:['Leucocitos (GB)','Hemograma','×10³/µL'], n:['Neutrófilos','Hemograma','%'], l:['Linfocitos','Hemograma','%'],
+  hb:['Hemoglobina','Hemograma','g/dL'], hto:['Hematocrito','Hemograma','%'], gr:['Glóbulos rojos','Hemograma','×10⁶/µL'],
+  plaq:['Plaquetas','Hemograma','×10³/µL'], vcm:['VCM','Hemograma','fL'], hcm:['HCM','Hemograma','pg'], chcm:['CHCM','Hemograma','g/dL'],
+  rdw:['RDW','Hemograma','%'], vpm:['VPM','Hemograma','fL'], retic:['Reticulocitos','Hemograma','%'],
+  glu:['Glucemia','Química','mg/dL'], urea:['Urea','Química','mg/dL'], cr:['Creatinina','Química','mg/dL'], fg:['Filtrado glomerular','Química','mL/min'],
+  na:['Sodio','Ionograma','mEq/L'], k:['Potasio','Ionograma','mEq/L'], cl:['Cloro','Ionograma','mEq/L'],
+  ca:['Calcio','Calcio / fósforo / magnesio','mg/dL'], cacorr:['Calcio corregido','Calcio / fósforo / magnesio','mg/dL'],
+  caion:['Calcio iónico','Calcio / fósforo / magnesio','mmol/L'], p:['Fósforo','Calcio / fósforo / magnesio','mg/dL'], mg:['Magnesio','Calcio / fósforo / magnesio','mg/dL'],
+  alb:['Albúmina','Calcio / fósforo / magnesio','g/dL'],
+  gpt:['GPT (ALT)','Hepático','U/L'], got:['GOT (AST)','Hepático','U/L'], fal:['Fosfatasa alcalina','Hepático','U/L'], ggt:['GGT','Hepático','U/L'],
+  bt:['Bilirrubina total','Hepático','mg/dL'], bd:['Bilirrubina directa','Hepático','mg/dL'],
+  pcr:['PCR','Inflamación',''], ers:['ERS / VSG','Inflamación','mm/h'], probnp:['proBNP','Inflamación','pg/mL'],
+  tp:['TP','Coagulación','%'], rin:['RIN','Coagulación',''], kptt:['KPTT','Coagulación','s'],
+  ph:['pH','Gases en sangre',''], pco2:['pCO2','Gases en sangre','mmHg'], po2:['pO2','Gases en sangre','mmHg'], hco3:['HCO3','Gases en sangre','mEq/L'],
+  eb:['Exceso de base','Gases en sangre','mEq/L'], so2:['SO2','Gases en sangre','%'], gap:['Anión GAP','Gases en sangre','mEq/L'], lac:['Lactato','Gases en sangre',''],
+  cpk:['CPK','Otros','U/L'], ldh:['LDH','Otros','U/L'], amil:['Amilasa','Otros','U/L'], hbglic:['Hb glicosilada','Otros','%'],
+  colt:['Colesterol total','Lípidos','mg/dL'], hdl:['HDL','Lípidos','mg/dL'], ldl:['LDL','Lípidos','mg/dL'], tg:['Triglicéridos','Lípidos','mg/dL'],
+  fe:['Hierro','Hierro y vitaminas','µg/dL'], transf:['Transferrina','Hierro y vitaminas','mg/dL'], ferritina:['Ferritina','Hierro y vitaminas','ng/mL'],
+  folico:['Ácido fólico','Hierro y vitaminas','ng/mL'], b12:['Vitamina B12','Hierro y vitaminas','pg/mL'],
+  tsh:['TSH','Hormonas','µUI/mL'], t3:['T3','Hormonas',''], t4l:['T4 libre','Hormonas','ng/dL'], pth:['PTH','Hormonas','pg/mL'], prealb:['Prealbúmina','Hormonas','mg/dL']
+};
+/* Rangos de plausibilidad: un valor fuera de rango es casi seguro un error de tipeo del pase
+   (por ejemplo cloro 1095) y se descarta para que no arruine el gráfico. */
+var LAB_RANGO = { gb:[.05,300], n:[0,100], l:[0,100], hb:[2,25], hto:[5,70], gr:[.5,9], plaq:[3,3000], vcm:[50,140], hcm:[10,45], chcm:[20,40], rdw:[8,40], vpm:[4,20], retic:[0,40],
+  glu:[10,1500], urea:[1,500], cr:[.05,25], fg:[1,200], na:[100,180], k:[1.5,9], cl:[60,140], ca:[3,20], cacorr:[3,20], caion:[.3,2], p:[.3,15], mg:[.2,6], alb:[.5,6],
+  gpt:[1,10000], got:[1,10000], fal:[10,3000], ggt:[1,3000], bt:[.05,50], bd:[.01,40], pcr:[0,600], ers:[0,150], probnp:[0,100000], tp:[5,150], rin:[.5,12], kptt:[10,200],
+  ph:[6.5,7.8], pco2:[5,150], po2:[10,600], hco3:[3,50], eb:[-30,30], so2:[30,100], gap:[-5,50], lac:[.1,300], cpk:[1,100000], ldh:[10,10000], amil:[1,5000], hbglic:[3,20],
+  colt:[40,600], hdl:[5,150], ldl:[10,500], tg:[10,3000], fe:[1,500], transf:[20,600], ferritina:[1,50000], folico:[.5,50], b12:[50,5000], tsh:[.001,200], t3:[10,500], t4l:[.1,10], pth:[1,2000], prealb:[1,60] };
+var LAB_ALIAS = [
+  ['leucocitos','gb'],['leuc','gb'],['gb','gb'],['globulos blancos','gb'],['neutrofilos','n'],['linfocitos','l'],
+  ['hemoglobina','hb'],['hb glic','hbglic'],['hba1c','hbglic'],['hb','hb'],['hg','hb'],['hematocrito','hto'],['hto','hto'],['htco','hto'],
+  ['globulos rojos','gr'],['gr','gr'],['plaquetas','plaq'],['plaq','plaq'],['vcm','vcm'],['hcm','hcm'],['chcm','chcm'],['rdw','rdw'],['vpm','vpm'],['reticulocitos','retic'],
+  ['glucemia','glu'],['gluc','glu'],['glu','glu'],['urea','urea'],['creatinina','cr'],['creat','cr'],['cr','cr'],['filtrado glomerular','fg'],['fg','fg'],
+  ['na','na'],['cl','cl'],['calcio corregido','cacorr'],['ca corregido','cacorr'],['calcio ionico','caion'],['ca ion','caion'],['calcemia','ca'],['calcio','ca'],['ca','ca'],
+  ['fosforo','p'],['magnesio','mg'],['mg','mg'],['albumina','alb'],['alb','alb'],
+  ['gpt','gpt'],['got','got'],['fal','fal'],['ggt','ggt'],['bt','bt'],['bd','bd'],
+  ['pcr','pcr'],['ers','ers'],['vsg','ers'],['erd','ers'],['esd','ers'],['probnp','probnp'],['tp%','tp'],['tp','tp'],['rin','rin'],['kptt','kptt'],
+  ['ph','ph'],['pco2','pco2'],['po2','po2'],['hco3','hco3'],['eb','eb'],['so2','so2'],['anion gap','gap'],['gap','gap'],['ac lac','lac'],['lactato','lac'],['lact','lac'],['lac','lac'],
+  ['cpk','cpk'],['ldh','ldh'],['amilasemia','amil'],['amilasa','amil'],
+  ['colesterol t','colt'],['no hdl','_'],['hdl','hdl'],['ldl','ldl'],['tg','tg'],['sat transf','_'],['tibc','_'],['uibc','_'],
+  ['transferrina','transf'],['ferritina','ferritina'],['ac folico','folico'],['vit b12','b12'],['b12','b12'],['fe','fe'],
+  ['tsh','tsh'],['t3','t3'],['t4l','t4l'],['pth','pth'],['prealbumina','prealb']
+];
+var LAB_ALIAS_MAP = {};
+LAB_ALIAS.forEach(function(a){ LAB_ALIAS_MAP[a[0].replace(/\s+/g,' ')] = a[1]; });
+var LAB_KV = (function(){
+  var alts = LAB_ALIAS.map(function(a){ return a[0]; }).sort(function(x,y){ return y.length-x.length; })
+    .map(function(a){ return a.split(' ').map(function(w){ return w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }).join('\\.?\\s*'); });
+  return new RegExp('(^|[^a-z0-9])('+alts.join('|')+')\\s*[:=.]?\\s*(-?\\d+(?:[.,]\\d+)*)','g');
+})();
+var LAB_KV1 = /(^|[^a-z0-9])([nlukcp])(?:\s*[:=]\s*|(?=\d))(-?\d+(?:[.,]\d+)*)/g;
+var LAB_NUMG = '(?:-|\\d+(?:[.,]\\d+)*%?)';
+var LAB_GRUPO = new RegExp('(^|[^A-Za-z0-9])(EAB[A-Za-z]?|[Ii][Oo][Nn][Oo]|[Ii][Oo]|[Hh][Ee][Pp]|[Hh][Pp][Tt]|[Rr][Ff][Aa]|H|Q|I|C)(?![A-Za-z])\\s*:?\\s*('+LAB_NUMG+'(?:\\s*[|\\/]\\s*'+LAB_NUMG+')*)','g');
+var LAB_FECHA = /(^|[\s(])(\d{1,2})\s*\/\s*(\d{1,2})(?:\s*\/\s*(\d{2,4}))?(?=\s*\/?\s*[:.]?(?:\s|$|[A-Za-zÁ-ú]))/g;
+
+function laboFechas(txt){
+  var out = [], m; LAB_FECHA.lastIndex = 0;
+  while((m = LAB_FECHA.exec(txt))){
+    var d = +m[2], mo = +m[3];
+    if(d<1 || d>31 || mo<1 || mo>12) continue;
+    out.push({ ini: m.index + m[1].length, fin: m.index + m[0].length, d:d, m:mo, y: m[4] ? +m[4] : 0 });
+  }
+  return out;
+}
+/* Un renglón por fecha (el pase las trae todas corridas en un solo párrafo). No se pierde texto. */
+function formatLabo(txt){
+  var t = String(txt==null?'':txt);
+  var f = laboFechas(t);
+  if(!f.length) return t.trim();
+  var lineas = [t.slice(0, f[0].ini)];
+  f.forEach(function(x, i){ lineas.push(t.slice(x.ini, i+1<f.length ? f[i+1].ini : t.length)); });
+  return lineas.map(function(s){ return s.replace(/[ \t]+/g,' ').trim(); }).filter(Boolean).join('\n');
+}
+function laboNum(s, key){
+  var x = String(s).replace('%','').replace(',','.');
+  if(!/^-?\d+(?:\.\d+)?$/.test(x)) return null;
+  var v = Number(x), r = LAB_RANGO[key];
+  if(key==='gb' && v>=1000 && v<=300000) v = v/1000;       // «GB 14500» (recuento por µL) → 14,5
+  if(r && (v<r[0] || v>r[1])) return null;
+  return v;
+}
+function laboValores(seg, descartados){
+  var v = {};
+  function poner(key, raw){
+    if(key==='_' || v[key]!==undefined) return;
+    var n = laboNum(raw, key);
+    if(n===null){ descartados.n++; return; }
+    v[key] = n;
+  }
+  var t = String(seg).normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  t = t.replace(/(uroanalisis|sedimento urinario|parametros urinarios|orina completa)[\s\S]*$/i,' ');   // pH/densidad de orina no son de sangre
+  t = t.replace(/\s*\(\s*N\s*(\d+)\s*%?\s*\)/g,'/$1%');            // «H 18 (N87%)/9.2/…» → «H 18/87%/9.2/…»
+  // 1) formatos compactos por grupo (H, Q, I, HEP, C, RFA, EAB)
+  t = t.replace(LAB_GRUPO, function(todo, pre, tag, vals){
+    var tg = tag.toLowerCase(), a = vals.split(/\s*[|\/]\s*/), map = null;
+    if(tg==='h') map = a.length>=6 ? ['gb','n','gr','hb','hto','plaq'] : a.length===5 ? ['gb','n','hb','hto','plaq'] : a.length===4 ? ['gb','hb','hto','plaq'] : null;
+    else if(tg==='q') map = a.length>=3 ? ['glu','urea','cr'] : null;
+    else if(tg==='i' || tg==='io' || tg==='iono') map = a.length>=3 ? ['na','k','cl'] : (a.length===2 ? ['na','k'] : null);
+    else if(tg==='hep' || tg==='hpt') map = a.length>=2 ? ['gpt','got','fal','bt','bd'] : null;
+    else if(tg==='c') map = a.length===3 ? ['tp','rin','kptt'] : null;
+    else if(tg==='rfa') map = ['pcr','ers'];
+    else if(tg.indexOf('eab')===0) map = a.length>=4 ? ['ph','pco2','po2','hco3','eb'] : null;
+    if(!map) return todo;                                  // no es un grupo reconocible: se deja para la lectura por nombre
+    a.forEach(function(x, i){ if(i<map.length && x!=='-') poner(map[i], x); });
+    return pre+' ';
+  });
+  // 2) valores con nombre («Hb: 11.7», «gb 5.5», «k4.2», «N: 55%»)
+  var hits = [], m;
+  t = t.toLowerCase();
+  LAB_KV.lastIndex = 0;
+  while((m = LAB_KV.exec(t))){
+    var al = m[2].replace(/[.\s]+/g,' ').trim();
+    var key = LAB_ALIAS_MAP[al];
+    if(key!==undefined) hits.push({ i:m.index, key:key, raw:m[3] });
+  }
+  LAB_KV1.lastIndex = 0;
+  var un = { n:'n', l:'l', u:'urea', k:'k', c:'cr', p:'p' };
+  while((m = LAB_KV1.exec(t))) hits.push({ i:m.index, key:un[m[2]], raw:m[3] });
+  hits.sort(function(a,b){ return a.i-b.i; }).forEach(function(h){ poner(h.key, h.raw); });
+  return v;
+}
+function parseLabo(texto, ref){
+  var txt = String(texto==null?'':texto), refD = ref ? new Date(ref) : new Date();
+  var fechas = laboFechas(txt), segs = [], desc = { n:0 };
+  /* Una «GUARDIA» dentro del renglón de un día es otra extracción del mismo día: se lee aparte para que
+     sus valores no pisen a los del laboratorio de rutina. */
+  function agregar(t, f){
+    t.split(/(?=\bguardia\b)/i).forEach(function(pt){ if(pt.trim()) segs.push({ txt: pt, f: f, guardia: /^\s*guardia/i.test(pt) }); });
+  }
+  agregar(fechas.length ? txt.slice(0, fechas[0].ini) : txt, null);
+  fechas.forEach(function(f, i){ agregar(txt.slice(f.fin, i+1<fechas.length ? fechas[i+1].ini : txt.length), f); });
+  var refT = Date.UTC(refD.getFullYear(), refD.getMonth(), refD.getDate()), prevT = null, entradas = [];
+  segs.forEach(function(s, idx){
+    var v = laboValores(s.txt, desc);
+    var e = { idx: idx, v: v, sinFecha: !s.f, label: s.guardia ? 'Guardia' : '' };
+    if(s.f){
+      var y;
+      if(s.f.y) y = s.f.y<100 ? 2000+s.f.y : s.f.y;
+      else{
+        y = prevT!=null ? new Date(prevT).getUTCFullYear() : refD.getFullYear();
+        var lim = prevT!=null ? prevT + 45*864e5 : refT + 3*864e5;
+        if(Date.UTC(y, s.f.m-1, s.f.d) > lim) y -= 1;
+      }
+      e.t = Date.UTC(y, s.f.m-1, s.f.d);
+      /* Los renglones vienen del más nuevo al más viejo. Una fecha mucho más vieja que la anterior es casi
+         seguro un error de tipeo del pase («30/3» entre el 01/10 y el 29/9): se excluye del gráfico y no
+         arrastra el año de los renglones siguientes. */
+      if(prevT!=null && e.t < prevT - 100*864e5){ e.dudosa = true; e.fechaTxt = s.f.d+'/'+s.f.m; }
+      else prevT = e.t;
+    } else e.t = refT;                                     // renglón sin fecha: se asume la del día del pase
+    if(Object.keys(v).length) entradas.push(e);
+  });
+  var dudosas = entradas.filter(function(e){ return e.dudosa; }).map(function(e){ return e.fechaTxt; });
+  entradas = entradas.filter(function(e){ return !e.dudosa; });
+  var series = {};
+  entradas.forEach(function(e){
+    Object.keys(e.v).forEach(function(k){ (series[k] = series[k] || []).push({ t:e.t, v:e.v[k], idx:e.idx, label:e.label, sinFecha:e.sinFecha }); });
+  });
+  Object.keys(series).forEach(function(k){ series[k].sort(function(a,b){ return a.t-b.t || b.idx-a.idx; }); });
+  return { entradas: entradas, series: series, descartados: desc.n, dudosas: dudosas };
+}
+
+  return { parsePase: parsePase, normCama: normCama, splitCultText: splitCultText, parseLabo: parseLabo, formatLabo: formatLabo, sexoPorNombre: sexoPorNombre, LAB_DEF: LAB_DEF };
 })();
 
 /* ================= Unificación: un documento por cama =================
@@ -5782,7 +6259,7 @@ function textoNoVacio(v){
 }
 
 function fusionarEnFicha(target, origen, fusionarPendientesGuardia){
-  ['nombre','sexo','edad','dni','fi','mc','ant','ic','evol','lastEstado'].forEach(k=>{
+  ['nombre','sexo','edad','dni','fi','mc','ant','ic','img','labo','evol','lastEstado'].forEach(k=>{
     if(!textoNoVacio(target[k]) && textoNoVacio(origen[k])) target[k] = origen[k];
   });
   // guardias.html llamaba "paciente" al nombre y guardaba MI como texto plano
@@ -5928,7 +6405,10 @@ const IMPORT_FIELDS = [
   {key:'ant',    label:'ANT'},
   {key:'mi',     label:'MI',   list:true},
   {key:'asoc',   label:'ASOC', list:true},
-  {key:'cult',   label:'Cultivos', list:true}
+  {key:'cult',   label:'Cultivos', list:true},
+  {key:'img',    label:'IMG'},
+  {key:'labo',   label:'LABO'},
+  {key:'sexo',   label:'Sexo (según el nombre)'}
 ];
 
 let importPlan = null;
@@ -5936,6 +6416,15 @@ let importParsed = null;      // lectura del .md vigente (para reanalizar sin vo
 let importOverrides = {};     // camas cuyo "traslado" descartó el usuario: { 'C123': true }
 
 function impEsc(s){ return escapeHtml(String(s==null?'':s)); }
+/* IMG y LABO traen todo el historial: en el informe se muestra un resumen, no el texto entero. */
+function impTxtLargo(key, t){
+  t = String(t==null?'':t);
+  if((key==='img' || key==='labo') && t.length>260){
+    const n = (t.match(/\n/g)||[]).length+1;
+    return t.slice(0,220).replace(/\s+$/,'')+' … ('+t.length+' caracteres, '+n+' renglones)';
+  }
+  return t;
+}
 function soloDigitos(s){ return String(s==null?'':s).replace(/\D/g,''); }
 function itemsToText(v){
   if(Array.isArray(v)) return v.map(i=>(i&&i.resuelto?'~~'+i.text+'~~':(i&&i.text)||'')).join(' · ');
@@ -5965,7 +6454,10 @@ function datosDelMd(np){
     ant:    np.ant || '',
     mi:     np.mi.map(i=>({text:i.text, resuelto:!!i.resuelto})),
     asoc:   np.asoc.map(i=>({text:i.text, resuelto:!!i.resuelto})),
-    cult:   (np.cult||[]).map(i=>({text:i.text, resuelto:!!i.resuelto}))
+    cult:   (np.cult||[]).map(i=>({text:i.text, resuelto:!!i.resuelto})),
+    img:    np.img || '',
+    labo:   np.labo || '',
+    sexo:   np.sexo || ''
   };
 }
 
@@ -6038,7 +6530,10 @@ function esReemplazoEnCama(cur, nuevo){
   if(!tienePacienteFicha(cur)) return false;
   const dv = soloDigitos(cur.dni), dn = soloDigitos(nuevo.dni);
   const ambos = !!dv && !!dn;
-  const dniDistinto = ambos && dv !== dn;
+  /* Mismo nombre completo y edad parecida pero otro DNI: casi seguro es el DNI corregido en el pase
+     (no un paciente nuevo, que borraría la evolución). Se toma como la misma persona. */
+  const mismaGente = ambos && dv !== dn && mismaPersonaPorNombreEstricto(cur.nombre, nuevo.nombre) && edadCompatible(cur.edad, nuevo.edad);
+  const dniDistinto = ambos && dv !== dn && !mismaGente;
   const nombreDistinto = !ambos ? (mismaPersonaPorNombre(cur.nombre, nuevo.nombre) === false) : false;
   return dniDistinto || nombreDistinto;
 }
@@ -6171,7 +6666,9 @@ function analizarImport(parsed, noTrasladar){
       const vacioNuevo = !valorTexto(f.key, nuevo[f.key]).trim();
       const manual = !!(ref && (f.list ? !mismasClaves(prev, ref[f.key]) : valorTexto(f.key, prev) !== (ref[f.key]||'')));
       /* Un campo que en el .md viene vacío no pisa lo que ya había cargado. */
-      const mostrar = changed && !(vacioNuevo && valorTexto(f.key, prev).trim());
+      const habiaPrev = !!valorTexto(f.key, prev).trim();
+      /* En un reemplazo (paciente nuevo en la cama) lo del anterior no se conserva, aunque el campo venga vacío. */
+      const mostrar = changed && !(vacioNuevo && habiaPrev && !reemplazo) && !(f.key==='sexo' && habiaPrev && !reemplazo);
       return {
         key: f.key, label: f.label, list: !!f.list,
         prevTxt: valorTexto(f.key, prev),
@@ -6205,7 +6702,7 @@ function analizarImport(parsed, noTrasladar){
       accion: accion,
       reset: reemplazo,
       vaciada: camasVaciadas.has(code),
-      sexo: np.sexo || (cur && cur.sexo) || '',
+      sexo: np.sexo || (!reemplazo && cur && cur.sexo) || '',
       campos: campos,
       aviso: aviso,
       dniViejo: soloDigitos(cur && cur.dni),
@@ -6333,9 +6830,9 @@ function renderImportReport(plan){
             html += '<tr'+(c.manual?' class="imp-manual"':'')+'>'+
               '<td class="imp-chk"><input type="checkbox" data-cama="'+impEsc(e.code)+'" data-key="'+impEsc(c.key)+'" '+(c.aplicar?'checked':'')+'></td>'+
               '<td class="imp-campo">'+impEsc(c.label)+(c.manual?'<span class="imp-manual-tag" title="Editaste esto a mano después de la última importación: se conserva tu versión salvo que tildes la casilla para tomar la del .md">editado a mano — se conserva</span>':'')+'</td>'+
-              '<td class="imp-prev">'+(c.prevTxt ? impEsc(c.prevTxt) : '<i>vacío</i>')+'</td>'+
+              '<td class="imp-prev">'+(c.prevTxt ? impEsc(impTxtLargo(c.key, c.prevTxt)) : '<i>vacío</i>')+'</td>'+
               '<td class="imp-arrow">→</td>'+
-              '<td class="imp-next">'+(c.nextTxt ? impEsc(c.nextTxt) : '<i>vacío</i>')+'</td></tr>';
+              '<td class="imp-next">'+(c.nextTxt ? impEsc(impTxtLargo(c.key, c.nextTxt)) : '<i>vacío</i>')+'</td></tr>';
           });
           html += '</tbody></table>';
         } else {
@@ -6522,6 +7019,7 @@ function aplicarImport(plan){
       /* Paciente nuevo en la cama: lo de la persona anterior no sirve. */
       p.evol = ''; p.evolCount = 0; p.lastEstado = ''; p.lastChecklist = null;
       p.manejo = []; p.datos = {}; p.hechos = {};
+      p.sexo = e.sexo || '';            // el sexo del paciente anterior no se hereda
       nuevos++;
     }
     p.lastImport = snapshotImport(p);
@@ -6569,7 +7067,7 @@ function aplicarImport(plan){
   aVaciar.forEach(a=>{
     const p = patients.find(x=>x.id===a.id);
     if(!p) return;
-    p.nombre=''; p.sexo=''; p.edad=''; p.dni=''; p.fi=''; p.mc=''; p.ant=''; p.mi=[]; p.asoc=[]; p.cult=[]; p.ic='';
+    p.nombre=''; p.sexo=''; p.edad=''; p.dni=''; p.fi=''; p.mc=''; p.ant=''; p.mi=[]; p.asoc=[]; p.cult=[]; p.ic=''; p.img=''; p.labo='';
     p.evol=''; p.evolCount=0; p.lastEstado=''; p.lastChecklist=null;
     p.manejo=[]; p.datos={}; p.hechos={};
     delete p.plantillaSeleccionada; delete p.bibIds; delete p.bibChecks; delete p.salidasPropias; delete p.checksPropios; delete p.cierreSel;
